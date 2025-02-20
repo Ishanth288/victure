@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { HashLink } from 'react-router-hash-link';
+import { Link } from 'react-router-dom';
 
 export default function Navigation() {
   return (
@@ -24,12 +25,16 @@ export default function Navigation() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" className="text-neutral-600 hover:text-primary">
-              Login
-            </Button>
-            <Button className="bg-primary hover:bg-primary-dark text-white">
-              Get Started
-            </Button>
+            <Link to="/login">
+              <Button variant="ghost" className="text-neutral-600 hover:text-primary">
+                Login
+              </Button>
+            </Link>
+            <Link to="/register">
+              <Button className="bg-primary hover:bg-primary-dark text-white">
+                Get Started
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
