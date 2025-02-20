@@ -1,5 +1,5 @@
 
-import { Link } from "react-router-dom";
+import { HashLink } from 'react-router-hash-link';
 
 export default function Footer() {
   return (
@@ -7,9 +7,9 @@ export default function Footer() {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <Link to="/" className="text-2xl font-bold text-primary">
+            <HashLink to="/" className="text-2xl font-bold text-primary">
               Victure
-            </Link>
+            </HashLink>
             <p className="mt-4 text-neutral-600">
               Streamlining pharmacy operations for better patient care.
             </p>
@@ -19,19 +19,19 @@ export default function Footer() {
             <h3 className="font-semibold text-neutral-900 mb-4">Product</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="#features" className="text-neutral-600 hover:text-primary transition-colors">
+                <HashLink smooth to="#features" className="text-neutral-600 hover:text-primary transition-colors">
                   Features
-                </Link>
+                </HashLink>
               </li>
               <li>
-                <Link to="#benefits" className="text-neutral-600 hover:text-primary transition-colors">
+                <HashLink smooth to="#benefits" className="text-neutral-600 hover:text-primary transition-colors">
                   Benefits
-                </Link>
+                </HashLink>
               </li>
               <li>
-                <Link to="#" className="text-neutral-600 hover:text-primary transition-colors">
+                <HashLink smooth to="#" className="text-neutral-600 hover:text-primary transition-colors">
                   Pricing
-                </Link>
+                </HashLink>
               </li>
             </ul>
           </div>
@@ -40,19 +40,19 @@ export default function Footer() {
             <h3 className="font-semibold text-neutral-900 mb-4">Company</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="#" className="text-neutral-600 hover:text-primary transition-colors">
+                <HashLink smooth to="#" className="text-neutral-600 hover:text-primary transition-colors">
                   About Us
-                </Link>
+                </HashLink>
               </li>
               <li>
-                <Link to="#" className="text-neutral-600 hover:text-primary transition-colors">
+                <HashLink smooth to="#" className="text-neutral-600 hover:text-primary transition-colors">
                   Contact
-                </Link>
+                </HashLink>
               </li>
               <li>
-                <Link to="#" className="text-neutral-600 hover:text-primary transition-colors">
+                <HashLink smooth to="#" className="text-neutral-600 hover:text-primary transition-colors">
                   Careers
-                </Link>
+                </HashLink>
               </li>
             </ul>
           </div>
@@ -61,14 +61,14 @@ export default function Footer() {
             <h3 className="font-semibold text-neutral-900 mb-4">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="#" className="text-neutral-600 hover:text-primary transition-colors">
+                <HashLink smooth to="#" className="text-neutral-600 hover:text-primary transition-colors">
                   Privacy Policy
-                </Link>
+                </HashLink>
               </li>
               <li>
-                <Link to="#" className="text-neutral-600 hover:text-primary transition-colors">
+                <HashLink smooth to="#" className="text-neutral-600 hover:text-primary transition-colors">
                   Terms of Service
-                </Link>
+                </HashLink>
               </li>
             </ul>
           </div>

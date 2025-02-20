@@ -1,26 +1,26 @@
 
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { HashLink } from 'react-router-hash-link';
 
 export default function Navigation() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center space-x-2">
+          <HashLink to="/" className="flex items-center space-x-2">
             <span className="text-2xl font-bold text-primary">Victure</span>
-          </Link>
+          </HashLink>
 
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="#features" className="text-neutral-600 hover:text-primary transition-colors">
+            <HashLink smooth to="#features" className="text-neutral-600 hover:text-primary transition-colors">
               Features
-            </Link>
-            <Link to="#benefits" className="text-neutral-600 hover:text-primary transition-colors">
+            </HashLink>
+            <HashLink smooth to="#benefits" className="text-neutral-600 hover:text-primary transition-colors">
               Benefits
-            </Link>
-            <Link to="#testimonials" className="text-neutral-600 hover:text-primary transition-colors">
+            </HashLink>
+            <HashLink smooth to="#testimonials" className="text-neutral-600 hover:text-primary transition-colors">
               Testimonials
-            </Link>
+            </HashLink>
           </div>
 
           <div className="flex items-center space-x-4">
