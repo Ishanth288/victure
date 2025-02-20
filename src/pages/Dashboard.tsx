@@ -1,5 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Package, FileText, Users, AlertTriangle } from "lucide-react";
 
