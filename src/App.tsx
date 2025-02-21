@@ -1,4 +1,5 @@
 
+import { BrowserRouter } from "react-router-dom";
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import Index from "@/pages/Index";
@@ -9,7 +10,7 @@ import Inventory from "@/pages/Inventory";
 
 function App() {
   return (
-    <>
+    <BrowserRouter>
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
@@ -18,7 +19,7 @@ function App() {
         <Route path="/inventory" element={<Inventory />} />
       </Routes>
       <Toaster />
-    </>
+    </BrowserRouter>
   );
 }
 
