@@ -1,9 +1,9 @@
-
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Package, Search, Filter, Plus, ArrowUpDown, 
-  AlertTriangle, Clock, Download
+  AlertTriangle, Clock, Download, Calendar,
+  X, AlertOctagon, ChevronUp, ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,8 +11,22 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-// Mock data for demonstration
 const inventoryData = [
   {
     id: 1,
@@ -55,9 +69,47 @@ const inventoryData = [
   },
 ];
 
+interface InventoryItemFormData {
+  name: string;
+  genericName: string;
+  ndc: string;
+  manufacturer: string;
+  dosageForm: string;
+  strength: string;
+  unitSize: string;
+  unitCost: string;
+  sellingPrice: string;
+  quantity: string;
+  reorderPoint: string;
+  expiryDate: string;
+  supplier: string;
+  storage: string;
+}
+
+const initialFormData: InventoryItemFormData = {
+  name: "",
+  genericName: "",
+  ndc: "",
+  manufacturer: "",
+  dosageForm: "",
+  strength: "",
+  unitSize: "",
+  unitCost: "",
+  sellingPrice: "",
+  quantity: "",
+  reorderPoint: "",
+  expiryDate: "",
+  supplier: "",
+  storage: "",
+};
+
 export default function Inventory() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [formData, setFormData] = useState<InventoryItemFormData>(initialFormData);
+  const [editingItem, setEditingItem] = useState<typeof inventoryData[0] | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -90,6 +142,211 @@ export default function Inventory() {
     );
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditClick = (item: typeof inventoryData[0]) => {
+    setEditingItem(item);
+    setFormData({
+      name: item.name,
+      genericName: "",
+      ndc: item.ndc,
+      manufacturer: item.manufacturer,
+      dosageForm: item.dosageForm,
+      strength: item.unitSize,
+      unitSize: item.unitSize,
+      unitCost: item.unitCost.toString(),
+      sellingPrice: (item.unitCost * 1.3).toString(),
+      quantity: item.quantity.toString(),
+      reorderPoint: "10",
+      expiryDate: item.expiryDate,
+      supplier: item.supplier,
+      storage: "Room Temperature",
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const InventoryForm = ({ isEdit = false }) => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <Label htmlFor="name">Medicine Name</Label>
+          <Input
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleInputChange}
+            placeholder="Enter medicine name"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="genericName">Generic Name</Label>
+          <Input
+            id="genericName"
+            name="genericName"
+            value={formData.genericName}
+            onChange={handleInputChange}
+            placeholder="Enter generic name"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="ndc">NDC</Label>
+          <Input
+            id="ndc"
+            name="ndc"
+            value={formData.ndc}
+            onChange={handleInputChange}
+            placeholder="Enter NDC"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="manufacturer">Manufacturer</Label>
+          <Input
+            id="manufacturer"
+            name="manufacturer"
+            value={formData.manufacturer}
+            onChange={handleInputChange}
+            placeholder="Enter manufacturer"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="dosageForm">Dosage Form</Label>
+          <Select
+            value={formData.dosageForm}
+            onValueChange={(value) => handleSelectChange("dosageForm", value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select dosage form" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="tablet">Tablet</SelectItem>
+              <SelectItem value="capsule">Capsule</SelectItem>
+              <SelectItem value="liquid">Liquid</SelectItem>
+              <SelectItem value="injection">Injection</SelectItem>
+              <SelectItem value="ointment">Ointment</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="strength">Strength/Concentration</Label>
+          <Input
+            id="strength"
+            name="strength"
+            value={formData.strength}
+            onChange={handleInputChange}
+            placeholder="e.g., 500mg"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="unitCost">Unit Cost (₹)</Label>
+          <Input
+            id="unitCost"
+            name="unitCost"
+            type="number"
+            value={formData.unitCost}
+            onChange={handleInputChange}
+            placeholder="Enter unit cost"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="sellingPrice">Selling Price (₹)</Label>
+          <Input
+            id="sellingPrice"
+            name="sellingPrice"
+            type="number"
+            value={formData.sellingPrice}
+            onChange={handleInputChange}
+            placeholder="Enter selling price"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="quantity">Quantity</Label>
+          <Input
+            id="quantity"
+            name="quantity"
+            type="number"
+            value={formData.quantity}
+            onChange={handleInputChange}
+            placeholder="Enter quantity"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="reorderPoint">Reorder Point</Label>
+          <Input
+            id="reorderPoint"
+            name="reorderPoint"
+            type="number"
+            value={formData.reorderPoint}
+            onChange={handleInputChange}
+            placeholder="Enter reorder point"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="expiryDate">Expiry Date</Label>
+          <Input
+            id="expiryDate"
+            name="expiryDate"
+            type="date"
+            value={formData.expiryDate}
+            onChange={handleInputChange}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="storage">Storage Conditions</Label>
+          <Select
+            value={formData.storage}
+            onValueChange={(value) => handleSelectChange("storage", value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select storage condition" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="room">Room Temperature</SelectItem>
+              <SelectItem value="refrigerated">Refrigerated</SelectItem>
+              <SelectItem value="frozen">Frozen</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          onClick={() => {
+            setFormData(initialFormData);
+            if (isEdit) {
+              setIsEditModalOpen(false);
+            } else {
+              setIsAddModalOpen(false);
+            }
+          }}
+        >
+          Cancel
+        </Button>
+        <Button>
+          {isEdit ? "Save Changes" : "Add Item"}
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
     <DashboardLayout>
       <motion.div
@@ -98,7 +355,6 @@ export default function Inventory() {
         transition={{ duration: 0.5 }}
         className="space-y-6"
       >
-        {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <motion.h1
@@ -129,7 +385,6 @@ export default function Inventory() {
           </div>
         </div>
 
-        {/* Search and Filters */}
         <Card className="p-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <div className="relative flex-1">
@@ -154,7 +409,6 @@ export default function Inventory() {
           </div>
         </Card>
 
-        {/* Inventory Table */}
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -218,7 +472,36 @@ export default function Inventory() {
           </div>
         </Card>
 
-        {/* Pagination */}
+        <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Item
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Add New Item</DialogTitle>
+              <DialogDescription>
+                Add a new item to your inventory. Fill in all required fields.
+              </DialogDescription>
+            </DialogHeader>
+            <InventoryForm />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Edit Item</DialogTitle>
+              <DialogDescription>
+                Update the item details. All changes will be saved automatically.
+              </DialogDescription>
+            </DialogHeader>
+            <InventoryForm isEdit />
+          </DialogContent>
+        </Dialog>
+
         <div className="flex items-center justify-between">
           <p className="text-sm text-neutral-600">
             Showing 1-3 of 3 items
