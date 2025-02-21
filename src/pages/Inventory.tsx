@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { motion } from "framer-motion";
+import { useState, useCallback, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Package, Search, Filter, Plus, ArrowUpDown, 
   AlertTriangle, Clock, Download
@@ -14,8 +14,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
 import InventoryForm, { InventoryItemFormData } from "@/components/inventory/InventoryForm";
 
@@ -85,6 +85,7 @@ export default function Inventory() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [formData, setFormData] = useState<InventoryItemFormData>(initialFormData);
   const [editingItem, setEditingItem] = useState<typeof inventoryData[0] | null>(null);
+  const [inventory, setInventory] = useState(inventoryData);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -145,6 +146,57 @@ export default function Inventory() {
         ? prev.filter(item => item !== id)
         : [...prev, id]
     );
+  };
+
+  const handleAddItem = async () => {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const newItem = {
+      id: inventory.length + 1,
+      name: formData.name,
+      ndc: formData.ndc,
+      manufacturer: formData.manufacturer,
+      dosageForm: formData.dosageForm,
+      unitSize: formData.strength,
+      quantity: parseInt(formData.quantity),
+      unitCost: parseFloat(formData.unitCost),
+      expiryDate: formData.expiryDate,
+      supplier: formData.supplier || "Not specified",
+      status: parseInt(formData.quantity) > parseInt(formData.reorderPoint) ? "In Stock" : "Low Stock",
+    };
+
+    setInventory(prev => [...prev, newItem]);
+    setFormData(initialFormData);
+    setIsAddModalOpen(false);
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editingItem) return;
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const updatedItem = {
+      ...editingItem,
+      name: formData.name,
+      ndc: formData.ndc,
+      manufacturer: formData.manufacturer,
+      dosageForm: formData.dosageForm,
+      unitSize: formData.strength,
+      quantity: parseInt(formData.quantity),
+      unitCost: parseFloat(formData.unitCost),
+      expiryDate: formData.expiryDate,
+      supplier: formData.supplier || "Not specified",
+      status: parseInt(formData.quantity) > parseInt(formData.reorderPoint) ? "In Stock" : "Low Stock",
+    };
+
+    setInventory(prev => 
+      prev.map(item => 
+        item.id === editingItem.id ? updatedItem : item
+      )
+    );
+    setFormData(initialFormData);
+    setEditingItem(null);
+    setIsEditModalOpen(false);
   };
 
   return (
@@ -233,44 +285,47 @@ export default function Inventory() {
                 </tr>
               </thead>
               <tbody>
-                {inventoryData.map((item) => (
-                  <motion.tr
-                    key={item.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="border-b border-neutral-200 hover:bg-neutral-50"
-                  >
-                    <td className="px-4 py-3">
-                      <Checkbox
-                        checked={selectedItems.includes(item.id)}
-                        onCheckedChange={() => toggleItemSelection(item.id)}
-                      />
-                    </td>
-                    <td className="px-4 py-3 font-medium">{item.name}</td>
-                    <td className="px-4 py-3 text-neutral-600">{item.ndc}</td>
-                    <td className="px-4 py-3 text-neutral-600">{item.manufacturer}</td>
-                    <td className="px-4 py-3">{item.quantity}</td>
-                    <td className="px-4 py-3">${item.unitCost.toFixed(2)}</td>
-                    <td className={`px-4 py-3 ${getExpiryColor(item.expiryDate)}`}>
-                      {new Date(item.expiryDate).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleEditClick(item)}
-                      >
-                        Edit
-                      </Button>
-                    </td>
-                  </motion.tr>
-                ))}
+                <AnimatePresence>
+                  {inventory.map((item) => (
+                    <motion.tr
+                      key={item.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{ duration: 0.3 }}
+                      className="border-b border-neutral-200 hover:bg-neutral-50"
+                    >
+                      <td className="px-4 py-3">
+                        <Checkbox
+                          checked={selectedItems.includes(item.id)}
+                          onCheckedChange={() => toggleItemSelection(item.id)}
+                        />
+                      </td>
+                      <td className="px-4 py-3 font-medium">{item.name}</td>
+                      <td className="px-4 py-3 text-neutral-600">{item.ndc}</td>
+                      <td className="px-4 py-3 text-neutral-600">{item.manufacturer}</td>
+                      <td className="px-4 py-3">{item.quantity}</td>
+                      <td className="px-4 py-3">${item.unitCost.toFixed(2)}</td>
+                      <td className={`px-4 py-3 ${getExpiryColor(item.expiryDate)}`}>
+                        {new Date(item.expiryDate).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEditClick(item)}
+                        >
+                          Edit
+                        </Button>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
               </tbody>
             </table>
           </div>
@@ -292,10 +347,7 @@ export default function Inventory() {
                 setFormData(initialFormData);
                 setIsAddModalOpen(false);
               }}
-              onSubmit={() => {
-                // Handle form submission
-                setIsAddModalOpen(false);
-              }}
+              onSubmit={handleAddItem}
             />
           </DialogContent>
         </Dialog>
@@ -317,10 +369,7 @@ export default function Inventory() {
                 setFormData(initialFormData);
                 setIsEditModalOpen(false);
               }}
-              onSubmit={() => {
-                // Handle form submission
-                setIsEditModalOpen(false);
-              }}
+              onSubmit={handleEditSubmit}
             />
           </DialogContent>
         </Dialog>

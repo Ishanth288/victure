@@ -1,7 +1,8 @@
-
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -9,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
 
 export interface InventoryItemFormData {
   name: string;
@@ -33,7 +35,7 @@ interface InventoryFormProps {
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSelectChange: (name: string, value: string) => void;
   onCancel: () => void;
-  onSubmit: () => void;
+  onSubmit: () => Promise<void>;
 }
 
 export default function InventoryForm({
@@ -44,6 +46,20 @@ export default function InventoryForm({
   onCancel,
   onSubmit
 }: InventoryFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    try {
+      setIsSubmitting(true);
+      await onSubmit();
+      toast.success(isEdit ? "Item updated successfully!" : "Item added successfully!");
+    } catch (error) {
+      toast.error("Failed to save item. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -97,10 +113,10 @@ export default function InventoryForm({
             value={formData.dosageForm}
             onValueChange={(value) => onSelectChange("dosageForm", value)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="bg-white">
               <SelectValue placeholder="Select dosage form" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white border shadow-lg">
               <SelectItem value="tablet">Tablet</SelectItem>
               <SelectItem value="capsule">Capsule</SelectItem>
               <SelectItem value="liquid">Liquid</SelectItem>
@@ -186,10 +202,10 @@ export default function InventoryForm({
             value={formData.storage}
             onValueChange={(value) => onSelectChange("storage", value)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="bg-white">
               <SelectValue placeholder="Select storage condition" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white border shadow-lg">
               <SelectItem value="room">Room Temperature</SelectItem>
               <SelectItem value="refrigerated">Refrigerated</SelectItem>
               <SelectItem value="frozen">Frozen</SelectItem>
@@ -202,11 +218,22 @@ export default function InventoryForm({
         <Button
           variant="outline"
           onClick={onCancel}
+          disabled={isSubmitting}
         >
           Cancel
         </Button>
-        <Button onClick={onSubmit}>
-          {isEdit ? "Save Changes" : "Add Item"}
+        <Button 
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {isEdit ? "Saving..." : "Adding..."}
+            </>
+          ) : (
+            isEdit ? "Save Changes" : "Add Item"
+          )}
         </Button>
       </div>
     </div>
