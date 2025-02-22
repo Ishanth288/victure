@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,11 +83,13 @@ export function CartSummary({
 
       if (itemsError) throw itemsError;
 
-      // Update inventory quantities
+      // Update inventory quantities - using arithmetic operator in the query
       for (const item of items) {
         const { error: updateError } = await supabase
           .from("inventory")
-          .update({ quantity: supabase.raw(`quantity - ${item.quantity}`) })
+          .update({ 
+            quantity: supabase.sql`quantity - ${item.quantity}` 
+          })
           .eq("id", item.id);
 
         if (updateError) throw updateError;
