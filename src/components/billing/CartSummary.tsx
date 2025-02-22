@@ -83,12 +83,22 @@ export function CartSummary({
 
       if (itemsError) throw itemsError;
 
-      // Update inventory quantities - using arithmetic operator in the query
+      // Update inventory quantities
       for (const item of items) {
+        // First get the current quantity
+        const { data: inventoryItem, error: fetchError } = await supabase
+          .from("inventory")
+          .select("quantity")
+          .eq("id", item.id)
+          .single();
+
+        if (fetchError) throw fetchError;
+
+        // Then update with the new quantity
         const { error: updateError } = await supabase
           .from("inventory")
           .update({ 
-            quantity: supabase.sql`quantity - ${item.quantity}` 
+            quantity: inventoryItem.quantity - item.quantity 
           })
           .eq("id", item.id);
 
