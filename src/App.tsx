@@ -7,6 +7,8 @@ import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Dashboard from "@/pages/Dashboard";
 import Inventory from "@/pages/Inventory";
+import Billing from "@/pages/Billing";
+import Prescriptions from "@/pages/Prescriptions";
 
 function App() {
   return (
@@ -17,6 +19,8 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/inventory" element={<Inventory />} />
+        <Route path="/billing" element={<Billing />} />
+        <Route path="/prescriptions" element={<Prescriptions />} />
       </Routes>
       <Toaster />
     </BrowserRouter>
@@ -24,3 +28,4 @@ function App() {
 }
 
 export default App;
+

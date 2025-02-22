@@ -9,7 +9,193 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      bill_items: {
+        Row: {
+          bill_id: number
+          id: number
+          inventory_item_id: number
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          bill_id: number
+          id?: number
+          inventory_item_id: number
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          bill_id?: number
+          id?: number
+          inventory_item_id?: number
+          quantity?: number
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bill_items_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bill_items_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bills: {
+        Row: {
+          bill_number: string
+          date: string
+          discount_amount: number | null
+          gst_amount: number
+          gst_percentage: number
+          id: number
+          prescription_id: number | null
+          status: string
+          subtotal: number
+          total_amount: number
+        }
+        Insert: {
+          bill_number: string
+          date?: string
+          discount_amount?: number | null
+          gst_amount: number
+          gst_percentage: number
+          id?: number
+          prescription_id?: number | null
+          status?: string
+          subtotal: number
+          total_amount: number
+        }
+        Update: {
+          bill_number?: string
+          date?: string
+          discount_amount?: number | null
+          gst_amount?: number
+          gst_percentage?: number
+          id?: number
+          prescription_id?: number | null
+          status?: string
+          subtotal?: number
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bills_prescription_id_fkey"
+            columns: ["prescription_id"]
+            isOneToOne: false
+            referencedRelation: "prescriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory: {
+        Row: {
+          dosage_form: string | null
+          expiry_date: string | null
+          id: number
+          manufacturer: string | null
+          name: string
+          ndc: string | null
+          quantity: number
+          status: string
+          supplier: string | null
+          unit_cost: number
+          unit_size: string | null
+        }
+        Insert: {
+          dosage_form?: string | null
+          expiry_date?: string | null
+          id?: number
+          manufacturer?: string | null
+          name: string
+          ndc?: string | null
+          quantity?: number
+          status?: string
+          supplier?: string | null
+          unit_cost: number
+          unit_size?: string | null
+        }
+        Update: {
+          dosage_form?: string | null
+          expiry_date?: string | null
+          id?: number
+          manufacturer?: string | null
+          name?: string
+          ndc?: string | null
+          quantity?: number
+          status?: string
+          supplier?: string | null
+          unit_cost?: number
+          unit_size?: string | null
+        }
+        Relationships: []
+      }
+      patients: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+          phone_number: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          name: string
+          phone_number: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          name?: string
+          phone_number?: string
+        }
+        Relationships: []
+      }
+      prescriptions: {
+        Row: {
+          date: string
+          doctor_name: string
+          id: number
+          patient_id: number
+          prescription_number: string
+          status: string
+        }
+        Insert: {
+          date?: string
+          doctor_name: string
+          id?: number
+          patient_id: number
+          prescription_number: string
+          status?: string
+        }
+        Update: {
+          date?: string
+          doctor_name?: string
+          id?: number
+          patient_id?: number
+          prescription_number?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescriptions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

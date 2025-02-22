@@ -10,7 +10,9 @@ import {
   BarChart3,
   Settings,
   Menu,
-  X
+  X,
+  DollarSign,
+  Prescription
 } from "lucide-react";
 
 interface DashboardLayoutProps {
@@ -55,9 +57,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               Inventory
             </Button>
           </Link>
+          <Link to="/billing">
+            <Button variant="ghost" className="w-full justify-start">
+              <DollarSign className="mr-2 h-5 w-5" />
+              Billing
+            </Button>
+          </Link>
           <Link to="/prescriptions">
             <Button variant="ghost" className="w-full justify-start">
-              <FileText className="mr-2 h-5 w-5" />
+              <Prescription className="mr-2 h-5 w-5" />
               Prescriptions
             </Button>
           </Link>
@@ -109,3 +117,4 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     </div>
   );
 }
+
