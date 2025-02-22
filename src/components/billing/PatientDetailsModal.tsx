@@ -67,7 +67,6 @@ export function PatientDetailsModal({
       });
 
       onSuccess(prescriptionData.id);
-      onOpenChange(false);
     } catch (error) {
       console.error("Error saving patient details:", error);
       toast({

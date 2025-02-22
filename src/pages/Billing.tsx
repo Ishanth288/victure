@@ -22,6 +22,7 @@ export default function Billing() {
 
   const handlePatientDetailsSuccess = (prescriptionId: number) => {
     setCurrentPrescriptionId(prescriptionId);
+    setShowPatientModal(false); // Explicitly close the modal
   };
 
   const handleAddToCart = (medicine: any, quantity: number) => {
@@ -49,6 +50,7 @@ export default function Billing() {
   };
 
   const handleUpdateQuantity = (id: number, quantity: number) => {
+    if (quantity <= 0) return;
     setCartItems(cartItems.map(item =>
       item.id === id
         ? { ...item, quantity, total: quantity * item.unit_cost }
