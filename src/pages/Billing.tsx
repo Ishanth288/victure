@@ -4,8 +4,9 @@ import { PatientDetailsModal } from "@/components/billing/PatientDetailsModal";
 import { SearchMedicineInput } from "@/components/billing/SearchMedicineInput";
 import { CartSummary } from "@/components/billing/CartSummary";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Plus } from "lucide-react";
+import { Plus, Receipt, Search } from "lucide-react";
 
 interface CartItem {
   id: number;
@@ -22,7 +23,7 @@ export default function Billing() {
 
   const handlePatientDetailsSuccess = (prescriptionId: number) => {
     setCurrentPrescriptionId(prescriptionId);
-    setShowPatientModal(false); // Explicitly close the modal
+    setShowPatientModal(false);
   };
 
   const handleAddToCart = (medicine: any, quantity: number) => {
@@ -66,15 +67,20 @@ export default function Billing() {
   return (
     <DashboardLayout>
       <div className="container mx-auto px-4 py-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Billing</h1>
-          {!currentPrescriptionId && (
-            <Button onClick={() => setShowPatientModal(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              New Bill
-            </Button>
-          )}
-        </div>
+        <Card className="mb-6">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-2xl font-bold text-primary">Billing Dashboard</CardTitle>
+            {!currentPrescriptionId && (
+              <Button 
+                onClick={() => setShowPatientModal(true)}
+                className="bg-primary hover:bg-primary/90 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                New Bill
+              </Button>
+            )}
+          </CardHeader>
+        </Card>
 
         <PatientDetailsModal
           open={showPatientModal}
@@ -85,23 +91,37 @@ export default function Billing() {
         {currentPrescriptionId && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2">
-              <div className="bg-white rounded-lg shadow p-4">
-                <h2 className="text-lg font-semibold mb-4">Add Items</h2>
-                <SearchMedicineInput onAddToCart={handleAddToCart} />
-              </div>
+              <Card className="h-full">
+                <CardHeader>
+                  <CardTitle className="flex items-center text-lg font-semibold text-gray-700">
+                    <Search className="w-5 h-5 mr-2 text-primary" />
+                    Search Medicines
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <SearchMedicineInput onAddToCart={handleAddToCart} />
+                </CardContent>
+              </Card>
             </div>
 
             <div>
-              <div className="bg-white rounded-lg shadow p-4">
-                <h2 className="text-lg font-semibold mb-4">Bill Summary</h2>
-                <CartSummary
-                  items={cartItems}
-                  onRemoveItem={handleRemoveItem}
-                  onUpdateQuantity={handleUpdateQuantity}
-                  prescriptionId={currentPrescriptionId}
-                  onBillGenerated={handleBillGenerated}
-                />
-              </div>
+              <Card className="h-full">
+                <CardHeader>
+                  <CardTitle className="flex items-center text-lg font-semibold text-gray-700">
+                    <Receipt className="w-5 h-5 mr-2 text-primary" />
+                    Bill Summary
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CartSummary
+                    items={cartItems}
+                    onRemoveItem={handleRemoveItem}
+                    onUpdateQuantity={handleUpdateQuantity}
+                    prescriptionId={currentPrescriptionId}
+                    onBillGenerated={handleBillGenerated}
+                  />
+                </CardContent>
+              </Card>
             </div>
           </div>
         )}
