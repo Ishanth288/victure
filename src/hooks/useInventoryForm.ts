@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,6 +59,7 @@ export function useInventoryForm(onSuccess: () => void) {
       const quantity = parseInt(formData.quantity);
       const reorderPoint = parseInt(formData.reorderPoint || "10");
 
+      // Additional validation for numeric values
       if (isNaN(unitCost) || isNaN(quantity) || isNaN(reorderPoint)) {
         toast({
           title: "Error",
@@ -66,6 +68,23 @@ export function useInventoryForm(onSuccess: () => void) {
         });
         return null;
       }
+
+      // Make sure we have valid positive numbers
+      if (unitCost <= 0 || quantity < 0 || reorderPoint < 0) {
+        toast({
+          title: "Error",
+          description: "Unit Cost must be greater than 0, and Quantity and Reorder Point must be non-negative",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      console.log("Attempting to add item with data:", {
+        name: formData.name.trim(),
+        unit_cost: unitCost,
+        quantity: quantity,
+        reorder_point: reorderPoint
+      });
 
       const { data: rawData, error } = await supabase
         .from("inventory")
