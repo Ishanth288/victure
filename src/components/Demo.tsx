@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { useState } from "react";
 import {
@@ -13,7 +14,7 @@ const demoSlides = [
     features: ["Real-time analytics", "Stock alerts", "Sales overview", "Daily tasks"],
     icon: LayoutGrid,
     bgColor: "bg-blue-50",
-    image: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b"
+    image: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&w=1920&h=1080&q=80"
   },
   {
     title: "Smart Inventory",
@@ -21,7 +22,7 @@ const demoSlides = [
     features: ["Expiry tracking", "Auto reordering", "Stock optimization", "Batch tracking"],
     icon: Package,
     bgColor: "bg-green-50",
-    image: "https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b"
+    image: "https://images.unsplash.com/photo-1587854692152-cbe660dbde88?auto=format&fit=crop&w=1920&h=1080&q=80"
   },
   {
     title: "Purchase Management",
@@ -29,7 +30,7 @@ const demoSlides = [
     features: ["Digital PO generation", "Delivery tracking", "Supplier management", "Payment history"],
     icon: ShoppingCart,
     bgColor: "bg-purple-50",
-    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f"
+    image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1920&h=1080&q=80"
   },
   {
     title: "Business Analytics",
@@ -37,7 +38,7 @@ const demoSlides = [
     features: ["Sales analytics", "Inventory reports", "Financial insights", "Growth metrics"],
     icon: LineChart,
     bgColor: "bg-orange-50",
-    image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085"
+    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1920&h=1080&q=80"
   }
 ];
 
@@ -91,13 +92,13 @@ export default function Demo() {
                 ))}
               </ul>
             </div>
-            <div className="relative rounded-lg overflow-hidden shadow-lg">
+            <div className="relative aspect-[16/9] rounded-lg overflow-hidden shadow-lg">
               <img 
                 src={slide.image} 
                 alt={slide.title}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px] flex items-center justify-center">
                 <slide.icon className="w-16 h-16 text-white" />
               </div>
             </div>
