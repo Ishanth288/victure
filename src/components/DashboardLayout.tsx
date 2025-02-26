@@ -82,6 +82,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         } bg-white border-r border-neutral-200 w-64 md:translate-x-0`}
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-neutral-200">
+          <div className="pl-12"> {/* Added padding to avoid back button */}
+            <span className="text-lg font-medium text-primary">
+              {profileData?.pharmacy_name || 'Loading...'}
+            </span>
+          </div>
           <Button
             variant="ghost"
             size="icon"
