@@ -1,15 +1,14 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Receipt, Info } from "lucide-react";
-import { CartItem } from "@/types/billing";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { CartItemList } from "./CartItemList";
-import { BillDetailsForm } from "./BillDetailsForm";
-import { BillPreviewDialog } from "./BillPreviewDialog";
-import { useBillGeneration } from "@/hooks/useBillGeneration";
-import { toast } from "@/components/ui/toast";
-import { Label, Input } from "@/components/ui/input";
+import { CartItem } from "@/types/billing";
 import { CartItemRow } from "./CartItemRow";
+import { BillPreviewDialog } from "./BillPreviewDialog";
 
 interface CartSummaryProps {
   items: CartItem[];
@@ -26,20 +25,14 @@ export function CartSummary({
   onUpdateQuantity,
   onBillGenerated,
 }: CartSummaryProps) {
+  const { toast } = useToast();
   const [gstPercentage, setGstPercentage] = useState(18);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [showBillPreview, setShowBillPreview] = useState(false);
+  const [generatedBill, setGeneratedBill] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [generatedBill, setGeneratedBill] = useState(null);
-  const [showBillPreview, setShowBillPreview] = useState(false);
-
-  const {
-    showBillPreview: _showBillPreview,
-    setShowBillPreview: _setShowBillPreview,
-    generatedBill: _generatedBill,
-    generateBill,
-  } = useBillGeneration();
 
   useEffect(() => {
     checkAuth();
@@ -134,7 +127,6 @@ export function CartSummary({
 
       if (billItemsError) throw new Error(billItemsError.message);
 
-      // Update inventory quantities
       for (const item of items) {
         const { data: inventoryData, error: fetchError } = await supabase
           .from("inventory")
