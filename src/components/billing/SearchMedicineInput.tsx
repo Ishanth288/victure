@@ -34,17 +34,24 @@ export function SearchMedicineInput({ onAddToCart }: SearchMedicineInputProps) {
 
     setIsLoading(true);
     try {
+      // Modified the query to use % on both sides for better matching
       const { data, error } = await supabase
         .from("inventory")
         .select("*")
-        .ilike("name", `${query}%`)
+        .ilike("name", `%${query}%`)
         .order("name")
         .limit(5);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
+
+      console.log("Search results:", data); // Debug log
       setSearchResults(data || []);
     } catch (error) {
       console.error("Error searching medicines:", error);
+      setSearchResults([]);
     } finally {
       setIsLoading(false);
     }
