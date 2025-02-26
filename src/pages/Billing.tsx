@@ -18,9 +18,11 @@ interface PatientDetails {
 }
 
 const generatePrescriptionNumber = () => {
-  const timestamp = Date.now().toString();
-  const random = Math.random().toString(36).substring(2, 7).toUpperCase();
-  return `PRE-${timestamp}-${random}`;
+  // Use more components to make it more unique
+  const dateStr = new Date().toISOString().replace(/[-:]/g, '').slice(0, 14);
+  const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  const randomLetters = Math.random().toString(36).substring(2, 5).toUpperCase();
+  return `PRE-${dateStr}-${randomNum}-${randomLetters}`;
 };
 
 export default function Billing() {
@@ -32,8 +34,11 @@ export default function Billing() {
     doctorName: "",
     prescriptionNumber: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleStartBilling = async () => {
+    if (isSubmitting) return;
+
     if (!patientDetails.patientName || !patientDetails.phoneNumber || !patientDetails.doctorName) {
       toast({
         title: "Error",
@@ -43,7 +48,28 @@ export default function Billing() {
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
+      // Check if prescription number already exists
+      if (patientDetails.prescriptionNumber) {
+        const { data: existingPrescription } = await supabase
+          .from('prescriptions')
+          .select('id')
+          .eq('prescription_number', patientDetails.prescriptionNumber)
+          .single();
+
+        if (existingPrescription) {
+          toast({
+            title: "Error",
+            description: "Prescription number already exists. Please use a different one.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       // Create patient
       const { data: patientData, error: patientError } = await supabase
         .from("patients")
@@ -56,15 +82,41 @@ export default function Billing() {
         .select()
         .single();
 
-      if (patientError) throw patientError;
+      if (patientError) {
+        throw new Error(`Patient creation failed: ${patientError.message}`);
+      }
 
-      // Create prescription with unique number
-      const prescriptionNumber = patientDetails.prescriptionNumber || generatePrescriptionNumber();
+      // Generate a unique prescription number or use the provided one
+      let finalPrescriptionNumber = patientDetails.prescriptionNumber;
+      if (!finalPrescriptionNumber) {
+        let isUnique = false;
+        let attempts = 0;
+        
+        while (!isUnique && attempts < 5) {
+          finalPrescriptionNumber = generatePrescriptionNumber();
+          const { data: existingPrescription } = await supabase
+            .from('prescriptions')
+            .select('id')
+            .eq('prescription_number', finalPrescriptionNumber)
+            .single();
+          
+          if (!existingPrescription) {
+            isUnique = true;
+          }
+          attempts++;
+        }
+
+        if (!isUnique) {
+          throw new Error("Failed to generate unique prescription number after multiple attempts");
+        }
+      }
+
+      // Create prescription with verified unique number
       const { data: prescriptionData, error: prescriptionError } = await supabase
         .from("prescriptions")
         .insert([
           {
-            prescription_number: prescriptionNumber,
+            prescription_number: finalPrescriptionNumber,
             patient_id: patientData.id,
             doctor_name: patientDetails.doctorName,
           },
@@ -72,7 +124,9 @@ export default function Billing() {
         .select()
         .single();
 
-      if (prescriptionError) throw prescriptionError;
+      if (prescriptionError) {
+        throw new Error(`Prescription creation failed: ${prescriptionError.message}`);
+      }
 
       // Navigate to cart page with prescription ID
       navigate(`/billing/cart/${prescriptionData.id}`);
@@ -85,9 +139,11 @@ export default function Billing() {
       console.error("Error saving patient details:", error);
       toast({
         title: "Error",
-        description: "Failed to save patient details",
+        description: error instanceof Error ? error.message : "Failed to save patient details",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -176,10 +232,11 @@ export default function Billing() {
             <div className="mt-6 flex justify-end">
               <Button 
                 onClick={handleStartBilling}
+                disabled={isSubmitting}
                 className="bg-primary hover:bg-primary/90 text-white shadow-lg hover:shadow-xl transition-all duration-200"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Start Billing
+                {isSubmitting ? "Saving..." : "Start Billing"}
               </Button>
             </div>
           </CardContent>
