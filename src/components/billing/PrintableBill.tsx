@@ -6,14 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface PrintableBillProps {
   billData: {
-    billNumber: string;
+    bill_number: string;
     date: string;
     subtotal: number;
-    gstAmount: number;
-    gstPercentage: number;
-    discountAmount: number;
-    totalAmount: number;
-    prescriptionDetails?: {
+    gst_amount: number;
+    gst_percentage: number;
+    discount_amount: number;
+    total_amount: number;
+    prescription: {
       patient: {
         name: string;
         phone_number: string;
@@ -69,88 +69,83 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div>
           <h2 className="font-semibold mb-2">Patient Details:</h2>
-          <p className="text-neutral-600">Name: {billData.prescriptionDetails?.patient.name || 'N/A'}</p>
-          <p className="text-neutral-600">Phone: {billData.prescriptionDetails?.patient.phone_number || 'N/A'}</p>
-          <p className="text-neutral-600">Doctor: {billData.prescriptionDetails?.doctor_name || 'N/A'}</p>
-          <p className="text-neutral-600">Prescription: {billData.prescriptionDetails?.prescription_number || 'N/A'}</p>
+          <p>Name: {billData.prescription.patient.name}</p>
+          <p>Phone: {billData.prescription.patient.phone_number}</p>
+          <p>Doctor: Dr. {billData.prescription.doctor_name}</p>
+          <p>Prescription: {billData.prescription.prescription_number}</p>
         </div>
         <div className="text-right">
           <h2 className="font-semibold mb-2">Bill Details:</h2>
-          <p className="text-neutral-600">Bill No: {billData.billNumber}</p>
-          <p className="text-neutral-600">Date: {format(new Date(billData.date), 'dd/MM/yyyy')}</p>
-          <p className="text-neutral-600">Time: {format(new Date(billData.date), 'hh:mm a')}</p>
+          <p>Bill No: {billData.bill_number}</p>
+          <p>Date: {format(new Date(billData.date), 'dd/MM/yyyy')}</p>
+          <p>Time: {format(new Date(billData.date), 'hh:mm a')}</p>
         </div>
       </div>
 
       {/* Items Table */}
-      <div className="mb-6 overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-neutral-50">
-            <tr className="text-left">
-              <th className="p-2 border">Sr. No.</th>
-              <th className="p-2 border">Medicine Name</th>
-              <th className="p-2 border">Qty</th>
-              <th className="p-2 border">Unit Price (₹)</th>
-              <th className="p-2 border">Total (₹)</th>
+      <table className="w-full mb-6">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="p-2 text-left border">Sr. No.</th>
+            <th className="p-2 text-left border">Item Name</th>
+            <th className="p-2 text-left border">Qty</th>
+            <th className="p-2 text-left border">Unit Price</th>
+            <th className="p-2 text-left border">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item, index) => (
+            <tr key={item.id}>
+              <td className="p-2 border">{index + 1}</td>
+              <td className="p-2 border">{item.name}</td>
+              <td className="p-2 border">{item.quantity}</td>
+              <td className="p-2 border">₹{item.unit_cost.toFixed(2)}</td>
+              <td className="p-2 border">₹{item.total.toFixed(2)}</td>
             </tr>
-          </thead>
-          <tbody>
-            {items.map((item, index) => (
-              <tr key={item.id}>
-                <td className="p-2 border">{index + 1}</td>
-                <td className="p-2 border">{item.name}</td>
-                <td className="p-2 border">{item.quantity}</td>
-                <td className="p-2 border">₹{item.unit_cost.toFixed(2)}</td>
-                <td className="p-2 border">₹{item.total.toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
 
       {/* Summary */}
       <div className="flex justify-end mb-6">
-        <div className="w-64 space-y-2">
-          <div className="flex justify-between">
+        <div className="w-64">
+          <div className="flex justify-between mb-2">
             <span>Subtotal:</span>
             <span>₹{billData.subtotal.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between">
-            <span>GST ({billData.gstPercentage}%):</span>
-            <span>₹{billData.gstAmount.toFixed(2)}</span>
+          <div className="flex justify-between mb-2">
+            <span>GST ({billData.gst_percentage}%):</span>
+            <span>₹{billData.gst_amount.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between mb-2">
             <span>Discount:</span>
-            <span>₹{billData.discountAmount.toFixed(2)}</span>
+            <span>₹{billData.discount_amount.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between font-bold text-lg border-t pt-2">
-            <span>Grand Total:</span>
-            <span>₹{billData.totalAmount.toFixed(2)}</span>
+          <div className="flex justify-between font-bold border-t pt-2">
+            <span>Total:</span>
+            <span>₹{billData.total_amount.toFixed(2)}</span>
           </div>
-        </div>
-      </div>
-
-      {/* Terms and QR */}
-      <div className="grid grid-cols-2 gap-4 border-t pt-4">
-        <div>
-          <h3 className="font-semibold mb-2">Terms & Conditions:</h3>
-          <ul className="text-sm text-neutral-600 list-disc list-inside space-y-1">
-            <li>Goods once sold will not be taken back or exchanged</li>
-            <li>Bills not paid after date will attract 4% interest</li>
-            <li>Subject to local jurisdiction only</li>
-            <li>This is a computer-generated bill</li>
-          </ul>
-        </div>
-        <div className="flex flex-col items-center justify-center">
-          <QrCode className="w-24 h-24 text-neutral-800 mb-2" />
-          <p className="text-sm text-neutral-600">Scan to pay</p>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="text-center mt-6 pt-4 border-t text-sm text-neutral-600">
-        <p>Thank you for choosing Victure Pharmacy!</p>
-        <p>For any queries, please contact: +91 9876543210</p>
+      <div className="grid grid-cols-2 gap-4 border-t pt-4">
+        <div>
+          <h3 className="font-semibold mb-2">Terms & Conditions:</h3>
+          <ul className="text-sm text-gray-600 list-disc list-inside">
+            <li>Goods once sold will not be taken back</li>
+            <li>Subject to local jurisdiction</li>
+            <li>This is a computer-generated bill</li>
+          </ul>
+        </div>
+        <div className="flex flex-col items-center justify-center">
+          <QrCode className="w-24 h-24 text-gray-800 mb-2" />
+          <p className="text-sm text-gray-600">Scan to verify</p>
+        </div>
+      </div>
+
+      <div className="text-center mt-6 text-sm text-gray-600">
+        <p>Thank you for choosing {pharmacyDetails?.pharmacy_name}!</p>
       </div>
     </div>
   );

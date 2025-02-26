@@ -74,7 +74,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         } bg-white border-r border-neutral-200 w-64 md:translate-x-0`}
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-neutral-200">
-          <Link to="/" className="flex items-center space-x-2">
+          <Link to="/dashboard" className="flex items-center space-x-2">
             <span className="text-2xl font-bold text-primary">
               {profileData?.pharmacy_name || 'Loading...'}
             </span>
@@ -110,7 +110,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </Link>
           <Link to="/prescriptions">
             <Button variant="ghost" className="w-full justify-start">
-              <Pill className="mr-2 h-5 w-5" />
+              <FileText className="mr-2 h-5 w-5" />
               Prescriptions
             </Button>
           </Link>
@@ -120,18 +120,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               Patients
             </Button>
           </Link>
-          <Link to="/reports">
-            <Button variant="ghost" className="w-full justify-start">
-              <BarChart3 className="mr-2 h-5 w-5" />
-              Reports
-            </Button>
-          </Link>
-          <Link to="/settings">
-            <Button variant="ghost" className="w-full justify-start">
-              <Settings className="mr-2 h-5 w-5" />
-              Settings
-            </Button>
-          </Link>
+          <Button variant="ghost" className="w-full justify-start" onClick={handleSignOut}>
+            <LogOut className="mr-2 h-5 w-5" />
+            Sign Out
+          </Button>
         </nav>
       </aside>
 
