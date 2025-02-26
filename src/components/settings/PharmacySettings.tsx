@@ -60,6 +60,9 @@ export default function PharmacySettings() {
     setIsSubmitting(true);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("No user found");
+
       const formData = new FormData(e.currentTarget);
       const updatedData: PharmacyData = {
         pharmacy_name: formData.get('pharmacyName')?.toString() || "",
@@ -70,9 +73,6 @@ export default function PharmacySettings() {
         pincode: formData.get('pincode')?.toString() || "",
         gstin: formData.get('gstin')?.toString() || null
       };
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) throw new Error("No user found");
 
       const { error } = await supabase
         .from('profiles')
