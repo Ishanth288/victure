@@ -44,6 +44,7 @@ export default function Billing() {
   });
   const [currentPrescriptionId, setCurrentPrescriptionId] = useState<number | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isCartVisible, setIsCartVisible] = useState(false);
 
   const handleStartBilling = async () => {
     if (!patientDetails.patientName || !patientDetails.phoneNumber || !patientDetails.doctorName) {
@@ -86,6 +87,7 @@ export default function Billing() {
       if (prescriptionError) throw prescriptionError;
 
       setCurrentPrescriptionId(prescriptionData.id);
+      setIsCartVisible(true);
       toast({
         title: "Success",
         description: "Patient details saved successfully",
@@ -136,6 +138,7 @@ export default function Billing() {
   const handleBillGenerated = () => {
     setCartItems([]);
     setCurrentPrescriptionId(null);
+    setIsCartVisible(false);
     setPatientDetails({
       patientName: "",
       phoneNumber: "",
@@ -153,80 +156,80 @@ export default function Billing() {
           </CardHeader>
         </Card>
 
-        {!currentPrescriptionId ? (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-700">
-                Patient Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="patientName">Patient Name</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="patientName"
-                        value={patientDetails.patientName}
-                        onChange={(e) =>
-                          setPatientDetails({ ...patientDetails, patientName: e.target.value })
-                        }
-                        className="pl-10"
-                        placeholder="Enter patient name"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phoneNumber">Phone Number</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="phoneNumber"
-                        value={patientDetails.phoneNumber}
-                        onChange={(e) =>
-                          setPatientDetails({ ...patientDetails, phoneNumber: e.target.value })
-                        }
-                        className="pl-10"
-                        placeholder="Enter phone number"
-                      />
-                    </div>
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-gray-700">
+              Patient Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="patientName">Patient Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="patientName"
+                      value={patientDetails.patientName}
+                      onChange={(e) =>
+                        setPatientDetails({ ...patientDetails, patientName: e.target.value })
+                      }
+                      className="pl-10"
+                      placeholder="Enter patient name"
+                    />
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="doctorName">Doctor Name</Label>
-                    <div className="relative">
-                      <UserRound className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="doctorName"
-                        value={patientDetails.doctorName}
-                        onChange={(e) =>
-                          setPatientDetails({ ...patientDetails, doctorName: e.target.value })
-                        }
-                        className="pl-10"
-                        placeholder="Enter doctor name"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="prescriptionNumber">Prescription Number</Label>
-                    <div className="relative">
-                      <FileText className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="prescriptionNumber"
-                        value={patientDetails.prescriptionNumber}
-                        onChange={(e) =>
-                          setPatientDetails({ ...patientDetails, prescriptionNumber: e.target.value })
-                        }
-                        className="pl-10"
-                        placeholder="Enter prescription number (optional)"
-                      />
-                    </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phoneNumber">Phone Number</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="phoneNumber"
+                      value={patientDetails.phoneNumber}
+                      onChange={(e) =>
+                        setPatientDetails({ ...patientDetails, phoneNumber: e.target.value })
+                      }
+                      className="pl-10"
+                      placeholder="Enter phone number"
+                    />
                   </div>
                 </div>
               </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="doctorName">Doctor Name</Label>
+                  <div className="relative">
+                    <UserRound className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="doctorName"
+                      value={patientDetails.doctorName}
+                      onChange={(e) =>
+                        setPatientDetails({ ...patientDetails, doctorName: e.target.value })
+                      }
+                      className="pl-10"
+                      placeholder="Enter doctor name"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="prescriptionNumber">Prescription Number</Label>
+                  <div className="relative">
+                    <FileText className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="prescriptionNumber"
+                      value={patientDetails.prescriptionNumber}
+                      onChange={(e) =>
+                        setPatientDetails({ ...patientDetails, prescriptionNumber: e.target.value })
+                      }
+                      className="pl-10"
+                      placeholder="Enter prescription number (optional)"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            {!isCartVisible && (
               <div className="mt-6 flex justify-end">
                 <Button 
                   onClick={handleStartBilling}
@@ -236,9 +239,11 @@ export default function Billing() {
                   Start Billing
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        ) : (
+            )}
+          </CardContent>
+        </Card>
+
+        {isCartVisible && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2">
               <Card className="h-full">
@@ -267,7 +272,7 @@ export default function Billing() {
                     items={cartItems}
                     onRemoveItem={handleRemoveItem}
                     onUpdateQuantity={handleUpdateQuantity}
-                    prescriptionId={currentPrescriptionId}
+                    prescriptionId={currentPrescriptionId!}
                     onBillGenerated={handleBillGenerated}
                   />
                 </CardContent>
