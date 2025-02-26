@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,6 +17,7 @@ import { motion } from "framer-motion";
 
 export default function Auth() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
@@ -27,19 +28,30 @@ export default function Auth() {
     ownerName: "",
   });
 
+  useEffect(() => {
+    // Set initial state based on navigation
+    if (location.state?.isLogin !== undefined) {
+      setIsLogin(location.state.isLogin);
+    }
+  }, [location.state]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
         });
 
         if (error) throw error;
-        navigate("/dashboard");
+        
+        // Redirect to dashboard after successful login
+        if (data.session) {
+          navigate("/dashboard");
+        }
       } else {
         const { error } = await supabase.auth.signUp({
           email: formData.email,

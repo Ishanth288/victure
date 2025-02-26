@@ -1,9 +1,19 @@
 
 import { Button } from "@/components/ui/button";
 import { HashLink } from 'react-router-hash-link';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function Navigation() {
+  const navigate = useNavigate();
+
+  const handleLogin = () => {
+    navigate('/auth', { state: { isLogin: true } });
+  };
+
+  const handleGetStarted = () => {
+    navigate('/auth', { state: { isLogin: false } });
+  };
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass">
       <div className="container mx-auto px-4">
@@ -25,16 +35,19 @@ export default function Navigation() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <Link to="/login">
-              <Button variant="ghost" className="text-neutral-600 hover:text-primary">
-                Login
-              </Button>
-            </Link>
-            <Link to="/register">
-              <Button className="bg-primary hover:bg-primary-dark text-white">
-                Get Started
-              </Button>
-            </Link>
+            <Button 
+              variant="ghost" 
+              className="text-neutral-600 hover:text-primary"
+              onClick={handleLogin}
+            >
+              Login
+            </Button>
+            <Button 
+              className="bg-primary hover:bg-primary-dark text-white"
+              onClick={handleGetStarted}
+            >
+              Get Started
+            </Button>
           </div>
         </div>
       </div>
