@@ -219,22 +219,37 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
+          city: string | null
           created_at: string
+          gstin: string | null
           id: string
           owner_name: string
           pharmacy_name: string
+          pincode: string | null
+          state: string | null
         }
         Insert: {
+          address?: string | null
+          city?: string | null
           created_at?: string
+          gstin?: string | null
           id: string
           owner_name: string
           pharmacy_name: string
+          pincode?: string | null
+          state?: string | null
         }
         Update: {
+          address?: string | null
+          city?: string | null
           created_at?: string
+          gstin?: string | null
           id?: string
           owner_name?: string
           pharmacy_name?: string
+          pincode?: string | null
+          state?: string | null
         }
         Relationships: []
       }
