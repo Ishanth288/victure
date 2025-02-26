@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Receipt, Info } from "lucide-react";
@@ -76,12 +75,6 @@ export function CartSummary({
     }
 
     try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
-
       const { data: billData, error: billError } = await supabase
         .from("bills")
         .insert([
@@ -94,7 +87,6 @@ export function CartSummary({
             discount_amount: discountAmount,
             total_amount: total,
             status: "completed",
-            user_id: user.id // Add user_id here
           },
         ])
         .select(`
@@ -131,7 +123,6 @@ export function CartSummary({
         throw new Error(billItemsError.message);
       }
 
-      // Update inventory quantities
       for (const item of items) {
         const { data: inventoryData, error: fetchError } = await supabase
           .from("inventory")
