@@ -53,7 +53,7 @@ export function SearchMedicineInput({ onAddToCart }: SearchMedicineInputProps) {
       <div className="relative">
         <Search className="absolute left-3 top-3 h-4 w-4 text-neutral-400" />
         <Input
-          placeholder="Search medicines..."
+          placeholder="Search medicine by name/code..."
           value={searchQuery}
           onChange={(e) => handleSearch(e.target.value)}
           className="pl-10"
