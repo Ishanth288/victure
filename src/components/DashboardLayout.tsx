@@ -16,8 +16,7 @@ import {
   LogOut,
   LineChart,
   ShoppingCart,
-  User,
-  FileText2
+  User
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -154,7 +153,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </Link>
             <Link to="/terms">
               <Button variant="ghost" className="w-full justify-start">
-                <FileText2 className="mr-2 h-5 w-5" />
+                <FileText className="mr-2 h-5 w-5" />
                 Terms & Privacy
               </Button>
             </Link>
