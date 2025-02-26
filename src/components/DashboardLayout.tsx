@@ -83,8 +83,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-neutral-200">
           <Link to="/dashboard" className="flex items-center space-x-2">
-            <span className="text-2xl font-bold text-neutral-900">
-              Victure Healthcare Solutions
+            <span className="text-xl font-bold text-primary">
+              {profileData?.pharmacy_name || 'Loading...'}
             </span>
           </Link>
           <Button
@@ -169,7 +169,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       }`}>
         <header className="sticky top-0 z-30 bg-white border-b border-neutral-200">
           <div className="flex items-center h-16">
-            <div className="flex items-center flex-1">
+            <div className="flex items-center w-full">
+              {/* Left section with back button space and pharmacy name */}
               <div className="w-16"></div> {/* Space for back button */}
               <div className="flex items-center space-x-4 px-4">
                 <Button
@@ -180,18 +181,27 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 >
                   <Menu className="h-6 w-6" />
                 </Button>
-                <span className="text-xl font-medium text-primary">
+                <span className="text-lg font-medium text-primary">
                   {profileData?.pharmacy_name || 'Loading...'}
                 </span>
               </div>
-            </div>
-            <div className="flex items-center space-x-4 px-4">
-              <span className="text-sm font-medium">
-                {profileData?.owner_name || 'Loading...'}
-              </span>
-              <Button variant="ghost" size="icon" onClick={handleSignOut}>
-                <LogOut className="h-5 w-5" />
-              </Button>
+
+              {/* Center section with company name */}
+              <div className="flex-1 flex justify-center">
+                <span className="text-2xl font-bold text-neutral-900">
+                  Victure Healthcare Solutions
+                </span>
+              </div>
+
+              {/* Right section with user info and logout */}
+              <div className="flex items-center space-x-4 px-4">
+                <span className="text-sm font-medium">
+                  {profileData?.owner_name || 'Loading...'}
+                </span>
+                <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                  <LogOut className="h-5 w-5" />
+                </Button>
+              </div>
             </div>
           </div>
         </header>
