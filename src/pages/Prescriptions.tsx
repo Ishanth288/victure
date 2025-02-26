@@ -1,12 +1,14 @@
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Eye, FileText } from "lucide-react";
+import { Eye } from "lucide-react";
 import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Prescription {
   id: number;
@@ -26,17 +28,37 @@ interface Prescription {
 }
 
 export default function Prescriptions() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBill, setSelectedBill] = useState<any>(null);
   const [showBillPreview, setShowBillPreview] = useState(false);
 
   useEffect(() => {
+    checkAuth();
     fetchPrescriptions();
   }, []);
 
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        title: "Authentication Required",
+        description: "Please login to view prescriptions",
+        variant: "destructive",
+      });
+      navigate("/auth");
+    }
+  };
+
   const fetchPrescriptions = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return;
+      }
+
       const { data, error } = await supabase
         .from("prescriptions")
         .select(`
@@ -44,12 +66,18 @@ export default function Prescriptions() {
           patient:patients (*),
           bills (*)
         `)
+        .eq('user_id', user.id)
         .order('date', { ascending: false });
 
       if (error) throw error;
       setPrescriptions(data);
     } catch (error) {
       console.error("Error fetching prescriptions:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load prescriptions",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -93,6 +121,11 @@ export default function Prescriptions() {
       setShowBillPreview(true);
     } catch (error) {
       console.error("Error fetching bill details:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load bill details",
+        variant: "destructive",
+      });
     }
   };
 

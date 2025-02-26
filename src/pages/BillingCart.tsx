@@ -57,6 +57,9 @@ export default function BillingCart() {
         return;
       }
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       const { data, error } = await supabase
         .from("prescriptions")
         .select(`
@@ -64,6 +67,7 @@ export default function BillingCart() {
           patient:patients(name, phone_number)
         `)
         .eq("id", prescriptionIdNumber)
+        .eq("user_id", user.id)
         .single();
 
       if (error) {

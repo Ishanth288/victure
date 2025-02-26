@@ -167,18 +167,21 @@ export type Database = {
           id: number
           name: string
           phone_number: string
+          user_id: string
         }
         Insert: {
           created_at?: string
           id?: number
           name: string
           phone_number: string
+          user_id: string
         }
         Update: {
           created_at?: string
           id?: number
           name?: string
           phone_number?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -190,6 +193,7 @@ export type Database = {
           patient_id: number
           prescription_number: string
           status: string
+          user_id: string
         }
         Insert: {
           date?: string
@@ -198,6 +202,7 @@ export type Database = {
           patient_id: number
           prescription_number: string
           status?: string
+          user_id: string
         }
         Update: {
           date?: string
@@ -206,6 +211,7 @@ export type Database = {
           patient_id?: number
           prescription_number?: string
           status?: string
+          user_id?: string
         }
         Relationships: [
           {

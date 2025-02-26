@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -8,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Eye, Calendar } from "lucide-react";
 import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
 
 interface PatientBill {
   id: number;
@@ -28,6 +30,8 @@ interface Patient {
 }
 
 export default function Patients() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBill, setSelectedBill] = useState<any>(null);
@@ -36,11 +40,27 @@ export default function Patients() {
   const [endDate, setEndDate] = useState("");
 
   useEffect(() => {
+    checkAuth();
     fetchPatients();
   }, [startDate, endDate]);
 
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        title: "Authentication Required",
+        description: "Please login to view patients",
+        variant: "destructive",
+      });
+      navigate("/auth");
+    }
+  };
+
   const fetchPatients = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       let query = supabase
         .from("patients")
         .select(`
@@ -51,7 +71,8 @@ export default function Patients() {
               *
             )
           )
-        `);
+        `)
+        .eq('user_id', user.id);
 
       const { data, error } = await query;
 
@@ -96,6 +117,11 @@ export default function Patients() {
       setLoading(false);
     } catch (error) {
       console.error("Error fetching patients:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load patients",
+        variant: "destructive",
+      });
       setLoading(false);
     }
   };
@@ -138,6 +164,11 @@ export default function Patients() {
       setShowBillPreview(true);
     } catch (error) {
       console.error("Error fetching bill details:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load bill details",
+        variant: "destructive",
+      });
     }
   };
 
