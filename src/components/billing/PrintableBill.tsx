@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { QrCode } from 'lucide-react';
@@ -61,7 +60,6 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
         </h1>
         <p className="text-neutral-600">{pharmacyDetails?.address}</p>
         <p className="text-neutral-600">{pharmacyDetails?.city}, {pharmacyDetails?.state} - {pharmacyDetails?.pincode}</p>
-        <p className="text-neutral-600">Phone: +91 9876543210 | Email: care@victure.com</p>
         <p className="text-neutral-600">GSTIN: {pharmacyDetails?.gstin || 'N/A'}</p>
       </div>
 
@@ -111,37 +109,31 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
         <div className="w-64">
           <div className="flex justify-between mb-2">
             <span>Subtotal:</span>
-            <span>₹{billData.subtotal.toFixed(2)}</span>
+            <span>₹{Math.round(billData.subtotal).toFixed(2)}</span>
           </div>
           <div className="flex justify-between mb-2">
             <span>GST ({billData.gst_percentage}%):</span>
-            <span>₹{billData.gst_amount.toFixed(2)}</span>
+            <span>₹{Math.round(billData.gst_amount).toFixed(2)}</span>
           </div>
           <div className="flex justify-between mb-2">
             <span>Discount:</span>
-            <span>₹{billData.discount_amount.toFixed(2)}</span>
+            <span>₹{Math.round(billData.discount_amount).toFixed(2)}</span>
           </div>
           <div className="flex justify-between font-bold border-t pt-2">
             <span>Total:</span>
-            <span>₹{billData.total_amount.toFixed(2)}</span>
+            <span>₹{Math.round(billData.total_amount).toFixed(2)}</span>
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="grid grid-cols-2 gap-4 border-t pt-4">
-        <div>
-          <h3 className="font-semibold mb-2">Terms & Conditions:</h3>
-          <ul className="text-sm text-gray-600 list-disc list-inside">
-            <li>Goods once sold will not be taken back</li>
-            <li>Subject to local jurisdiction</li>
-            <li>This is a computer-generated bill</li>
-          </ul>
-        </div>
-        <div className="flex flex-col items-center justify-center">
-          <QrCode className="w-24 h-24 text-gray-800 mb-2" />
-          <p className="text-sm text-gray-600">Scan to verify</p>
-        </div>
+      <div className="border-t pt-4">
+        <h3 className="font-semibold mb-2">Terms & Conditions:</h3>
+        <ul className="text-sm text-gray-600 list-disc list-inside">
+          <li>Goods once sold will not be taken back</li>
+          <li>Subject to local jurisdiction</li>
+          <li>This is a computer-generated bill</li>
+        </ul>
       </div>
 
       <div className="text-center mt-6 text-sm text-gray-600">

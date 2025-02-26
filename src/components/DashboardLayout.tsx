@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import BackButton from "./BackButton";
 import {
   LayoutGrid, Package, Users, FileText, BarChart3, Settings, Menu,
-  X, DollarSign, Pill, LogOut, LineChart, ShoppingCart, User
+  X, DollarSign, Pill, LogOut, LineChart, ShoppingCart, User, FileTerminal
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -22,7 +22,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     checkAuth();
     fetchProfile();
 
-    // Listen for pharmacy name updates
     const handlePharmacyNameUpdate = () => {
       const updatedName = localStorage.getItem('pharmacyName');
       if (updatedName && profileData) {
@@ -66,6 +65,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     navigate('/auth');
   };
 
+  const handleTermsClick = () => {
+    window.open('https://www.termsfeed.com/live/661b4717-faf2-4a61-a219-ddc2010a943c', '_blank');
+  };
+
   if (isLoading) {
     return <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
       Loading...
@@ -81,7 +84,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         } bg-white border-r border-neutral-200 w-64 md:translate-x-0`}
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-neutral-200">
-          <div className="pl-12"> {/* Space for back button */}
+          <div className="pl-12">
             <span className="text-lg font-medium text-primary">
               {profileData?.pharmacy_name || 'Loading...'}
             </span>
@@ -155,6 +158,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 Profile
               </Button>
             </Link>
+            <Button variant="ghost" className="w-full justify-start" onClick={handleTermsClick}>
+              <FileTerminal className="mr-2 h-5 w-5" />
+              Terms & Conditions
+            </Button>
             <Button variant="ghost" className="w-full justify-start" onClick={handleSignOut}>
               <LogOut className="mr-2 h-5 w-5" />
               Sign Out

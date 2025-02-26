@@ -51,9 +51,9 @@ export function CartSummary({
     setIsLoading(false);
   };
 
-  const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-  const gstAmount = (subtotal * gstPercentage) / 100;
-  const total = subtotal + gstAmount - discountAmount;
+  const subtotal = Math.round(items.reduce((sum, item) => sum + item.total, 0));
+  const gstAmount = Math.round((subtotal * gstPercentage) / 100);
+  const total = Math.round(subtotal + gstAmount - discountAmount);
 
   const handleGenerateBill = async () => {
     if (!isAuthenticated) {
@@ -75,18 +75,25 @@ export function CartSummary({
     }
 
     try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
       const { data: billData, error: billError } = await supabase
         .from("bills")
         .insert([
           {
             prescription_id: prescriptionId,
             bill_number: `BILL-${Date.now()}`,
-            subtotal,
-            gst_amount: gstAmount,
+            subtotal: Math.round(subtotal),
+            gst_amount: Math.round(gstAmount),
             gst_percentage: gstPercentage,
-            discount_amount: discountAmount,
-            total_amount: total,
+            discount_amount: Math.round(discountAmount),
+            total_amount: Math.round(total),
             status: "completed",
+            user_id: session.user.id
           },
         ])
         .select(`
@@ -147,7 +154,7 @@ export function CartSummary({
         }
       }
 
-      setGeneratedBill(billData);
+      setGeneratedBill({ ...billData, pharmacy_address: profileData });
       setShowBillPreview(true);
       onBillGenerated();
 
@@ -177,17 +184,57 @@ export function CartSummary({
       ))}
 
       <div className="space-y-3 pt-4">
-        <BillSummary
-          subtotal={subtotal}
-          gstPercentage={gstPercentage}
-          gstAmount={gstAmount}
-          discountAmount={discountAmount}
-          total={total}
-          onGstChange={setGstPercentage}
-          onDiscountChange={setDiscountAmount}
-          onPaymentMethodChange={setPaymentMethod}
-          paymentMethod={paymentMethod}
-        />
+        <div className="rounded-lg border p-4">
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span>Subtotal</span>
+              <span className="font-medium">₹{subtotal}</span>
+            </div>
+
+            <div className="space-y-2">
+              <Label>GST (%)</Label>
+              <Input
+                type="number"
+                value={gstPercentage}
+                onChange={(e) => onGstChange(Number(e.target.value))}
+                min="0"
+                max="100"
+              />
+              <div className="flex justify-between text-sm">
+                <span>GST Amount</span>
+                <span>₹{gstAmount}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Discount (₹)</Label>
+              <Input
+                type="number"
+                value={discountAmount}
+                onChange={(e) => onDiscountChange(Number(e.target.value))}
+                min="0"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Payment Method</Label>
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2"
+                value={paymentMethod}
+                onChange={(e) => onPaymentMethodChange(e.target.value)}
+              >
+                <option value="cash">Cash</option>
+                <option value="card">Credit Card</option>
+                <option value="upi">UPI</option>
+              </select>
+            </div>
+
+            <div className="flex justify-between font-bold text-lg pt-2 border-t">
+              <span>Total</span>
+              <span>₹{total}</span>
+            </div>
+          </div>
+        </div>
 
         {!isLoading && !isAuthenticated && (
           <div className="flex items-center gap-2 text-sm text-yellow-600 bg-yellow-50 p-2 rounded-md">
