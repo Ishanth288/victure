@@ -1,33 +1,13 @@
 
 import { useState, useEffect } from "react";
-import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import DashboardLayout from "@/components/DashboardLayout";
-import { supabase } from "@/integrations/supabase/client";
-import { Eye, Calendar } from "lucide-react";
-import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-
-interface PatientBill {
-  id: number;
-  date: string;
-  total_amount: number;
-  bill_number: string;
-  prescription: {
-    doctor_name: string;
-  };
-}
-
-interface Patient {
-  id: number;
-  name: string;
-  phone_number: string;
-  bills: PatientBill[];
-  total_spent: number;
-}
+import { supabase } from "@/integrations/supabase/client";
+import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
+import { DateRangeFilter } from "@/components/patients/DateRangeFilter";
+import { PatientList } from "@/components/patients/PatientList";
+import type { Patient } from "@/types/patients";
 
 export default function Patients() {
   const navigate = useNavigate();
@@ -86,7 +66,7 @@ export default function Patients() {
               prescription: { doctor_name: prescription.doctor_name }
             }))
           )
-          .filter((bill: PatientBill) => {
+          .filter((bill: any) => {
             if (!startDate && !endDate) return true;
             const billDate = new Date(bill.date);
             const start = startDate ? new Date(startDate) : null;
@@ -102,7 +82,7 @@ export default function Patients() {
             return true;
           });
 
-        const total_spent = bills.reduce((sum: number, bill: PatientBill) => 
+        const total_spent = bills.reduce((sum: number, bill: any) => 
           sum + (bill.total_amount || 0), 0
         );
 
@@ -185,82 +165,14 @@ export default function Patients() {
   return (
     <DashboardLayout>
       <div className="container mx-auto px-4 py-6">
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-2xl">Patients</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4 mb-4">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-40"
-                />
-                <span>to</span>
-                <Input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-40"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <DateRangeFilter
+          startDate={startDate}
+          endDate={endDate}
+          onStartDateChange={setStartDate}
+          onEndDateChange={setEndDate}
+        />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {patients.map((patient) => (
-            <Card key={patient.id}>
-              <CardHeader>
-                <CardTitle className="text-lg">{patient.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Phone Number</p>
-                    <p>{patient.phone_number}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Total Bills</p>
-                    <p>{patient.bills.length}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Total Amount</p>
-                    <p>₹{patient.total_spent.toFixed(2)}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-500">Recent Bills</p>
-                    {patient.bills.slice(0, 3).map((bill) => (
-                      <div
-                        key={bill.id}
-                        className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                      >
-                        <div>
-                          <p className="text-sm font-medium">
-                            {format(new Date(bill.date), "dd/MM/yyyy")}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            ₹{bill.total_amount.toFixed(2)}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => viewBill(bill.id)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <PatientList patients={patients} onViewBill={viewBill} />
 
         {selectedBill && (
           <BillPreviewDialog
