@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast"; // Fixed import path
 import { supabase } from "@/integrations/supabase/client";
 import { type InventoryItem, type InventoryItemFormData, type InventoryItemDB } from "@/types/inventory";
 
@@ -58,6 +58,7 @@ export function useInventoryForm(onSuccess: () => void) {
       const unitCost = parseFloat(formData.unitCost);
       const quantity = parseInt(formData.quantity);
       const reorderPoint = parseInt(formData.reorderPoint || "10");
+      const sellingPrice = formData.sellingPrice ? parseFloat(formData.sellingPrice) : null;
 
       // Additional validation for numeric values
       if (isNaN(unitCost) || isNaN(quantity) || isNaN(reorderPoint)) {
@@ -79,34 +80,29 @@ export function useInventoryForm(onSuccess: () => void) {
         return null;
       }
 
-      console.log("Attempting to add item with data:", {
+      const insertData = {
         name: formData.name.trim(),
+        generic_name: formData.genericName.trim() || null,
+        ndc: formData.ndc.trim() || null,
+        manufacturer: formData.manufacturer.trim() || null,
+        dosage_form: formData.dosageForm || null,
+        strength: formData.strength.trim() || null,
+        unit_size: formData.unitSize.trim() || null,
         unit_cost: unitCost,
+        selling_price: sellingPrice,
         quantity: quantity,
-        reorder_point: reorderPoint
-      });
+        reorder_point: reorderPoint,
+        expiry_date: formData.expiryDate || null,
+        supplier: formData.supplier.trim() || null,
+        storage_condition: formData.storage || null,
+        status: 'in stock',
+      };
+
+      console.log("Attempting to add item with data:", insertData);
 
       const { data: rawData, error } = await supabase
         .from("inventory")
-        .insert([
-          {
-            name: formData.name.trim(),
-            generic_name: formData.genericName.trim() || null,
-            ndc: formData.ndc.trim() || null,
-            manufacturer: formData.manufacturer.trim() || null,
-            dosage_form: formData.dosageForm || null,
-            strength: formData.strength.trim() || null,
-            unit_size: formData.unitSize.trim() || null,
-            unit_cost: unitCost,
-            selling_price: formData.sellingPrice ? parseFloat(formData.sellingPrice) : null,
-            quantity: quantity,
-            reorder_point: reorderPoint,
-            expiry_date: formData.expiryDate || null,
-            supplier: formData.supplier.trim() || null,
-            storage_condition: formData.storage || null,
-            status: 'in stock',
-          }
-        ])
+        .insert([insertData])
         .select()
         .single();
 
