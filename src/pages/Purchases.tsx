@@ -10,7 +10,9 @@ import { AddPurchaseOrderDialog } from "@/components/purchases/AddPurchaseOrderD
 import { PurchaseOrderCard } from "@/components/purchases/PurchaseOrderCard";
 import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
 import type { PurchaseOrder } from "@/types/purchases";
-import type { Database } from "@/integrations/supabase/types";
+
+// Declare the table name as a type to avoid string literal issues
+type Tables = 'purchase_orders' | 'purchase_order_items';
 
 export default function Purchases() {
   const navigate = useNavigate();
@@ -43,7 +45,7 @@ export default function Purchases() {
       if (!user) return;
 
       const { data, error } = await supabase
-        .from('purchase_orders')
+        .from('purchase_orders' as Tables)
         .select('*, items:purchase_order_items(*)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -84,7 +86,7 @@ export default function Purchases() {
       );
 
       const { data: order, error: orderError } = await supabase
-        .from('purchase_orders')
+        .from('purchase_orders' as Tables)
         .insert({
           user_id: user.id,
           supplier_name: data.supplier_name,
@@ -92,7 +94,7 @@ export default function Purchases() {
           order_date: data.order_date,
           total_amount: totalAmount,
           status: 'pending'
-        })
+        } as any)
         .select()
         .single();
 
@@ -109,8 +111,8 @@ export default function Purchases() {
       }));
 
       const { error: itemsError } = await supabase
-        .from('purchase_order_items')
-        .insert(items);
+        .from('purchase_order_items' as Tables)
+        .insert(items as any[]);
 
       if (itemsError) throw itemsError;
 
@@ -138,22 +140,22 @@ export default function Purchases() {
   ) => {
     try {
       const { error: orderError } = await supabase
-        .from('purchase_orders')
+        .from('purchase_orders' as Tables)
         .update({ 
           notes,
           status: items.every(item => item.is_delivered) ? 'delivered' : 'partially_delivered'
-        })
+        } as any)
         .eq('id', orderId);
 
       if (orderError) throw orderError;
 
       for (const item of items) {
         const { error: itemError } = await supabase
-          .from('purchase_order_items')
+          .from('purchase_order_items' as Tables)
           .update({
             quantity_delivered: item.quantity_delivered,
             is_delivered: item.is_delivered,
-          })
+          } as any)
           .eq('id', item.id);
 
         if (itemError) throw itemError;
