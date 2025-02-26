@@ -3,9 +3,16 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { X, Plus, Minus, Receipt } from "lucide-react";
+import { X, Plus, Minus, Receipt, Printer } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { PrintableBill } from "./PrintableBill";
 
 interface CartItem {
   id: number;
@@ -34,6 +41,8 @@ export function CartSummary({
   const [gstPercentage, setGstPercentage] = useState(18);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [showBillPreview, setShowBillPreview] = useState(false);
+  const [generatedBill, setGeneratedBill] = useState<any>(null);
 
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
   const gstAmount = (subtotal * gstPercentage) / 100;
@@ -65,7 +74,16 @@ export function CartSummary({
             status: "completed",
           },
         ])
-        .select()
+        .select(`
+          *,
+          prescription:prescriptions (
+            *,
+            patient:patients (
+              name,
+              phone_number
+            )
+          )
+        `)
         .single();
 
       if (billError) throw billError;
@@ -87,7 +105,6 @@ export function CartSummary({
 
       // Update inventory quantities
       for (const item of items) {
-        // First get the current quantity
         const { data: inventoryData, error: fetchError } = await supabase
           .from("inventory")
           .select("quantity")
@@ -96,7 +113,6 @@ export function CartSummary({
 
         if (fetchError) throw fetchError;
 
-        // Then update with the new quantity
         const newQuantity = (inventoryData?.quantity || 0) - item.quantity;
         const { error: inventoryError } = await supabase
           .from("inventory")
@@ -106,12 +122,13 @@ export function CartSummary({
         if (inventoryError) throw inventoryError;
       }
 
+      setGeneratedBill(billData);
+      setShowBillPreview(true);
+
       toast({
         title: "Success",
         description: "Bill generated successfully",
       });
-
-      onBillGenerated();
     } catch (error) {
       console.error("Error generating bill:", error);
       toast({
@@ -120,6 +137,10 @@ export function CartSummary({
         variant: "destructive",
       });
     }
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   return (
@@ -226,6 +247,26 @@ export function CartSummary({
           Generate Bill
         </Button>
       </div>
+
+      <Dialog open={showBillPreview} onOpenChange={setShowBillPreview}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Bill Preview</span>
+              <Button variant="outline" size="sm" onClick={handlePrint}>
+                <Printer className="w-4 h-4 mr-2" />
+                Print Bill
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          {generatedBill && (
+            <PrintableBill
+              billData={generatedBill}
+              items={items}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
