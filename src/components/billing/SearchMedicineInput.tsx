@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
-import { type InventoryItem } from "@/types/inventory";
+import { type InventoryItem, type InventoryItemDB } from "@/types/inventory";
 
 interface SearchMedicineInputProps {
   onAddToCart: (medicine: InventoryItem, quantity: number) => void;
@@ -39,7 +39,7 @@ export function SearchMedicineInput({ onAddToCart }: SearchMedicineInputProps) {
         throw error;
       }
 
-      const inventoryItems: InventoryItem[] = (data || []).map(item => ({
+      const inventoryItems: InventoryItem[] = (data as InventoryItemDB[]).map(item => ({
         ...item,
         generic_name: item.generic_name || null,
         strength: item.strength || null,

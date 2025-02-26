@@ -2,7 +2,7 @@
 import { useState, useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { type InventoryItem, type InventoryItemFormData } from "@/types/inventory";
+import { type InventoryItem, type InventoryItemFormData, type InventoryItemDB } from "@/types/inventory";
 
 const initialFormData: InventoryItemFormData = {
   name: "",
@@ -46,7 +46,7 @@ export function useInventoryForm(onSuccess: () => void) {
 
   const handleAddItem = async () => {
     try {
-      const { data, error } = await supabase.from("inventory").insert([{
+      const { data: rawData, error } = await supabase.from("inventory").insert([{
         name: formData.name,
         generic_name: formData.genericName || null,
         ndc: formData.ndc || null,
@@ -64,6 +64,8 @@ export function useInventoryForm(onSuccess: () => void) {
       }]).select().single();
 
       if (error) throw error;
+
+      const data = rawData as InventoryItemDB;
 
       const newItem: InventoryItem = {
         ...data,
@@ -95,7 +97,7 @@ export function useInventoryForm(onSuccess: () => void) {
 
   const handleEditItem = async (itemId: number) => {
     try {
-      const { data, error } = await supabase
+      const { data: rawData, error } = await supabase
         .from("inventory")
         .update({
           name: formData.name,
@@ -118,6 +120,8 @@ export function useInventoryForm(onSuccess: () => void) {
         .single();
 
       if (error) throw error;
+
+      const data = rawData as InventoryItemDB;
 
       const updatedItem: InventoryItem = {
         ...data,

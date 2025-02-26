@@ -1,6 +1,5 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from "react";
-import { type InventoryItem, type InventoryItemFormData } from "@/types/inventory";
+import { type InventoryItem, type InventoryItemFormData, type InventoryItemDB } from "@/types/inventory";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -58,7 +57,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
-      const inventoryItems: InventoryItem[] = (data || []).map(item => ({
+      const inventoryItems: InventoryItem[] = (data as InventoryItemDB[]).map(item => ({
         ...item,
         generic_name: item.generic_name || null,
         strength: item.strength || null,

@@ -1,5 +1,5 @@
 
-export interface InventoryItem {
+export interface InventoryItemDB {
   id: number;
   name: string;
   generic_name: string | null;
@@ -17,6 +17,8 @@ export interface InventoryItem {
   storage_condition: string | null;
   status: string;
 }
+
+export interface InventoryItem extends InventoryItemDB {}
 
 export interface InventoryItemFormData {
   name: string;
