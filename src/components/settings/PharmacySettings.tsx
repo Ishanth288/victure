@@ -47,7 +47,6 @@ export default function PharmacySettings() {
       if (error) throw error;
       if (data) {
         setPharmacyData(data);
-        // Update document title with new pharmacy name
         document.title = `${data.pharmacy_name} - Dashboard`;
       }
     } catch (error: any) {
@@ -59,7 +58,6 @@ export default function PharmacySettings() {
   const handlePharmacyUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-    console.log("Starting pharmacy update...");
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -67,18 +65,15 @@ export default function PharmacySettings() {
         throw new Error("No user found");
       }
 
-      const formData = new FormData(e.currentTarget);
-      const updatedData: PharmacyData = {
-        pharmacy_name: formData.get('pharmacyName')?.toString() || "",
-        owner_name: formData.get('ownerName')?.toString() || "",
-        address: formData.get('address')?.toString() || "",
-        city: formData.get('city')?.toString() || "",
-        state: formData.get('state')?.toString() || "",
-        pincode: formData.get('pincode')?.toString() || "",
-        gstin: formData.get('gstin')?.toString() || null
+      const updatedData = {
+        pharmacy_name: pharmacyData.pharmacy_name,
+        owner_name: pharmacyData.owner_name,
+        address: pharmacyData.address,
+        city: pharmacyData.city,
+        state: pharmacyData.state,
+        pincode: pharmacyData.pincode,
+        gstin: pharmacyData.gstin
       };
-
-      console.log("Updating pharmacy data:", updatedData);
 
       const { error } = await supabase
         .from('profiles')
@@ -87,13 +82,7 @@ export default function PharmacySettings() {
 
       if (error) throw error;
 
-      // Update local state
-      setPharmacyData(updatedData);
-      
-      // Update document title
       document.title = `${updatedData.pharmacy_name} - Dashboard`;
-      
-      console.log("Pharmacy update successful");
       toast.success("Pharmacy details updated successfully");
     } catch (error: any) {
       console.error("Error updating pharmacy:", error);
@@ -120,20 +109,20 @@ export default function PharmacySettings() {
       <CardContent>
         <form onSubmit={handlePharmacyUpdate} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="pharmacyName">Pharmacy Name</Label>
+            <Label htmlFor="pharmacy_name">Pharmacy Name</Label>
             <Input 
-              id="pharmacyName" 
-              name="pharmacyName" 
+              id="pharmacy_name" 
+              name="pharmacy_name" 
               value={pharmacyData.pharmacy_name}
               onChange={handleInputChange}
               required 
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="ownerName">Owner Name</Label>
+            <Label htmlFor="owner_name">Owner Name</Label>
             <Input 
-              id="ownerName" 
-              name="ownerName" 
+              id="owner_name" 
+              name="owner_name" 
               value={pharmacyData.owner_name}
               onChange={handleInputChange}
               required 
