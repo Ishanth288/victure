@@ -232,7 +232,9 @@ export type Database = {
           id: string
           owner_name: string
           pharmacy_name: string
+          phone: string | null
           pincode: string | null
+          role: string | null
           state: string | null
         }
         Insert: {
@@ -243,7 +245,9 @@ export type Database = {
           id: string
           owner_name: string
           pharmacy_name: string
+          phone?: string | null
           pincode?: string | null
+          role?: string | null
           state?: string | null
         }
         Update: {
@@ -254,7 +258,9 @@ export type Database = {
           id?: string
           owner_name?: string
           pharmacy_name?: string
+          phone?: string | null
           pincode?: string | null
+          role?: string | null
           state?: string | null
         }
         Relationships: []
