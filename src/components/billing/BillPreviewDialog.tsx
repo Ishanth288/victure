@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { PrintableBill } from "./PrintableBill";
 import { CartItem } from "@/types/billing";
 
@@ -29,7 +30,7 @@ export function BillPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Bill Preview</span>
@@ -39,7 +40,9 @@ export function BillPreviewDialog({
             </Button>
           </DialogTitle>
         </DialogHeader>
-        {billData && <PrintableBill billData={billData} items={items} />}
+        <ScrollArea className="flex-1 overflow-auto">
+          {billData && <PrintableBill billData={billData} items={items} />}
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
