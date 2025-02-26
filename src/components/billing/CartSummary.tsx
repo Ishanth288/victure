@@ -1,11 +1,13 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Receipt, Info } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/types/billing";
 import { CartItemRow } from "./CartItemRow";
-import { BillSummary } from "./BillSummary";
 import { BillPreviewDialog } from "./BillPreviewDialog";
 
 interface CartSummaryProps {
@@ -56,7 +58,8 @@ export function CartSummary({
   const total = Math.round(subtotal + gstAmount - discountAmount);
 
   const handleGenerateBill = async () => {
-    if (!isAuthenticated) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
       toast({
         title: "Error",
         description: "You must be logged in to generate bills",
@@ -172,6 +175,18 @@ export function CartSummary({
     }
   };
 
+  const handleGstChange = (value: number) => {
+    setGstPercentage(value);
+  };
+
+  const handleDiscountChange = (value: number) => {
+    setDiscountAmount(value);
+  };
+
+  const handlePaymentMethodChange = (value: string) => {
+    setPaymentMethod(value);
+  };
+
   return (
     <div className="space-y-4">
       {items.map((item) => (
@@ -196,7 +211,7 @@ export function CartSummary({
               <Input
                 type="number"
                 value={gstPercentage}
-                onChange={(e) => onGstChange(Number(e.target.value))}
+                onChange={(e) => handleGstChange(Number(e.target.value))}
                 min="0"
                 max="100"
               />
@@ -211,7 +226,7 @@ export function CartSummary({
               <Input
                 type="number"
                 value={discountAmount}
-                onChange={(e) => onDiscountChange(Number(e.target.value))}
+                onChange={(e) => handleDiscountChange(Number(e.target.value))}
                 min="0"
               />
             </div>
@@ -221,7 +236,7 @@ export function CartSummary({
               <select
                 className="w-full rounded-md border border-input bg-background px-3 py-2"
                 value={paymentMethod}
-                onChange={(e) => onPaymentMethodChange(e.target.value)}
+                onChange={(e) => handlePaymentMethodChange(e.target.value)}
               >
                 <option value="cash">Cash</option>
                 <option value="card">Credit Card</option>
