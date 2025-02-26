@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useInventory } from "@/contexts/InventoryContext";
 import InventoryForm from "./InventoryForm";
 import { useInventoryForm } from "@/hooks/useInventoryForm";
@@ -67,24 +68,26 @@ export function EditInventoryModal() {
 
   return (
     <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Edit Item</DialogTitle>
           <DialogDescription>
             Update the item details. All changes will be saved automatically.
           </DialogDescription>
         </DialogHeader>
-        <InventoryForm
-          formData={formData}
-          isEdit
-          onInputChange={handleInputChange}
-          onSelectChange={handleSelectChange}
-          onCancel={() => {
-            resetForm();
-            setIsEditModalOpen(false);
-          }}
-          onSubmit={handleSubmit}
-        />
+        <ScrollArea className="h-[calc(90vh-8rem)] px-1">
+          <InventoryForm
+            formData={formData}
+            isEdit
+            onInputChange={handleInputChange}
+            onSelectChange={handleSelectChange}
+            onCancel={() => {
+              resetForm();
+              setIsEditModalOpen(false);
+            }}
+            onSubmit={handleSubmit}
+          />
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
