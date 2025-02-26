@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -10,44 +9,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-
-// List of Indian states
-const INDIAN_STATES = [
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
-  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
-  "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
-  "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
-  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
-  "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu",
-  "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
-];
-
-interface RegistrationData {
-  pharmacyName: string;
-  ownerName: string;
-  email: string;
-  password: string;
-  phone: string;
-  address: string;
-  city: string;
-  state: string;
-  pincode: string;
-  gstin: string;
-  role: string;
-}
+import { BasicInfoFields } from "@/components/registration/BasicInfoFields";
+import { AddressFields } from "@/components/registration/AddressFields";
+import { AccountFields } from "@/components/registration/AccountFields";
+import { RegistrationData } from "@/types/registration";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -128,140 +99,17 @@ export default function Register() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="pharmacyName">Pharmacy Name*</Label>
-                <Input
-                  id="pharmacyName"
-                  placeholder="Enter pharmacy name"
-                  value={formData.pharmacyName}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="ownerName">Owner Name*</Label>
-                <Input
-                  id="ownerName"
-                  placeholder="Enter owner name"
-                  value={formData.ownerName}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number*</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="Enter phone number"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="address">Address*</Label>
-                <Input
-                  id="address"
-                  placeholder="Enter complete address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="city">City*</Label>
-                  <Input
-                    id="city"
-                    placeholder="Enter city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="state">State*</Label>
-                  <Select onValueChange={handleStateChange} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select state" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {INDIAN_STATES.map((state) => (
-                        <SelectItem key={state} value={state}>
-                          {state}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="pincode">PIN Code*</Label>
-                  <Input
-                    id="pincode"
-                    placeholder="Enter PIN code"
-                    value={formData.pincode}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="gstin">GSTIN (Optional)</Label>
-                  <Input
-                    id="gstin"
-                    placeholder="Enter GSTIN"
-                    value={formData.gstin}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address*</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter email address"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password*</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="role">User Role*</Label>
-                <Select onValueChange={handleRoleChange} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pharmacist">Pharmacist</SelectItem>
-                    <SelectItem value="technician">Technician</SelectItem>
-                    <SelectItem value="administrator">Administrator</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <BasicInfoFields formData={formData} onChange={handleChange} />
+              <AddressFields 
+                formData={formData} 
+                onChange={handleChange}
+                onStateChange={handleStateChange}
+              />
+              <AccountFields 
+                formData={formData} 
+                onChange={handleChange}
+                onRoleChange={handleRoleChange}
+              />
 
               <div className="space-y-4 pt-2">
                 <div className="flex items-center space-x-2">
