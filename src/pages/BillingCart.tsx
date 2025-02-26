@@ -27,13 +27,26 @@ export default function BillingCart() {
 
   useEffect(() => {
     const fetchPrescriptionDetails = async () => {
+      if (!prescriptionId) return;
+      
+      const prescriptionIdNumber = parseInt(prescriptionId);
+      if (isNaN(prescriptionIdNumber)) {
+        toast({
+          title: "Error",
+          description: "Invalid prescription ID",
+          variant: "destructive",
+        });
+        navigate("/billing");
+        return;
+      }
+
       const { data, error } = await supabase
         .from("prescriptions")
         .select(`
           *,
           patient:patients(name, phone_number)
         `)
-        .eq("id", prescriptionId)
+        .eq("id", prescriptionIdNumber)
         .single();
 
       if (error) {
@@ -49,7 +62,7 @@ export default function BillingCart() {
     };
 
     fetchPrescriptionDetails();
-  }, [prescriptionId, toast]);
+  }, [prescriptionId, toast, navigate]);
 
   const handleAddToCart = (medicine: any, quantity: number) => {
     const existingItem = cartItems.find(item => item.id === medicine.id);
@@ -141,7 +154,7 @@ export default function BillingCart() {
                   items={cartItems}
                   onRemoveItem={handleRemoveItem}
                   onUpdateQuantity={handleUpdateQuantity}
-                  prescriptionId={Number(prescriptionId)}
+                  prescriptionId={parseInt(prescriptionId!)}
                   onBillGenerated={handleBillGenerated}
                 />
               </CardContent>
