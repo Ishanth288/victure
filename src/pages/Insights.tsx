@@ -17,13 +17,25 @@ import {
   Bar,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  Legend
 } from "recharts";
-import { Download, Printer, Calendar } from "lucide-react";
+import { 
+  Download, 
+  Printer, 
+  Calendar, 
+  TrendingUp, 
+  ShoppingCart, 
+  DollarSign, 
+  ArrowUpRight,
+  ArrowDownRight,
+  Package,
+  Users
+} from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 interface SalesData {
   date: string;
@@ -35,10 +47,27 @@ interface TopProduct {
   value: number;
 }
 
+interface InsightMetrics {
+  totalRevenue: number;
+  averageOrder: number;
+  totalOrders: number;
+  totalCustomers: number;
+  percentageChange: number;
+  productsSold: number;
+}
+
 export default function Insights() {
   const [timeframe, setTimeframe] = useState<'day' | 'week' | 'month' | 'year'>('week');
   const [salesData, setSalesData] = useState<SalesData[]>([]);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+  const [metrics, setMetrics] = useState<InsightMetrics>({
+    totalRevenue: 0,
+    averageOrder: 0,
+    totalOrders: 0,
+    totalCustomers: 0,
+    percentageChange: 0,
+    productsSold: 0
+  });
   const [loading, setLoading] = useState(true);
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -69,13 +98,53 @@ export default function Insights() {
       // Fetch sales data
       const { data: billsData, error: billsError } = await supabase
         .from('bills')
-        .select('date, total_amount')
+        .select('date, total_amount, bill_items(quantity)')
         .gte('date', start.toISOString())
         .lte('date', end.toISOString())
         .order('date', { ascending: true });
 
       if (billsError) throw billsError;
 
+      // Calculate metrics
+      const totalRevenue = billsData.reduce((sum, bill) => sum + bill.total_amount, 0);
+      const totalOrders = billsData.length;
+      const averageOrder = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+      const productsSold = billsData.reduce((sum, bill) => 
+        sum + bill.bill_items.reduce((itemSum: number, item: any) => itemSum + item.quantity, 0), 0
+      );
+
+      // Calculate percentage change from previous period
+      const previousStart = new Date(start);
+      previousStart.setDate(previousStart.getDate() - (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      
+      const { data: previousData } = await supabase
+        .from('bills')
+        .select('total_amount')
+        .gte('date', previousStart.toISOString())
+        .lt('date', start.toISOString());
+
+      const previousRevenue = previousData?.reduce((sum, bill) => sum + bill.total_amount, 0) || 0;
+      const percentageChange = previousRevenue > 0 
+        ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 
+        : 0;
+
+      // Get unique customers count
+      const { count: totalCustomers } = await supabase
+        .from('patients')
+        .select('id', { count: 'exact' })
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString());
+
+      setMetrics({
+        totalRevenue,
+        averageOrder,
+        totalOrders,
+        totalCustomers: totalCustomers || 0,
+        percentageChange,
+        productsSold
+      });
+
+      // Process sales data for chart
       const aggregatedSales = billsData.reduce((acc: Record<string, number>, curr) => {
         const date = format(new Date(curr.date), 'yyyy-MM-dd');
         acc[date] = (acc[date] || 0) + curr.total_amount;
@@ -144,6 +213,33 @@ export default function Insights() {
     window.print();
   };
 
+  const StatCard = ({ title, value, icon: Icon, trend = 0 }: { 
+    title: string; 
+    value: string | number;
+    icon: any;
+    trend?: number;
+  }) => (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between space-x-4">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+            <Icon className="w-6 h-6 text-primary" />
+          </div>
+          {trend !== 0 && (
+            <div className={`flex items-center ${trend > 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {trend > 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+              <span className="text-sm font-medium">{Math.abs(trend).toFixed(1)}%</span>
+            </div>
+          )}
+        </div>
+        <div className="mt-4">
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <h2 className="text-2xl font-bold">{value}</h2>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -174,12 +270,13 @@ export default function Insights() {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {['day', 'week', 'month', 'year'].map((period) => (
             <Button
               key={period}
               variant={timeframe === period ? 'default' : 'outline'}
               onClick={() => setTimeframe(period as any)}
+              className="w-full"
             >
               {period.charAt(0).toUpperCase() + period.slice(1)}
             </Button>
@@ -187,22 +284,61 @@ export default function Insights() {
         </div>
 
         <div ref={reportRef} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <StatCard
+              title="Total Revenue"
+              value={`₹${metrics.totalRevenue.toFixed(2)}`}
+              icon={DollarSign}
+              trend={metrics.percentageChange}
+            />
+            <StatCard
+              title="Average Order Value"
+              value={`₹${metrics.averageOrder.toFixed(2)}`}
+              icon={ShoppingCart}
+            />
+            <StatCard
+              title="Products Sold"
+              value={metrics.productsSold}
+              icon={Package}
+            />
+            <StatCard
+              title="Total Customers"
+              value={metrics.totalCustomers}
+              icon={Users}
+            />
+          </div>
+
           <Card>
             <CardHeader>
-              <CardTitle>Sales Trend</CardTitle>
+              <CardTitle>Revenue Trend</CardTitle>
             </CardHeader>
             <CardContent className="h-[400px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={salesData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                  <XAxis 
+                    dataKey="date"
+                    stroke="#888888"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="#888888"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `₹${value}`}
+                  />
+                  <Tooltip
+                    formatter={(value: any) => [`₹${value}`, 'Revenue']}
+                  />
                   <Line 
                     type="monotone" 
                     dataKey="total" 
                     stroke="#8884d8" 
                     strokeWidth={2}
+                    dot={false}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -217,11 +353,29 @@ export default function Insights() {
               <CardContent className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={topProducts}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="value" fill="#8884d8" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                    <XAxis 
+                      dataKey="name" 
+                      stroke="#888888"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="#888888"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `₹${value}`}
+                    />
+                    <Tooltip
+                      formatter={(value: any) => [`₹${value}`, 'Revenue']}
+                    />
+                    <Bar 
+                      dataKey="value" 
+                      fill="#8884d8"
+                      radius={[4, 4, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -229,7 +383,7 @@ export default function Insights() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Sales Distribution</CardTitle>
+                <CardTitle>Revenue Distribution</CardTitle>
               </CardHeader>
               <CardContent className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -247,7 +401,8 @@ export default function Insights() {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip formatter={(value: any) => `₹${value}`} />
+                    <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               </CardContent>
