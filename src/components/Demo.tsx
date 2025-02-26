@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { useState } from "react";
 import {
@@ -13,28 +12,32 @@ const demoSlides = [
     description: "Get a comprehensive overview of your pharmacy operations with our intuitive dashboard. Monitor key metrics, track inventory levels, and stay on top of important notifications.",
     features: ["Real-time analytics", "Stock alerts", "Sales overview", "Daily tasks"],
     icon: LayoutGrid,
-    bgColor: "bg-blue-50"
+    bgColor: "bg-blue-50",
+    image: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b"
   },
   {
     title: "Smart Inventory",
     description: "Manage your inventory efficiently with our smart tracking system. Get alerts for low stock, expiring medicines, and automated reorder suggestions.",
     features: ["Expiry tracking", "Auto reordering", "Stock optimization", "Batch tracking"],
     icon: Package,
-    bgColor: "bg-green-50"
+    bgColor: "bg-green-50",
+    image: "https://images.unsplash.com/photo-1581090464777-f3220bbe1b8b"
   },
   {
     title: "Purchase Management",
     description: "Streamline your procurement process with digital purchase orders. Track deliveries, manage suppliers, and maintain organized records of all transactions.",
     features: ["Digital PO generation", "Delivery tracking", "Supplier management", "Payment history"],
     icon: ShoppingCart,
-    bgColor: "bg-purple-50"
+    bgColor: "bg-purple-50",
+    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f"
   },
   {
     title: "Business Analytics",
     description: "Make data-driven decisions with comprehensive analytics. Track sales trends, inventory turnover, and generate insights for better business growth.",
     features: ["Sales analytics", "Inventory reports", "Financial insights", "Growth metrics"],
     icon: LineChart,
-    bgColor: "bg-orange-50"
+    bgColor: "bg-orange-50",
+    image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085"
   }
 ];
 
@@ -88,10 +91,14 @@ export default function Demo() {
                 ))}
               </ul>
             </div>
-            <div className="relative rounded-lg bg-white/80 backdrop-blur p-6 shadow-lg">
-              {/* Placeholder for feature screenshot/illustration */}
-              <div className="aspect-video rounded bg-neutral-100 flex items-center justify-center">
-                <slide.icon className="w-16 h-16 text-neutral-300" />
+            <div className="relative rounded-lg overflow-hidden shadow-lg">
+              <img 
+                src={slide.image} 
+                alt={slide.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center">
+                <slide.icon className="w-16 h-16 text-white" />
               </div>
             </div>
           </div>
