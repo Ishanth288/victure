@@ -83,8 +83,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-neutral-200">
           <Link to="/dashboard" className="flex items-center space-x-2">
-            <span className="text-2xl font-bold text-primary">
-              {profileData?.pharmacy_name || 'Loading...'}
+            <span className="text-2xl font-bold text-neutral-900">
+              Victure Healthcare Solutions
             </span>
           </Link>
           <Button
@@ -168,21 +168,24 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         isSidebarOpen ? "md:ml-64" : ""
       }`}>
         <header className="sticky top-0 z-30 bg-white border-b border-neutral-200">
-          <div className="flex items-center justify-between h-16 px-4">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-                onClick={() => setIsSidebarOpen(true)}
-              >
-                <Menu className="h-6 w-6" />
-              </Button>
-              <span className="text-xl font-bold text-primary hidden md:block">
-                {profileData?.pharmacy_name || 'Loading...'}
-              </span>
+          <div className="flex items-center h-16">
+            <div className="flex items-center flex-1">
+              <div className="w-16"></div> {/* Space for back button */}
+              <div className="flex items-center space-x-4 px-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden"
+                  onClick={() => setIsSidebarOpen(true)}
+                >
+                  <Menu className="h-6 w-6" />
+                </Button>
+                <span className="text-xl font-medium text-primary">
+                  {profileData?.pharmacy_name || 'Loading...'}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 px-4">
               <span className="text-sm font-medium">
                 {profileData?.owner_name || 'Loading...'}
               </span>
