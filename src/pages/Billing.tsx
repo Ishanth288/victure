@@ -8,13 +8,7 @@ import { Label } from "@/components/ui/label";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  Plus, 
-  User, 
-  Phone, 
-  UserRound, 
-  FileText 
-} from "lucide-react";
+import { Plus, User, Phone, UserRound, FileText } from "lucide-react";
 
 interface PatientDetails {
   patientName: string;

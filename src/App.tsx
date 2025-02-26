@@ -1,14 +1,16 @@
 
-import { BrowserRouter } from "react-router-dom";
-import { Routes, Route } from "react-router-dom";
-import { Toaster } from "@/components/ui/sonner";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "@/pages/Index";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Dashboard from "@/pages/Dashboard";
-import Inventory from "@/pages/Inventory";
+import NotFound from "@/pages/NotFound";
 import Billing from "@/pages/Billing";
+import BillingCart from "@/pages/BillingCart";
+import Inventory from "@/pages/Inventory";
 import Prescriptions from "@/pages/Prescriptions";
+import { Toaster } from "@/components/ui/toaster";
+import "./App.css";
 
 function App() {
   return (
@@ -18,9 +20,11 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/inventory" element={<Inventory />} />
         <Route path="/billing" element={<Billing />} />
+        <Route path="/billing/cart/:prescriptionId" element={<BillingCart />} />
+        <Route path="/inventory" element={<Inventory />} />
         <Route path="/prescriptions" element={<Prescriptions />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />
     </BrowserRouter>
@@ -28,4 +32,3 @@ function App() {
 }
 
 export default App;
-
