@@ -10,6 +10,7 @@ import { AddPurchaseOrderDialog } from "@/components/purchases/AddPurchaseOrderD
 import { PurchaseOrderCard } from "@/components/purchases/PurchaseOrderCard";
 import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
 import type { PurchaseOrder } from "@/types/purchases";
+import type { Database } from "@/integrations/supabase/types";
 
 export default function Purchases() {
   const navigate = useNavigate();
@@ -42,17 +43,26 @@ export default function Purchases() {
       if (!user) return;
 
       const { data, error } = await supabase
-        .from("purchase_orders")
-        .select(`
-          *,
-          items:purchase_order_items(*)
-        `)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .from('purchase_orders')
+        .select('*, items:purchase_order_items(*)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      setOrders(data || []);
+      if (data) {
+        const formattedOrders: PurchaseOrder[] = data.map((order: any) => ({
+          id: order.id,
+          supplier_name: order.supplier_name,
+          supplier_phone: order.supplier_phone,
+          order_date: order.order_date,
+          status: order.status,
+          notes: order.notes,
+          total_amount: order.total_amount,
+          items: order.items || [],
+        }));
+        setOrders(formattedOrders);
+      }
     } catch (error) {
       console.error("Error fetching orders:", error);
       toast({
@@ -74,13 +84,14 @@ export default function Purchases() {
       );
 
       const { data: order, error: orderError } = await supabase
-        .from("purchase_orders")
+        .from('purchase_orders')
         .insert({
           user_id: user.id,
           supplier_name: data.supplier_name,
           supplier_phone: data.supplier_phone,
           order_date: data.order_date,
           total_amount: totalAmount,
+          status: 'pending'
         })
         .select()
         .single();
@@ -94,10 +105,11 @@ export default function Purchases() {
         quantity_delivered: 0,
         unit_cost: item.unit_cost,
         total_cost: item.quantity_ordered * item.unit_cost,
+        is_delivered: false
       }));
 
       const { error: itemsError } = await supabase
-        .from("purchase_order_items")
+        .from('purchase_order_items')
         .insert(items);
 
       if (itemsError) throw itemsError;
@@ -126,20 +138,23 @@ export default function Purchases() {
   ) => {
     try {
       const { error: orderError } = await supabase
-        .from("purchase_orders")
-        .update({ notes })
-        .eq("id", orderId);
+        .from('purchase_orders')
+        .update({ 
+          notes,
+          status: items.every(item => item.is_delivered) ? 'delivered' : 'partially_delivered'
+        })
+        .eq('id', orderId);
 
       if (orderError) throw orderError;
 
       for (const item of items) {
         const { error: itemError } = await supabase
-          .from("purchase_order_items")
+          .from('purchase_order_items')
           .update({
             quantity_delivered: item.quantity_delivered,
             is_delivered: item.is_delivered,
           })
-          .eq("id", item.id);
+          .eq('id', item.id);
 
         if (itemError) throw itemError;
       }

@@ -259,6 +259,86 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_order_items: {
+        Row: {
+          delivery_notes: string | null
+          id: number
+          is_delivered: boolean | null
+          item_name: string
+          purchase_order_id: number | null
+          quantity_delivered: number | null
+          quantity_ordered: number
+          total_cost: number
+          unit_cost: number
+        }
+        Insert: {
+          delivery_notes?: string | null
+          id?: number
+          is_delivered?: boolean | null
+          item_name: string
+          purchase_order_id?: number | null
+          quantity_delivered?: number | null
+          quantity_ordered: number
+          total_cost: number
+          unit_cost: number
+        }
+        Update: {
+          delivery_notes?: string | null
+          id?: number
+          is_delivered?: boolean | null
+          item_name?: string
+          purchase_order_id?: number | null
+          quantity_delivered?: number | null
+          quantity_ordered?: number
+          total_cost?: number
+          unit_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_items_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          created_at: string | null
+          id: number
+          notes: string | null
+          order_date: string | null
+          status: string | null
+          supplier_name: string
+          supplier_phone: string | null
+          total_amount: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          notes?: string | null
+          order_date?: string | null
+          status?: string | null
+          supplier_name: string
+          supplier_phone?: string | null
+          total_amount?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          notes?: string | null
+          order_date?: string | null
+          status?: string | null
+          supplier_name?: string
+          supplier_phone?: string | null
+          total_amount?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
