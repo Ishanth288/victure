@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 import { EditDeliveryDialog } from "./EditDeliveryDialog";
 import type { PurchaseOrder } from "@/types/purchases";
 
@@ -35,7 +36,15 @@ export function PurchaseOrderCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>{order.supplier_name}</span>
+          <div className="flex items-center gap-4">
+            <span>{order.supplier_name}</span>
+            <Checkbox
+              checked={isFullyDelivered}
+              disabled
+              className="h-5 w-5"
+              aria-label="Delivery status"
+            />
+          </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
