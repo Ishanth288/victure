@@ -11,6 +11,7 @@ import BillingCart from "@/pages/BillingCart";
 import Inventory from "@/pages/Inventory";
 import Prescriptions from "@/pages/Prescriptions";
 import Patients from "@/pages/Patients";
+import Insights from "@/pages/Insights";
 import { Toaster } from "@/components/ui/toaster";
 import "./App.css";
 
@@ -26,6 +27,7 @@ function App() {
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/prescriptions" element={<Prescriptions />} />
         <Route path="/patients" element={<Patients />} />
+        <Route path="/insights" element={<Insights />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />

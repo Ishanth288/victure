@@ -13,7 +13,8 @@ import {
   X,
   DollarSign,
   Pill,
-  LogOut
+  LogOut,
+  LineChart
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -118,6 +119,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <Button variant="ghost" className="w-full justify-start">
               <Users className="mr-2 h-5 w-5" />
               Patients
+            </Button>
+          </Link>
+          <Link to="/insights">
+            <Button variant="ghost" className="w-full justify-start">
+              <LineChart className="mr-2 h-5 w-5" />
+              Insights
             </Button>
           </Link>
           <Button variant="ghost" className="w-full justify-start" onClick={handleSignOut}>
