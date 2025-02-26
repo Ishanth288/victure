@@ -151,12 +151,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 Profile
               </Button>
             </Link>
-            <Link to="/terms">
+            <a 
+              href="https://www.termsfeed.com/live/661b4717-faf2-4a61-a219-ddc2010a943c"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Button variant="ghost" className="w-full justify-start">
                 <FileText className="mr-2 h-5 w-5" />
                 Terms & Privacy
               </Button>
-            </Link>
+            </a>
             <Button variant="ghost" className="w-full justify-start" onClick={handleSignOut}>
               <LogOut className="mr-2 h-5 w-5" />
               Sign Out

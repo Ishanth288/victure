@@ -116,11 +116,21 @@ export default function Register() {
                   <Checkbox id="terms" required />
                   <Label htmlFor="terms" className="text-sm">
                     I agree to the{" "}
-                    <a href="#" className="text-primary hover:underline">
+                    <a 
+                      href="https://www.termsfeed.com/live/661b4717-faf2-4a61-a219-ddc2010a943c" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
                       Terms of Service
                     </a>{" "}
                     and{" "}
-                    <a href="#" className="text-primary hover:underline">
+                    <a 
+                      href="https://www.termsfeed.com/live/661b4717-faf2-4a61-a219-ddc2010a943c" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
                       Privacy Policy
                     </a>
                   </Label>
