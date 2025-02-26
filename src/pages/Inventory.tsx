@@ -108,7 +108,7 @@ function InventoryContent() {
         items={inventory}
         selectedItems={selectedItems}
         onToggleItem={(id) => {
-          setSelectedItems(prev => 
+          setSelectedItems((prev: number[]) => 
             prev.includes(id) 
               ? prev.filter(item => item !== id)
               : [...prev, id]

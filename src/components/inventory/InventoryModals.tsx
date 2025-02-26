@@ -9,6 +9,7 @@ import {
 import InventoryForm from "./InventoryForm";
 import { useInventory } from "@/contexts/InventoryContext";
 import { useCallback } from "react";
+import { type InventoryItem, type InventoryItemFormData } from "@/types/inventory";
 
 export default function InventoryModals() {
   const {
@@ -26,11 +27,17 @@ export default function InventoryModals() {
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev: InventoryItemFormData) => ({
+      ...prev,
+      [name]: value,
+    }));
   }, [setFormData]);
 
   const handleSelectChange = useCallback((name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev: InventoryItemFormData) => ({
+      ...prev,
+      [name]: value,
+    }));
   }, [setFormData]);
 
   const handleAddItem = async () => {
@@ -89,7 +96,7 @@ export default function InventoryModals() {
       status: parseInt(formData.quantity) > parseInt(formData.reorderPoint) ? "In Stock" : "Low Stock",
     };
 
-    setInventory(prev => 
+    setInventory((prev: InventoryItem[]) => 
       prev.map(item => 
         item.id === editingItem.id ? updatedItem : item
       )
