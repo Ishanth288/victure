@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { QrCode } from 'lucide-react';
+import { supabase } from "@/integrations/supabase/client";
 
 interface PrintableBillProps {
   billData: {
@@ -31,11 +32,33 @@ interface PrintableBillProps {
 }
 
 export function PrintableBill({ billData, items }: PrintableBillProps) {
+  const [pharmacyDetails, setPharmacyDetails] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchPharmacyDetails = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (data) {
+          setPharmacyDetails(data);
+        }
+      }
+    };
+
+    fetchPharmacyDetails();
+  }, []);
+
   return (
     <div className="max-w-4xl mx-auto bg-white p-8 print:p-4 print:shadow-none">
-      {/* Header */}
       <div className="text-center mb-6 border-b pb-4">
-        <h1 className="text-3xl font-bold text-primary mb-2">Victure Pharmacy</h1>
+        <h1 className="text-3xl font-bold text-primary mb-2">
+          {pharmacyDetails?.pharmacy_name || 'Loading...'}
+        </h1>
         <p className="text-neutral-600">123 Healthcare Avenue, Medical District</p>
         <p className="text-neutral-600">Mumbai, Maharashtra - 400001</p>
         <p className="text-neutral-600">Phone: +91 9876543210 | Email: care@victure.com</p>

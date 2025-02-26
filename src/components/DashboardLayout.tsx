@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   LayoutGrid,
@@ -12,19 +12,62 @@ import {
   Menu,
   X,
   DollarSign,
-  Pill
+  Pill,
+  LogOut
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [profileData, setProfileData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    checkAuth();
+    fetchProfile();
+  }, []);
+
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate('/auth');
+    }
+    setIsLoading(false);
+  };
+
+  const fetchProfile = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.id) {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (!error && data) {
+        setProfileData(data);
+      }
+    }
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/auth');
+  };
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+      Loading...
+    </div>;
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      {/* Sidebar */}
       <aside
         className={`fixed top-0 left-0 z-40 h-screen transition-transform ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -32,7 +75,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-neutral-200">
           <Link to="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-bold text-primary">Victure</span>
+            <span className="text-2xl font-bold text-primary">
+              {profileData?.pharmacy_name || 'Loading...'}
+            </span>
           </Link>
           <Button
             variant="ghost"
@@ -90,11 +135,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </nav>
       </aside>
 
-      {/* Main content */}
       <div className={`transition-all duration-300 ${
         isSidebarOpen ? "md:ml-64" : ""
       }`}>
-        {/* Header */}
         <header className="sticky top-0 z-30 bg-white border-b border-neutral-200">
           <div className="flex items-center justify-between h-16 px-4">
             <Button
@@ -106,12 +149,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <Menu className="h-6 w-6" />
             </Button>
             <div className="flex items-center space-x-4 ml-auto">
-              <Button variant="ghost">John Doe</Button>
+              <span className="text-sm font-medium">
+                {profileData?.owner_name || 'Loading...'}
+              </span>
+              <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                <LogOut className="h-5 w-5" />
+              </Button>
             </div>
           </div>
         </header>
 
-        {/* Page content */}
         <main className="p-4">{children}</main>
       </div>
     </div>

@@ -63,6 +63,7 @@ export type Database = {
           status: string
           subtotal: number
           total_amount: number
+          user_id: string | null
         }
         Insert: {
           bill_number: string
@@ -75,6 +76,7 @@ export type Database = {
           status?: string
           subtotal: number
           total_amount: number
+          user_id?: string | null
         }
         Update: {
           bill_number?: string
@@ -87,6 +89,7 @@ export type Database = {
           status?: string
           subtotal?: number
           total_amount?: number
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -116,6 +119,7 @@ export type Database = {
           supplier: string | null
           unit_cost: number
           unit_size: string | null
+          user_id: string | null
         }
         Insert: {
           dosage_form?: string | null
@@ -134,6 +138,7 @@ export type Database = {
           supplier?: string | null
           unit_cost: number
           unit_size?: string | null
+          user_id?: string | null
         }
         Update: {
           dosage_form?: string | null
@@ -152,6 +157,7 @@ export type Database = {
           supplier?: string | null
           unit_cost?: number
           unit_size?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -210,6 +216,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          owner_name: string
+          pharmacy_name: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          owner_name: string
+          pharmacy_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          owner_name?: string
+          pharmacy_name?: string
+        }
+        Relationships: []
       }
     }
     Views: {
