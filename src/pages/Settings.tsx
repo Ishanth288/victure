@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+interface PharmacyData {
+  pharmacy_name: string;
+  owner_name: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  gstin: string | null;
+}
 
 export default function Settings() {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,6 +26,39 @@ export default function Settings() {
   const [notificationEmail, setNotificationEmail] = useState(true);
   const [lowStockAlert, setLowStockAlert] = useState(true);
   const [expiryAlert, setExpiryAlert] = useState(true);
+  const [pharmacyData, setPharmacyData] = useState<PharmacyData>({
+    pharmacy_name: "",
+    owner_name: "",
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
+    gstin: null
+  });
+
+  useEffect(() => {
+    fetchPharmacyData();
+  }, []);
+
+  const fetchPharmacyData = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setPharmacyData(data);
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,14 +86,14 @@ export default function Settings() {
   const handlePharmacyUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const pharmacyData = {
-      pharmacy_name: formData.get('pharmacyName'),
-      owner_name: formData.get('ownerName'),
-      address: formData.get('address'),
-      city: formData.get('city'),
-      state: formData.get('state'),
-      pincode: formData.get('pincode'),
-      gstin: formData.get('gstin'),
+    const updatedData: PharmacyData = {
+      pharmacy_name: formData.get('pharmacyName')?.toString() || "",
+      owner_name: formData.get('ownerName')?.toString() || "",
+      address: formData.get('address')?.toString() || "",
+      city: formData.get('city')?.toString() || "",
+      state: formData.get('state')?.toString() || "",
+      pincode: formData.get('pincode')?.toString() || "",
+      gstin: formData.get('gstin')?.toString() || null
     };
 
     try {
@@ -59,11 +102,12 @@ export default function Settings() {
 
       const { error } = await supabase
         .from('profiles')
-        .update(pharmacyData)
+        .update(updatedData)
         .eq('id', session.user.id);
 
       if (error) throw error;
       toast.success("Pharmacy details updated successfully");
+      setPharmacyData(updatedData);
     } catch (error: any) {
       toast.error(error.message);
     }
@@ -136,34 +180,68 @@ export default function Settings() {
               <form onSubmit={handlePharmacyUpdate} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="pharmacyName">Pharmacy Name</Label>
-                  <Input id="pharmacyName" name="pharmacyName" required />
+                  <Input 
+                    id="pharmacyName" 
+                    name="pharmacyName" 
+                    defaultValue={pharmacyData.pharmacy_name}
+                    required 
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="ownerName">Owner Name</Label>
-                  <Input id="ownerName" name="ownerName" required />
+                  <Input 
+                    id="ownerName" 
+                    name="ownerName" 
+                    defaultValue={pharmacyData.owner_name}
+                    required 
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="address">Address</Label>
-                  <Input id="address" name="address" required />
+                  <Input 
+                    id="address" 
+                    name="address" 
+                    defaultValue={pharmacyData.address}
+                    required 
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="city">City</Label>
-                    <Input id="city" name="city" required />
+                    <Input 
+                      id="city" 
+                      name="city" 
+                      defaultValue={pharmacyData.city}
+                      required 
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="state">State</Label>
-                    <Input id="state" name="state" required />
+                    <Input 
+                      id="state" 
+                      name="state" 
+                      defaultValue={pharmacyData.state}
+                      required 
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="pincode">PIN Code</Label>
-                    <Input id="pincode" name="pincode" required />
+                    <Input 
+                      id="pincode" 
+                      name="pincode" 
+                      defaultValue={pharmacyData.pincode}
+                      required 
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="gstin">GSTIN</Label>
-                    <Input id="gstin" name="gstin" />
+                    <Input 
+                      id="gstin" 
+                      name="gstin" 
+                      defaultValue={pharmacyData.gstin || ""}
+                    />
                   </div>
                 </div>
                 <Button type="submit">Update Pharmacy Details</Button>
