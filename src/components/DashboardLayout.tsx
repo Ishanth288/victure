@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,9 @@ import {
   Pill,
   LogOut,
   LineChart,
-  ShoppingCart
+  ShoppingCart,
+  User,
+  FileText2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -90,54 +93,77 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </Button>
         </div>
 
-        <nav className="p-4 space-y-2">
-          <Link to="/dashboard">
-            <Button variant="ghost" className="w-full justify-start">
-              <LayoutGrid className="mr-2 h-5 w-5" />
-              Dashboard
+        <div className="flex flex-col h-[calc(100%-4rem)] justify-between">
+          <nav className="p-4 space-y-2">
+            <Link to="/dashboard">
+              <Button variant="ghost" className="w-full justify-start">
+                <LayoutGrid className="mr-2 h-5 w-5" />
+                Dashboard
+              </Button>
+            </Link>
+            <Link to="/inventory">
+              <Button variant="ghost" className="w-full justify-start">
+                <Package className="mr-2 h-5 w-5" />
+                Inventory
+              </Button>
+            </Link>
+            <Link to="/billing">
+              <Button variant="ghost" className="w-full justify-start">
+                <DollarSign className="mr-2 h-5 w-5" />
+                Billing
+              </Button>
+            </Link>
+            <Link to="/prescriptions">
+              <Button variant="ghost" className="w-full justify-start">
+                <FileText className="mr-2 h-5 w-5" />
+                Prescriptions
+              </Button>
+            </Link>
+            <Link to="/patients">
+              <Button variant="ghost" className="w-full justify-start">
+                <Users className="mr-2 h-5 w-5" />
+                Patients
+              </Button>
+            </Link>
+            <Link to="/purchases">
+              <Button variant="ghost" className="w-full justify-start">
+                <ShoppingCart className="mr-2 h-5 w-5" />
+                Purchases
+              </Button>
+            </Link>
+            <Link to="/insights">
+              <Button variant="ghost" className="w-full justify-start">
+                <LineChart className="mr-2 h-5 w-5" />
+                Insights
+              </Button>
+            </Link>
+          </nav>
+
+          <div className="p-4 space-y-2 border-t border-neutral-200">
+            <Link to="/settings">
+              <Button variant="ghost" className="w-full justify-start">
+                <Settings className="mr-2 h-5 w-5" />
+                Settings
+              </Button>
+            </Link>
+            <Link to="/profile">
+              <Button variant="ghost" className="w-full justify-start">
+                <User className="mr-2 h-5 w-5" />
+                Profile
+              </Button>
+            </Link>
+            <Link to="/terms">
+              <Button variant="ghost" className="w-full justify-start">
+                <FileText2 className="mr-2 h-5 w-5" />
+                Terms & Privacy
+              </Button>
+            </Link>
+            <Button variant="ghost" className="w-full justify-start" onClick={handleSignOut}>
+              <LogOut className="mr-2 h-5 w-5" />
+              Sign Out
             </Button>
-          </Link>
-          <Link to="/inventory">
-            <Button variant="ghost" className="w-full justify-start">
-              <Package className="mr-2 h-5 w-5" />
-              Inventory
-            </Button>
-          </Link>
-          <Link to="/billing">
-            <Button variant="ghost" className="w-full justify-start">
-              <DollarSign className="mr-2 h-5 w-5" />
-              Billing
-            </Button>
-          </Link>
-          <Link to="/prescriptions">
-            <Button variant="ghost" className="w-full justify-start">
-              <FileText className="mr-2 h-5 w-5" />
-              Prescriptions
-            </Button>
-          </Link>
-          <Link to="/patients">
-            <Button variant="ghost" className="w-full justify-start">
-              <Users className="mr-2 h-5 w-5" />
-              Patients
-            </Button>
-          </Link>
-          <Link to="/purchases">
-            <Button variant="ghost" className="w-full justify-start">
-              <ShoppingCart className="mr-2 h-5 w-5" />
-              Purchases
-            </Button>
-          </Link>
-          <Link to="/insights">
-            <Button variant="ghost" className="w-full justify-start">
-              <LineChart className="mr-2 h-5 w-5" />
-              Insights
-            </Button>
-          </Link>
-          <Button variant="ghost" className="w-full justify-start" onClick={handleSignOut}>
-            <LogOut className="mr-2 h-5 w-5" />
-            Sign Out
-          </Button>
-        </nav>
+          </div>
+        </div>
       </aside>
 
       <div className={`transition-all duration-300 ${
