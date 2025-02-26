@@ -22,21 +22,93 @@ import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+// List of Indian states
+const INDIAN_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+  "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+  "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+  "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
+];
+
+interface RegistrationData {
+  pharmacyName: string;
+  ownerName: string;
+  email: string;
+  password: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  gstin: string;
+  role: string;
+}
 
 export default function Register() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState<RegistrationData>({
+    pharmacyName: "",
+    ownerName: "",
+    email: "",
+    password: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
+    gstin: "",
+    role: ""
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleStateChange = (value: string) => {
+    setFormData(prev => ({ ...prev, state: value }));
+  };
+
+  const handleRoleChange = (value: string) => {
+    setFormData(prev => ({ ...prev, role: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate registration process
-    setTimeout(() => {
-      setIsLoading(false);
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            pharmacy_name: formData.pharmacyName,
+            owner_name: formData.ownerName,
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+            pincode: formData.pincode,
+            gstin: formData.gstin
+          }
+        }
+      });
+
+      if (error) throw error;
+
       toast.success("Registration successful! Please check your email for verification.");
       navigate("/login");
-    }, 1500);
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -57,56 +129,129 @@ export default function Register() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="pharmacyName">Pharmacy Name</Label>
+                <Label htmlFor="pharmacyName">Pharmacy Name*</Label>
                 <Input
                   id="pharmacyName"
                   placeholder="Enter pharmacy name"
+                  value={formData.pharmacyName}
+                  onChange={handleChange}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="contactPerson">Contact Person</Label>
+                <Label htmlFor="ownerName">Owner Name*</Label>
                 <Input
-                  id="contactPerson"
-                  placeholder="Enter contact person name"
+                  id="ownerName"
+                  placeholder="Enter owner name"
+                  value={formData.ownerName}
+                  onChange={handleChange}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone">Phone Number*</Label>
                 <Input
                   id="phone"
                   type="tel"
                   placeholder="Enter phone number"
+                  value={formData.phone}
+                  onChange={handleChange}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="address">Address*</Label>
+                <Input
+                  id="address"
+                  placeholder="Enter complete address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="city">City*</Label>
+                  <Input
+                    id="city"
+                    placeholder="Enter city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="state">State*</Label>
+                  <Select onValueChange={handleStateChange} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INDIAN_STATES.map((state) => (
+                        <SelectItem key={state} value={state}>
+                          {state}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="pincode">PIN Code*</Label>
+                  <Input
+                    id="pincode"
+                    placeholder="Enter PIN code"
+                    value={formData.pincode}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="gstin">GSTIN (Optional)</Label>
+                  <Input
+                    id="gstin"
+                    placeholder="Enter GSTIN"
+                    value={formData.gstin}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address*</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="Enter email address"
+                  value={formData.email}
+                  onChange={handleChange}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Password*</Label>
                 <Input
                   id="password"
                   type="password"
                   placeholder="Enter password"
+                  value={formData.password}
+                  onChange={handleChange}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="role">User Role</Label>
-                <Select>
+                <Label htmlFor="role">User Role*</Label>
+                <Select onValueChange={handleRoleChange} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
