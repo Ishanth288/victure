@@ -6,23 +6,17 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-
-interface Medicine {
-  id: number;
-  name: string;
-  quantity: number;
-  unit_cost: number;
-  dosage_form: string | null;
-  unit_size: string | null;
-}
+import { useToast } from "@/components/ui/use-toast";
+import { type InventoryItem } from "@/types/inventory";
 
 interface SearchMedicineInputProps {
-  onAddToCart: (medicine: Medicine, quantity: number) => void;
+  onAddToCart: (medicine: InventoryItem, quantity: number) => void;
 }
 
 export function SearchMedicineInput({ onAddToCart }: SearchMedicineInputProps) {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Medicine[]>([]);
+  const [searchResults, setSearchResults] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSearch = async (query: string) => {
@@ -34,36 +28,39 @@ export function SearchMedicineInput({ onAddToCart }: SearchMedicineInputProps) {
 
     setIsLoading(true);
     try {
-      // Modified the query to use % on both sides for better matching
       const { data, error } = await supabase
         .from("inventory")
         .select("*")
-        .ilike("name", `%${query}%`)
+        .or(`name.ilike.%${query}%,generic_name.ilike.%${query}%`)
         .order("name")
-        .limit(5);
+        .limit(10);
 
       if (error) {
         console.error("Supabase error:", error);
         throw error;
       }
 
-      console.log("Search results:", data); // Debug log
       setSearchResults(data || []);
     } catch (error) {
       console.error("Error searching medicines:", error);
+      toast({
+        title: "Error",
+        description: "Failed to search medicines",
+        variant: "destructive",
+      });
       setSearchResults([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getStockStatus = (quantity: number) => {
-    if (quantity === 0) {
+  const getStockStatus = (item: InventoryItem) => {
+    if (item.quantity === 0) {
       return <Badge variant="destructive">Out of Stock</Badge>;
-    } else if (quantity < 10) {
-      return <Badge variant="warning">Low Stock: {quantity}</Badge>;
+    } else if (item.quantity < (item.reorder_point || 10)) {
+      return <Badge variant="warning">Low Stock: {item.quantity}</Badge>;
     } else {
-      return <Badge variant="success">In Stock: {quantity}</Badge>;
+      return <Badge variant="success">In Stock: {item.quantity}</Badge>;
     }
   };
 
@@ -72,7 +69,7 @@ export function SearchMedicineInput({ onAddToCart }: SearchMedicineInputProps) {
       <div className="relative">
         <Search className="absolute left-3 top-3 h-4 w-4 text-neutral-400" />
         <Input
-          placeholder="Start typing medicine name..."
+          placeholder="Search by medicine name or generic name..."
           value={searchQuery}
           onChange={(e) => handleSearch(e.target.value)}
           className="pl-10"
@@ -88,14 +85,19 @@ export function SearchMedicineInput({ onAddToCart }: SearchMedicineInputProps) {
             >
               <div className="flex-grow">
                 <div className="font-medium text-base">{medicine.name}</div>
+                {medicine.generic_name && (
+                  <div className="text-sm text-neutral-600">
+                    {medicine.generic_name}
+                  </div>
+                )}
                 <div className="text-sm text-neutral-500 flex items-center gap-2 mt-1">
-                  {medicine.dosage_form && medicine.unit_size && (
-                    <span>{`${medicine.dosage_form} • ${medicine.unit_size}`}</span>
+                  {medicine.dosage_form && medicine.strength && (
+                    <span>{`${medicine.dosage_form} • ${medicine.strength}`}</span>
                   )}
                   <span>₹{medicine.unit_cost.toFixed(2)}</span>
                 </div>
                 <div className="mt-1">
-                  {getStockStatus(medicine.quantity)}
+                  {getStockStatus(medicine)}
                 </div>
               </div>
               <Button

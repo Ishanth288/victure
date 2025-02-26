@@ -1,6 +1,8 @@
 
-import { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from "react";
 import { type InventoryItem, type InventoryItemFormData } from "@/types/inventory";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface InventoryContextType {
   inventory: InventoryItem[];
@@ -15,15 +17,19 @@ interface InventoryContextType {
   setFormData: Dispatch<SetStateAction<InventoryItemFormData>>;
   editingItem: InventoryItem | null;
   setEditingItem: (item: InventoryItem | null) => void;
+  isLoading: boolean;
+  fetchInventory: () => Promise<void>;
 }
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
 
 export function InventoryProvider({ children }: { children: ReactNode }) {
+  const { toast } = useToast();
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<InventoryItemFormData>({
     name: "",
     genericName: "",
@@ -42,6 +48,55 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
   });
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
 
+  const fetchInventory = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("inventory")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+      setInventory(data || []);
+    } catch (error) {
+      console.error("Error fetching inventory:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch inventory items",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Subscribe to real-time changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('inventory-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'inventory'
+        },
+        () => {
+          fetchInventory();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchInventory();
+  }, []);
+
   return (
     <InventoryContext.Provider
       value={{
@@ -57,6 +112,8 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
         setFormData,
         editingItem,
         setEditingItem,
+        isLoading,
+        fetchInventory,
       }}
     >
       {children}

@@ -2,14 +2,19 @@
 export interface InventoryItem {
   id: number;
   name: string;
-  ndc: string;
-  manufacturer: string;
-  dosageForm: string;
-  unitSize: string;
+  generic_name: string | null;
+  ndc: string | null;
+  manufacturer: string | null;
+  dosage_form: string | null;
+  strength: string | null;
+  unit_size: string | null;
+  unit_cost: number;
+  selling_price: number | null;
   quantity: number;
-  unitCost: number;
-  expiryDate: string;
-  supplier: string;
+  reorder_point: number;
+  expiry_date: string | null;
+  supplier: string | null;
+  storage_condition: string | null;
   status: string;
 }
 
