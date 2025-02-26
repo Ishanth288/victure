@@ -1,22 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import BackButton from "./BackButton";
 import {
-  LayoutGrid,
-  Package,
-  Users,
-  FileText,
-  BarChart3,
-  Settings,
-  Menu,
-  X,
-  DollarSign,
-  Pill,
-  LogOut,
-  LineChart,
-  ShoppingCart,
-  User
+  LayoutGrid, Package, Users, FileText, BarChart3, Settings, Menu,
+  X, DollarSign, Pill, LogOut, LineChart, ShoppingCart, User
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -68,7 +57,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       if (!error && data) {
         setProfileData(data);
-        // Initialize localStorage with pharmacy name
         localStorage.setItem('pharmacyName', data.pharmacy_name);
       }
     }
@@ -168,16 +156,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 Profile
               </Button>
             </Link>
-            <a 
-              href="https://www.termsfeed.com/live/661b4717-faf2-4a61-a219-ddc2010a943c"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button variant="ghost" className="w-full justify-start">
-                <FileText className="mr-2 h-5 w-5" />
-                Terms & Privacy
-              </Button>
-            </a>
             <Button variant="ghost" className="w-full justify-start" onClick={handleSignOut}>
               <LogOut className="mr-2 h-5 w-5" />
               Sign Out
@@ -191,15 +169,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       }`}>
         <header className="sticky top-0 z-30 bg-white border-b border-neutral-200">
           <div className="flex items-center justify-between h-16 px-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsSidebarOpen(true)}
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-            <div className="flex items-center space-x-4 ml-auto">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setIsSidebarOpen(true)}
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
+              <span className="text-xl font-bold text-primary hidden md:block">
+                {profileData?.pharmacy_name || 'Loading...'}
+              </span>
+            </div>
+            <div className="flex items-center space-x-4">
               <span className="text-sm font-medium">
                 {profileData?.owner_name || 'Loading...'}
               </span>
