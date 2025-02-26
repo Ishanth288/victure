@@ -1,41 +1,16 @@
-
 import { useState, useEffect, useRef } from "react";
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  Legend
-} from "recharts";
-import { 
-  Download, 
-  Printer, 
-  Calendar, 
-  TrendingUp, 
-  ShoppingCart, 
-  DollarSign, 
-  ArrowUpRight,
-  ArrowDownRight,
-  Package,
-  Users
-} from "lucide-react";
+import { Download, Printer, Calendar, DollarSign, ShoppingCart, Package, Users } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+import { StatCard } from "@/components/insights/StatCard";
+import { TimeframeSelector } from "@/components/insights/TimeframeSelector";
+import { RevenueTrendChart } from "@/components/insights/RevenueTrendChart";
+import { ProductsChart } from "@/components/insights/ProductsChart";
+import { RevenueDistribution } from "@/components/insights/RevenueDistribution";
 
 interface SalesData {
   date: string;
@@ -213,33 +188,6 @@ export default function Insights() {
     window.print();
   };
 
-  const StatCard = ({ title, value, icon: Icon, trend = 0 }: { 
-    title: string; 
-    value: string | number;
-    icon: any;
-    trend?: number;
-  }) => (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between space-x-4">
-          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
-            <Icon className="w-6 h-6 text-primary" />
-          </div>
-          {trend !== 0 && (
-            <div className={`flex items-center ${trend > 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {trend > 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-              <span className="text-sm font-medium">{Math.abs(trend).toFixed(1)}%</span>
-            </div>
-          )}
-        </div>
-        <div className="mt-4">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <h2 className="text-2xl font-bold">{value}</h2>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
   if (loading) {
     return (
       <DashboardLayout>
@@ -270,21 +218,13 @@ export default function Insights() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          {['day', 'week', 'month', 'year'].map((period) => (
-            <Button
-              key={period}
-              variant={timeframe === period ? 'default' : 'outline'}
-              onClick={() => setTimeframe(period as any)}
-              className="w-full"
-            >
-              {period.charAt(0).toUpperCase() + period.slice(1)}
-            </Button>
-          ))}
-        </div>
+        <TimeframeSelector 
+          timeframe={timeframe} 
+          onTimeframeChange={setTimeframe} 
+        />
 
-        <div ref={reportRef} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div ref={reportRef} className="space-y-6 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
               title="Total Revenue"
               value={`₹${metrics.totalRevenue.toFixed(2)}`}
@@ -308,105 +248,11 @@ export default function Insights() {
             />
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Revenue Trend</CardTitle>
-            </CardHeader>
-            <CardContent className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={salesData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                  <XAxis 
-                    dataKey="date"
-                    stroke="#888888"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    stroke="#888888"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `₹${value}`}
-                  />
-                  <Tooltip
-                    formatter={(value: any) => [`₹${value}`, 'Revenue']}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="total" 
-                    stroke="#8884d8" 
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <RevenueTrendChart data={salesData} />
 
           <div className="grid md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Products</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={topProducts}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                    <XAxis 
-                      dataKey="name" 
-                      stroke="#888888"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      stroke="#888888"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(value) => `₹${value}`}
-                    />
-                    <Tooltip
-                      formatter={(value: any) => [`₹${value}`, 'Revenue']}
-                    />
-                    <Bar 
-                      dataKey="value" 
-                      fill="#8884d8"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Revenue Distribution</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={topProducts}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      label
-                    >
-                      {topProducts.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value: any) => `₹${value}`} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            <ProductsChart data={topProducts} />
+            <RevenueDistribution data={topProducts} />
           </div>
         </div>
       </div>
