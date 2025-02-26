@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -31,19 +30,30 @@ export default function Auth() {
   useEffect(() => {
     const handleEmailVerification = async () => {
       const hash = window.location.hash;
-      if (hash && hash.includes('type=email_verification')) {
+      const searchParams = new URLSearchParams(window.location.search);
+      const accessToken = searchParams.get('access_token') || hash.split('access_token=')[1]?.split('&')[0];
+
+      if ((hash && hash.includes('type=email_verification')) || accessToken) {
         try {
-          const { error } = await supabase.auth.getSession();
-          if (error) throw error;
+          if (accessToken) {
+            const { data: { session }, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: '',
+            });
+            if (error) throw error;
+          } else {
+            const { error } = await supabase.auth.getSession();
+            if (error) throw error;
+          }
           
           toast({
             title: "Email verified successfully!",
             description: "You can now log in to your account.",
           });
           
-          // Redirect to login after successful verification
           navigate("/auth", { state: { isLogin: true } });
         } catch (error: any) {
+          console.error('Verification error:', error);
           toast({
             title: "Verification failed",
             description: error.message,
@@ -57,7 +67,6 @@ export default function Auth() {
   }, [navigate, toast]);
 
   useEffect(() => {
-    // Set initial state based on navigation
     if (location.state?.isLogin !== undefined) {
       setIsLogin(location.state.isLogin);
     }
@@ -76,7 +85,6 @@ export default function Auth() {
 
         if (error) throw error;
         
-        // Redirect to dashboard after successful login
         if (data.session) {
           navigate("/dashboard");
         }
