@@ -27,6 +27,7 @@ export default function PharmacySettings() {
     pincode: "",
     gstin: null
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchPharmacyData();
@@ -56,18 +57,20 @@ export default function PharmacySettings() {
 
   const handlePharmacyUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const updatedData: PharmacyData = {
-      pharmacy_name: formData.get('pharmacyName')?.toString() || "",
-      owner_name: formData.get('ownerName')?.toString() || "",
-      address: formData.get('address')?.toString() || "",
-      city: formData.get('city')?.toString() || "",
-      state: formData.get('state')?.toString() || "",
-      pincode: formData.get('pincode')?.toString() || "",
-      gstin: formData.get('gstin')?.toString() || null
-    };
+    setIsSubmitting(true);
 
     try {
+      const formData = new FormData(e.currentTarget);
+      const updatedData: PharmacyData = {
+        pharmacy_name: formData.get('pharmacyName')?.toString() || "",
+        owner_name: formData.get('ownerName')?.toString() || "",
+        address: formData.get('address')?.toString() || "",
+        city: formData.get('city')?.toString() || "",
+        state: formData.get('state')?.toString() || "",
+        pincode: formData.get('pincode')?.toString() || "",
+        gstin: formData.get('gstin')?.toString() || null
+      };
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("No user found");
 
@@ -77,13 +80,27 @@ export default function PharmacySettings() {
         .eq('id', session.user.id);
 
       if (error) throw error;
-      toast.success("Pharmacy details updated successfully");
+
+      // Update local state
       setPharmacyData(updatedData);
-      // Update document title with new pharmacy name
+      
+      // Update document title
       document.title = `${updatedData.pharmacy_name} - Dashboard`;
+      
+      toast.success("Pharmacy details updated successfully");
     } catch (error: any) {
       toast.error(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPharmacyData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   return (
@@ -99,7 +116,8 @@ export default function PharmacySettings() {
             <Input 
               id="pharmacyName" 
               name="pharmacyName" 
-              defaultValue={pharmacyData.pharmacy_name}
+              value={pharmacyData.pharmacy_name}
+              onChange={handleInputChange}
               required 
             />
           </div>
@@ -108,7 +126,8 @@ export default function PharmacySettings() {
             <Input 
               id="ownerName" 
               name="ownerName" 
-              defaultValue={pharmacyData.owner_name}
+              value={pharmacyData.owner_name}
+              onChange={handleInputChange}
               required 
             />
           </div>
@@ -117,7 +136,8 @@ export default function PharmacySettings() {
             <Input 
               id="address" 
               name="address" 
-              defaultValue={pharmacyData.address}
+              value={pharmacyData.address}
+              onChange={handleInputChange}
               required 
             />
           </div>
@@ -127,7 +147,8 @@ export default function PharmacySettings() {
               <Input 
                 id="city" 
                 name="city" 
-                defaultValue={pharmacyData.city}
+                value={pharmacyData.city}
+                onChange={handleInputChange}
                 required 
               />
             </div>
@@ -136,7 +157,8 @@ export default function PharmacySettings() {
               <Input 
                 id="state" 
                 name="state" 
-                defaultValue={pharmacyData.state}
+                value={pharmacyData.state}
+                onChange={handleInputChange}
                 required 
               />
             </div>
@@ -147,7 +169,8 @@ export default function PharmacySettings() {
               <Input 
                 id="pincode" 
                 name="pincode" 
-                defaultValue={pharmacyData.pincode}
+                value={pharmacyData.pincode}
+                onChange={handleInputChange}
                 required 
               />
             </div>
@@ -156,11 +179,14 @@ export default function PharmacySettings() {
               <Input 
                 id="gstin" 
                 name="gstin" 
-                defaultValue={pharmacyData.gstin || ""}
+                value={pharmacyData.gstin || ""}
+                onChange={handleInputChange}
               />
             </div>
           </div>
-          <Button type="submit">Update Pharmacy Details</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Updating..." : "Update Pharmacy Details"}
+          </Button>
         </form>
       </CardContent>
     </Card>

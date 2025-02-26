@@ -59,10 +59,10 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
         <h1 className="text-3xl font-bold text-primary mb-2">
           {pharmacyDetails?.pharmacy_name || 'Loading...'}
         </h1>
-        <p className="text-neutral-600">123 Healthcare Avenue, Medical District</p>
-        <p className="text-neutral-600">Mumbai, Maharashtra - 400001</p>
+        <p className="text-neutral-600">{pharmacyDetails?.address}</p>
+        <p className="text-neutral-600">{pharmacyDetails?.city}, {pharmacyDetails?.state} - {pharmacyDetails?.pincode}</p>
         <p className="text-neutral-600">Phone: +91 9876543210 | Email: care@victure.com</p>
-        <p className="text-neutral-600">GSTIN: 27AAAAA0000A1Z5 | DL No: MH-MUM-123456</p>
+        <p className="text-neutral-600">GSTIN: {pharmacyDetails?.gstin || 'N/A'}</p>
       </div>
 
       {/* Bill Details */}
