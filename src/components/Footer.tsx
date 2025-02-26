@@ -2,8 +2,23 @@
 import { HashLink } from 'react-router-hash-link';
 
 export default function Footer() {
+  const handlePricingClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    alert("Contact us at thugs.business@gmail.com");
+  };
+
+  const handleLegalClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.open('https://www.termsfeed.com/live/661b4717-faf2-4a61-a219-ddc2010a943c', '_blank');
+  };
+
+  const handleContactClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    alert("Contact us at thugs.business@gmail.com");
+  };
+
   return (
-    <footer className="bg-neutral-50 py-12">
+    <footer className="bg-white py-12 border-t">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
@@ -29,9 +44,9 @@ export default function Footer() {
                 </HashLink>
               </li>
               <li>
-                <HashLink smooth to="#" className="text-neutral-600 hover:text-primary transition-colors">
+                <a href="#" onClick={handlePricingClick} className="text-neutral-600 hover:text-primary transition-colors">
                   Pricing
-                </HashLink>
+                </a>
               </li>
             </ul>
           </div>
@@ -45,14 +60,9 @@ export default function Footer() {
                 </HashLink>
               </li>
               <li>
-                <HashLink smooth to="#" className="text-neutral-600 hover:text-primary transition-colors">
+                <a href="#" onClick={handleContactClick} className="text-neutral-600 hover:text-primary transition-colors">
                   Contact
-                </HashLink>
-              </li>
-              <li>
-                <HashLink smooth to="#" className="text-neutral-600 hover:text-primary transition-colors">
-                  Careers
-                </HashLink>
+                </a>
               </li>
             </ul>
           </div>
@@ -61,14 +71,14 @@ export default function Footer() {
             <h3 className="font-semibold text-neutral-900 mb-4">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <HashLink smooth to="#" className="text-neutral-600 hover:text-primary transition-colors">
+                <a href="#" onClick={handleLegalClick} className="text-neutral-600 hover:text-primary transition-colors">
                   Privacy Policy
-                </HashLink>
+                </a>
               </li>
               <li>
-                <HashLink smooth to="#" className="text-neutral-600 hover:text-primary transition-colors">
+                <a href="#" onClick={handleLegalClick} className="text-neutral-600 hover:text-primary transition-colors">
                   Terms of Service
-                </HashLink>
+                </a>
               </li>
             </ul>
           </div>

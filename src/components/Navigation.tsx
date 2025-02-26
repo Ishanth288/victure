@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { HashLink } from 'react-router-hash-link';
 import { Link, useNavigate } from 'react-router-dom';
@@ -15,7 +14,7 @@ export default function Navigation() {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <HashLink to="/" className="flex items-center space-x-2">
@@ -28,9 +27,6 @@ export default function Navigation() {
             </HashLink>
             <HashLink smooth to="#benefits" className="text-neutral-600 hover:text-primary transition-colors">
               Benefits
-            </HashLink>
-            <HashLink smooth to="#testimonials" className="text-neutral-600 hover:text-primary transition-colors">
-              Testimonials
             </HashLink>
           </div>
 
