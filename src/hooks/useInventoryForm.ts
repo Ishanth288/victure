@@ -46,7 +46,6 @@ export function useInventoryForm(onSuccess: () => void) {
 
   const handleAddItem = async () => {
     try {
-      // Basic validation
       if (!formData.name || !formData.unitCost || !formData.quantity) {
         toast({
           title: "Error",
@@ -56,13 +55,22 @@ export function useInventoryForm(onSuccess: () => void) {
         return null;
       }
 
-      // Parse numeric values
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to add inventory items",
+          variant: "destructive",
+        });
+        return null;
+      }
+
       const unitCost = parseFloat(formData.unitCost);
       const quantity = parseInt(formData.quantity);
       const reorderPoint = parseInt(formData.reorderPoint || "10");
       const sellingPrice = formData.sellingPrice ? parseFloat(formData.sellingPrice) : null;
 
-      // Numeric validation
       if (isNaN(unitCost) || isNaN(quantity)) {
         toast({
           title: "Error",
@@ -72,7 +80,6 @@ export function useInventoryForm(onSuccess: () => void) {
         return null;
       }
 
-      // Prepare insert data matching exactly with database schema
       const insertData = {
         name: formData.name.trim(),
         ndc: formData.ndc.trim() || null,
@@ -84,15 +91,13 @@ export function useInventoryForm(onSuccess: () => void) {
         expiry_date: formData.expiryDate || null,
         supplier: formData.supplier.trim() || null,
         status: 'in stock',
-        // New columns
         generic_name: formData.genericName.trim() || null,
         strength: formData.strength.trim() || null,
         selling_price: sellingPrice,
         reorder_point: reorderPoint,
         storage_condition: formData.storage || null,
+        user_id: user.id // Add the user_id here
       };
-
-      console.log("Attempting to insert:", insertData);
 
       const { data: newItem, error } = await supabase
         .from("inventory")
@@ -136,7 +141,18 @@ export function useInventoryForm(onSuccess: () => void) {
       if (!formData.name || !formData.unitCost || !formData.quantity) {
         toast({
           title: "Error",
-          description: "Please fill in all required fields",
+          description: "Please fill in all required fields: Name, Unit Cost, and Quantity",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to edit inventory items",
           variant: "destructive",
         });
         return null;
@@ -157,12 +173,13 @@ export function useInventoryForm(onSuccess: () => void) {
         selling_price: formData.sellingPrice ? parseFloat(formData.sellingPrice) : null,
         reorder_point: parseInt(formData.reorderPoint || "10"),
         storage_condition: formData.storage || null,
+        user_id: user.id // Add the user_id here
       };
 
       const { data: updatedItem, error } = await supabase
         .from("inventory")
         .update(updateData)
-        .eq("id", itemId)
+        .eq('id', itemId)
         .select()
         .single();
 
