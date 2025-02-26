@@ -51,6 +51,7 @@ export default function PharmacySettings() {
         document.title = `${data.pharmacy_name} - Dashboard`;
       }
     } catch (error: any) {
+      console.error("Error fetching pharmacy data:", error);
       toast.error(error.message);
     }
   };
@@ -58,10 +59,13 @@ export default function PharmacySettings() {
   const handlePharmacyUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    console.log("Starting pharmacy update...");
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) throw new Error("No user found");
+      if (!session?.user?.id) {
+        throw new Error("No user found");
+      }
 
       const formData = new FormData(e.currentTarget);
       const updatedData: PharmacyData = {
@@ -73,6 +77,8 @@ export default function PharmacySettings() {
         pincode: formData.get('pincode')?.toString() || "",
         gstin: formData.get('gstin')?.toString() || null
       };
+
+      console.log("Updating pharmacy data:", updatedData);
 
       const { error } = await supabase
         .from('profiles')
@@ -87,9 +93,11 @@ export default function PharmacySettings() {
       // Update document title
       document.title = `${updatedData.pharmacy_name} - Dashboard`;
       
+      console.log("Pharmacy update successful");
       toast.success("Pharmacy details updated successfully");
     } catch (error: any) {
-      toast.error(error.message);
+      console.error("Error updating pharmacy:", error);
+      toast.error(error.message || "Failed to update pharmacy details");
     } finally {
       setIsSubmitting(false);
     }

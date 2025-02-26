@@ -15,21 +15,49 @@ export default function SecuritySettings() {
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate password confirmation
     if (newPassword !== confirmPassword) {
       toast.error("New passwords don't match");
       return;
     }
+
+    // Validate password length
+    if (newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters long");
+      return;
+    }
+
     setIsLoading(true);
+
     try {
-      const { error } = await supabase.auth.updateUser({ 
+      // First verify current password by trying to sign in
+      const { data: { session }, error: signInError } = await supabase.auth.signInWithPassword({
+        email: (await supabase.auth.getSession()).data.session?.user?.email || "",
+        password: currentPassword
+      });
+
+      if (signInError) {
+        toast.error("Current password is incorrect");
+        setIsLoading(false);
+        return;
+      }
+
+      // If current password is correct, update to new password
+      const { error: updateError } = await supabase.auth.updateUser({ 
         password: newPassword 
       });
-      if (error) throw error;
+
+      if (updateError) throw updateError;
+
       toast.success("Password updated successfully");
+      // Clear form
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      
     } catch (error: any) {
+      console.error("Password update error:", error);
       toast.error(error.message);
     } finally {
       setIsLoading(false);
@@ -62,6 +90,7 @@ export default function SecuritySettings() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
+              minLength={6}
             />
           </div>
           <div className="space-y-2">
@@ -72,6 +101,7 @@ export default function SecuritySettings() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
+              minLength={6}
             />
           </div>
           <Button type="submit" disabled={isLoading}>
