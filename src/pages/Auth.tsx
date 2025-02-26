@@ -29,6 +29,34 @@ export default function Auth() {
   });
 
   useEffect(() => {
+    const handleEmailVerification = async () => {
+      const hash = window.location.hash;
+      if (hash && hash.includes('type=email_verification')) {
+        try {
+          const { error } = await supabase.auth.getSession();
+          if (error) throw error;
+          
+          toast({
+            title: "Email verified successfully!",
+            description: "You can now log in to your account.",
+          });
+          
+          // Redirect to login after successful verification
+          navigate("/auth", { state: { isLogin: true } });
+        } catch (error: any) {
+          toast({
+            title: "Verification failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    handleEmailVerification();
+  }, [navigate, toast]);
+
+  useEffect(() => {
     // Set initial state based on navigation
     if (location.state?.isLogin !== undefined) {
       setIsLogin(location.state.isLogin);
