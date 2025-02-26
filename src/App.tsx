@@ -26,7 +26,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/billing" element={<Billing />} />
-        <Route path="/billing/cart" element={<BillingCart />} />
+        <Route path="/billing/cart/:prescriptionId" element={<BillingCart />} />
         <Route path="/prescriptions" element={<Prescriptions />} />
         <Route path="/patients" element={<Patients />} />
         <Route path="/insights" element={<Insights />} />
