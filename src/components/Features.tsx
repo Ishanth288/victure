@@ -1,5 +1,4 @@
-
-import { BarChart4, UserCircle2, Package, Syringe, Link } from "lucide-react";
+import { BarChart4, UserCircle2, Package, Syringe, Link, FileText } from "lucide-react";
 import { motion } from "framer-motion";
 
 const features = [
@@ -27,6 +26,11 @@ const features = [
     icon: Link,
     title: "Integration",
     description: "Seamlessly integrate with other pharmacy systems, insurance providers, and healthcare platforms."
+  },
+  {
+    icon: FileText,
+    title: "Purchase Book",
+    description: "Efficiently manage and track supplier purchase orders, maintain delivery records, and organize procurement in one place."
   }
 ];
 

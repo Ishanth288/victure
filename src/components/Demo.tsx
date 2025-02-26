@@ -1,74 +1,131 @@
 
 import { motion } from "framer-motion";
-import { LayoutGrid, Users, ShoppingCart, LineChart, FileText } from "lucide-react";
+import { useState } from "react";
+import {
+  LayoutGrid, Package, ShoppingCart, LineChart, FileText, Pill,
+  ChevronLeft, ChevronRight
+} from "lucide-react";
+import { Button } from "./ui/button";
 
-const demoFeatures = [
+const demoSlides = [
   {
+    title: "Intuitive Dashboard",
+    description: "Get a comprehensive overview of your pharmacy operations with our intuitive dashboard. Monitor key metrics, track inventory levels, and stay on top of important notifications.",
+    features: ["Real-time analytics", "Stock alerts", "Sales overview", "Daily tasks"],
     icon: LayoutGrid,
-    title: "Dashboard Overview",
-    description: "Get a quick overview of your pharmacy's performance, sales, and inventory status all in one place.",
-    image: "/placeholder.svg"
+    bgColor: "bg-blue-50"
   },
   {
-    icon: Users,
-    title: "Patient Management",
-    description: "Maintain detailed patient records, prescription history, and streamline communication.",
-    image: "/placeholder.svg"
+    title: "Smart Inventory",
+    description: "Manage your inventory efficiently with our smart tracking system. Get alerts for low stock, expiring medicines, and automated reorder suggestions.",
+    features: ["Expiry tracking", "Auto reordering", "Stock optimization", "Batch tracking"],
+    icon: Package,
+    bgColor: "bg-green-50"
   },
   {
+    title: "Purchase Management",
+    description: "Streamline your procurement process with digital purchase orders. Track deliveries, manage suppliers, and maintain organized records of all transactions.",
+    features: ["Digital PO generation", "Delivery tracking", "Supplier management", "Payment history"],
     icon: ShoppingCart,
-    title: "Billing System",
-    description: "Generate invoices, process payments, and manage transactions effortlessly.",
-    image: "/placeholder.svg"
+    bgColor: "bg-purple-50"
   },
   {
+    title: "Business Analytics",
+    description: "Make data-driven decisions with comprehensive analytics. Track sales trends, inventory turnover, and generate insights for better business growth.",
+    features: ["Sales analytics", "Inventory reports", "Financial insights", "Growth metrics"],
     icon: LineChart,
-    title: "Analytics & Reports",
-    description: "Track sales trends, inventory levels, and generate comprehensive business reports.",
-    image: "/placeholder.svg"
-  },
-  {
-    icon: FileText,
-    title: "Digital Prescriptions",
-    description: "Manage digital prescriptions, verify details, and process refills efficiently.",
-    image: "/placeholder.svg"
+    bgColor: "bg-orange-50"
   }
 ];
 
 export default function Demo() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % demoSlides.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + demoSlides.length) % demoSlides.length);
+  };
+
+  const slide = demoSlides[currentSlide];
+
   return (
     <section className="py-20 bg-white">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <span className="text-primary font-semibold">Demo</span>
           <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mt-2">
-            See Victure in Action
+            Experience Victure in Action
           </h2>
           <p className="mt-4 text-lg text-neutral-600 max-w-2xl mx-auto">
-            Experience how Victure streamlines your pharmacy operations with these powerful features
+            See how our platform transforms your pharmacy operations
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {demoFeatures.map((feature, index) => (
-            <motion.div
-              key={feature.title}
-              className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
+        <motion.div
+          key={currentSlide}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.5 }}
+          className={`rounded-2xl ${slide.bgColor} p-8 md:p-12 max-w-5xl mx-auto`}
+        >
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div className="space-y-6">
+              <div className="inline-block p-3 rounded-lg bg-white/80 backdrop-blur">
+                <slide.icon className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="text-2xl font-bold text-neutral-900">{slide.title}</h3>
+              <p className="text-neutral-600">{slide.description}</p>
+              <ul className="grid grid-cols-2 gap-3">
+                {slide.features.map((feature) => (
+                  <li key={feature} className="flex items-center space-x-2 text-sm text-neutral-700">
+                    <Pill className="w-4 h-4 text-primary" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="relative rounded-lg bg-white/80 backdrop-blur p-6 shadow-lg">
+              {/* Placeholder for feature screenshot/illustration */}
+              <div className="aspect-video rounded bg-neutral-100 flex items-center justify-center">
+                <slide.icon className="w-16 h-16 text-neutral-300" />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-center mt-8 space-x-4">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={prevSlide}
+              className="rounded-full"
             >
-              <feature.icon className="w-12 h-12 text-primary mb-4" />
-              <h3 className="text-xl font-semibold text-neutral-900 mb-2">
-                {feature.title}
-              </h3>
-              <p className="text-neutral-600">
-                {feature.description}
-              </p>
-            </motion.div>
-          ))}
-        </div>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="flex space-x-2">
+              {demoSlides.map((_, index) => (
+                <button
+                  key={index}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    index === currentSlide ? "bg-primary" : "bg-neutral-300"
+                  }`}
+                  onClick={() => setCurrentSlide(index)}
+                />
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={nextSlide}
+              className="rounded-full"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
