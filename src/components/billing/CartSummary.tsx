@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Receipt } from "lucide-react";
+import { Receipt, Info } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/types/billing";
@@ -31,14 +30,25 @@ export function CartSummary({
   const [showBillPreview, setShowBillPreview] = useState(false);
   const [generatedBill, setGeneratedBill] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     checkAuth();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+      setIsLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     setIsAuthenticated(!!session);
+    setIsLoading(false);
   };
 
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
@@ -65,7 +75,6 @@ export function CartSummary({
     }
 
     try {
-      // Create bill with better error handling
       const { data: billData, error: billError } = await supabase
         .from("bills")
         .insert([
@@ -97,7 +106,6 @@ export function CartSummary({
         throw new Error(billError.message);
       }
 
-      // Create bill items
       const billItems = items.map((item) => ({
         bill_id: billData.id,
         inventory_item_id: item.id,
@@ -115,7 +123,6 @@ export function CartSummary({
         throw new Error(billItemsError.message);
       }
 
-      // Update inventory quantities
       for (const item of items) {
         const { data: inventoryData, error: fetchError } = await supabase
           .from("inventory")
@@ -182,10 +189,17 @@ export function CartSummary({
           paymentMethod={paymentMethod}
         />
 
+        {!isLoading && !isAuthenticated && (
+          <div className="flex items-center gap-2 text-sm text-yellow-600 bg-yellow-50 p-2 rounded-md">
+            <Info className="h-4 w-4" />
+            <span>Please log in to generate bills</span>
+          </div>
+        )}
+
         <Button
           className="w-full"
           onClick={handleGenerateBill}
-          disabled={items.length === 0 || !isAuthenticated}
+          disabled={items.length === 0 || !isAuthenticated || isLoading}
         >
           <Receipt className="w-4 h-4 mr-2" />
           Generate Bill
