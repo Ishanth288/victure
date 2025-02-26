@@ -32,15 +32,23 @@ export function SearchMedicineInput({ onAddToCart }: SearchMedicineInputProps) {
         .from("inventory")
         .select("*")
         .or(`name.ilike.%${query}%,generic_name.ilike.%${query}%`)
-        .order("name")
-        .limit(10);
+        .order("name");
 
       if (error) {
         console.error("Supabase error:", error);
         throw error;
       }
 
-      setSearchResults(data || []);
+      const inventoryItems = (data || []).map(item => ({
+        ...item,
+        generic_name: item.generic_name || null,
+        strength: item.strength || null,
+        selling_price: item.selling_price || null,
+        reorder_point: item.reorder_point || 10,
+        storage_condition: item.storage_condition || null
+      })) as InventoryItem[];
+
+      setSearchResults(inventoryItems);
     } catch (error) {
       console.error("Error searching medicines:", error);
       toast({

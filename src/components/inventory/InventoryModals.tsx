@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -5,12 +6,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import InventoryForm from "./InventoryForm";
 import { useInventory } from "@/contexts/InventoryContext";
-import { useCallback } from "react";
 import { type InventoryItem, type InventoryItemFormData } from "@/types/inventory";
-import { supabase } from "@/lib/supabase";
-import { toast } from "@/components/ui/toast";
 
 export default function InventoryModals() {
   const {
@@ -80,13 +80,13 @@ export default function InventoryModals() {
         storage: "",
       });
       setIsAddModalOpen(false);
-      toast({
+      useToast({
         title: "Success",
         description: "Item added successfully",
       });
     } catch (error) {
       console.error("Error adding item:", error);
-      toast({
+      useToast({
         title: "Error",
         description: "Failed to add item",
         variant: "destructive",
@@ -144,13 +144,13 @@ export default function InventoryModals() {
       });
       setEditingItem(null);
       setIsEditModalOpen(false);
-      toast({
+      useToast({
         title: "Success",
         description: "Item updated successfully",
       });
     } catch (error) {
       console.error("Error updating item:", error);
-      toast({
+      useToast({
         title: "Error",
         description: "Failed to update item",
         variant: "destructive",

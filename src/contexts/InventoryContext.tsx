@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from "react";
 import { type InventoryItem, type InventoryItemFormData } from "@/types/inventory";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,7 +56,17 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
         .order("name");
 
       if (error) throw error;
-      setInventory(data || []);
+
+      const inventoryItems = (data || []).map(item => ({
+        ...item,
+        generic_name: item.generic_name || null,
+        strength: item.strength || null,
+        selling_price: item.selling_price || null,
+        reorder_point: item.reorder_point || 10,
+        storage_condition: item.storage_condition || null
+      })) as InventoryItem[];
+
+      setInventory(inventoryItems);
     } catch (error) {
       console.error("Error fetching inventory:", error);
       toast({
@@ -70,7 +79,6 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Subscribe to real-time changes
   useEffect(() => {
     const channel = supabase
       .channel('inventory-changes')
@@ -92,7 +100,6 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Initial fetch
   useEffect(() => {
     fetchInventory();
   }, []);
