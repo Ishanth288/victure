@@ -3,6 +3,14 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -32,6 +40,7 @@ export function CartSummary({
   const { toast } = useToast();
   const [gstPercentage, setGstPercentage] = useState(18);
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState("cash");
   const [isGenerating, setIsGenerating] = useState(false);
 
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
@@ -62,6 +71,7 @@ export function CartSummary({
           gst_amount: gstAmount,
           discount_amount: discountAmount,
           total_amount: total,
+          status: 'completed',
         }])
         .select()
         .single();
@@ -85,7 +95,6 @@ export function CartSummary({
 
       // Update inventory quantities
       for (const item of items) {
-        // First get the current quantity
         const { data: inventoryItem, error: fetchError } = await supabase
           .from("inventory")
           .select("quantity")
@@ -94,7 +103,6 @@ export function CartSummary({
 
         if (fetchError) throw fetchError;
 
-        // Then update with the new quantity
         const { error: updateError } = await supabase
           .from("inventory")
           .update({ 
@@ -153,31 +161,46 @@ export function CartSummary({
       ))}
 
       <div className="space-y-2 pt-4">
-        <div className="flex justify-between">
+        <div className="flex justify-between text-sm">
           <span>Subtotal</span>
           <span>₹{subtotal.toFixed(2)}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span>GST (%)</span>
+          <Label htmlFor="gst">GST (%)</Label>
           <Input
+            id="gst"
             type="number"
             value={gstPercentage}
             onChange={(e) => setGstPercentage(parseFloat(e.target.value))}
             className="w-20"
           />
         </div>
-        <div className="flex justify-between">
+        <div className="flex justify-between text-sm">
           <span>GST Amount</span>
           <span>₹{gstAmount.toFixed(2)}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span>Discount</span>
+          <Label htmlFor="discount">Discount</Label>
           <Input
+            id="discount"
             type="number"
             value={discountAmount}
             onChange={(e) => setDiscountAmount(parseFloat(e.target.value))}
             className="w-20"
           />
+        </div>
+        <div className="flex items-center justify-between pt-4">
+          <Label htmlFor="payment-method">Payment Method</Label>
+          <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select payment method" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="cash">Cash</SelectItem>
+              <SelectItem value="card">Credit/Debit Card</SelectItem>
+              <SelectItem value="upi">UPI</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex justify-between font-bold text-lg pt-2 border-t">
           <span>Total</span>
