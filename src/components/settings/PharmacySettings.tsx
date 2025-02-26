@@ -47,12 +47,20 @@ export default function PharmacySettings() {
       if (error) throw error;
       if (data) {
         setPharmacyData(data);
-        document.title = `${data.pharmacy_name} - Dashboard`;
+        updateTitle(data.pharmacy_name);
       }
     } catch (error: any) {
       console.error("Error fetching pharmacy data:", error);
       toast.error(error.message);
     }
+  };
+
+  const updateTitle = (pharmacyName: string) => {
+    document.title = `${pharmacyName} - Dashboard`;
+    // Update pharmacy name in parent component via localStorage
+    localStorage.setItem('pharmacyName', pharmacyName);
+    // Dispatch an event to notify other components
+    window.dispatchEvent(new Event('pharmacyNameUpdated'));
   };
 
   const handlePharmacyUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -65,24 +73,14 @@ export default function PharmacySettings() {
         throw new Error("No user found");
       }
 
-      const updatedData = {
-        pharmacy_name: pharmacyData.pharmacy_name,
-        owner_name: pharmacyData.owner_name,
-        address: pharmacyData.address,
-        city: pharmacyData.city,
-        state: pharmacyData.state,
-        pincode: pharmacyData.pincode,
-        gstin: pharmacyData.gstin
-      };
-
       const { error } = await supabase
         .from('profiles')
-        .update(updatedData)
+        .update(pharmacyData)
         .eq('id', session.user.id);
 
       if (error) throw error;
 
-      document.title = `${updatedData.pharmacy_name} - Dashboard`;
+      updateTitle(pharmacyData.pharmacy_name);
       toast.success("Pharmacy details updated successfully");
     } catch (error: any) {
       console.error("Error updating pharmacy:", error);

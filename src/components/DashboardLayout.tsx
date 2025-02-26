@@ -33,6 +33,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   useEffect(() => {
     checkAuth();
     fetchProfile();
+
+    // Listen for pharmacy name updates
+    const handlePharmacyNameUpdate = () => {
+      const updatedName = localStorage.getItem('pharmacyName');
+      if (updatedName && profileData) {
+        setProfileData({ ...profileData, pharmacy_name: updatedName });
+      }
+    };
+
+    window.addEventListener('pharmacyNameUpdated', handlePharmacyNameUpdate);
+
+    return () => {
+      window.removeEventListener('pharmacyNameUpdated', handlePharmacyNameUpdate);
+    };
   }, []);
 
   const checkAuth = async () => {
@@ -54,6 +68,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       if (!error && data) {
         setProfileData(data);
+        // Initialize localStorage with pharmacy name
+        localStorage.setItem('pharmacyName', data.pharmacy_name);
       }
     }
   };
