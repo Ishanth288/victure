@@ -102,12 +102,17 @@ export type Database = {
         Row: {
           dosage_form: string | null
           expiry_date: string | null
+          generic_name: string | null
           id: number
           manufacturer: string | null
           name: string
           ndc: string | null
           quantity: number
+          reorder_point: number | null
+          selling_price: number | null
           status: string
+          storage_condition: string | null
+          strength: string | null
           supplier: string | null
           unit_cost: number
           unit_size: string | null
@@ -115,12 +120,17 @@ export type Database = {
         Insert: {
           dosage_form?: string | null
           expiry_date?: string | null
+          generic_name?: string | null
           id?: number
           manufacturer?: string | null
           name: string
           ndc?: string | null
           quantity?: number
+          reorder_point?: number | null
+          selling_price?: number | null
           status?: string
+          storage_condition?: string | null
+          strength?: string | null
           supplier?: string | null
           unit_cost: number
           unit_size?: string | null
@@ -128,12 +138,17 @@ export type Database = {
         Update: {
           dosage_form?: string | null
           expiry_date?: string | null
+          generic_name?: string | null
           id?: number
           manufacturer?: string | null
           name?: string
           ndc?: string | null
           quantity?: number
+          reorder_point?: number | null
+          selling_price?: number | null
           status?: string
+          storage_condition?: string | null
+          strength?: string | null
           supplier?: string | null
           unit_cost?: number
           unit_size?: string | null

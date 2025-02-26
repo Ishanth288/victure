@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from "react";
-import { useToast } from "@/hooks/use-toast"; // Fixed import path
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { type InventoryItem, type InventoryItemFormData, type InventoryItemDB } from "@/types/inventory";
 
@@ -46,6 +46,7 @@ export function useInventoryForm(onSuccess: () => void) {
 
   const handleAddItem = async () => {
     try {
+      // Basic validation
       if (!formData.name || !formData.unitCost || !formData.quantity) {
         toast({
           title: "Error",
@@ -55,52 +56,45 @@ export function useInventoryForm(onSuccess: () => void) {
         return null;
       }
 
+      // Parse numeric values
       const unitCost = parseFloat(formData.unitCost);
       const quantity = parseInt(formData.quantity);
       const reorderPoint = parseInt(formData.reorderPoint || "10");
       const sellingPrice = formData.sellingPrice ? parseFloat(formData.sellingPrice) : null;
 
-      // Additional validation for numeric values
-      if (isNaN(unitCost) || isNaN(quantity) || isNaN(reorderPoint)) {
+      // Numeric validation
+      if (isNaN(unitCost) || isNaN(quantity)) {
         toast({
           title: "Error",
-          description: "Please enter valid numbers for Unit Cost, Quantity, and Reorder Point",
+          description: "Please enter valid numbers for Unit Cost and Quantity",
           variant: "destructive",
         });
         return null;
       }
 
-      // Make sure we have valid positive numbers
-      if (unitCost <= 0 || quantity < 0 || reorderPoint < 0) {
-        toast({
-          title: "Error",
-          description: "Unit Cost must be greater than 0, and Quantity and Reorder Point must be non-negative",
-          variant: "destructive",
-        });
-        return null;
-      }
-
+      // Prepare insert data matching exactly with database schema
       const insertData = {
         name: formData.name.trim(),
-        generic_name: formData.genericName.trim() || null,
         ndc: formData.ndc.trim() || null,
         manufacturer: formData.manufacturer.trim() || null,
         dosage_form: formData.dosageForm || null,
-        strength: formData.strength.trim() || null,
         unit_size: formData.unitSize.trim() || null,
         unit_cost: unitCost,
-        selling_price: sellingPrice,
         quantity: quantity,
-        reorder_point: reorderPoint,
         expiry_date: formData.expiryDate || null,
         supplier: formData.supplier.trim() || null,
-        storage_condition: formData.storage || null,
         status: 'in stock',
+        // New columns
+        generic_name: formData.genericName.trim() || null,
+        strength: formData.strength.trim() || null,
+        selling_price: sellingPrice,
+        reorder_point: reorderPoint,
+        storage_condition: formData.storage || null,
       };
 
-      console.log("Attempting to add item with data:", insertData);
+      console.log("Attempting to insert:", insertData);
 
-      const { data: rawData, error } = await supabase
+      const { data: newItem, error } = await supabase
         .from("inventory")
         .insert([insertData])
         .select()
@@ -111,22 +105,12 @@ export function useInventoryForm(onSuccess: () => void) {
         throw error;
       }
 
-      if (!rawData) {
+      if (!newItem) {
         throw new Error("No data returned from insert");
       }
 
-      const data = rawData as InventoryItemDB;
-
-      const newItem: InventoryItem = {
-        ...data,
-        generic_name: data.generic_name || null,
-        strength: data.strength || null,
-        selling_price: data.selling_price || null,
-        reorder_point: data.reorder_point || 10,
-        storage_condition: data.storage_condition || null,
-      };
-
-      console.log("Successfully added item:", newItem);
+      console.log("Successfully inserted:", newItem);
+      
       resetForm();
       onSuccess();
       toast({
@@ -134,7 +118,8 @@ export function useInventoryForm(onSuccess: () => void) {
         description: "Item added successfully",
       });
 
-      return newItem;
+      return newItem as InventoryItem;
+
     } catch (error) {
       console.error("Error adding item:", error);
       toast({
@@ -148,40 +133,44 @@ export function useInventoryForm(onSuccess: () => void) {
 
   const handleEditItem = async (itemId: number) => {
     try {
-      const { data: rawData, error } = await supabase
+      if (!formData.name || !formData.unitCost || !formData.quantity) {
+        toast({
+          title: "Error",
+          description: "Please fill in all required fields",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      const updateData = {
+        name: formData.name.trim(),
+        ndc: formData.ndc.trim() || null,
+        manufacturer: formData.manufacturer.trim() || null,
+        dosage_form: formData.dosageForm || null,
+        unit_size: formData.unitSize.trim() || null,
+        unit_cost: parseFloat(formData.unitCost),
+        quantity: parseInt(formData.quantity),
+        expiry_date: formData.expiryDate || null,
+        supplier: formData.supplier.trim() || null,
+        generic_name: formData.genericName.trim() || null,
+        strength: formData.strength.trim() || null,
+        selling_price: formData.sellingPrice ? parseFloat(formData.sellingPrice) : null,
+        reorder_point: parseInt(formData.reorderPoint || "10"),
+        storage_condition: formData.storage || null,
+      };
+
+      const { data: updatedItem, error } = await supabase
         .from("inventory")
-        .update({
-          name: formData.name,
-          generic_name: formData.genericName || null,
-          ndc: formData.ndc || null,
-          manufacturer: formData.manufacturer || null,
-          dosage_form: formData.dosageForm || null,
-          strength: formData.strength || null,
-          unit_size: formData.unitSize || null,
-          unit_cost: parseFloat(formData.unitCost),
-          selling_price: parseFloat(formData.sellingPrice) || null,
-          quantity: parseInt(formData.quantity),
-          reorder_point: parseInt(formData.reorderPoint),
-          expiry_date: formData.expiryDate || null,
-          supplier: formData.supplier || null,
-          storage_condition: formData.storage || null,
-        })
+        .update(updateData)
         .eq("id", itemId)
         .select()
         .single();
 
       if (error) throw error;
 
-      const data = rawData as InventoryItemDB;
-
-      const updatedItem: InventoryItem = {
-        ...data,
-        generic_name: data.generic_name || null,
-        strength: data.strength || null,
-        selling_price: data.selling_price || null,
-        reorder_point: data.reorder_point || 10,
-        storage_condition: data.storage_condition || null,
-      };
+      if (!updatedItem) {
+        throw new Error("No data returned from update");
+      }
 
       resetForm();
       onSuccess();
@@ -190,12 +179,13 @@ export function useInventoryForm(onSuccess: () => void) {
         description: "Item updated successfully",
       });
 
-      return updatedItem;
+      return updatedItem as InventoryItem;
+
     } catch (error) {
       console.error("Error updating item:", error);
       toast({
         title: "Error",
-        description: "Failed to update item",
+        description: error instanceof Error ? error.message : "Failed to update item",
         variant: "destructive",
       });
       return null;
