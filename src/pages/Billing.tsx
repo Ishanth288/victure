@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -101,12 +100,11 @@ export default function Billing() {
       // Create patient
       const { data: patientData, error: patientError } = await supabase
         .from("patients")
-        .insert([
-          {
-            name: patientDetails.patientName,
-            phone_number: patientDetails.phoneNumber,
-          },
-        ])
+        .insert({
+          name: patientDetails.patientName,
+          phone_number: patientDetails.phoneNumber,
+          user_id: user.id
+        })
         .select()
         .single();
 
@@ -142,13 +140,12 @@ export default function Billing() {
       // Create prescription
       const { data: prescriptionData, error: prescriptionError } = await supabase
         .from("prescriptions")
-        .insert([
-          {
-            prescription_number: finalPrescriptionNumber,
-            patient_id: patientData.id,
-            doctor_name: patientDetails.doctorName,
-          },
-        ])
+        .insert({
+          prescription_number: finalPrescriptionNumber,
+          patient_id: patientData.id,
+          doctor_name: patientDetails.doctorName,
+          user_id: user.id
+        })
         .select()
         .single();
 

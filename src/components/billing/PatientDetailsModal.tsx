@@ -31,15 +31,19 @@ export function PatientDetailsModal({
     setIsSubmitting(true);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("No authenticated user found");
+      }
+
       // Create patient
       const { data: patientData, error: patientError } = await supabase
         .from("patients")
-        .insert([
-          {
-            name: formData.patientName,
-            phone_number: formData.phoneNumber,
-          },
-        ])
+        .insert({
+          name: formData.patientName,
+          phone_number: formData.phoneNumber,
+          user_id: user.id
+        })
         .select()
         .single();
 
@@ -49,13 +53,12 @@ export function PatientDetailsModal({
       const prescriptionNumber = `PRE-${Date.now()}`;
       const { data: prescriptionData, error: prescriptionError } = await supabase
         .from("prescriptions")
-        .insert([
-          {
-            prescription_number: prescriptionNumber,
-            patient_id: patientData.id,
-            doctor_name: formData.doctorName,
-          },
-        ])
+        .insert({
+          prescription_number: prescriptionNumber,
+          patient_id: patientData.id,
+          doctor_name: formData.doctorName,
+          user_id: user.id
+        })
         .select()
         .single();
 
