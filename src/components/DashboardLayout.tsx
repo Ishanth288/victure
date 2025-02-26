@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -83,8 +82,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-neutral-200">
           <Link to="/dashboard" className="flex items-center space-x-2">
-            <span className="text-xl font-bold text-primary">
-              {profileData?.pharmacy_name || 'Loading...'}
+            <span className="text-xl font-bold text-neutral-900">
+              Victure Healthcare Solutions
             </span>
           </Link>
           <Button
@@ -186,15 +185,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </span>
               </div>
 
-              {/* Center section with company name */}
-              <div className="flex-1 flex justify-center">
-                <span className="text-2xl font-bold text-neutral-900">
-                  Victure Healthcare Solutions
-                </span>
-              </div>
-
               {/* Right section with user info and logout */}
-              <div className="flex items-center space-x-4 px-4">
+              <div className="flex items-center justify-end flex-1 space-x-4 px-4">
                 <span className="text-sm font-medium">
                   {profileData?.owner_name || 'Loading...'}
                 </span>
