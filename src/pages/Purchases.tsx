@@ -11,9 +11,6 @@ import { PurchaseOrderCard } from "@/components/purchases/PurchaseOrderCard";
 import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
 import type { PurchaseOrder } from "@/types/purchases";
 
-// Declare the table name as a type to avoid string literal issues
-type Tables = 'purchase_orders' | 'purchase_order_items';
-
 export default function Purchases() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -45,15 +42,33 @@ export default function Purchases() {
       if (!user) return;
 
       const { data, error } = await supabase
-        .from('purchase_orders' as Tables)
-        .select('*, items:purchase_order_items(*)')
+        .from('purchase_orders')
+        .select(`
+          id,
+          supplier_name,
+          supplier_phone,
+          order_date,
+          status,
+          notes,
+          total_amount,
+          items:purchase_order_items (
+            id,
+            item_name,
+            quantity_ordered,
+            quantity_delivered,
+            unit_cost,
+            total_cost,
+            is_delivered,
+            delivery_notes
+          )
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       if (data) {
-        const formattedOrders: PurchaseOrder[] = data.map((order: any) => ({
+        const formattedOrders: PurchaseOrder[] = data.map((order) => ({
           id: order.id,
           supplier_name: order.supplier_name,
           supplier_phone: order.supplier_phone,
@@ -86,7 +101,7 @@ export default function Purchases() {
       );
 
       const { data: order, error: orderError } = await supabase
-        .from('purchase_orders' as Tables)
+        .from('purchase_orders')
         .insert({
           user_id: user.id,
           supplier_name: data.supplier_name,
@@ -94,7 +109,7 @@ export default function Purchases() {
           order_date: data.order_date,
           total_amount: totalAmount,
           status: 'pending'
-        } as any)
+        })
         .select()
         .single();
 
@@ -111,8 +126,8 @@ export default function Purchases() {
       }));
 
       const { error: itemsError } = await supabase
-        .from('purchase_order_items' as Tables)
-        .insert(items as any[]);
+        .from('purchase_order_items')
+        .insert(items);
 
       if (itemsError) throw itemsError;
 
@@ -140,22 +155,22 @@ export default function Purchases() {
   ) => {
     try {
       const { error: orderError } = await supabase
-        .from('purchase_orders' as Tables)
+        .from('purchase_orders')
         .update({ 
           notes,
           status: items.every(item => item.is_delivered) ? 'delivered' : 'partially_delivered'
-        } as any)
+        })
         .eq('id', orderId);
 
       if (orderError) throw orderError;
 
       for (const item of items) {
         const { error: itemError } = await supabase
-          .from('purchase_order_items' as Tables)
+          .from('purchase_order_items')
           .update({
             quantity_delivered: item.quantity_delivered,
             is_delivered: item.is_delivered,
-          } as any)
+          })
           .eq('id', item.id);
 
         if (itemError) throw itemError;
