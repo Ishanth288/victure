@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,9 +11,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import { INDIAN_STATES } from "@/constants/states";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -25,6 +28,12 @@ export default function Auth() {
     password: "",
     pharmacyName: "",
     ownerName: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
+    gstin: "",
   });
 
   useEffect(() => {
@@ -96,6 +105,12 @@ export default function Auth() {
             data: {
               pharmacy_name: formData.pharmacyName,
               owner_name: formData.ownerName,
+              phone: formData.phone,
+              address: formData.address,
+              city: formData.city,
+              state: formData.state,
+              pincode: formData.pincode,
+              gstin: formData.gstin,
             },
           },
         });
@@ -142,7 +157,7 @@ export default function Auth() {
               {!isLogin && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="pharmacyName">Pharmacy Name</Label>
+                    <Label htmlFor="pharmacyName">Pharmacy Name*</Label>
                     <Input
                       id="pharmacyName"
                       value={formData.pharmacyName}
@@ -150,10 +165,11 @@ export default function Auth() {
                         setFormData({ ...formData, pharmacyName: e.target.value })
                       }
                       required={!isLogin}
+                      placeholder="Enter pharmacy name"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="ownerName">Owner Name</Label>
+                    <Label htmlFor="ownerName">Owner Name*</Label>
                     <Input
                       id="ownerName"
                       value={formData.ownerName}
@@ -161,12 +177,95 @@ export default function Auth() {
                         setFormData({ ...formData, ownerName: e.target.value })
                       }
                       required={!isLogin}
+                      placeholder="Enter owner name"
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number*</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
+                      required={!isLogin}
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Address*</Label>
+                    <Input
+                      id="address"
+                      value={formData.address}
+                      onChange={(e) =>
+                        setFormData({ ...formData, address: e.target.value })
+                      }
+                      required={!isLogin}
+                      placeholder="Enter complete address"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="city">City*</Label>
+                      <Input
+                        id="city"
+                        value={formData.city}
+                        onChange={(e) =>
+                          setFormData({ ...formData, city: e.target.value })
+                        }
+                        required={!isLogin}
+                        placeholder="Enter city"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="state">State*</Label>
+                      <Select 
+                        value={formData.state}
+                        onValueChange={(value) => setFormData({ ...formData, state: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select state" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {INDIAN_STATES.map((state) => (
+                            <SelectItem key={state} value={state}>
+                              {state}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="pincode">PIN Code*</Label>
+                      <Input
+                        id="pincode"
+                        value={formData.pincode}
+                        onChange={(e) =>
+                          setFormData({ ...formData, pincode: e.target.value })
+                        }
+                        required={!isLogin}
+                        placeholder="Enter PIN code"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="gstin">GSTIN (Optional)</Label>
+                      <Input
+                        id="gstin"
+                        value={formData.gstin}
+                        onChange={(e) =>
+                          setFormData({ ...formData, gstin: e.target.value })
+                        }
+                        placeholder="Enter GSTIN"
+                      />
+                    </div>
                   </div>
                 </>
               )}
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email*</Label>
                 <Input
                   id="email"
                   type="email"
@@ -175,10 +274,11 @@ export default function Auth() {
                     setFormData({ ...formData, email: e.target.value })
                   }
                   required
+                  placeholder="Enter email address"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Password*</Label>
                 <Input
                   id="password"
                   type="password"
@@ -187,6 +287,7 @@ export default function Auth() {
                     setFormData({ ...formData, password: e.target.value })
                   }
                   required
+                  placeholder="Enter password"
                 />
               </div>
               <Button className="w-full" type="submit" disabled={isLoading}>
