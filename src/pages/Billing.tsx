@@ -17,6 +17,12 @@ interface PatientDetails {
   prescriptionNumber: string;
 }
 
+const generatePrescriptionNumber = () => {
+  const timestamp = Date.now().toString();
+  const random = Math.random().toString(36).substring(2, 7).toUpperCase();
+  return `PRE-${timestamp}-${random}`;
+};
+
 export default function Billing() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -52,12 +58,13 @@ export default function Billing() {
 
       if (patientError) throw patientError;
 
-      // Create prescription
+      // Create prescription with unique number
+      const prescriptionNumber = patientDetails.prescriptionNumber || generatePrescriptionNumber();
       const { data: prescriptionData, error: prescriptionError } = await supabase
         .from("prescriptions")
         .insert([
           {
-            prescription_number: patientDetails.prescriptionNumber || `PRE-${Date.now()}`,
+            prescription_number: prescriptionNumber,
             patient_id: patientData.id,
             doctor_name: patientDetails.doctorName,
           },
