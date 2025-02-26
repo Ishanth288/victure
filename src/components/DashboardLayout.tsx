@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -81,11 +82,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         } bg-white border-r border-neutral-200 w-64 md:translate-x-0`}
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-neutral-200">
-          <Link to="/dashboard" className="flex items-center space-x-2">
-            <span className="text-xl font-bold text-neutral-900">
-              Victure Healthcare Solutions
-            </span>
-          </Link>
           <Button
             variant="ghost"
             size="icon"
@@ -170,8 +166,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex items-center h-16">
             <div className="flex items-center w-full">
               {/* Left section with back button space and pharmacy name */}
-              <div className="w-16"></div> {/* Space for back button */}
-              <div className="flex items-center space-x-4 px-4">
+              <div className="w-20"></div> {/* Increased space for back button */}
+              <div className="flex items-center">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -180,13 +176,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 >
                   <Menu className="h-6 w-6" />
                 </Button>
-                <span className="text-lg font-medium text-primary">
+                <span className="text-lg font-medium text-primary ml-6">
                   {profileData?.pharmacy_name || 'Loading...'}
                 </span>
               </div>
 
+              {/* Center section with company name */}
+              <div className="flex-1 flex justify-center">
+                <span className="text-2xl font-bold text-neutral-900">
+                  Victure Healthcare Solutions
+                </span>
+              </div>
+
               {/* Right section with user info and logout */}
-              <div className="flex items-center justify-end flex-1 space-x-4 px-4">
+              <div className="flex items-center space-x-4 px-4">
                 <span className="text-sm font-medium">
                   {profileData?.owner_name || 'Loading...'}
                 </span>
