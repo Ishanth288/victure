@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useInventory } from "@/contexts/InventoryContext";
 import InventoryForm from "./InventoryForm";
 import { useInventoryForm } from "@/hooks/useInventoryForm";
@@ -30,23 +31,25 @@ export function AddInventoryModal() {
 
   return (
     <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Add New Item</DialogTitle>
           <DialogDescription>
             Add a new item to your inventory. Fill in all required fields.
           </DialogDescription>
         </DialogHeader>
-        <InventoryForm
-          formData={formData}
-          onInputChange={handleInputChange}
-          onSelectChange={handleSelectChange}
-          onCancel={() => {
-            resetForm();
-            setIsAddModalOpen(false);
-          }}
-          onSubmit={handleSubmit}
-        />
+        <ScrollArea className="h-[calc(90vh-8rem)] px-1">
+          <InventoryForm
+            formData={formData}
+            onInputChange={handleInputChange}
+            onSelectChange={handleSelectChange}
+            onCancel={() => {
+              resetForm();
+              setIsAddModalOpen(false);
+            }}
+            onSubmit={handleSubmit}
+          />
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
