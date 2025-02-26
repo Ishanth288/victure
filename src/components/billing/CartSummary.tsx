@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Receipt, Info } from "lucide-react";
@@ -8,6 +7,9 @@ import { CartItemList } from "./CartItemList";
 import { BillDetailsForm } from "./BillDetailsForm";
 import { BillPreviewDialog } from "./BillPreviewDialog";
 import { useBillGeneration } from "@/hooks/useBillGeneration";
+import { toast } from "@/components/ui/toast";
+import { Label, Input } from "@/components/ui/input";
+import { CartItemRow } from "./CartItemRow";
 
 interface CartSummaryProps {
   items: CartItem[];
@@ -29,11 +31,13 @@ export function CartSummary({
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [generatedBill, setGeneratedBill] = useState(null);
+  const [showBillPreview, setShowBillPreview] = useState(false);
 
   const {
-    showBillPreview,
-    setShowBillPreview,
-    generatedBill,
+    showBillPreview: _showBillPreview,
+    setShowBillPreview: _setShowBillPreview,
+    generatedBill: _generatedBill,
     generateBill,
   } = useBillGeneration();
 
@@ -60,39 +64,178 @@ export function CartSummary({
   const gstAmount = Math.round((subtotal * gstPercentage) / 100);
   const total = Math.round(subtotal + gstAmount - discountAmount);
 
-  const handleGenerateBill = () => {
-    generateBill(
-      items,
-      prescriptionId,
-      subtotal,
-      gstAmount,
-      gstPercentage,
-      discountAmount,
-      total,
-      onBillGenerated
-    );
+  const handleGenerateBill = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to generate bills",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (items.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please add items to the cart",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      const { data: billData, error: billError } = await supabase
+        .from("bills")
+        .insert([
+          {
+            prescription_id: prescriptionId,
+            bill_number: `BILL-${Date.now()}`,
+            subtotal: Math.round(subtotal),
+            gst_amount: Math.round(gstAmount),
+            gst_percentage: gstPercentage,
+            discount_amount: Math.round(discountAmount),
+            total_amount: Math.round(total),
+            status: "completed",
+            user_id: session.user.id
+          },
+        ])
+        .select(`
+          *,
+          prescription:prescriptions (
+            *,
+            patient:patients (
+              name,
+              phone_number
+            )
+          )
+        `)
+        .single();
+
+      if (billError) throw new Error(billError.message);
+
+      const billItems = items.map((item) => ({
+        bill_id: billData.id,
+        inventory_item_id: item.id,
+        quantity: item.quantity,
+        unit_price: item.unit_cost,
+        total_price: item.total,
+      }));
+
+      const { error: billItemsError } = await supabase
+        .from("bill_items")
+        .insert(billItems);
+
+      if (billItemsError) throw new Error(billItemsError.message);
+
+      // Update inventory quantities
+      for (const item of items) {
+        const { data: inventoryData, error: fetchError } = await supabase
+          .from("inventory")
+          .select("quantity")
+          .eq("id", item.id)
+          .single();
+
+        if (fetchError) throw new Error(fetchError.message);
+
+        const newQuantity = (inventoryData?.quantity || 0) - item.quantity;
+        const { error: inventoryError } = await supabase
+          .from("inventory")
+          .update({ quantity: newQuantity })
+          .eq("id", item.id);
+
+        if (inventoryError) throw new Error(inventoryError.message);
+      }
+
+      setGeneratedBill({ ...billData, pharmacy_address: profileData });
+      setShowBillPreview(true);
+      onBillGenerated();
+
+      toast({
+        title: "Success",
+        description: "Bill generated successfully",
+      });
+    } catch (error) {
+      console.error("Error generating bill:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to generate bill",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
     <div className="space-y-4">
-      <CartItemList
-        items={items}
-        onRemoveItem={onRemoveItem}
-        onUpdateQuantity={onUpdateQuantity}
-      />
+      <div className="space-y-4">
+        {items.map((item) => (
+          <CartItemRow
+            key={item.id}
+            {...item}
+            onRemoveItem={onRemoveItem}
+            onUpdateQuantity={onUpdateQuantity}
+          />
+        ))}
+      </div>
 
       <div className="space-y-3 pt-4">
-        <BillDetailsForm
-          subtotal={subtotal}
-          gstPercentage={gstPercentage}
-          gstAmount={gstAmount}
-          discountAmount={discountAmount}
-          total={total}
-          paymentMethod={paymentMethod}
-          onGstChange={setGstPercentage}
-          onDiscountChange={setDiscountAmount}
-          onPaymentMethodChange={setPaymentMethod}
-        />
+        <div className="rounded-lg border p-4">
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span>Subtotal</span>
+              <span className="font-medium truncate">₹{subtotal.toFixed(2)}</span>
+            </div>
+
+            <div className="space-y-2">
+              <Label>GST (%)</Label>
+              <Input
+                type="number"
+                value={gstPercentage}
+                onChange={(e) => setGstPercentage(Number(e.target.value))}
+                min="0"
+                max="100"
+              />
+              <div className="flex justify-between text-sm">
+                <span>GST Amount</span>
+                <span className="truncate">₹{gstAmount.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Discount (₹)</Label>
+              <Input
+                type="number"
+                value={discountAmount}
+                onChange={(e) => setDiscountAmount(Number(e.target.value))}
+                min="0"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Payment Method</Label>
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2"
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              >
+                <option value="cash">Cash</option>
+                <option value="card">Credit Card</option>
+                <option value="upi">UPI</option>
+              </select>
+            </div>
+
+            <div className="flex justify-between font-bold text-lg pt-2 border-t">
+              <span>Total</span>
+              <span className="truncate">₹{total.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
 
         {!isLoading && !isAuthenticated && (
           <div className="flex items-center gap-2 text-sm text-yellow-600 bg-yellow-50 p-2 rounded-md">

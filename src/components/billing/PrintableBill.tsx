@@ -1,6 +1,6 @@
+
 import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { QrCode } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 
 interface PrintableBillProps {
@@ -53,8 +53,8 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
   }, []);
 
   return (
-    <div className="max-w-4xl mx-auto bg-white p-8 print:p-4 print:shadow-none">
-      <div className="text-center mb-6 border-b pb-4">
+    <div className="max-w-4xl mx-auto bg-white p-8 print:p-4">
+      <div className="text-center mb-6 border-b pb-4 print:block">
         <h1 className="text-3xl font-bold text-primary mb-2">
           {pharmacyDetails?.pharmacy_name || 'Loading...'}
         </h1>
@@ -63,8 +63,7 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
         <p className="text-neutral-600">GSTIN: {pharmacyDetails?.gstin || 'N/A'}</p>
       </div>
 
-      {/* Bill Details */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-4 mb-6 print:block">
         <div>
           <h2 className="font-semibold mb-2">Patient Details:</h2>
           <p>Name: {billData.prescription.patient.name}</p>
@@ -80,8 +79,7 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
         </div>
       </div>
 
-      {/* Items Table */}
-      <table className="w-full mb-6">
+      <table className="w-full mb-6 print:block">
         <thead className="bg-gray-50">
           <tr>
             <th className="p-2 text-left border">Sr. No.</th>
@@ -104,8 +102,7 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
         </tbody>
       </table>
 
-      {/* Summary */}
-      <div className="flex justify-end mb-6">
+      <div className="flex justify-end mb-6 print:block">
         <div className="w-64">
           <div className="flex justify-between mb-2">
             <span>Subtotal:</span>
@@ -126,8 +123,7 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="border-t pt-4">
+      <div className="border-t pt-4 print:block">
         <h3 className="font-semibold mb-2">Terms & Conditions:</h3>
         <ul className="text-sm text-gray-600 list-disc list-inside">
           <li>Goods once sold will not be taken back</li>
@@ -136,7 +132,7 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
         </ul>
       </div>
 
-      <div className="text-center mt-6 text-sm text-gray-600">
+      <div className="text-center mt-6 text-sm text-gray-600 print:block">
         <p>Thank you for choosing {pharmacyDetails?.pharmacy_name}!</p>
       </div>
     </div>
