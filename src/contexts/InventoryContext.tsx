@@ -1,18 +1,18 @@
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction } from "react";
 import { type InventoryItem, type InventoryItemFormData } from "@/types/inventory";
 
 interface InventoryContextType {
   inventory: InventoryItem[];
-  setInventory: (items: InventoryItem[]) => void;
+  setInventory: Dispatch<SetStateAction<InventoryItem[]>>;
   selectedItems: number[];
-  setSelectedItems: (ids: number[]) => void;
+  setSelectedItems: Dispatch<SetStateAction<number[]>>;
   isAddModalOpen: boolean;
   setIsAddModalOpen: (open: boolean) => void;
   isEditModalOpen: boolean;
   setIsEditModalOpen: (open: boolean) => void;
   formData: InventoryItemFormData;
-  setFormData: (data: InventoryItemFormData) => void;
+  setFormData: Dispatch<SetStateAction<InventoryItemFormData>>;
   editingItem: InventoryItem | null;
   setEditingItem: (item: InventoryItem | null) => void;
 }

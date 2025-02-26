@@ -27,14 +27,14 @@ export default function InventoryModals() {
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev: InventoryItemFormData) => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   }, [setFormData]);
 
   const handleSelectChange = useCallback((name: string, value: string) => {
-    setFormData((prev: InventoryItemFormData) => ({
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -43,7 +43,7 @@ export default function InventoryModals() {
   const handleAddItem = async () => {
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    const newItem = {
+    const newItem: InventoryItem = {
       id: inventory.length + 1,
       name: formData.name,
       ndc: formData.ndc,
@@ -82,7 +82,7 @@ export default function InventoryModals() {
 
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    const updatedItem = {
+    const updatedItem: InventoryItem = {
       ...editingItem,
       name: formData.name,
       ndc: formData.ndc,
@@ -96,11 +96,11 @@ export default function InventoryModals() {
       status: parseInt(formData.quantity) > parseInt(formData.reorderPoint) ? "In Stock" : "Low Stock",
     };
 
-    setInventory((prev: InventoryItem[]) => 
-      prev.map(item => 
-        item.id === editingItem.id ? updatedItem : item
-      )
+    const updatedInventory = inventory.map(item => 
+      item.id === editingItem.id ? updatedItem : item
     );
+    
+    setInventory(updatedInventory);
     setFormData({
       name: "",
       genericName: "",

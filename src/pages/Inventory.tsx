@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -108,11 +107,10 @@ function InventoryContent() {
         items={inventory}
         selectedItems={selectedItems}
         onToggleItem={(id) => {
-          setSelectedItems((prev: number[]) => 
-            prev.includes(id) 
-              ? prev.filter(item => item !== id)
-              : [...prev, id]
-          );
+          const updatedItems = selectedItems.includes(id)
+            ? selectedItems.filter(item => item !== id)
+            : [...selectedItems, id];
+          setSelectedItems(updatedItems);
         }}
         onEditItem={handleEditClick}
       />
