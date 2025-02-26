@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -10,6 +9,8 @@ import InventoryForm from "./InventoryForm";
 import { useInventory } from "@/contexts/InventoryContext";
 import { useCallback } from "react";
 import { type InventoryItem, type InventoryItemFormData } from "@/types/inventory";
+import { supabase } from "@/lib/supabase";
+import { toast } from "@/components/ui/toast";
 
 export default function InventoryModals() {
   const {
@@ -41,84 +42,120 @@ export default function InventoryModals() {
   }, [setFormData]);
 
   const handleAddItem = async () => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const { data, error } = await supabase.from("inventory").insert([{
+        name: formData.name,
+        generic_name: formData.genericName || null,
+        ndc: formData.ndc || null,
+        manufacturer: formData.manufacturer || null,
+        dosage_form: formData.dosageForm || null,
+        strength: formData.strength || null,
+        unit_size: formData.unitSize || null,
+        unit_cost: parseFloat(formData.unitCost),
+        selling_price: parseFloat(formData.sellingPrice) || null,
+        quantity: parseInt(formData.quantity),
+        reorder_point: parseInt(formData.reorderPoint),
+        expiry_date: formData.expiryDate || null,
+        supplier: formData.supplier || null,
+        storage_condition: formData.storage || null,
+      }]).select().single();
 
-    const newItem: InventoryItem = {
-      id: inventory.length + 1,
-      name: formData.name,
-      ndc: formData.ndc,
-      manufacturer: formData.manufacturer,
-      dosageForm: formData.dosageForm,
-      unitSize: formData.strength,
-      quantity: parseInt(formData.quantity),
-      unitCost: parseFloat(formData.unitCost),
-      expiryDate: formData.expiryDate,
-      supplier: formData.supplier || "Not specified",
-      status: parseInt(formData.quantity) > parseInt(formData.reorderPoint) ? "In Stock" : "Low Stock",
-    };
+      if (error) throw error;
 
-    setInventory([...inventory, newItem]);
-    setFormData({
-      name: "",
-      genericName: "",
-      ndc: "",
-      manufacturer: "",
-      dosageForm: "",
-      strength: "",
-      unitSize: "",
-      unitCost: "",
-      sellingPrice: "",
-      quantity: "",
-      reorderPoint: "",
-      expiryDate: "",
-      supplier: "",
-      storage: "",
-    });
-    setIsAddModalOpen(false);
+      setInventory([...inventory, data]);
+      setFormData({
+        name: "",
+        genericName: "",
+        ndc: "",
+        manufacturer: "",
+        dosageForm: "",
+        strength: "",
+        unitSize: "",
+        unitCost: "",
+        sellingPrice: "",
+        quantity: "",
+        reorderPoint: "",
+        expiryDate: "",
+        supplier: "",
+        storage: "",
+      });
+      setIsAddModalOpen(false);
+      toast({
+        title: "Success",
+        description: "Item added successfully",
+      });
+    } catch (error) {
+      console.error("Error adding item:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add item",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEditSubmit = async () => {
     if (!editingItem) return;
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const { data, error } = await supabase
+        .from("inventory")
+        .update({
+          name: formData.name,
+          generic_name: formData.genericName || null,
+          ndc: formData.ndc || null,
+          manufacturer: formData.manufacturer || null,
+          dosage_form: formData.dosageForm || null,
+          strength: formData.strength || null,
+          unit_size: formData.unitSize || null,
+          unit_cost: parseFloat(formData.unitCost),
+          selling_price: parseFloat(formData.sellingPrice) || null,
+          quantity: parseInt(formData.quantity),
+          reorder_point: parseInt(formData.reorderPoint),
+          expiry_date: formData.expiryDate || null,
+          supplier: formData.supplier || null,
+          storage_condition: formData.storage || null,
+        })
+        .eq("id", editingItem.id)
+        .select()
+        .single();
 
-    const updatedItem: InventoryItem = {
-      ...editingItem,
-      name: formData.name,
-      ndc: formData.ndc,
-      manufacturer: formData.manufacturer,
-      dosageForm: formData.dosageForm,
-      unitSize: formData.strength,
-      quantity: parseInt(formData.quantity),
-      unitCost: parseFloat(formData.unitCost),
-      expiryDate: formData.expiryDate,
-      supplier: formData.supplier || "Not specified",
-      status: parseInt(formData.quantity) > parseInt(formData.reorderPoint) ? "In Stock" : "Low Stock",
-    };
+      if (error) throw error;
 
-    const updatedInventory = inventory.map(item => 
-      item.id === editingItem.id ? updatedItem : item
-    );
-    
-    setInventory(updatedInventory);
-    setFormData({
-      name: "",
-      genericName: "",
-      ndc: "",
-      manufacturer: "",
-      dosageForm: "",
-      strength: "",
-      unitSize: "",
-      unitCost: "",
-      sellingPrice: "",
-      quantity: "",
-      reorderPoint: "",
-      expiryDate: "",
-      supplier: "",
-      storage: "",
-    });
-    setEditingItem(null);
-    setIsEditModalOpen(false);
+      setInventory(inventory.map(item => 
+        item.id === editingItem.id ? data : item
+      ));
+      
+      setFormData({
+        name: "",
+        genericName: "",
+        ndc: "",
+        manufacturer: "",
+        dosageForm: "",
+        strength: "",
+        unitSize: "",
+        unitCost: "",
+        sellingPrice: "",
+        quantity: "",
+        reorderPoint: "",
+        expiryDate: "",
+        supplier: "",
+        storage: "",
+      });
+      setEditingItem(null);
+      setIsEditModalOpen(false);
+      toast({
+        title: "Success",
+        description: "Item updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating item:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update item",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

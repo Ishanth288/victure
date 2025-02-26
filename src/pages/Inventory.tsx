@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -8,48 +9,7 @@ import InventoryTable from "@/components/inventory/InventoryTable";
 import InventoryModals from "@/components/inventory/InventoryModals";
 import InventoryPagination from "@/components/inventory/InventoryPagination";
 import { InventoryProvider, useInventory } from "@/contexts/InventoryContext";
-
-const inventoryData = [
-  {
-    id: 1,
-    name: "Amoxicillin",
-    ndc: "12345-678-90",
-    manufacturer: "PharmaCo",
-    dosageForm: "Tablet",
-    unitSize: "500mg",
-    quantity: 150,
-    unitCost: 2.5,
-    expiryDate: "2024-12-31",
-    supplier: "MedSupply Inc",
-    status: "In Stock",
-  },
-  {
-    id: 2,
-    name: "Lisinopril",
-    ndc: "98765-432-10",
-    manufacturer: "MediPharm",
-    dosageForm: "Tablet",
-    unitSize: "10mg",
-    quantity: 50,
-    unitCost: 1.75,
-    expiryDate: "2024-06-30",
-    supplier: "PharmaDist",
-    status: "Low Stock",
-  },
-  {
-    id: 3,
-    name: "Ibuprofen",
-    ndc: "45678-901-23",
-    manufacturer: "HealthCare",
-    dosageForm: "Capsule",
-    unitSize: "200mg",
-    quantity: 0,
-    unitCost: 0.5,
-    expiryDate: "2024-03-15",
-    supplier: "MedSupply Inc",
-    status: "Out of Stock",
-  },
-];
+import { type InventoryItem } from "@/types/inventory";
 
 function InventoryContent() {
   const {
@@ -64,27 +24,23 @@ function InventoryContent() {
     setEditingItem,
   } = useInventory();
 
-  useEffect(() => {
-    setInventory(inventoryData);
-  }, [setInventory]);
-
-  const handleEditClick = (item: typeof inventory[0]) => {
+  const handleEditClick = (item: InventoryItem) => {
     setEditingItem(item);
     setFormData({
       name: item.name,
-      genericName: "",
-      ndc: item.ndc,
-      manufacturer: item.manufacturer,
-      dosageForm: item.dosageForm,
-      strength: item.unitSize,
-      unitSize: item.unitSize,
-      unitCost: item.unitCost.toString(),
-      sellingPrice: (item.unitCost * 1.3).toString(),
+      genericName: item.generic_name || "",
+      ndc: item.ndc || "",
+      manufacturer: item.manufacturer || "",
+      dosageForm: item.dosage_form || "",
+      strength: item.strength || "",
+      unitSize: item.unit_size || "",
+      unitCost: item.unit_cost.toString(),
+      sellingPrice: (item.selling_price || item.unit_cost * 1.3).toString(),
       quantity: item.quantity.toString(),
-      reorderPoint: "10",
-      expiryDate: item.expiryDate,
-      supplier: item.supplier,
-      storage: "Room Temperature",
+      reorderPoint: item.reorder_point.toString(),
+      expiryDate: item.expiry_date || "",
+      supplier: item.supplier || "",
+      storage: item.storage_condition || "",
     });
     setIsEditModalOpen(true);
   };

@@ -32,7 +32,8 @@ export default function InventoryTable({
     }
   };
 
-  const getExpiryColor = (date: string) => {
+  const getExpiryColor = (date: string | null) => {
+    if (!date) return "text-neutral-600";
     const expiryDate = new Date(date);
     const today = new Date();
     const monthsDiff = (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24 * 30);
@@ -87,9 +88,9 @@ export default function InventoryTable({
                   <td className="px-4 py-3 text-neutral-600">{item.ndc}</td>
                   <td className="px-4 py-3 text-neutral-600">{item.manufacturer}</td>
                   <td className="px-4 py-3">{item.quantity}</td>
-                  <td className="px-4 py-3">${item.unitCost.toFixed(2)}</td>
-                  <td className={`px-4 py-3 ${getExpiryColor(item.expiryDate)}`}>
-                    {new Date(item.expiryDate).toLocaleDateString()}
+                  <td className="px-4 py-3">₹{item.unit_cost.toFixed(2)}</td>
+                  <td className={`px-4 py-3 ${getExpiryColor(item.expiry_date)}`}>
+                    {item.expiry_date ? new Date(item.expiry_date).toLocaleDateString() : 'N/A'}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
