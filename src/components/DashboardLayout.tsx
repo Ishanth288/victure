@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,8 @@ import {
   DollarSign,
   Pill,
   LogOut,
-  LineChart
+  LineChart,
+  ShoppingCart
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -119,6 +119,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <Button variant="ghost" className="w-full justify-start">
               <Users className="mr-2 h-5 w-5" />
               Patients
+            </Button>
+          </Link>
+          <Link to="/purchases">
+            <Button variant="ghost" className="w-full justify-start">
+              <ShoppingCart className="mr-2 h-5 w-5" />
+              Purchases
             </Button>
           </Link>
           <Link to="/insights">
