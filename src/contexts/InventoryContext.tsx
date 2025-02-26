@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from "react";
 import { type InventoryItem, type InventoryItemFormData } from "@/types/inventory";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,14 +58,14 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
-      const inventoryItems = (data || []).map(item => ({
+      const inventoryItems: InventoryItem[] = (data || []).map(item => ({
         ...item,
         generic_name: item.generic_name || null,
         strength: item.strength || null,
         selling_price: item.selling_price || null,
         reorder_point: item.reorder_point || 10,
         storage_condition: item.storage_condition || null
-      })) as InventoryItem[];
+      }));
 
       setInventory(inventoryItems);
     } catch (error) {

@@ -39,14 +39,14 @@ export function SearchMedicineInput({ onAddToCart }: SearchMedicineInputProps) {
         throw error;
       }
 
-      const inventoryItems = (data || []).map(item => ({
+      const inventoryItems: InventoryItem[] = (data || []).map(item => ({
         ...item,
         generic_name: item.generic_name || null,
         strength: item.strength || null,
         selling_price: item.selling_price || null,
         reorder_point: item.reorder_point || 10,
         storage_condition: item.storage_condition || null
-      })) as InventoryItem[];
+      }));
 
       setSearchResults(inventoryItems);
     } catch (error) {

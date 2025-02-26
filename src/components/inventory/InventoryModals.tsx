@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import {
   Dialog,
@@ -13,6 +14,7 @@ import { useInventory } from "@/contexts/InventoryContext";
 import { type InventoryItem, type InventoryItemFormData } from "@/types/inventory";
 
 export default function InventoryModals() {
+  const { toast } = useToast();
   const {
     isAddModalOpen,
     setIsAddModalOpen,
@@ -62,7 +64,16 @@ export default function InventoryModals() {
 
       if (error) throw error;
 
-      setInventory([...inventory, data]);
+      const newItem: InventoryItem = {
+        ...data,
+        generic_name: data.generic_name || null,
+        strength: data.strength || null,
+        selling_price: data.selling_price || null,
+        reorder_point: data.reorder_point || 10,
+        storage_condition: data.storage_condition || null,
+      };
+
+      setInventory([...inventory, newItem]);
       setFormData({
         name: "",
         genericName: "",
@@ -80,13 +91,13 @@ export default function InventoryModals() {
         storage: "",
       });
       setIsAddModalOpen(false);
-      useToast({
+      toast({
         title: "Success",
         description: "Item added successfully",
       });
     } catch (error) {
       console.error("Error adding item:", error);
-      useToast({
+      toast({
         title: "Error",
         description: "Failed to add item",
         variant: "destructive",
@@ -122,8 +133,17 @@ export default function InventoryModals() {
 
       if (error) throw error;
 
+      const updatedItem: InventoryItem = {
+        ...data,
+        generic_name: data.generic_name || null,
+        strength: data.strength || null,
+        selling_price: data.selling_price || null,
+        reorder_point: data.reorder_point || 10,
+        storage_condition: data.storage_condition || null,
+      };
+
       setInventory(inventory.map(item => 
-        item.id === editingItem.id ? data : item
+        item.id === editingItem.id ? updatedItem : item
       ));
       
       setFormData({
@@ -144,13 +164,13 @@ export default function InventoryModals() {
       });
       setEditingItem(null);
       setIsEditModalOpen(false);
-      useToast({
+      toast({
         title: "Success",
         description: "Item updated successfully",
       });
     } catch (error) {
       console.error("Error updating item:", error);
-      useToast({
+      toast({
         title: "Error",
         description: "Failed to update item",
         variant: "destructive",
