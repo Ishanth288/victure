@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Receipt } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -30,12 +30,31 @@ export function CartSummary({
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [showBillPreview, setShowBillPreview] = useState(false);
   const [generatedBill, setGeneratedBill] = useState<any>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    setIsAuthenticated(!!session);
+  };
 
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
   const gstAmount = (subtotal * gstPercentage) / 100;
   const total = subtotal + gstAmount - discountAmount;
 
   const handleGenerateBill = async () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to generate bills",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (items.length === 0) {
       toast({
         title: "Error",
@@ -46,7 +65,7 @@ export function CartSummary({
     }
 
     try {
-      // Create bill
+      // Create bill with better error handling
       const { data: billData, error: billError } = await supabase
         .from("bills")
         .insert([
@@ -73,7 +92,10 @@ export function CartSummary({
         `)
         .single();
 
-      if (billError) throw billError;
+      if (billError) {
+        console.error("Bill creation error:", billError);
+        throw new Error(billError.message);
+      }
 
       // Create bill items
       const billItems = items.map((item) => ({
@@ -88,7 +110,10 @@ export function CartSummary({
         .from("bill_items")
         .insert(billItems);
 
-      if (billItemsError) throw billItemsError;
+      if (billItemsError) {
+        console.error("Bill items creation error:", billItemsError);
+        throw new Error(billItemsError.message);
+      }
 
       // Update inventory quantities
       for (const item of items) {
@@ -98,7 +123,10 @@ export function CartSummary({
           .eq("id", item.id)
           .single();
 
-        if (fetchError) throw fetchError;
+        if (fetchError) {
+          console.error("Inventory fetch error:", fetchError);
+          throw new Error(fetchError.message);
+        }
 
         const newQuantity = (inventoryData?.quantity || 0) - item.quantity;
         const { error: inventoryError } = await supabase
@@ -106,11 +134,15 @@ export function CartSummary({
           .update({ quantity: newQuantity })
           .eq("id", item.id);
 
-        if (inventoryError) throw inventoryError;
+        if (inventoryError) {
+          console.error("Inventory update error:", inventoryError);
+          throw new Error(inventoryError.message);
+        }
       }
 
       setGeneratedBill(billData);
       setShowBillPreview(true);
+      onBillGenerated();
 
       toast({
         title: "Success",
@@ -120,7 +152,7 @@ export function CartSummary({
       console.error("Error generating bill:", error);
       toast({
         title: "Error",
-        description: "Failed to generate bill",
+        description: error instanceof Error ? error.message : "Failed to generate bill",
         variant: "destructive",
       });
     }
@@ -153,7 +185,7 @@ export function CartSummary({
         <Button
           className="w-full"
           onClick={handleGenerateBill}
-          disabled={items.length === 0}
+          disabled={items.length === 0 || !isAuthenticated}
         >
           <Receipt className="w-4 h-4 mr-2" />
           Generate Bill
