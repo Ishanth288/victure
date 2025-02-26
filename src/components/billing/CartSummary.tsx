@@ -87,9 +87,20 @@ export function CartSummary({
 
       // Update inventory quantities
       for (const item of items) {
+        // First get the current quantity
+        const { data: inventoryData, error: fetchError } = await supabase
+          .from("inventory")
+          .select("quantity")
+          .eq("id", item.id)
+          .single();
+
+        if (fetchError) throw fetchError;
+
+        // Then update with the new quantity
+        const newQuantity = (inventoryData?.quantity || 0) - item.quantity;
         const { error: inventoryError } = await supabase
           .from("inventory")
-          .update({ quantity: supabase.raw(`quantity - ${item.quantity}`) })
+          .update({ quantity: newQuantity })
           .eq("id", item.id);
 
         if (inventoryError) throw inventoryError;
