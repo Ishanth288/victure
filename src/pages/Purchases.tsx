@@ -9,29 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { AddPurchaseOrderDialog } from "@/components/purchases/AddPurchaseOrderDialog";
 import { PurchaseOrderCard } from "@/components/purchases/PurchaseOrderCard";
 import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
-import type { PurchaseOrder, PurchaseOrderItem } from "@/types/purchases";
-
-type DBPurchaseOrder = {
-  id: number;
-  supplier_name: string;
-  supplier_phone: string | null;
-  order_date: string;
-  status: string;
-  notes: string | null;
-  total_amount: number;
-  items: DBPurchaseOrderItem[];
-};
-
-type DBPurchaseOrderItem = {
-  id: number;
-  item_name: string;
-  quantity_ordered: number;
-  quantity_delivered: number;
-  unit_cost: number;
-  total_cost: number;
-  is_delivered: boolean;
-  delivery_notes: string | null;
-};
+import { fetchPurchaseOrders, createPurchaseOrder, createOrderItems, updatePurchaseOrderDelivery } from "@/services/purchaseOrderService";
+import { calculateTotalAmount } from "@/utils/purchaseOrderUtils";
+import type { PurchaseOrder } from "@/types/purchases";
 
 export default function Purchases() {
   const navigate = useNavigate();
@@ -43,7 +23,7 @@ export default function Purchases() {
 
   useEffect(() => {
     checkAuth();
-    fetchOrders();
+    loadOrders();
   }, []);
 
   const checkAuth = async () => {
@@ -58,68 +38,13 @@ export default function Purchases() {
     }
   };
 
-  const formatOrderData = (order: DBPurchaseOrder): PurchaseOrder => {
-    const status = order.status as PurchaseOrder['status'];
-    if (!['pending', 'delivered', 'partially_delivered'].includes(status)) {
-      throw new Error(`Invalid status: ${status}`);
-    }
-
-    return {
-      id: order.id,
-      supplier_name: order.supplier_name,
-      supplier_phone: order.supplier_phone || '',
-      order_date: order.order_date,
-      status,
-      notes: order.notes || undefined,
-      total_amount: order.total_amount,
-      items: order.items.map((item): PurchaseOrderItem => ({
-        id: item.id,
-        item_name: item.item_name,
-        quantity_ordered: item.quantity_ordered,
-        quantity_delivered: item.quantity_delivered,
-        unit_cost: item.unit_cost,
-        total_cost: item.total_cost,
-        is_delivered: item.is_delivered,
-        delivery_notes: item.delivery_notes || undefined
-      }))
-    };
-  };
-
-  const fetchOrders = async () => {
+  const loadOrders = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
-        .from('purchase_orders')
-        .select(`
-          id,
-          supplier_name,
-          supplier_phone,
-          order_date,
-          status,
-          notes,
-          total_amount,
-          items:purchase_order_items (
-            id,
-            item_name,
-            quantity_ordered,
-            quantity_delivered,
-            unit_cost,
-            total_cost,
-            is_delivered,
-            delivery_notes
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      if (data) {
-        const formattedOrders = data.map((order: DBPurchaseOrder) => formatOrderData(order));
-        setOrders(formattedOrders);
-      }
+      const orders = await fetchPurchaseOrders(user.id);
+      setOrders(orders);
     } catch (error) {
       console.error("Error fetching orders:", error);
       toast({
@@ -135,25 +60,16 @@ export default function Purchases() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const totalAmount = data.items.reduce(
-        (sum: number, item: any) => sum + item.quantity_ordered * item.unit_cost,
-        0
-      );
+      const totalAmount = calculateTotalAmount(data.items);
+      const orderData = {
+        supplier_name: data.supplier_name,
+        supplier_phone: data.supplier_phone,
+        order_date: data.order_date,
+        total_amount: totalAmount,
+        status: 'pending'
+      };
 
-      const { data: order, error: orderError } = await supabase
-        .from('purchase_orders')
-        .insert({
-          user_id: user.id,
-          supplier_name: data.supplier_name,
-          supplier_phone: data.supplier_phone,
-          order_date: data.order_date,
-          total_amount: totalAmount,
-          status: 'pending'
-        })
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
+      const order = await createPurchaseOrder(user.id, orderData);
 
       const items = data.items.map((item: any) => ({
         purchase_order_id: order.id,
@@ -165,11 +81,7 @@ export default function Purchases() {
         is_delivered: false
       }));
 
-      const { error: itemsError } = await supabase
-        .from('purchase_order_items')
-        .insert(items);
-
-      if (itemsError) throw itemsError;
+      await createOrderItems(items);
 
       toast({
         title: "Success",
@@ -177,7 +89,7 @@ export default function Purchases() {
       });
 
       setShowAddDialog(false);
-      fetchOrders();
+      loadOrders();
     } catch (error) {
       console.error("Error creating order:", error);
       toast({
@@ -194,34 +106,12 @@ export default function Purchases() {
     notes: string
   ) => {
     try {
-      const { error: orderError } = await supabase
-        .from('purchase_orders')
-        .update({ 
-          notes,
-          status: items.every(item => item.is_delivered) ? 'delivered' : 'partially_delivered'
-        })
-        .eq('id', orderId);
-
-      if (orderError) throw orderError;
-
-      for (const item of items) {
-        const { error: itemError } = await supabase
-          .from('purchase_order_items')
-          .update({
-            quantity_delivered: item.quantity_delivered,
-            is_delivered: item.is_delivered,
-          })
-          .eq('id', item.id);
-
-        if (itemError) throw itemError;
-      }
-
+      await updatePurchaseOrderDelivery(orderId, items, notes);
       toast({
         title: "Success",
         description: "Delivery details updated successfully",
       });
-
-      fetchOrders();
+      loadOrders();
     } catch (error) {
       console.error("Error updating delivery:", error);
       toast({
