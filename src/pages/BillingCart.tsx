@@ -26,6 +26,23 @@ export default function BillingCart() {
   const [prescriptionDetails, setPrescriptionDetails] = useState<any>(null);
 
   useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Authentication Required",
+          description: "Please login to access billing",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return;
+      }
+    };
+
+    checkAuth();
+  }, [navigate, toast]);
+
+  useEffect(() => {
     const fetchPrescriptionDetails = async () => {
       if (!prescriptionId) return;
       

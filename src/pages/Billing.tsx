@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,6 @@ interface PatientDetails {
 }
 
 const generatePrescriptionNumber = () => {
-  // Use more components to make it more unique
   const dateStr = new Date().toISOString().replace(/[-:]/g, '').slice(0, 14);
   const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
   const randomLetters = Math.random().toString(36).substring(2, 5).toUpperCase();
@@ -36,6 +35,23 @@ export default function Billing() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Authentication Required",
+          description: "Please login to access billing",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return;
+      }
+    };
+
+    checkAuth();
+  }, [navigate, toast]);
+
   const handleStartBilling = async () => {
     if (isSubmitting) return;
 
@@ -51,6 +67,18 @@ export default function Billing() {
     setIsSubmitting(true);
 
     try {
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "Please login to continue",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return;
+      }
+
       // Check if prescription number already exists
       if (patientDetails.prescriptionNumber) {
         const { data: existingPrescription } = await supabase
@@ -111,7 +139,7 @@ export default function Billing() {
         }
       }
 
-      // Create prescription with verified unique number
+      // Create prescription
       const { data: prescriptionData, error: prescriptionError } = await supabase
         .from("prescriptions")
         .insert([
