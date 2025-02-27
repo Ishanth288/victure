@@ -53,86 +53,85 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
   }, []);
 
   return (
-    <div className="max-w-4xl mx-auto bg-white p-8 print:p-4">
-      <div className="text-center mb-6 border-b pb-4 print:block">
-        <h1 className="text-3xl font-bold text-primary mb-2">
+    <div className="w-full bg-white" style={{ maxHeight: '148mm' }}>
+      <div className="text-center mb-4 border-b pb-4">
+        <h1 className="text-2xl font-bold text-primary mb-1">
           {pharmacyDetails?.pharmacy_name || 'Loading...'}
         </h1>
-        <p className="text-neutral-600">{pharmacyDetails?.address}</p>
-        <p className="text-neutral-600">{pharmacyDetails?.city}, {pharmacyDetails?.state} - {pharmacyDetails?.pincode}</p>
-        <p className="text-neutral-600">GSTIN: {pharmacyDetails?.gstin || 'N/A'}</p>
+        <p className="text-sm text-neutral-600">{pharmacyDetails?.address}</p>
+        <p className="text-sm text-neutral-600">{pharmacyDetails?.city}, {pharmacyDetails?.state} - {pharmacyDetails?.pincode}</p>
+        <p className="text-sm text-neutral-600">GSTIN: {pharmacyDetails?.gstin || 'N/A'}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-6 print:block">
+      <div className="grid grid-cols-2 gap-2 mb-4 text-sm">
         <div>
-          <h2 className="font-semibold mb-2">Patient Details:</h2>
+          <h2 className="font-semibold mb-1">Patient Details:</h2>
           <p>Name: {billData.prescription.patient.name}</p>
           <p>Phone: {billData.prescription.patient.phone_number}</p>
           <p>Doctor: Dr. {billData.prescription.doctor_name}</p>
           <p>Prescription: {billData.prescription.prescription_number}</p>
         </div>
         <div className="text-right">
-          <h2 className="font-semibold mb-2">Bill Details:</h2>
+          <h2 className="font-semibold mb-1">Bill Details:</h2>
           <p>Bill No: {billData.bill_number}</p>
           <p>Date: {format(new Date(billData.date), 'dd/MM/yyyy')}</p>
           <p>Time: {format(new Date(billData.date), 'hh:mm a')}</p>
         </div>
       </div>
 
-      <table className="w-full mb-6 print:w-full">
+      <table className="w-full mb-4 text-sm">
         <thead className="bg-gray-50">
           <tr>
-            <th className="p-2 text-left border">Sr. No.</th>
-            <th className="p-2 text-left border">Item Name</th>
-            <th className="p-2 text-left border">Qty</th>
-            <th className="p-2 text-left border">Unit Price</th>
-            <th className="p-2 text-left border">Total</th>
+            <th className="p-1 text-left border">Sr. No.</th>
+            <th className="p-1 text-left border">Item Name</th>
+            <th className="p-1 text-left border">Qty</th>
+            <th className="p-1 text-left border">Unit Price</th>
+            <th className="p-1 text-left border">Total</th>
           </tr>
         </thead>
         <tbody>
           {items.map((item, index) => (
             <tr key={item.id}>
-              <td className="p-2 border">{index + 1}</td>
-              <td className="p-2 border">{item.name}</td>
-              <td className="p-2 border">{item.quantity}</td>
-              <td className="p-2 border">₹{item.unit_cost.toFixed(2)}</td>
-              <td className="p-2 border">₹{item.total.toFixed(2)}</td>
+              <td className="p-1 border">{index + 1}</td>
+              <td className="p-1 border">{item.name}</td>
+              <td className="p-1 border">{item.quantity}</td>
+              <td className="p-1 border">₹{item.unit_cost.toFixed(2)}</td>
+              <td className="p-1 border">₹{item.total.toFixed(2)}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <div className="flex justify-end mb-6 print:block">
-        <div className="w-64 print:w-full">
-          <div className="flex justify-between mb-2">
+      <div className="flex justify-end mb-4">
+        <div className="w-48">
+          <div className="flex justify-between mb-1 text-sm">
             <span>Subtotal:</span>
             <span>₹{Math.round(billData.subtotal).toFixed(2)}</span>
           </div>
-          <div className="flex justify-between mb-2">
+          <div className="flex justify-between mb-1 text-sm">
             <span>GST ({billData.gst_percentage}%):</span>
             <span>₹{Math.round(billData.gst_amount).toFixed(2)}</span>
           </div>
-          <div className="flex justify-between mb-2">
+          <div className="flex justify-between mb-1 text-sm">
             <span>Discount:</span>
             <span>₹{Math.round(billData.discount_amount).toFixed(2)}</span>
           </div>
-          <div className="flex justify-between font-bold border-t pt-2">
+          <div className="flex justify-between font-bold border-t pt-1 text-sm">
             <span>Total:</span>
             <span>₹{Math.round(billData.total_amount).toFixed(2)}</span>
           </div>
         </div>
       </div>
 
-      <div className="border-t pt-4 print:block">
-        <h3 className="font-semibold mb-2">Terms & Conditions:</h3>
-        <ul className="text-sm text-gray-600 list-disc list-inside">
+      <div className="text-xs text-gray-600">
+        <h3 className="font-semibold mb-1">Terms & Conditions:</h3>
+        <ul className="list-disc list-inside">
           <li>Goods once sold will not be taken back</li>
           <li>Subject to local jurisdiction</li>
-          <li>This is a computer-generated bill</li>
         </ul>
       </div>
 
-      <div className="text-center mt-6 text-sm text-gray-600 print:block">
+      <div className="text-center mt-2 text-xs text-gray-600">
         <p>Thank you for choosing {pharmacyDetails?.pharmacy_name}!</p>
       </div>
     </div>

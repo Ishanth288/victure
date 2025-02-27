@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import BackButton from "./BackButton";
 import {
   LayoutGrid, Package, Users, FileText, BarChart3, Settings, Menu,
-  X, DollarSign, Pill, LogOut, LineChart, ShoppingCart, User, FileTerminal
+  X, DollarSign, Pill, LogOut, LineChart, ShoppingCart, FileTerminal
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -150,12 +151,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <Button variant="ghost" className="w-full justify-start">
                 <Settings className="mr-2 h-5 w-5" />
                 Settings
-              </Button>
-            </Link>
-            <Link to="/profile">
-              <Button variant="ghost" className="w-full justify-start">
-                <User className="mr-2 h-5 w-5" />
-                Profile
               </Button>
             </Link>
             <Button variant="ghost" className="w-full justify-start" onClick={handleTermsClick}>

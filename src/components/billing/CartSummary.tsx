@@ -94,7 +94,7 @@ export function CartSummary({
 
   const handlePrint = () => {
     if (!billPreviewRef.current) return;
-
+    
     const printContent = billPreviewRef.current;
     const originalDisplay = document.body.style.display;
     const originalOverflow = document.body.style.overflow;
@@ -106,12 +106,17 @@ export function CartSummary({
         @page {
           size: A4;
           margin: 10mm;
-          scale: 1;
+        }
+        
+        html, body {
+          height: 148mm !important; /* Restrict to upper half of A4 */
+          overflow: hidden !important;
+          margin: 0 !important;
+          padding: 0 !important;
         }
         
         body * {
           visibility: hidden;
-          overflow: visible !important;
         }
         
         #print-content, #print-content * {
@@ -123,18 +128,12 @@ export function CartSummary({
           left: 0;
           top: 0;
           width: 100%;
-          transform: scale(0.98);
           transform-origin: top left;
         }
         
-        /* Additional rules to prevent blank pages */
-        html, body {
-          height: auto !important;
-          overflow: visible !important;
-        }
-        
-        .page-break {
-          display: none;
+        /* Force to fit in upper half */
+        .print-content {
+          max-height: 148mm !important;
         }
       }
     `;
@@ -142,9 +141,6 @@ export function CartSummary({
     
     // Add ID to print content
     printContent.setAttribute('id', 'print-content');
-    
-    // Prepare for printing
-    document.body.style.overflow = 'visible';
     
     // Print
     window.print();
@@ -175,19 +171,33 @@ export function CartSummary({
         backgroundColor: "#ffffff"
       });
       
-      // Create PDF
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/png');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      // Create PDF (A4 size)
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      // Calculate dimensions to fit content in upper half of the page
+      const imgWidth = 210 - 20; // A4 width minus margins
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const maxHeight = 148; // Upper half of A4 (297/2)
+      
+      // Scale down if needed to fit in upper half
+      const finalImgHeight = Math.min(imgHeight, maxHeight);
+      const scaleFactor = finalImgHeight / imgHeight;
+      const finalImgWidth = imgWidth * scaleFactor;
+      
+      // Center the image horizontally
+      const xPos = (210 - finalImgWidth) / 2;
       
       // Add image to PDF
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', xPos, 10, finalImgWidth, finalImgHeight);
       
       // Add watermark
       pdf.setFontSize(12);
       pdf.setTextColor(180, 180, 180);
-      pdf.text('Victure', pdf.internal.pageSize.getWidth() - 20, 10);
+      pdf.text('Victure', 190, 10);
       
       // Save PDF
       pdf.save(`bill-${generatedBill?.bill_number || 'export'}.pdf`);
@@ -483,8 +493,8 @@ export function CartSummary({
               </Button>
             </div>
           </div>
-          <ScrollArea className="h-[650px] w-full rounded-md border" scrollHideDelay={150}>
-            <div ref={billPreviewRef} className="p-4">
+          <ScrollArea className="h-[500px] w-full rounded-md border" scrollHideDelay={150}>
+            <div ref={billPreviewRef} className="p-4 print-content">
               <PrintableBill billData={generatedBill} items={items} />
             </div>
           </ScrollArea>

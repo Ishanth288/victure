@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 
 interface InventoryHeaderProps {
   onAddClick: () => void;
+  onExportClick: () => void;
 }
 
-export default function InventoryHeader({ onAddClick }: InventoryHeaderProps) {
+export default function InventoryHeader({ onAddClick, onExportClick }: InventoryHeaderProps) {
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
@@ -28,7 +29,7 @@ export default function InventoryHeader({ onAddClick }: InventoryHeaderProps) {
           <Filter className="h-4 w-4" />
           Filter
         </Button>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" onClick={onExportClick}>
           <Download className="h-4 w-4" />
           Export
         </Button>
