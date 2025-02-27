@@ -1,7 +1,7 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Plus, Download, Printer } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -12,6 +12,8 @@ import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
 import { fetchPurchaseOrders, createPurchaseOrder, createOrderItems, updatePurchaseOrderDelivery } from "@/services/purchaseOrderService";
 import { calculateTotalAmount } from "@/utils/purchaseOrderUtils";
 import type { PurchaseOrder } from "@/types/purchases";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 export default function Purchases() {
   const navigate = useNavigate();
@@ -20,6 +22,7 @@ export default function Purchases() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedBill, setSelectedBill] = useState<any>(null);
   const [showBillPreview, setShowBillPreview] = useState(false);
+  const ordersContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     checkAuth();
@@ -148,18 +151,120 @@ export default function Purchases() {
     setShowBillPreview(true);
   };
 
+  const handleExportOrders = async () => {
+    if (!ordersContainerRef.current) return;
+    
+    try {
+      // Create canvas from the content
+      const canvas = await html2canvas(ordersContainerRef.current, {
+        scale: 2, // Higher scale for better quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff"
+      });
+      
+      // Create PDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgData = canvas.toDataURL('image/png');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      // Add image to PDF
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      
+      // Add watermark
+      pdf.setFontSize(12);
+      pdf.setTextColor(180, 180, 180);
+      pdf.text('Victure', pdf.internal.pageSize.getWidth() - 20, 10);
+      
+      // Save PDF
+      pdf.save(`purchase-orders-${new Date().toISOString().split('T')[0]}.pdf`);
+      
+      toast({
+        title: "Export successful",
+        description: "Purchase orders exported as PDF",
+      });
+    } catch (error) {
+      console.error("Error exporting orders:", error);
+      toast({
+        title: "Export failed",
+        description: "Failed to export purchase orders",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePrintOrders = () => {
+    if (!ordersContainerRef.current) return;
+    
+    const printContent = ordersContainerRef.current;
+    const originalDisplay = document.body.style.display;
+    const originalOverflow = document.body.style.overflow;
+    
+    // Create a style element for print
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @media print {
+        body * {
+          visibility: hidden;
+          overflow: visible !important;
+        }
+        #print-content, #print-content * {
+          visibility: visible;
+        }
+        #print-content {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Add ID to print content
+    printContent.setAttribute('id', 'print-content');
+    
+    // Prepare for printing
+    document.body.style.overflow = 'visible';
+    
+    // Print
+    window.print();
+    
+    // Cleanup
+    printContent.removeAttribute('id');
+    document.body.style.display = originalDisplay;
+    document.body.style.overflow = originalOverflow;
+    document.head.removeChild(style);
+    
+    toast({
+      title: "Print job sent",
+      description: "The purchase orders have been sent to your printer.",
+    });
+  };
+
   return (
     <DashboardLayout>
       <div className="container mx-auto px-4 py-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Purchase Orders</h1>
-          <Button onClick={() => setShowAddDialog(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Order
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleExportOrders}>
+              <Download className="w-4 h-4 mr-2" />
+              Export
+            </Button>
+            <Button variant="outline" onClick={handlePrintOrders}>
+              <Printer className="w-4 h-4 mr-2" />
+              Print
+            </Button>
+            <Button onClick={() => setShowAddDialog(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Order
+            </Button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div ref={ordersContainerRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {orders.map((order) => (
             <PurchaseOrderCard
               key={order.id}

@@ -6,9 +6,11 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Eye } from "lucide-react";
+import { Eye, Download, Printer } from "lucide-react";
 import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
 import { useToast } from "@/components/ui/use-toast";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 interface Prescription {
   id: number;
@@ -110,8 +112,8 @@ export default function Prescriptions() {
       if (error) throw error;
 
       const items = billData.bill_items.map((item: any) => ({
-        id: item.inventory_item.id,
-        name: item.inventory_item.name,
+        id: item.inventory_item?.id || 0,
+        name: item.inventory_item?.name || 'Unknown',
         quantity: item.quantity,
         unit_cost: item.unit_price,
         total: item.total_price,

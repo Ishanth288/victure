@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -11,6 +12,7 @@ import { TimeframeSelector } from "@/components/insights/TimeframeSelector";
 import { RevenueTrendChart } from "@/components/insights/RevenueTrendChart";
 import { ProductsChart } from "@/components/insights/ProductsChart";
 import { RevenueDistribution } from "@/components/insights/RevenueDistribution";
+import { useToast } from "@/hooks/use-toast";
 
 interface SalesData {
   date: string;
@@ -45,6 +47,7 @@ export default function Insights() {
   });
   const [loading, setLoading] = useState(true);
   const reportRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchInsights();
@@ -149,7 +152,7 @@ export default function Insights() {
       if (productsError) throw productsError;
 
       const productSales = productsData.reduce((acc: Record<string, number>, curr) => {
-        const productName = curr.inventory_item.name;
+        const productName = curr.inventory_item?.name || 'Unknown';
         acc[productName] = (acc[productName] || 0) + curr.total_price;
         return acc;
       }, {});
@@ -171,21 +174,92 @@ export default function Insights() {
     if (!reportRef.current) return;
 
     try {
-      const canvas = await html2canvas(reportRef.current);
-      const imgData = canvas.toDataURL('image/png');
+      // Create canvas from the content
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2, // Higher scale for better quality
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff"
+      });
+      
+      // Create PDF
       const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgData = canvas.toDataURL('image/png');
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
+      // Add image to PDF
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      
+      // Add watermark
+      pdf.setFontSize(12);
+      pdf.setTextColor(180, 180, 180);
+      pdf.text('Victure', pdf.internal.pageSize.getWidth() - 20, 10);
+      
+      // Save PDF
       pdf.save(`sales-report-${timeframe}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      
+      toast({
+        title: "Export successful",
+        description: "The insights report has been exported as a PDF.",
+      });
     } catch (error) {
       console.error('Error exporting report:', error);
+      toast({
+        title: "Export failed",
+        description: "Failed to export the insights report.",
+        variant: "destructive",
+      });
     }
   };
 
   const handlePrint = () => {
+    if (!reportRef.current) return;
+    
+    const printContent = reportRef.current;
+    const originalDisplay = document.body.style.display;
+    const originalOverflow = document.body.style.overflow;
+    
+    // Create a style element for print
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @media print {
+        body * {
+          visibility: hidden;
+          overflow: visible !important;
+        }
+        #print-content, #print-content * {
+          visibility: visible;
+        }
+        #print-content {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Add ID to print content
+    printContent.setAttribute('id', 'print-content');
+    
+    // Prepare for printing
+    document.body.style.overflow = 'visible';
+    
+    // Print
     window.print();
+    
+    // Cleanup
+    printContent.removeAttribute('id');
+    document.body.style.display = originalDisplay;
+    document.body.style.overflow = originalOverflow;
+    document.head.removeChild(style);
+    
+    toast({
+      title: "Print job sent",
+      description: "The report has been sent to your printer.",
+    });
   };
 
   if (loading) {

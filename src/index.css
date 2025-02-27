@@ -82,23 +82,40 @@
     size: A4;
   }
 
-  body * {
+  body {
     visibility: hidden;
+    width: 100%;
+    height: 100%;
+    overflow: visible !important;
   }
 
-  .print-content,
-  .print-content * {
+  #print-content {
     visibility: visible;
-  }
-
-  .print-content {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
   }
 
-  .no-print {
-    display: none;
+  #print-content * {
+    visibility: visible;
+  }
+
+  .no-print, .no-print * {
+    display: none !important;
+  }
+
+  table {
+    page-break-inside: avoid;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  .print-content {
+    visibility: visible;
+    width: 100%;
   }
 }

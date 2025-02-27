@@ -79,7 +79,7 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
         </div>
       </div>
 
-      <table className="w-full mb-6 print:block">
+      <table className="w-full mb-6 print:w-full">
         <thead className="bg-gray-50">
           <tr>
             <th className="p-2 text-left border">Sr. No.</th>
@@ -103,7 +103,7 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
       </table>
 
       <div className="flex justify-end mb-6 print:block">
-        <div className="w-64">
+        <div className="w-64 print:w-full">
           <div className="flex justify-between mb-2">
             <span>Subtotal:</span>
             <span>₹{Math.round(billData.subtotal).toFixed(2)}</span>
