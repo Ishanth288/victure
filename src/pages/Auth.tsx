@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -23,6 +22,8 @@ export default function Auth() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationSuccess, setVerificationSuccess] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -37,30 +38,36 @@ export default function Auth() {
   });
 
   useEffect(() => {
-    const handleEmailVerification = async () => {
+    const checkEmailVerificationToken = async () => {
+      setIsVerifying(true);
+      
       const hash = window.location.hash;
       const searchParams = new URLSearchParams(window.location.search);
+      
       const accessToken = searchParams.get('access_token') || hash.split('access_token=')[1]?.split('&')[0];
-
-      if ((hash && hash.includes('type=email_verification')) || accessToken) {
+      const tokenType = searchParams.get('type') || (hash.includes('type=') ? hash.split('type=')[1]?.split('&')[0] : null);
+      
+      if (tokenType === 'recovery' || tokenType === 'signup' || tokenType === 'email_verification' || accessToken) {
         try {
           if (accessToken) {
             const { data: { session }, error } = await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: '',
             });
+            
             if (error) throw error;
+            
+            setVerificationSuccess(true);
+            
+            toast({
+              title: "Email verified successfully!",
+              description: "You can now log in to your account.",
+            });
+            
+            setIsLogin(true);
           } else {
-            const { error } = await supabase.auth.getSession();
-            if (error) throw error;
+            throw new Error("Verification link appears to be invalid or expired.");
           }
-          
-          toast({
-            title: "Email verified successfully!",
-            description: "You can now log in to your account.",
-          });
-          
-          navigate("/auth", { state: { isLogin: true } });
         } catch (error: any) {
           console.error('Verification error:', error);
           toast({
@@ -68,11 +75,15 @@ export default function Auth() {
             description: error.message,
             variant: "destructive",
           });
+        } finally {
+          setIsVerifying(false);
         }
+      } else {
+        setIsVerifying(false);
       }
     };
 
-    handleEmailVerification();
+    checkEmailVerificationToken();
   }, [navigate, toast]);
 
   useEffect(() => {
@@ -95,10 +106,14 @@ export default function Auth() {
         if (error) throw error;
         
         if (data.session) {
+          toast({
+            title: "Login successful!",
+            description: "Welcome to your pharmacy dashboard.",
+          });
           navigate("/dashboard");
         }
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
@@ -112,15 +127,20 @@ export default function Auth() {
               pincode: formData.pincode,
               gstin: formData.gstin,
             },
+            emailRedirectTo: `${window.location.origin}/auth`,
           },
         });
 
         if (error) throw error;
 
-        toast({
-          title: "Registration successful!",
-          description: "Please check your email to verify your account.",
-        });
+        if (data.user) {
+          toast({
+            title: "Registration successful!",
+            description: "Please check your email to verify your account. Click the verification link to complete the process.",
+          });
+          
+          setIsLogin(true);
+        }
       }
     } catch (error: any) {
       toast({
@@ -132,6 +152,64 @@ export default function Auth() {
       setIsLoading(false);
     }
   };
+
+  if (isVerifying) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-2xl text-center">Verifying Your Email</CardTitle>
+            <CardDescription className="text-center">
+              Please wait while we verify your email address...
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center py-6">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (verificationSuccess) {
+    return (
+      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl text-center text-green-600">
+                Email Verified Successfully!
+              </CardTitle>
+              <CardDescription className="text-center">
+                Your account has been verified. You can now log in.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center space-y-4">
+              <div className="rounded-full bg-green-100 p-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <Button 
+                className="w-full" 
+                onClick={() => {
+                  setVerificationSuccess(false);
+                  setIsLogin(true);
+                }}
+              >
+                Continue to Login
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
