@@ -6,17 +6,19 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Eye, Download, Printer } from "lucide-react";
+import { Eye, Download, Printer, XCircle, CheckCircle } from "lucide-react";
 import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
 import { useToast } from "@/components/ui/use-toast";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Prescription {
   id: number;
   prescription_number: string;
   date: string;
   doctor_name: string;
+  status: string;
   patient: {
     name: string;
     phone_number: string;
@@ -36,6 +38,7 @@ export default function Prescriptions() {
   const [loading, setLoading] = useState(true);
   const [selectedBill, setSelectedBill] = useState<any>(null);
   const [showBillPreview, setShowBillPreview] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("active");
 
   useEffect(() => {
     checkAuth();
@@ -85,6 +88,40 @@ export default function Prescriptions() {
     }
   };
 
+  const handleToggleStatus = async (prescriptionId: number, currentStatus: string) => {
+    try {
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      
+      const { error } = await supabase
+        .from("prescriptions")
+        .update({ status: newStatus })
+        .eq("id", prescriptionId);
+
+      if (error) throw error;
+
+      // Update local state
+      setPrescriptions(prevPrescriptions => 
+        prevPrescriptions.map(prescription => 
+          prescription.id === prescriptionId
+            ? { ...prescription, status: newStatus }
+            : prescription
+        )
+      );
+
+      toast({
+        title: "Status Updated",
+        description: `Prescription marked as ${newStatus}`,
+      });
+    } catch (error) {
+      console.error("Error updating prescription status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update prescription status",
+        variant: "destructive",
+      });
+    }
+  };
+
   const viewBill = async (billId: number) => {
     try {
       const { data: billData, error } = await supabase
@@ -130,6 +167,10 @@ export default function Prescriptions() {
       });
     }
   };
+  
+  const filteredPrescriptions = prescriptions.filter(prescription => 
+    activeTab === "all" || prescription.status === activeTab
+  );
 
   if (loading) {
     return (
@@ -145,66 +186,115 @@ export default function Prescriptions() {
     <DashboardLayout>
       <div className="container mx-auto px-4 py-6">
         <Card className="mb-6">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-2xl">Prescriptions</CardTitle>
+            <Tabs defaultValue="active" value={activeTab} onValueChange={setActiveTab}>
+              <TabsList>
+                <TabsTrigger value="active">Active</TabsTrigger>
+                <TabsTrigger value="inactive">Inactive</TabsTrigger>
+                <TabsTrigger value="all">All</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </CardHeader>
         </Card>
 
         <div className="grid grid-cols-1 gap-6">
-          {prescriptions.map((prescription) => (
-            <Card key={prescription.id}>
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row justify-between gap-4">
-                  <div className="space-y-2">
-                    <p className="text-lg font-semibold">
-                      {prescription.patient.name}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {prescription.patient.phone_number}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Dr. {prescription.doctor_name}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {format(new Date(prescription.date), "dd/MM/yyyy")}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {prescription.prescription_number}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Bills</p>
-                    {prescription.bills.map((bill) => (
-                      <div
-                        key={bill.id}
-                        className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                      >
-                        <div>
-                          <p className="text-sm font-medium">
-                            {bill.bill_number}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            ₹{bill.total_amount.toFixed(2)}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {format(new Date(bill.date), "dd/MM/yyyy")}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => viewBill(bill.id)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+          {filteredPrescriptions.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 text-center text-gray-500">
+                No prescriptions found
               </CardContent>
             </Card>
-          ))}
+          ) : (
+            filteredPrescriptions.map((prescription) => (
+              <Card 
+                key={prescription.id} 
+                className={prescription.status === 'inactive' ? 'bg-gray-50' : ''}
+              >
+                <CardContent className="p-6">
+                  <div className="flex flex-col md:flex-row justify-between gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <p className="text-lg font-semibold">
+                          {prescription.patient.name}
+                        </p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          prescription.status === 'active' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {prescription.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        {prescription.patient.phone_number}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Dr. {prescription.doctor_name}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {format(new Date(prescription.date), "dd/MM/yyyy")}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {prescription.prescription_number}
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleToggleStatus(prescription.id, prescription.status)}
+                        className="mt-2"
+                      >
+                        {prescription.status === 'active' ? (
+                          <>
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Mark Inactive
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Mark Active
+                          </>
+                        )}
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Bills</p>
+                      {prescription.bills.length === 0 ? (
+                        <p className="text-sm text-gray-500">No bills</p>
+                      ) : (
+                        prescription.bills.map((bill) => (
+                          <div
+                            key={bill.id}
+                            className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                          >
+                            <div>
+                              <p className="text-sm font-medium">
+                                {bill.bill_number}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                ₹{bill.total_amount.toFixed(2)}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {format(new Date(bill.date), "dd/MM/yyyy")}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => viewBill(bill.id)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
 
         {selectedBill && (

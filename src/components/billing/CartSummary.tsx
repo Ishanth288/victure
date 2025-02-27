@@ -99,22 +99,42 @@ export function CartSummary({
     const originalDisplay = document.body.style.display;
     const originalOverflow = document.body.style.overflow;
     
-    // Create a style element for print
+    // Create a style element for print that only uses upper half of the page
     const style = document.createElement('style');
     style.innerHTML = `
       @media print {
+        @page {
+          size: A4;
+          margin: 10mm;
+          scale: 1;
+        }
+        
         body * {
           visibility: hidden;
           overflow: visible !important;
         }
+        
         #print-content, #print-content * {
           visibility: visible;
         }
+        
         #print-content {
           position: absolute;
           left: 0;
           top: 0;
           width: 100%;
+          transform: scale(0.98);
+          transform-origin: top left;
+        }
+        
+        /* Additional rules to prevent blank pages */
+        html, body {
+          height: auto !important;
+          overflow: visible !important;
+        }
+        
+        .page-break {
+          display: none;
         }
       }
     `;
@@ -463,7 +483,7 @@ export function CartSummary({
               </Button>
             </div>
           </div>
-          <ScrollArea className="h-[500px] w-full rounded-md border" scrollHideDelay={150}>
+          <ScrollArea className="h-[650px] w-full rounded-md border" scrollHideDelay={150}>
             <div ref={billPreviewRef} className="p-4">
               <PrintableBill billData={generatedBill} items={items} />
             </div>

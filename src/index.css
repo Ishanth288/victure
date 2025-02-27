@@ -78,15 +78,20 @@
 
 @media print {
   @page {
-    margin: 20mm;
+    margin: 10mm;
     size: A4;
+  }
+
+  html, body {
+    width: 210mm;
+    height: auto;
+    overflow: visible !important;
   }
 
   body {
     visibility: hidden;
-    width: 100%;
-    height: 100%;
-    overflow: visible !important;
+    margin: 0;
+    padding: 0;
   }
 
   #print-content {
@@ -95,6 +100,8 @@
     left: 0;
     top: 0;
     width: 100%;
+    transform: scale(0.98);
+    transform-origin: top left;
   }
 
   #print-content * {
@@ -117,5 +124,11 @@
   .print-content {
     visibility: visible;
     width: 100%;
+  }
+  
+  /* Force only first page to print */
+  .footer-spacer {
+    height: 0;
+    display: none;
   }
 }

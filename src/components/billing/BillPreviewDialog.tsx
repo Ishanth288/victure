@@ -37,22 +37,42 @@ export function BillPreviewDialog({
     const originalDisplay = document.body.style.display;
     const originalOverflow = document.body.style.overflow;
     
-    // Create a style element for print
+    // Create a style element for print that only uses upper half of the page
     const style = document.createElement('style');
     style.innerHTML = `
       @media print {
+        @page {
+          size: A4;
+          margin: 10mm;
+          scale: 1;
+        }
+        
         body * {
           visibility: hidden;
           overflow: visible !important;
         }
+        
         #print-content, #print-content * {
           visibility: visible;
         }
+        
         #print-content {
           position: absolute;
           left: 0;
           top: 0;
           width: 100%;
+          transform: scale(0.98);
+          transform-origin: top left;
+        }
+        
+        /* Additional rules to prevent blank pages */
+        html, body {
+          height: auto !important;
+          overflow: visible !important;
+        }
+        
+        .page-break {
+          display: none;
         }
       }
     `;
@@ -116,7 +136,7 @@ export function BillPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>Bill Preview</span>
@@ -133,7 +153,7 @@ export function BillPreviewDialog({
           </DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 overflow-auto">
-          <div ref={printRef} className="print-content">
+          <div ref={printRef} className="print-content p-4">
             {billData && <PrintableBill billData={billData} items={items} />}
           </div>
         </ScrollArea>

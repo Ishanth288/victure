@@ -71,12 +71,20 @@ export default function Insights() {
 
   const fetchInsights = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setLoading(false);
+        return;
+      }
+
+      const userId = session.user.id;
       const { start, end } = getDateRange();
       
-      // Fetch sales data
+      // Fetch sales data for current user only
       const { data: billsData, error: billsError } = await supabase
         .from('bills')
         .select('date, total_amount, bill_items(quantity)')
+        .eq('user_id', userId)
         .gte('date', start.toISOString())
         .lte('date', end.toISOString())
         .order('date', { ascending: true });
@@ -98,6 +106,7 @@ export default function Insights() {
       const { data: previousData } = await supabase
         .from('bills')
         .select('total_amount')
+        .eq('user_id', userId)
         .gte('date', previousStart.toISOString())
         .lt('date', start.toISOString());
 
@@ -106,10 +115,11 @@ export default function Insights() {
         ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 
         : 0;
 
-      // Get unique customers count
+      // Get unique customers count for current user only
       const { count: totalCustomers } = await supabase
         .from('patients')
         .select('id', { count: 'exact' })
+        .eq('user_id', userId)
         .gte('created_at', start.toISOString())
         .lte('created_at', end.toISOString());
 
@@ -136,7 +146,7 @@ export default function Insights() {
 
       setSalesData(formattedSales);
 
-      // Fetch top products
+      // Fetch top products for current user only
       const { data: productsData, error: productsError } = await supabase
         .from('bill_items')
         .select(`
@@ -144,14 +154,21 @@ export default function Insights() {
           total_price,
           inventory_item:inventory (
             name
+          ),
+          bill:bills (
+            user_id
           )
         `)
+        .eq('bill.user_id', userId)
         .gte('bill:bills(date)', start.toISOString())
         .lte('bill:bills(date)', end.toISOString());
 
       if (productsError) throw productsError;
 
-      const productSales = productsData.reduce((acc: Record<string, number>, curr) => {
+      // Filter out items that don't belong to the current user
+      const userProducts = productsData.filter(item => item.bill?.user_id === userId);
+
+      const productSales = userProducts.reduce((acc: Record<string, number>, curr) => {
         const productName = curr.inventory_item?.name || 'Unknown';
         acc[productName] = (acc[productName] || 0) + curr.total_price;
         return acc;

@@ -15,4 +15,5 @@ export interface Patient {
   phone_number: string;
   bills: PatientBill[];
   total_spent: number;
+  status?: string;
 }
