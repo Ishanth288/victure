@@ -97,7 +97,8 @@ export default function Patients() {
           ...patient,
           bills: allBills,
           total_spent: totalSpent,
-          status: patient.status || 'active' // Default to active if status is not set
+          // The status field is now properly defined in the database
+          status: patient.status || 'active' // Fallback to active if status is null
         };
       });
 
