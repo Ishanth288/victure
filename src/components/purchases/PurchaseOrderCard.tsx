@@ -70,12 +70,32 @@ export function PurchaseOrderCard({ order, onUpdateDelivery, onPreviewBill }: Pu
     // Update status based on delivery
     const allDelivered = items.every(item => item.is_delivered);
     if (allDelivered) {
-      setOrderStatus('completed');
+      setOrderStatus('delivered');
     } else if (items.some(item => item.is_delivered)) {
-      setOrderStatus('partial');
+      setOrderStatus('partially_delivered');
     }
     
     setIsEditDialogOpen(false);
+  };
+
+  // Helper function to get status display text
+  const getStatusDisplayText = (status: 'pending' | 'delivered' | 'partially_delivered') => {
+    switch(status) {
+      case 'delivered': return 'Completed';
+      case 'partially_delivered': return 'Partially Delivered';
+      case 'pending': 
+      default: return 'Pending';
+    }
+  };
+
+  // Helper function to get badge variant based on status
+  const getStatusBadgeVariant = (status: 'pending' | 'delivered' | 'partially_delivered') => {
+    switch(status) {
+      case 'delivered': return 'default';
+      case 'partially_delivered': return 'outline';
+      case 'pending': 
+      default: return 'secondary';
+    }
   };
 
   return (
@@ -86,14 +106,8 @@ export function PurchaseOrderCard({ order, onUpdateDelivery, onPreviewBill }: Pu
             <CardTitle className="text-lg">{order.supplier_name}</CardTitle>
             <p className="text-sm text-muted-foreground">PO-{order.id}</p>
           </div>
-          <Badge 
-            variant={
-              orderStatus === 'completed' ? 'default' : 
-              orderStatus === 'partial' ? 'outline' : 'secondary'
-            }
-          >
-            {orderStatus === 'completed' ? 'Completed' : 
-             orderStatus === 'partial' ? 'Partially Delivered' : 'Pending'}
+          <Badge variant={getStatusBadgeVariant(orderStatus)}>
+            {getStatusDisplayText(orderStatus)}
           </Badge>
         </div>
       </CardHeader>
@@ -126,7 +140,7 @@ export function PurchaseOrderCard({ order, onUpdateDelivery, onPreviewBill }: Pu
                   id={`item-${item.id}`}
                   checked={selectedItems.includes(item.id!)}
                   onCheckedChange={(checked) => handleToggleItem(item.id!, checked as boolean)}
-                  disabled={orderStatus === 'completed'}
+                  disabled={orderStatus === 'delivered'}
                   className="data-[state=checked]:bg-primary"
                 />
                 <Label 
@@ -139,10 +153,10 @@ export function PurchaseOrderCard({ order, onUpdateDelivery, onPreviewBill }: Pu
             ))}
           </div>
 
-          {order.delivery_notes && (
+          {order.notes && (
             <div className="pt-2">
               <p className="text-sm font-medium">Delivery Notes:</p>
-              <p className="text-sm text-muted-foreground">{order.delivery_notes}</p>
+              <p className="text-sm text-muted-foreground">{order.notes}</p>
             </div>
           )}
         </div>
@@ -157,7 +171,7 @@ export function PurchaseOrderCard({ order, onUpdateDelivery, onPreviewBill }: Pu
             <Printer className="h-4 w-4 mr-2" />
             Print Order
           </Button>
-          <Button size="sm" disabled={orderStatus !== 'completed'}>
+          <Button size="sm" disabled={orderStatus !== 'delivered'}>
             <FileCheck className="h-4 w-4 mr-2" />
             Complete
           </Button>

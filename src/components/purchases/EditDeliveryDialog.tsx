@@ -10,27 +10,26 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { PurchaseOrderItem } from "@/types/purchases";
+import type { PurchaseOrder, PurchaseOrderItem } from "@/types/purchases";
 
 interface EditDeliveryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  items: PurchaseOrderItem[];
+  order: PurchaseOrder;
   onSave: (items: PurchaseOrderItem[], notes: string) => void;
 }
 
 export function EditDeliveryDialog({
   open,
   onOpenChange,
-  items,
+  order,
   onSave,
 }: EditDeliveryDialogProps) {
-  const [editedItems, setEditedItems] = useState<PurchaseOrderItem[]>(items);
-  const [notes, setNotes] = useState("");
+  const [editedItems, setEditedItems] = useState<PurchaseOrderItem[]>(order?.items || []);
+  const [notes, setNotes] = useState(order?.notes || "");
 
   const handleSave = () => {
     onSave(editedItems, notes);
-    onOpenChange(false);
   };
 
   const handleQuantityChange = (index: number, quantity: number) => {
