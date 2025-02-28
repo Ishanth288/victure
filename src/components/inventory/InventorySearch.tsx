@@ -7,9 +7,10 @@ import { Card } from "@/components/ui/card";
 interface InventorySearchProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  totalItems: number;
 }
 
-export default function InventorySearch({ searchQuery, onSearchChange }: InventorySearchProps) {
+export default function InventorySearch({ searchQuery, onSearchChange, totalItems }: InventorySearchProps) {
   return (
     <Card className="p-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
@@ -32,6 +33,9 @@ export default function InventorySearch({ searchQuery, onSearchChange }: Invento
             Low Stock
           </Button>
         </div>
+      </div>
+      <div className="mt-2 text-sm text-gray-600">
+        Showing {totalItems} items
       </div>
     </Card>
   );

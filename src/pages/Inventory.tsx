@@ -6,11 +6,10 @@ import InventoryHeader from "@/components/inventory/InventoryHeader";
 import InventorySearch from "@/components/inventory/InventorySearch";
 import InventoryTable from "@/components/inventory/InventoryTable";
 import InventoryPagination from "@/components/inventory/InventoryPagination";
-import { InventoryModals } from "@/components/inventory/InventoryModals";
+import InventoryModals from "@/components/inventory/InventoryModals";
 import { supabase } from "@/integrations/supabase/client";
 import { InventoryItem } from "@/types/inventory";
 import { useToast } from "@/components/ui/use-toast";
-import { useInventoryContext } from "@/contexts/InventoryContext";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
@@ -18,7 +17,7 @@ export default function Inventory() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const { inventory, fetchInventory } = useInventoryContext();
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -49,7 +48,17 @@ export default function Inventory() {
 
   const fetchInventoryData = async () => {
     try {
-      await fetchInventory();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("inventory")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+
+      setInventory(data || []);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching inventory:", error);
@@ -194,8 +203,8 @@ export default function Inventory() {
 
         <div className="mt-8">
           <InventorySearch
-            value={searchQuery}
-            onChange={setSearchQuery}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
             totalItems={filteredItems.length}
           />
 
@@ -210,24 +219,22 @@ export default function Inventory() {
 
           <div className="mt-4">
             <InventoryPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
+              totalItems={filteredItems.length}
             />
           </div>
         </div>
 
-        <InventoryModals
-          isAddOpen={isAddModalOpen}
-          isEditOpen={isEditModalOpen}
-          editItem={currentEditItem}
-          onAddClose={() => setIsAddModalOpen(false)}
-          onEditClose={() => {
-            setIsEditModalOpen(false);
-            setCurrentEditItem(null);
-          }}
-          onSuccessfulSave={fetchInventoryData}
-        />
+        {isAddModalOpen && (
+          <div>
+            {/* Add modal implementation */}
+          </div>
+        )}
+
+        {isEditModalOpen && currentEditItem && (
+          <div>
+            {/* Edit modal implementation */}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
