@@ -5,7 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle, CheckCircle } from "lucide-react";
 
 interface PharmacyData {
   pharmacy_name: string;
@@ -28,6 +30,10 @@ export default function PharmacySettings() {
     gstin: null
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{ type: 'error' | 'success' | null; message: string | null }>({
+    type: null,
+    message: null
+  });
 
   useEffect(() => {
     fetchPharmacyData();
@@ -51,7 +57,15 @@ export default function PharmacySettings() {
       }
     } catch (error: any) {
       console.error("Error fetching pharmacy data:", error);
-      toast.error(error.message);
+      setStatusMessage({
+        type: 'error',
+        message: error.message
+      });
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   };
 
@@ -66,6 +80,7 @@ export default function PharmacySettings() {
   const handlePharmacyUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setStatusMessage({ type: null, message: null });
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -81,10 +96,29 @@ export default function PharmacySettings() {
       if (error) throw error;
 
       updateTitle(pharmacyData.pharmacy_name);
-      toast.success("Pharmacy details updated successfully");
+      
+      setStatusMessage({
+        type: 'success',
+        message: "Pharmacy details updated successfully"
+      });
+      
+      toast({
+        title: "Success",
+        description: "Pharmacy details updated successfully"
+      });
     } catch (error: any) {
       console.error("Error updating pharmacy:", error);
-      toast.error(error.message || "Failed to update pharmacy details");
+      
+      setStatusMessage({
+        type: 'error',
+        message: error.message || "Failed to update pharmacy details"
+      });
+      
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update pharmacy details",
+        variant: "destructive"
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -105,6 +139,25 @@ export default function PharmacySettings() {
         <CardDescription>Update your pharmacy information</CardDescription>
       </CardHeader>
       <CardContent>
+        {statusMessage.type && (
+          <Alert 
+            variant={statusMessage.type === 'error' ? 'destructive' : 'default'} 
+            className={`mb-4 ${statusMessage.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : ''}`}
+          >
+            {statusMessage.type === 'error' ? (
+              <AlertCircle className="h-4 w-4" />
+            ) : (
+              <CheckCircle className="h-4 w-4" />
+            )}
+            <AlertTitle>
+              {statusMessage.type === 'error' ? 'Error' : 'Success'}
+            </AlertTitle>
+            <AlertDescription>
+              {statusMessage.message}
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <form onSubmit={handlePharmacyUpdate} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="pharmacy_name">Pharmacy Name</Label>

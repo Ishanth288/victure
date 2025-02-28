@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { INDIAN_STATES } from "@/constants/states";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle, CheckCircle } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -24,6 +27,10 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationSuccess, setVerificationSuccess] = useState(false);
+  const [authMessage, setAuthMessage] = useState<{ type: 'error' | 'success' | null; message: string | null }>({
+    type: null,
+    message: null
+  });
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -59,6 +66,11 @@ export default function Auth() {
             
             setVerificationSuccess(true);
             
+            setAuthMessage({
+              type: 'success',
+              message: "Email verified successfully! You can now log in to your account."
+            });
+            
             toast({
               title: "Email verified successfully!",
               description: "You can now log in to your account.",
@@ -70,6 +82,10 @@ export default function Auth() {
           }
         } catch (error: any) {
           console.error('Verification error:', error);
+          setAuthMessage({
+            type: 'error',
+            message: error.message
+          });
           toast({
             title: "Verification failed",
             description: error.message,
@@ -95,6 +111,7 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setAuthMessage({ type: null, message: null });
 
     try {
       if (isLogin) {
@@ -106,11 +123,20 @@ export default function Auth() {
         if (error) throw error;
         
         if (data.session) {
+          setAuthMessage({
+            type: 'success',
+            message: "Login successful! Redirecting to dashboard..."
+          });
+          
           toast({
             title: "Login successful!",
             description: "Welcome to your pharmacy dashboard.",
           });
-          navigate("/dashboard");
+          
+          // Short timeout to show success message before redirect
+          setTimeout(() => {
+            navigate("/dashboard");
+          }, 1000);
         }
       } else {
         const { data, error } = await supabase.auth.signUp({
@@ -134,6 +160,11 @@ export default function Auth() {
         if (error) throw error;
 
         if (data.user) {
+          setAuthMessage({
+            type: 'success',
+            message: "Registration successful! Please check your email to verify your account."
+          });
+          
           toast({
             title: "Registration successful!",
             description: "Please check your email to verify your account. Click the verification link to complete the process.",
@@ -143,6 +174,12 @@ export default function Auth() {
         }
       }
     } catch (error: any) {
+      console.error("Auth error:", error);
+      setAuthMessage({
+        type: 'error',
+        message: error.message
+      });
+      
       toast({
         title: "Error",
         description: error.message,
@@ -231,6 +268,25 @@ export default function Auth() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {authMessage.type && (
+              <Alert 
+                variant={authMessage.type === 'error' ? 'destructive' : 'default'} 
+                className={`mb-4 ${authMessage.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : ''}`}
+              >
+                {authMessage.type === 'error' ? (
+                  <AlertCircle className="h-4 w-4" />
+                ) : (
+                  <CheckCircle className="h-4 w-4" />
+                )}
+                <AlertTitle>
+                  {authMessage.type === 'error' ? 'Error' : 'Success'}
+                </AlertTitle>
+                <AlertDescription>
+                  {authMessage.message}
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
                 <>
