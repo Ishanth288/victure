@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,8 +7,10 @@ import { Package, FileText, AlertTriangle, ArrowUp, ArrowDown, DollarSign } from
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [lowStockCount, setLowStockCount] = useState(0);
   const [expiringCount, setExpiringCount] = useState(0);
   const [todaysSales, setTodaysSales] = useState(0);
@@ -118,6 +121,14 @@ export default function Dashboard() {
     };
   };
 
+  const handleNavigateToPrescriptions = () => {
+    navigate('/prescriptions');
+  };
+
+  const handleNavigateToInventory = () => {
+    navigate('/inventory');
+  };
+
   const stats = [
     {
       title: "Low Stock Items",
@@ -205,7 +216,7 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   Recent Activity
-                  <Button variant="ghost" size="sm" className="text-xs">
+                  <Button variant="ghost" size="sm" className="text-xs" onClick={handleNavigateToPrescriptions}>
                     View All
                   </Button>
                 </CardTitle>
@@ -248,7 +259,7 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   Inventory Alerts
-                  <Button variant="ghost" size="sm" className="text-xs">
+                  <Button variant="ghost" size="sm" className="text-xs" onClick={handleNavigateToInventory}>
                     View All
                   </Button>
                 </CardTitle>
@@ -269,7 +280,7 @@ export default function Dashboard() {
                             {alert.name} - Current stock: {alert.quantity}
                           </p>
                         </div>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={handleNavigateToInventory}>
                           Reorder
                         </Button>
                       </motion.div>

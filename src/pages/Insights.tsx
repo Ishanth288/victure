@@ -1,351 +1,402 @@
 
-import { useState, useEffect, useRef } from "react";
-import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { Download, Printer, Calendar, DollarSign, ShoppingCart, Package, Users } from "lucide-react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import { RevenueTrendChart } from "@/components/insights/RevenueTrendChart";
+import { RevenueDistribution } from "@/components/insights/RevenueDistribution";
+import { ProductsChart } from "@/components/insights/ProductsChart";
 import { StatCard } from "@/components/insights/StatCard";
 import { TimeframeSelector } from "@/components/insights/TimeframeSelector";
-import { RevenueTrendChart } from "@/components/insights/RevenueTrendChart";
-import { ProductsChart } from "@/components/insights/ProductsChart";
-import { RevenueDistribution } from "@/components/insights/RevenueDistribution";
-import { useToast } from "@/hooks/use-toast";
-
-interface SalesData {
-  date: string;
-  total: number;
-}
-
-interface TopProduct {
-  name: string;
-  value: number;
-}
-
-interface InsightMetrics {
-  totalRevenue: number;
-  averageOrder: number;
-  totalOrders: number;
-  totalCustomers: number;
-  percentageChange: number;
-  productsSold: number;
-}
+import { supabase } from "@/integrations/supabase/client";
+import { ArrowDown, ArrowUp, DollarSign, Users, ShoppingCart, Package } from "lucide-react";
+import { format, subDays, startOfWeek, startOfMonth, startOfYear } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export default function Insights() {
-  const [timeframe, setTimeframe] = useState<'day' | 'week' | 'month' | 'year'>('week');
-  const [salesData, setSalesData] = useState<SalesData[]>([]);
-  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
-  const [metrics, setMetrics] = useState<InsightMetrics>({
-    totalRevenue: 0,
-    averageOrder: 0,
-    totalOrders: 0,
-    totalCustomers: 0,
-    percentageChange: 0,
-    productsSold: 0
-  });
-  const [loading, setLoading] = useState(true);
-  const reportRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const [timeframe, setTimeframe] = useState<'day' | 'week' | 'month' | 'year'>('month');
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    revenue: 0,
+    revenueChange: 0,
+    patients: 0,
+    patientsChange: 0,
+    orders: 0,
+    ordersChange: 0,
+    products: 0,
+    productsChange: 0,
+  });
+  const [revenueData, setRevenueData] = useState<any[]>([]);
+  const [distributionData, setDistributionData] = useState<any[]>([]);
+  const [productsData, setProductsData] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchInsights();
+    checkAuth();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!loading) {
+      fetchInsightsData();
+    }
   }, [timeframe]);
 
-  const getDateRange = () => {
-    const now = new Date();
-    switch (timeframe) {
-      case 'day':
-        return { start: subDays(now, 1), end: now };
-      case 'week':
-        return { start: startOfWeek(now), end: endOfWeek(now) };
-      case 'month':
-        return { start: startOfMonth(now), end: endOfMonth(now) };
-      case 'year':
-        return { start: startOfYear(now), end: endOfYear(now) };
-      default:
-        return { start: subDays(now, 7), end: now };
-    }
-  };
-
-  const fetchInsights = async () => {
+  const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        setLoading(false);
+        toast({
+          title: "Authentication Required",
+          description: "Please login to view insights",
+          variant: "destructive",
+        });
+        navigate("/auth");
         return;
       }
-
-      const userId = session.user.id;
-      const { start, end } = getDateRange();
-      
-      // Fetch sales data for current user only
-      const { data: billsData, error: billsError } = await supabase
-        .from('bills')
-        .select('date, total_amount, bill_items(quantity)')
-        .eq('user_id', userId)
-        .gte('date', start.toISOString())
-        .lte('date', end.toISOString())
-        .order('date', { ascending: true });
-
-      if (billsError) throw billsError;
-
-      // Calculate metrics
-      const totalRevenue = billsData.reduce((sum, bill) => sum + bill.total_amount, 0);
-      const totalOrders = billsData.length;
-      const averageOrder = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-      const productsSold = billsData.reduce((sum, bill) => 
-        sum + bill.bill_items.reduce((itemSum: number, item: any) => itemSum + item.quantity, 0), 0
-      );
-
-      // Calculate percentage change from previous period
-      const previousStart = new Date(start);
-      previousStart.setDate(previousStart.getDate() - (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-      
-      const { data: previousData } = await supabase
-        .from('bills')
-        .select('total_amount')
-        .eq('user_id', userId)
-        .gte('date', previousStart.toISOString())
-        .lt('date', start.toISOString());
-
-      const previousRevenue = previousData?.reduce((sum, bill) => sum + bill.total_amount, 0) || 0;
-      const percentageChange = previousRevenue > 0 
-        ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 
-        : 0;
-
-      // Get unique customers count for current user only
-      const { count: totalCustomers } = await supabase
-        .from('patients')
-        .select('id', { count: 'exact' })
-        .eq('user_id', userId)
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
-
-      setMetrics({
-        totalRevenue,
-        averageOrder,
-        totalOrders,
-        totalCustomers: totalCustomers || 0,
-        percentageChange,
-        productsSold
-      });
-
-      // Process sales data for chart
-      const aggregatedSales = billsData.reduce((acc: Record<string, number>, curr) => {
-        const date = format(new Date(curr.date), 'yyyy-MM-dd');
-        acc[date] = (acc[date] || 0) + curr.total_amount;
-        return acc;
-      }, {});
-
-      const formattedSales = Object.entries(aggregatedSales).map(([date, total]) => ({
-        date: format(new Date(date), 'MMM dd'),
-        total
-      }));
-
-      setSalesData(formattedSales);
-
-      // Fetch top products for current user only
-      const { data: productsData, error: productsError } = await supabase
-        .from('bill_items')
-        .select(`
-          quantity,
-          total_price,
-          inventory_item:inventory (
-            name
-          ),
-          bill:bills (
-            user_id
-          )
-        `)
-        .eq('bill.user_id', userId)
-        .gte('bill:bills(date)', start.toISOString())
-        .lte('bill:bills(date)', end.toISOString());
-
-      if (productsError) throw productsError;
-
-      // Filter out items that don't belong to the current user
-      const userProducts = productsData.filter(item => item.bill?.user_id === userId);
-
-      const productSales = userProducts.reduce((acc: Record<string, number>, curr) => {
-        const productName = curr.inventory_item?.name || 'Unknown';
-        acc[productName] = (acc[productName] || 0) + curr.total_price;
-        return acc;
-      }, {});
-
-      const topProductsData = Object.entries(productSales)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 5)
-        .map(([name, value]) => ({ name, value }));
-
-      setTopProducts(topProductsData);
       setLoading(false);
+      fetchInsightsData();
     } catch (error) {
-      console.error('Error fetching insights:', error);
-      setLoading(false);
-    }
-  };
-
-  const handleExport = async () => {
-    if (!reportRef.current) return;
-
-    try {
-      // Create canvas from the content
-      const canvas = await html2canvas(reportRef.current, {
-        scale: 2, // Higher scale for better quality
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff"
-      });
-      
-      // Create PDF
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/png');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      // Add image to PDF
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      
-      // Add watermark
-      pdf.setFontSize(12);
-      pdf.setTextColor(180, 180, 180);
-      pdf.text('Victure', pdf.internal.pageSize.getWidth() - 20, 10);
-      
-      // Save PDF
-      pdf.save(`sales-report-${timeframe}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-      
+      console.error("Auth check error:", error);
       toast({
-        title: "Export successful",
-        description: "The insights report has been exported as a PDF.",
-      });
-    } catch (error) {
-      console.error('Error exporting report:', error);
-      toast({
-        title: "Export failed",
-        description: "Failed to export the insights report.",
+        title: "Error",
+        description: "Authentication check failed",
         variant: "destructive",
       });
     }
   };
 
-  const handlePrint = () => {
-    if (!reportRef.current) return;
-    
-    const printContent = reportRef.current;
-    const originalDisplay = document.body.style.display;
-    const originalOverflow = document.body.style.overflow;
-    
-    // Create a style element for print
-    const style = document.createElement('style');
-    style.innerHTML = `
-      @media print {
-        body * {
-          visibility: hidden;
-          overflow: visible !important;
-        }
-        #print-content, #print-content * {
-          visibility: visible;
-        }
-        #print-content {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 100%;
+  const fetchInsightsData = async () => {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return;
+
+      // Set date range based on timeframe
+      let startDate;
+      let previousStartDate;
+      let interval: 'day' | 'week' | 'month';
+      const now = new Date();
+
+      switch(timeframe) {
+        case 'day':
+          startDate = new Date(now);
+          startDate.setHours(0, 0, 0, 0);
+          previousStartDate = subDays(startDate, 1);
+          interval = 'day';
+          break;
+        case 'week':
+          startDate = startOfWeek(now);
+          previousStartDate = subDays(startDate, 7);
+          interval = 'day';
+          break;
+        case 'month':
+          startDate = startOfMonth(now);
+          previousStartDate = subDays(startDate, 30);
+          interval = 'week';
+          break;
+        case 'year':
+          startDate = startOfYear(now);
+          previousStartDate = subDays(startDate, 365);
+          interval = 'month';
+          break;
+      }
+
+      // Fetch data for the current period
+      const { data: currentBills } = await supabase
+        .from('bills')
+        .select(`
+          id, 
+          date, 
+          total_amount,
+          bill_items (
+            inventory_item_id,
+            quantity
+          )
+        `)
+        .eq('user_id', user.id)
+        .gte('date', startDate.toISOString());
+
+      // Fetch data for the previous period
+      const { data: previousBills } = await supabase
+        .from('bills')
+        .select('total_amount')
+        .eq('user_id', user.id)
+        .gte('date', previousStartDate.toISOString())
+        .lt('date', startDate.toISOString());
+
+      // Fetch patients data
+      const { data: patients } = await supabase
+        .from('patients')
+        .select('id, created_at')
+        .eq('user_id', user.id);
+
+      // Fetch inventory data
+      const { data: inventory } = await supabase
+        .from('inventory')
+        .select('id, name, quantity, unit_cost')
+        .eq('user_id', user.id);
+
+      // Calculate stats
+      const currentRevenue = currentBills?.reduce((sum, bill) => sum + bill.total_amount, 0) || 0;
+      const previousRevenue = previousBills?.reduce((sum, bill) => sum + bill.total_amount, 0) || 0;
+      const revenueChange = previousRevenue ? ((currentRevenue - previousRevenue) / previousRevenue) * 100 : 0;
+
+      const currentPatients = patients?.filter(p => new Date(p.created_at) >= startDate).length || 0;
+      const previousPatients = patients?.filter(p => 
+        new Date(p.created_at) >= previousStartDate && new Date(p.created_at) < startDate
+      ).length || 0;
+      const patientsChange = previousPatients ? ((currentPatients - previousPatients) / previousPatients) * 100 : 0;
+
+      // Generate revenue trend data based on timeframe
+      let revenueChartData: any[] = [];
+      
+      if (currentBills) {
+        if (timeframe === 'day') {
+          // Group by hour
+          const hourlyData: {[key: string]: number} = {};
+          for (let i = 0; i < 24; i++) {
+            hourlyData[i] = 0;
+          }
+          
+          currentBills.forEach(bill => {
+            const date = new Date(bill.date);
+            const hour = date.getHours();
+            hourlyData[hour] += bill.total_amount;
+          });
+          
+          revenueChartData = Object.entries(hourlyData).map(([hour, amount]) => ({
+            name: `${hour}:00`,
+            value: amount
+          }));
+        } else if (timeframe === 'week') {
+          // Group by day of the week
+          const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+          const dailyData: {[key: string]: number} = {};
+          daysOfWeek.forEach(day => { dailyData[day] = 0; });
+          
+          currentBills.forEach(bill => {
+            const date = new Date(bill.date);
+            const day = daysOfWeek[date.getDay()];
+            dailyData[day] += bill.total_amount;
+          });
+          
+          revenueChartData = Object.entries(dailyData).map(([day, amount]) => ({
+            name: day.substring(0, 3),
+            value: amount
+          }));
+        } else if (timeframe === 'month') {
+          // Group by date
+          const dailyData: {[key: string]: number} = {};
+          const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+          
+          for (let i = 1; i <= daysInMonth; i++) {
+            dailyData[i] = 0;
+          }
+          
+          currentBills.forEach(bill => {
+            const date = new Date(bill.date);
+            const day = date.getDate();
+            dailyData[day] += bill.total_amount;
+          });
+          
+          revenueChartData = Object.entries(dailyData).map(([day, amount]) => ({
+            name: day,
+            value: amount
+          }));
+        } else if (timeframe === 'year') {
+          // Group by month
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const monthlyData: {[key: string]: number} = {};
+          months.forEach(month => { monthlyData[month] = 0; });
+          
+          currentBills.forEach(bill => {
+            const date = new Date(bill.date);
+            const month = months[date.getMonth()];
+            monthlyData[month] += bill.total_amount;
+          });
+          
+          revenueChartData = Object.entries(monthlyData).map(([month, amount]) => ({
+            name: month,
+            value: amount
+          }));
         }
       }
-    `;
-    document.head.appendChild(style);
-    
-    // Add ID to print content
-    printContent.setAttribute('id', 'print-content');
-    
-    // Prepare for printing
-    document.body.style.overflow = 'visible';
-    
-    // Print
-    window.print();
-    
-    // Cleanup
-    printContent.removeAttribute('id');
-    document.body.style.display = originalDisplay;
-    document.body.style.overflow = originalOverflow;
-    document.head.removeChild(style);
-    
-    toast({
-      title: "Print job sent",
-      description: "The report has been sent to your printer.",
-    });
-  };
 
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-screen">
-          Loading...
-        </div>
-      </DashboardLayout>
-    );
-  }
+      // Generate revenue distribution data (by product category)
+      const itemFrequency: {[key: number]: number} = {};
+      currentBills?.forEach(bill => {
+        bill.bill_items.forEach((item: any) => {
+          const itemId = item.inventory_item_id;
+          if (itemFrequency[itemId]) {
+            itemFrequency[itemId] += item.quantity;
+          } else {
+            itemFrequency[itemId] = item.quantity;
+          }
+        });
+      });
+
+      // Map inventory items to their names
+      const inventoryMap = new Map();
+      inventory?.forEach(item => {
+        inventoryMap.set(item.id, { name: item.name, unit_cost: item.unit_cost });
+      });
+
+      // Top 5 products by revenue
+      const productRevenueData = Object.entries(itemFrequency)
+        .map(([itemId, quantity]) => {
+          const item = inventoryMap.get(parseInt(itemId));
+          return {
+            name: item?.name || `Item #${itemId}`,
+            value: quantity * (item?.unit_cost || 0)
+          };
+        })
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+
+      // Calculate total orders and order change
+      const currentOrders = currentBills?.length || 0;
+      const previousOrders = previousBills?.length || 0;
+      const ordersChange = previousOrders ? ((currentOrders - previousOrders) / previousOrders) * 100 : 0;
+
+      // Calculate total products and product change
+      // For this example, we'll count how many unique products were sold
+      const currentProductsSold = new Set();
+      currentBills?.forEach(bill => {
+        bill.bill_items.forEach((item: any) => {
+          currentProductsSold.add(item.inventory_item_id);
+        });
+      });
+      const productsCount = currentProductsSold.size;
+      const productsChange = (productsCount / (inventory?.length || 1)) * 100;
+
+      // Prepare top products data
+      const topProducts = Object.entries(itemFrequency)
+        .map(([itemId, quantity]) => {
+          const item = inventoryMap.get(parseInt(itemId));
+          return {
+            id: parseInt(itemId),
+            name: item?.name || `Item #${itemId}`,
+            quantity: quantity,
+            revenue: quantity * (item?.unit_cost || 0)
+          };
+        })
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 10);
+
+      // Update state with calculated data
+      setStats({
+        revenue: currentRevenue,
+        revenueChange: revenueChange,
+        patients: currentPatients,
+        patientsChange: patientsChange,
+        orders: currentOrders,
+        ordersChange: ordersChange,
+        products: productsCount,
+        productsChange: productsChange
+      });
+
+      setRevenueData(revenueChartData);
+      setDistributionData(productRevenueData);
+      setProductsData(topProducts);
+
+    } catch (error) {
+      console.error("Error fetching insights data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load insights data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            <h1 className="text-2xl font-bold">Sales Insights</h1>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
-              Export PDF
-            </Button>
-            <Button variant="outline" size="sm" onClick={handlePrint}>
-              <Printer className="h-4 w-4 mr-2" />
-              Print
-            </Button>
-          </div>
+      <div className="container mx-auto p-4 space-y-8">
+        <h1 className="text-3xl font-bold">Business Insights</h1>
+        
+        <TimeframeSelector timeframe={timeframe} onTimeframeChange={setTimeframe} />
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="Revenue"
+            value={`₹${stats.revenue.toLocaleString()}`}
+            description={`${Math.abs(stats.revenueChange).toFixed(1)}% ${stats.revenueChange >= 0 ? 'increase' : 'decrease'}`}
+            icon={DollarSign}
+            trend={stats.revenueChange >= 0 ? 'up' : 'down'}
+          />
+          <StatCard
+            title="New Patients"
+            value={stats.patients.toString()}
+            description={`${Math.abs(stats.patientsChange).toFixed(1)}% ${stats.patientsChange >= 0 ? 'increase' : 'decrease'}`}
+            icon={Users}
+            trend={stats.patientsChange >= 0 ? 'up' : 'down'}
+          />
+          <StatCard
+            title="Orders"
+            value={stats.orders.toString()}
+            description={`${Math.abs(stats.ordersChange).toFixed(1)}% ${stats.ordersChange >= 0 ? 'increase' : 'decrease'}`}
+            icon={ShoppingCart}
+            trend={stats.ordersChange >= 0 ? 'up' : 'down'}
+          />
+          <StatCard
+            title="Products Sold"
+            value={stats.products.toString()}
+            description={`${stats.productsChange.toFixed(1)}% of inventory`}
+            icon={Package}
+            trend="neutral"
+          />
         </div>
-
-        <TimeframeSelector 
-          timeframe={timeframe} 
-          onTimeframeChange={setTimeframe} 
-        />
-
-        <div ref={reportRef} className="space-y-6 mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard
-              title="Total Revenue"
-              value={`₹${metrics.totalRevenue.toFixed(2)}`}
-              icon={DollarSign}
-              trend={metrics.percentageChange}
-            />
-            <StatCard
-              title="Average Order Value"
-              value={`₹${metrics.averageOrder.toFixed(2)}`}
-              icon={ShoppingCart}
-            />
-            <StatCard
-              title="Products Sold"
-              value={metrics.productsSold}
-              icon={Package}
-            />
-            <StatCard
-              title="Total Customers"
-              value={metrics.totalCustomers}
-              icon={Users}
-            />
-          </div>
-
-          <RevenueTrendChart data={salesData} />
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <ProductsChart data={topProducts} />
-            <RevenueDistribution data={topProducts} />
-          </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Revenue Trend</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center h-64">
+                  Loading...
+                </div>
+              ) : (
+                <RevenueTrendChart data={revenueData} timeframe={timeframe} />
+              )}
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Revenue Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center h-64">
+                  Loading...
+                </div>
+              ) : (
+                <RevenueDistribution data={distributionData} />
+              )}
+            </CardContent>
+          </Card>
         </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Top Products</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex items-center justify-center h-64">
+                Loading...
+              </div>
+            ) : (
+              <ProductsChart data={productsData} />
+            )}
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );

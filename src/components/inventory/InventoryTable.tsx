@@ -1,6 +1,6 @@
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
@@ -11,13 +11,15 @@ interface InventoryTableProps {
   selectedItems: number[];
   onToggleItem: (id: number) => void;
   onEditItem: (item: InventoryItem) => void;
+  onDeleteItem: (id: number) => void;
 }
 
 export default function InventoryTable({
   items,
   selectedItems,
   onToggleItem,
-  onEditItem
+  onEditItem,
+  onDeleteItem
 }: InventoryTableProps) {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -98,13 +100,23 @@ export default function InventoryTable({
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => onEditItem(item)}
-                    >
-                      Edit
-                    </Button>
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => onEditItem(item)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => onDeleteItem(item.id)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </td>
                 </motion.tr>
               ))}

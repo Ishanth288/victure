@@ -59,6 +59,7 @@ export default function Prescriptions() {
 
   const fetchPrescriptions = async () => {
     try {
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         return;
@@ -75,7 +76,7 @@ export default function Prescriptions() {
         .order('date', { ascending: false });
 
       if (error) throw error;
-      setPrescriptions(data);
+      setPrescriptions(data || []);
     } catch (error) {
       console.error("Error fetching prescriptions:", error);
       toast({
@@ -100,6 +101,7 @@ export default function Prescriptions() {
         .eq("id", prescriptionId);
 
       if (error) {
+        console.error("Supabase update error:", error);
         throw error;
       }
 
@@ -116,11 +118,11 @@ export default function Prescriptions() {
         title: "Status Updated",
         description: `Prescription marked as ${newStatus}`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating prescription status:", error);
       toast({
         title: "Error",
-        description: "Failed to update prescription status",
+        description: error.message || "Failed to update prescription status",
         variant: "destructive",
       });
     }

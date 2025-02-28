@@ -12,6 +12,16 @@ import { InventoryItem } from "@/types/inventory";
 import { useToast } from "@/components/ui/use-toast";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Inventory() {
   const navigate = useNavigate();
@@ -25,6 +35,9 @@ export default function Inventory() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentEditItem, setCurrentEditItem] = useState<InventoryItem | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<number | null>(null);
+  const [filterType, setFilterType] = useState<string | null>(null);
   const tableRef = useRef<HTMLDivElement>(null);
 
   const itemsPerPage = 10;
@@ -68,11 +81,74 @@ export default function Inventory() {
     }
   };
 
-  const filteredItems = inventory.filter((item) =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (item.generic_name && item.generic_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (item.manufacturer && item.manufacturer.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const handleDeleteItem = async (id: number) => {
+    setItemToDelete(id);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+    
+    try {
+      const { error } = await supabase
+        .from("inventory")
+        .delete()
+        .eq("id", itemToDelete);
+
+      if (error) throw error;
+
+      // Remove from local state
+      setInventory(prev => prev.filter(item => item.id !== itemToDelete));
+      
+      // Remove from selected items if present
+      setSelectedItems(prev => prev.filter(id => id !== itemToDelete));
+      
+      toast({
+        title: "Item deleted",
+        description: "The inventory item has been removed successfully."
+      });
+    } catch (error: any) {
+      console.error("Error deleting item:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete item",
+        variant: "destructive"
+      });
+    } finally {
+      setShowDeleteDialog(false);
+      setItemToDelete(null);
+    }
+  };
+
+  const handleApplyFilter = (type: string) => {
+    setFilterType(type);
+    setCurrentPage(1);
+  };
+
+  const filteredItems = inventory.filter((item) => {
+    // First filter by search query
+    const matchesSearch = 
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.generic_name && item.generic_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.manufacturer && item.manufacturer.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    // Then apply other filters if any
+    if (!matchesSearch) return false;
+    
+    if (filterType === "lowStock") {
+      return item.quantity < (item.reorder_point || 10);
+    } else if (filterType === "expiringSoon") {
+      if (!item.expiry_date) return false;
+      
+      const expiryDate = new Date(item.expiry_date);
+      const now = new Date();
+      const monthsDiff = (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30);
+      
+      return monthsDiff <= 3; // Items expiring within 3 months
+    }
+    
+    return true;
+  });
 
   useEffect(() => {
     setTotalPages(Math.ceil(filteredItems.length / itemsPerPage));
@@ -208,6 +284,8 @@ export default function Inventory() {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             totalItems={filteredItems.length}
+            onFilterChange={handleApplyFilter}
+            activeFilter={filterType}
           />
 
           <div className="mt-6" ref={tableRef}>
@@ -216,12 +294,17 @@ export default function Inventory() {
               selectedItems={selectedItems}
               onToggleItem={handleToggleSelectItem}
               onEditItem={handleEditItem}
+              onDeleteItem={handleDeleteItem}
             />
           </div>
 
           <div className="mt-4">
             <InventoryPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
               totalItems={filteredItems.length}
+              itemsPerPage={itemsPerPage}
             />
           </div>
         </div>
@@ -237,6 +320,23 @@ export default function Inventory() {
           }}
           onSuccessfulSave={fetchInventoryData}
         />
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to delete this item?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the inventory item and remove the data from our servers.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

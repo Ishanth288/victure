@@ -48,10 +48,13 @@ export default function Auth() {
     const checkEmailVerificationToken = async () => {
       setIsVerifying(true);
       
+      // Parse URL parameters
       const hash = window.location.hash;
       const searchParams = new URLSearchParams(window.location.search);
       
-      const accessToken = searchParams.get('access_token') || hash.split('access_token=')[1]?.split('&')[0];
+      // Look for token in both query params and hash
+      const accessToken = searchParams.get('access_token') || (hash.includes('access_token=') ? hash.split('access_token=')[1]?.split('&')[0] : null);
+      const refreshToken = searchParams.get('refresh_token') || (hash.includes('refresh_token=') ? hash.split('refresh_token=')[1]?.split('&')[0] : null);
       const tokenType = searchParams.get('type') || (hash.includes('type=') ? hash.split('type=')[1]?.split('&')[0] : null);
       
       if (tokenType === 'recovery' || tokenType === 'signup' || tokenType === 'email_verification' || accessToken) {
@@ -59,7 +62,7 @@ export default function Auth() {
           if (accessToken) {
             const { data: { session }, error } = await supabase.auth.setSession({
               access_token: accessToken,
-              refresh_token: '',
+              refresh_token: refreshToken || '',
             });
             
             if (error) throw error;
@@ -77,6 +80,12 @@ export default function Auth() {
             });
             
             setIsLogin(true);
+            
+            // Clean up URL by removing tokens
+            if (window.history.pushState) {
+              const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+              window.history.pushState({ path: newUrl }, '', newUrl);
+            }
           } else {
             throw new Error("Verification link appears to be invalid or expired.");
           }

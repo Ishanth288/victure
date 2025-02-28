@@ -8,9 +8,17 @@ interface InventorySearchProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   totalItems: number;
+  onFilterChange: (type: string) => void;
+  activeFilter: string | null;
 }
 
-export default function InventorySearch({ searchQuery, onSearchChange, totalItems }: InventorySearchProps) {
+export default function InventorySearch({ 
+  searchQuery, 
+  onSearchChange, 
+  totalItems,
+  onFilterChange,
+  activeFilter
+}: InventorySearchProps) {
   return (
     <Card className="p-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
@@ -24,11 +32,21 @@ export default function InventorySearch({ searchQuery, onSearchChange, totalItem
           />
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button 
+            variant={activeFilter === "expiringSoon" ? "default" : "outline"} 
+            size="sm" 
+            className="gap-2"
+            onClick={() => onFilterChange(activeFilter === "expiringSoon" ? "" : "expiringSoon")}
+          >
             <Clock className="h-4 w-4" />
             Expiring Soon
           </Button>
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button 
+            variant={activeFilter === "lowStock" ? "default" : "outline"} 
+            size="sm" 
+            className="gap-2"
+            onClick={() => onFilterChange(activeFilter === "lowStock" ? "" : "lowStock")}
+          >
             <AlertTriangle className="h-4 w-4" />
             Low Stock
           </Button>
