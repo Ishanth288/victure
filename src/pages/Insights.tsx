@@ -150,83 +150,86 @@ export default function Insights() {
       const patientsChange = previousPatients ? ((currentPatients - previousPatients) / previousPatients) * 100 : 0;
 
       // Generate revenue trend data based on timeframe
-      let revenueChartData: Array<{ name: string; value: number }> = [];
+      const revenueChartData: Array<{ name: string; value: number }> = [];
       
       if (currentBills) {
         if (timeframe === 'day') {
           // Group by hour
-          const hourlyData: Record<string, number> = {};
+          const hourlyData: Record<number, number> = {};
           for (let i = 0; i < 24; i++) {
-            hourlyData[i.toString()] = 0;
+            hourlyData[i] = 0;
           }
           
           currentBills.forEach(bill => {
             const date = new Date(bill.date);
-            const hour = date.getHours().toString();
+            const hour = date.getHours();
             hourlyData[hour] = (hourlyData[hour] || 0) + (Number(bill.total_amount) || 0);
           });
           
-          for (const [hour, amount] of Object.entries(hourlyData)) {
+          for (let hour = 0; hour < 24; hour++) {
             revenueChartData.push({
               name: `${hour}:00`,
-              value: Number(amount)
+              value: hourlyData[hour]
             });
           }
         } else if (timeframe === 'week') {
           // Group by day of the week
           const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-          const dailyData: Record<string, number> = {};
-          daysOfWeek.forEach(day => { dailyData[day] = 0; });
+          const dailyData: Record<number, number> = {};
+          for (let i = 0; i < 7; i++) {
+            dailyData[i] = 0;
+          }
           
           currentBills.forEach(bill => {
             const date = new Date(bill.date);
-            const day = daysOfWeek[date.getDay()];
+            const day = date.getDay();
             dailyData[day] = (dailyData[day] || 0) + (Number(bill.total_amount) || 0);
           });
           
-          for (const [day, amount] of Object.entries(dailyData)) {
+          for (let day = 0; day < 7; day++) {
             revenueChartData.push({
-              name: day.substring(0, 3),
-              value: Number(amount)
+              name: daysOfWeek[day].substring(0, 3),
+              value: dailyData[day]
             });
           }
         } else if (timeframe === 'month') {
           // Group by date
-          const dailyData: Record<string, number> = {};
           const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-          
+          const dailyData: Record<number, number> = {};
           for (let i = 1; i <= daysInMonth; i++) {
-            dailyData[i.toString()] = 0;
+            dailyData[i] = 0;
           }
           
           currentBills.forEach(bill => {
             const date = new Date(bill.date);
-            const day = date.getDate().toString();
+            const day = date.getDate();
             dailyData[day] = (dailyData[day] || 0) + (Number(bill.total_amount) || 0);
           });
           
-          for (const [day, amount] of Object.entries(dailyData)) {
+          for (let day = 1; day <= daysInMonth; day++) {
             revenueChartData.push({
-              name: day,
-              value: Number(amount)
+              name: day.toString(),
+              value: dailyData[day]
             });
           }
         } else if (timeframe === 'year') {
           // Group by month
           const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-          const monthlyData: Record<string, number> = {};
-          months.forEach(month => { monthlyData[month] = 0; });
+          const monthlyData: Record<number, number> = {};
+          for (let i = 0; i < 12; i++) {
+            monthlyData[i] = 0;
+          }
           
           currentBills.forEach(bill => {
             const date = new Date(bill.date);
-            const month = months[date.getMonth()];
+            const month = date.getMonth();
             monthlyData[month] = (monthlyData[month] || 0) + (Number(bill.total_amount) || 0);
           });
           
-          for (const [month, amount] of Object.entries(monthlyData)) {
+          for (let month = 0; month < 12; month++) {
             revenueChartData.push({
-              name: month,
-              value: Number(amount)
+              name: months[month],
+              value: monthlyData[month]
             });
           }
         }
