@@ -51,9 +51,11 @@ export default function Inventory() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Filter inventory by user_id to ensure data isolation
       const { data, error } = await supabase
         .from("inventory")
         .select("*")
+        .eq("user_id", user.id)  // Filter by user_id
         .order("name");
 
       if (error) throw error;
@@ -224,17 +226,17 @@ export default function Inventory() {
           </div>
         </div>
 
-        {isAddModalOpen && (
-          <div>
-            {/* Add modal implementation */}
-          </div>
-        )}
-
-        {isEditModalOpen && currentEditItem && (
-          <div>
-            {/* Edit modal implementation */}
-          </div>
-        )}
+        <InventoryModals
+          isAddOpen={isAddModalOpen}
+          isEditOpen={isEditModalOpen}
+          editItem={currentEditItem}
+          onAddClose={() => setIsAddModalOpen(false)}
+          onEditClose={() => {
+            setIsEditModalOpen(false);
+            setCurrentEditItem(null);
+          }}
+          onSuccessfulSave={fetchInventoryData}
+        />
       </div>
     </DashboardLayout>
   );
