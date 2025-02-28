@@ -150,7 +150,7 @@ export default function Insights() {
       const patientsChange = previousPatients ? ((currentPatients - previousPatients) / previousPatients) * 100 : 0;
 
       // Generate revenue trend data based on timeframe
-      const revenueChartData: Array<{ name: string; value: number }> = [];
+      let revenueChartData: Array<{ name: string; value: number }> = [];
       
       if (currentBills) {
         if (timeframe === 'day') {
@@ -166,12 +166,12 @@ export default function Insights() {
             hourlyData[hour] = (hourlyData[hour] || 0) + (Number(bill.total_amount) || 0);
           });
           
-          Object.entries(hourlyData).forEach(([hour, amount]) => {
+          for (const [hour, amount] of Object.entries(hourlyData)) {
             revenueChartData.push({
               name: `${hour}:00`,
-              value: amount
+              value: Number(amount)
             });
-          });
+          }
         } else if (timeframe === 'week') {
           // Group by day of the week
           const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -184,12 +184,12 @@ export default function Insights() {
             dailyData[day] = (dailyData[day] || 0) + (Number(bill.total_amount) || 0);
           });
           
-          Object.entries(dailyData).forEach(([day, amount]) => {
+          for (const [day, amount] of Object.entries(dailyData)) {
             revenueChartData.push({
               name: day.substring(0, 3),
-              value: amount
+              value: Number(amount)
             });
-          });
+          }
         } else if (timeframe === 'month') {
           // Group by date
           const dailyData: Record<string, number> = {};
@@ -205,12 +205,12 @@ export default function Insights() {
             dailyData[day] = (dailyData[day] || 0) + (Number(bill.total_amount) || 0);
           });
           
-          Object.entries(dailyData).forEach(([day, amount]) => {
+          for (const [day, amount] of Object.entries(dailyData)) {
             revenueChartData.push({
               name: day,
-              value: amount
+              value: Number(amount)
             });
-          });
+          }
         } else if (timeframe === 'year') {
           // Group by month
           const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -223,12 +223,12 @@ export default function Insights() {
             monthlyData[month] = (monthlyData[month] || 0) + (Number(bill.total_amount) || 0);
           });
           
-          Object.entries(monthlyData).forEach(([month, amount]) => {
+          for (const [month, amount] of Object.entries(monthlyData)) {
             revenueChartData.push({
               name: month,
-              value: amount
+              value: Number(amount)
             });
-          });
+          }
         }
       }
 
@@ -254,20 +254,18 @@ export default function Insights() {
       // Top 5 products by revenue
       const productRevenueData: Array<{ name: string; value: number }> = [];
       
-      Object.entries(itemFrequency)
-        .map(([itemId, quantity]) => {
-          const item = inventoryMap.get(parseInt(itemId));
-          const value = Number(quantity) * (Number(item?.unit_cost) || 0);
-          return {
-            name: item?.name || `Item #${itemId}`,
-            value
-          };
-        })
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 5)
-        .forEach(item => {
-          productRevenueData.push(item);
+      Object.entries(itemFrequency).forEach(([itemId, quantity]) => {
+        const item = inventoryMap.get(parseInt(itemId));
+        const value = Number(quantity) * (Number(item?.unit_cost) || 0);
+        productRevenueData.push({
+          name: item?.name || `Item #${itemId}`,
+          value: value
         });
+      });
+      
+      // Sort and slice the product revenue data
+      productRevenueData.sort((a, b) => b.value - a.value);
+      const top5ProductsData = productRevenueData.slice(0, 5);
 
       // Calculate total orders and order change
       const currentOrders = currentBills?.length || 0;
@@ -288,22 +286,20 @@ export default function Insights() {
       // Prepare top products data
       const topProducts: Array<{ id: number; name: string; quantity: number; revenue: number }> = [];
       
-      Object.entries(itemFrequency)
-        .map(([itemId, quantity]) => {
-          const item = inventoryMap.get(parseInt(itemId));
-          const revenue = Number(quantity) * (Number(item?.unit_cost) || 0);
-          return {
-            id: parseInt(itemId),
-            name: item?.name || `Item #${itemId}`,
-            quantity: Number(quantity),
-            revenue
-          };
-        })
-        .sort((a, b) => b.quantity - a.quantity)
-        .slice(0, 10)
-        .forEach(item => {
-          topProducts.push(item);
+      Object.entries(itemFrequency).forEach(([itemId, quantity]) => {
+        const item = inventoryMap.get(parseInt(itemId));
+        const revenue = Number(quantity) * (Number(item?.unit_cost) || 0);
+        topProducts.push({
+          id: parseInt(itemId),
+          name: item?.name || `Item #${itemId}`,
+          quantity: Number(quantity),
+          revenue: revenue
         });
+      });
+      
+      // Sort and slice the top products data
+      topProducts.sort((a, b) => b.quantity - a.quantity);
+      const top10Products = topProducts.slice(0, 10);
 
       // Update state with calculated data
       setStats({
@@ -318,8 +314,8 @@ export default function Insights() {
       });
 
       setRevenueData(revenueChartData);
-      setDistributionData(productRevenueData);
-      setProductsData(topProducts);
+      setDistributionData(top5ProductsData);
+      setProductsData(top10Products);
 
     } catch (error) {
       console.error("Error fetching insights data:", error);
