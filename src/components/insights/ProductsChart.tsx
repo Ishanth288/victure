@@ -12,12 +12,21 @@ import {
 
 interface ProductsChartProps {
   data: Array<{
+    id?: number;
     name: string;
-    value: number;
+    quantity?: number;
+    revenue?: number;
+    value?: number;
   }>;
 }
 
 export function ProductsChart({ data }: ProductsChartProps) {
+  // Transform data to ensure it has a value property if it doesn't already
+  const chartData = data.map(item => ({
+    ...item,
+    value: item.value !== undefined ? item.value : (item.revenue || 0)
+  }));
+
   return (
     <Card>
       <CardHeader>
@@ -25,7 +34,7 @@ export function ProductsChart({ data }: ProductsChartProps) {
       </CardHeader>
       <CardContent className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data}>
+          <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
             <XAxis 
               dataKey="name" 
