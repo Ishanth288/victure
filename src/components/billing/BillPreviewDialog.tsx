@@ -13,7 +13,7 @@ import { CartItem } from "@/types/billing";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { useRef } from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/use-toast";
 
 interface BillPreviewDialogProps {
   open: boolean;
@@ -34,8 +34,6 @@ export function BillPreviewDialog({
     if (!printRef.current) return;
     
     const printContent = printRef.current;
-    const originalDisplay = document.body.style.display;
-    const originalOverflow = document.body.style.overflow;
     
     // Create a style element for print that only uses upper half of the page
     const style = document.createElement('style');
@@ -46,50 +44,66 @@ export function BillPreviewDialog({
           margin: 10mm;
         }
         
-        html, body {
-          height: 148mm !important; /* Restrict to upper half of A4 */
-          overflow: hidden !important;
+        body {
           margin: 0 !important;
           padding: 0 !important;
         }
         
-        body * {
-          visibility: hidden;
+        /* Hide all other elements */
+        body > *:not(.print-container) {
+          display: none !important;
         }
         
-        #print-content, #print-content * {
-          visibility: visible;
-        }
-        
-        #print-content {
-          position: absolute;
-          left: 0;
-          top: 0;
+        /* Container for print content */
+        .print-container {
+          display: block !important;
+          position: relative;
           width: 100%;
-          transform-origin: top left;
+          height: 148mm !important; /* Upper half of A4 */
+          overflow: hidden !important;
+          page-break-after: avoid;
+          page-break-inside: avoid;
         }
         
-        /* Force to fit in upper half */
+        /* Reset any previous print styling */
         .print-content {
+          visibility: visible !important;
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
           max-height: 148mm !important;
+          overflow: hidden !important;
+        }
+        
+        /* Prevent any additional pages */
+        .avoid-page-break {
+          page-break-inside: avoid;
+          page-break-after: avoid;
         }
       }
     `;
     document.head.appendChild(style);
     
-    // Add ID to print content
-    printContent.setAttribute('id', 'print-content');
+    // Create temporary container for printing
+    const printContainer = document.createElement('div');
+    printContainer.className = 'print-container';
+    const printContentClone = printContent.cloneNode(true) as HTMLElement;
+    printContentClone.className = 'print-content avoid-page-break';
+    printContainer.appendChild(printContentClone);
+    document.body.appendChild(printContainer);
     
     // Print
     window.print();
     
     // Cleanup
-    printContent.removeAttribute('id');
-    document.body.style.display = originalDisplay;
-    document.body.style.overflow = originalOverflow;
+    document.body.removeChild(printContainer);
     document.head.removeChild(style);
     
-    toast.success("Print job sent to printer");
+    toast({
+      title: "Print job sent",
+      description: "The bill has been sent to your printer."
+    });
   };
 
   const handleExport = async () => {
@@ -137,10 +151,17 @@ export function BillPreviewDialog({
       // Save PDF
       pdf.save(`bill-${billData.bill_number || 'export'}.pdf`);
       
-      toast.success("Bill exported as PDF");
+      toast({
+        title: "Export successful",
+        description: "Bill exported as PDF"
+      });
     } catch (error) {
       console.error("Error exporting bill:", error);
-      toast.error("Failed to export bill");
+      toast({
+        title: "Export failed",
+        description: "Failed to export bill",
+        variant: "destructive"
+      });
     }
   };
 

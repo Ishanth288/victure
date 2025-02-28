@@ -90,14 +90,18 @@ export default function Prescriptions() {
 
   const handleToggleStatus = async (prescriptionId: number, currentStatus: string) => {
     try {
+      // Determine new status
       const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
       
+      // Update in the database
       const { error } = await supabase
         .from("prescriptions")
         .update({ status: newStatus })
         .eq("id", prescriptionId);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
       // Update local state
       setPrescriptions(prevPrescriptions => 

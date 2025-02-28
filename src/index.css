@@ -82,29 +82,29 @@
     margin: 10mm;
   }
 
-  html, body {
-    width: 210mm;
-    height: 148mm !important; /* Only upper half of A4 */
-    overflow: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  body {
+  body * {
     visibility: hidden;
   }
 
-  #print-content {
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    width: auto !important;
+    overflow: hidden !important;
+  }
+
+  .print-content, .print-content *, .print-container, .print-container * {
     visibility: visible;
+  }
+  
+  .print-content, .print-container {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
-    transform-origin: top left;
-  }
-
-  #print-content * {
-    visibility: visible;
+    max-height: 148mm !important; /* Half of A4 height */
+    overflow: hidden !important;
   }
 
   .no-print, .no-print * {
@@ -119,12 +119,7 @@
     page-break-inside: avoid;
   }
 
-  .print-content {
-    max-height: 148mm !important;
-    overflow: hidden !important;
-  }
-
-  /* Avoid page breaks and extra pages */
+  /* Prevent page breaks */
   * {
     page-break-inside: avoid;
     page-break-after: avoid;

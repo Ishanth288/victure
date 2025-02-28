@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -95,10 +94,6 @@ export function CartSummary({
   const handlePrint = () => {
     if (!billPreviewRef.current) return;
     
-    const printContent = billPreviewRef.current;
-    const originalDisplay = document.body.style.display;
-    const originalOverflow = document.body.style.overflow;
-    
     // Create a style element for print that only uses upper half of the page
     const style = document.createElement('style');
     style.innerHTML = `
@@ -108,52 +103,65 @@ export function CartSummary({
           margin: 10mm;
         }
         
-        html, body {
-          height: 148mm !important; /* Restrict to upper half of A4 */
-          overflow: hidden !important;
+        body {
           margin: 0 !important;
           padding: 0 !important;
         }
         
-        body * {
-          visibility: hidden;
+        /* Hide all other elements */
+        body > *:not(.print-container) {
+          display: none !important;
         }
         
-        #print-content, #print-content * {
-          visibility: visible;
-        }
-        
-        #print-content {
-          position: absolute;
-          left: 0;
-          top: 0;
+        /* Container for print content */
+        .print-container {
+          display: block !important;
+          position: relative;
           width: 100%;
-          transform-origin: top left;
+          height: 148mm !important; /* Upper half of A4 */
+          overflow: hidden !important;
+          page-break-after: avoid;
+          page-break-inside: avoid;
         }
         
-        /* Force to fit in upper half */
+        /* Reset any previous print styling */
         .print-content {
+          visibility: visible !important;
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
           max-height: 148mm !important;
+          overflow: hidden !important;
+        }
+        
+        /* Prevent any additional pages */
+        .avoid-page-break {
+          page-break-inside: avoid;
+          page-break-after: avoid;
         }
       }
     `;
     document.head.appendChild(style);
     
-    // Add ID to print content
-    printContent.setAttribute('id', 'print-content');
+    // Create temporary container for printing
+    const printContainer = document.createElement('div');
+    printContainer.className = 'print-container';
+    const printContentClone = billPreviewRef.current.cloneNode(true) as HTMLElement;
+    printContentClone.className = 'print-content avoid-page-break';
+    printContainer.appendChild(printContentClone);
+    document.body.appendChild(printContainer);
     
     // Print
     window.print();
     
     // Cleanup
-    printContent.removeAttribute('id');
-    document.body.style.display = originalDisplay;
-    document.body.style.overflow = originalOverflow;
+    document.body.removeChild(printContainer);
     document.head.removeChild(style);
     
     toast({
       title: "Print job sent",
-      description: "The document has been sent to your printer.",
+      description: "The bill has been sent to your printer."
     });
   };
 
@@ -204,14 +212,14 @@ export function CartSummary({
       
       toast({
         title: "Export successful",
-        description: "The bill has been exported as a PDF.",
+        description: "The bill has been exported as a PDF."
       });
     } catch (error) {
       console.error("Error exporting bill:", error);
       toast({
         title: "Export failed",
         description: "Failed to export the bill as PDF.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -221,7 +229,7 @@ export function CartSummary({
       toast({
         title: "Error",
         description: "Please add items to the cart",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -233,7 +241,7 @@ export function CartSummary({
         toast({
           title: "Error",
           description: "You must be logged in to preview bills",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
@@ -267,7 +275,7 @@ export function CartSummary({
       toast({
         title: "Error",
         description: "Failed to generate bill preview",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsGenerating(false);
@@ -280,7 +288,7 @@ export function CartSummary({
       toast({
         title: "Error",
         description: "You must be logged in to generate bills",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -289,7 +297,7 @@ export function CartSummary({
       toast({
         title: "Error",
         description: "Please add items to the cart",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -369,14 +377,14 @@ export function CartSummary({
 
       toast({
         title: "Success",
-        description: "Bill generated successfully",
+        description: "Bill generated successfully"
       });
     } catch (error) {
       console.error("Error generating bill:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to generate bill",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsGenerating(false);

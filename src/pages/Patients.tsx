@@ -70,7 +70,7 @@ export default function Patients() {
           )
         `)
         .eq("user_id", user.id)
-        .order("name", { ascending: true });
+        .order("created_at", { ascending: false }); // Sorting from newest to oldest
 
       if (error) throw error;
 
@@ -116,9 +116,10 @@ export default function Patients() {
   };
 
   const filterPatients = () => {
+    // Parse dates to timestamps for comparison
     const startTimestamp = new Date(startDate).getTime();
     const endTimestamp = new Date(endDate).getTime() + 86400000; // Add one day to include the end date
-
+    
     const filtered = patients.filter((patient) => {
       // Filter by status
       if (activeTab !== "all" && patient.status !== activeTab) {
