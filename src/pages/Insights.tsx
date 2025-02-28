@@ -150,12 +150,12 @@ export default function Insights() {
       const patientsChange = previousPatients ? ((currentPatients - previousPatients) / previousPatients) * 100 : 0;
 
       // Generate revenue trend data based on timeframe
-      let revenueChartData: any[] = [];
+      let revenueChartData: Array<{ name: string; value: number }> = [];
       
       if (currentBills) {
         if (timeframe === 'day') {
           // Group by hour
-          const hourlyData: {[key: string]: number} = {};
+          const hourlyData: Record<string, number> = {};
           for (let i = 0; i < 24; i++) {
             hourlyData[i.toString()] = 0;
           }
@@ -168,12 +168,12 @@ export default function Insights() {
           
           revenueChartData = Object.entries(hourlyData).map(([hour, amount]) => ({
             name: `${hour}:00`,
-            value: Number(amount)  // Ensure amount is a number
+            value: amount
           }));
         } else if (timeframe === 'week') {
           // Group by day of the week
           const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-          const dailyData: {[key: string]: number} = {};
+          const dailyData: Record<string, number> = {};
           daysOfWeek.forEach(day => { dailyData[day] = 0; });
           
           currentBills.forEach(bill => {
@@ -184,11 +184,11 @@ export default function Insights() {
           
           revenueChartData = Object.entries(dailyData).map(([day, amount]) => ({
             name: day.substring(0, 3),
-            value: Number(amount)  // Ensure amount is a number
+            value: amount
           }));
         } else if (timeframe === 'month') {
           // Group by date
-          const dailyData: {[key: string]: number} = {};
+          const dailyData: Record<string, number> = {};
           const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
           
           for (let i = 1; i <= daysInMonth; i++) {
@@ -203,12 +203,12 @@ export default function Insights() {
           
           revenueChartData = Object.entries(dailyData).map(([day, amount]) => ({
             name: day,
-            value: Number(amount)  // Ensure amount is a number
+            value: amount
           }));
         } else if (timeframe === 'year') {
           // Group by month
           const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-          const monthlyData: {[key: string]: number} = {};
+          const monthlyData: Record<string, number> = {};
           months.forEach(month => { monthlyData[month] = 0; });
           
           currentBills.forEach(bill => {
@@ -219,7 +219,7 @@ export default function Insights() {
           
           revenueChartData = Object.entries(monthlyData).map(([month, amount]) => ({
             name: month,
-            value: Number(amount)  // Ensure amount is a number
+            value: amount
           }));
         }
       }
