@@ -12,12 +12,27 @@ import {
 
 interface RevenueTrendChartProps {
   data: Array<{
-    date: string;
-    total: number;
+    name: string;
+    value: number;
   }>;
+  timeframe?: 'day' | 'week' | 'month' | 'year';
 }
 
-export function RevenueTrendChart({ data }: RevenueTrendChartProps) {
+export function RevenueTrendChart({ data, timeframe = 'month' }: RevenueTrendChartProps) {
+  // Format labels based on timeframe
+  const formatXAxis = (value: string) => {
+    if (timeframe === 'day') {
+      return `${value}`;
+    } else if (timeframe === 'week') {
+      return value;
+    } else if (timeframe === 'month') {
+      return `${value}`;
+    } else if (timeframe === 'year') {
+      return value;
+    }
+    return value;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -28,11 +43,12 @@ export function RevenueTrendChart({ data }: RevenueTrendChartProps) {
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
             <XAxis 
-              dataKey="date"
+              dataKey="name"
               stroke="#888888"
               fontSize={12}
               tickLine={false}
               axisLine={false}
+              tickFormatter={formatXAxis}
             />
             <YAxis
               stroke="#888888"
@@ -43,10 +59,22 @@ export function RevenueTrendChart({ data }: RevenueTrendChartProps) {
             />
             <Tooltip
               formatter={(value: any) => [`₹${value}`, 'Revenue']}
+              labelFormatter={(label) => {
+                if (timeframe === 'day') {
+                  return `Hour: ${label}`;
+                } else if (timeframe === 'week') {
+                  return `${label}`;
+                } else if (timeframe === 'month') {
+                  return `Day ${label}`;
+                } else if (timeframe === 'year') {
+                  return `${label}`;
+                }
+                return label;
+              }}
             />
             <Line 
               type="monotone" 
-              dataKey="total" 
+              dataKey="value" 
               stroke="#8884d8" 
               strokeWidth={2}
               dot={false}
