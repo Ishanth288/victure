@@ -101,7 +101,31 @@ export default function Inventory() {
         return;
       }
       
-      // Delete with both id and user_id conditions for safety
+      // First, check if this item is used in any bills
+      const { data: billItems, error: billCheckError } = await supabase
+        .from("bill_items")
+        .select("id")
+        .eq("inventory_item_id", itemToDelete)
+        .limit(1);
+        
+      if (billCheckError) {
+        console.error("Error checking bill items:", billCheckError);
+        throw billCheckError;
+      }
+      
+      if (billItems && billItems.length > 0) {
+        // This item is used in bills, so we can't delete it
+        toast({
+          title: "Cannot Delete Item",
+          description: "This item is used in one or more bills and cannot be deleted.",
+          variant: "destructive",
+        });
+        setShowDeleteDialog(false);
+        setItemToDelete(null);
+        return;
+      }
+      
+      // Now safe to delete as the item is not referenced in bills
       const { error } = await supabase
         .from("inventory")
         .delete()
@@ -123,10 +147,6 @@ export default function Inventory() {
         title: "Item deleted",
         description: "The inventory item has been removed successfully."
       });
-      
-      // Refresh inventory data to make sure UI is in sync with database
-      fetchInventoryData(); 
-      
     } catch (error: any) {
       console.error("Error deleting item:", error);
       toast({

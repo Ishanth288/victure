@@ -16,7 +16,7 @@ interface ProductsChartProps {
     name: string;
     quantity?: number;
     revenue?: number;
-    value?: number;
+    value?: number | string;
   }>;
 }
 
@@ -25,7 +25,7 @@ export function ProductsChart({ data }: ProductsChartProps) {
   const chartData = data.map(item => ({
     ...item,
     value: item.value !== undefined 
-      ? Number(item.value) 
+      ? (typeof item.value === 'string' ? Number(item.value) : item.value)
       : (item.revenue !== undefined ? Number(item.revenue) : 0)
   }));
 

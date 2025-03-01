@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ export default function Purchases() {
   const [isEditDialogOpen, setEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<number | null>(null);
+  const [selectedOrderItems, setSelectedOrderItems] = useState<PurchaseOrderItem[]>([]);
 
   useEffect(() => {
     checkAuth();
@@ -85,11 +87,27 @@ export default function Purchases() {
           if (itemsError) throw itemsError;
 
           // Cast the order status to the expected type
-          return {
-            ...order,
-            status: order.status as PurchaseOrder['status'],
-            items: items || [],
-          } as PurchaseOrder;
+          const orderWithTypedStatus: PurchaseOrder = {
+            id: order.id,
+            supplier_name: order.supplier_name,
+            supplier_phone: order.supplier_phone || "",
+            order_date: order.order_date || new Date().toISOString(),
+            status: (order.status || 'pending') as PurchaseOrder['status'],
+            notes: order.notes || undefined,
+            total_amount: order.total_amount || 0,
+            items: items?.map(item => ({
+              id: item.id,
+              item_name: item.item_name,
+              quantity_ordered: item.quantity_ordered,
+              quantity_delivered: item.quantity_delivered || 0,
+              unit_cost: item.unit_cost,
+              total_cost: item.total_cost,
+              is_delivered: item.is_delivered || false,
+              delivery_notes: item.delivery_notes
+            })) || []
+          };
+
+          return orderWithTypedStatus;
         })
       );
 
@@ -184,8 +202,13 @@ export default function Purchases() {
   };
 
   const handleUpdateDelivery = (orderId: number) => {
-    setSelectedOrderId(orderId);
-    setDeliveryDialogOpen(true);
+    // Find the order and set its items as the selected items
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+      setSelectedOrderItems(order.items);
+      setSelectedOrderId(orderId);
+      setDeliveryDialogOpen(true);
+    }
   };
 
   const handleEditOrder = (order: PurchaseOrder) => {
@@ -256,7 +279,9 @@ export default function Purchases() {
 
       // Check if all items for the order are fully delivered
       const orderToUpdate = orders.find(o => o.id === selectedOrderId);
-      const updatedItems = orderToUpdate?.items.map(item => {
+      if (!orderToUpdate) return;
+      
+      const updatedItems = orderToUpdate.items.map(item => {
         const updatedItem = itemUpdates.find((update: any) => update.id === item.id);
         return {
           ...item,
@@ -267,7 +292,17 @@ export default function Purchases() {
         };
       });
 
-      const allItemsDelivered = updatedItems?.every(item => item.is_delivered);
+      const allItemsDelivered = updatedItems.every(item => item.is_delivered);
+      
+      // Update the order status if all items are delivered
+      if (allItemsDelivered && orderToUpdate.status === 'pending') {
+        const { error } = await supabase
+          .from("purchase_orders")
+          .update({ status: "partially_delivered" })
+          .eq("id", selectedOrderId);
+
+        if (error) throw error;
+      }
 
       // Refetch orders to update UI
       fetchOrders();
@@ -283,6 +318,8 @@ export default function Purchases() {
         description: "Failed to update delivery information",
         variant: "destructive",
       });
+    } finally {
+      setDeliveryDialogOpen(false);
     }
   };
 
@@ -295,11 +332,11 @@ export default function Purchases() {
 
       if (error) throw error;
 
-      // Update local state with type safety
+      // Update local state
       setOrders(prev => 
         prev.map(order => 
           order.id === orderId
-            ? { ...order, status: "completed" as PurchaseOrder['status'] }
+            ? { ...order, status: "completed" }
             : order
         )
       );
@@ -599,9 +636,8 @@ export default function Purchases() {
       <EditDeliveryDialog
         open={isDeliveryDialogOpen}
         onOpenChange={setDeliveryDialogOpen}
-        orderItems={orders.find(o => o.id === selectedOrderId)?.items || []}
+        orderItems={selectedOrderItems}
         onSubmit={handleUpdateDeliverySubmit}
-        orderId={selectedOrderId}
       />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

@@ -1,67 +1,51 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import DashboardLayout from "@/components/DashboardLayout";
-import { RevenueTrendChart } from "@/components/insights/RevenueTrendChart";
-import { RevenueDistribution } from "@/components/insights/RevenueDistribution";
-import { ProductsChart } from "@/components/insights/ProductsChart";
-import { StatCard } from "@/components/insights/StatCard";
-import { TimeframeSelector } from "@/components/insights/TimeframeSelector";
-import { supabase } from "@/integrations/supabase/client";
-import { ArrowDown, ArrowUp, DollarSign, Users, ShoppingCart, Package } from "lucide-react";
-import { format, subDays, startOfWeek, startOfMonth, startOfYear } from "date-fns";
-import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+import { CreditCard, DollarSign, ShoppingCart, Users } from "lucide-react";
+import DashboardLayout from "@/components/DashboardLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { ProductsChart } from "@/components/insights/ProductsChart";
+import { RevenueChart } from "@/components/insights/RevenueChart";
+import { StatsCard } from "@/components/insights/StatsCard";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
+import { addDays, format, subDays, subMonths } from "date-fns";
 
 export default function Insights() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [timeframe, setTimeframe] = useState<'day' | 'week' | 'month' | 'year'>('week');
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    revenue: 0,
-    revenueChange: 0,
-    patients: 0,
-    patientsChange: 0,
-    orders: 0,
-    ordersChange: 0,
-    products: 0,
-    productsChange: 0,
+  const [dateRange, setDateRange] = useState({
+    from: subDays(new Date(), 30),
+    to: new Date(),
   });
-  const [revenueData, setRevenueData] = useState<Array<{ name: string; value: number }>>([]);
-  const [distributionData, setDistributionData] = useState<Array<{ name: string; value: number }>>([]);
-  const [productsData, setProductsData] = useState<Array<{ id: number; name: string; quantity: number; revenue: number }>>([]);
+  const [period, setPeriod] = useState("30d");
+  const [totalSales, setTotalSales] = useState(0);
+  const [salesChange, setSalesChange] = useState(0);
+  const [monthlyRevenue, setMonthlyRevenue] = useState(0);
+  const [revenueChange, setRevenueChange] = useState(0);
+  const [averageOrderValue, setAverageOrderValue] = useState(0);
+  const [aovChange, setAovChange] = useState(0);
+  const [customerRetentionRate, setCustomerRetentionRate] = useState(0);
+  const [retentionChange, setRetentionChange] = useState(0);
+  const [topProducts, setTopProducts] = useState([]);
+  const [revenueData, setRevenueData] = useState([]);
 
   useEffect(() => {
     checkAuth();
-  }, [navigate]);
-
-  useEffect(() => {
-    if (!loading) {
-      fetchInsightsData();
-    }
-  }, [timeframe]);
+    fetchInsightsData();
+  }, [dateRange]);
 
   const checkAuth = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Authentication Required",
-          description: "Please login to view insights",
-          variant: "destructive",
-        });
-        navigate("/auth");
-        return;
-      }
-      setLoading(false);
-      fetchInsightsData();
-    } catch (error) {
-      console.error("Auth check error:", error);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
       toast({
-        title: "Error",
-        description: "Authentication check failed",
+        title: "Authentication Required",
+        description: "Please login to view insights",
         variant: "destructive",
       });
+      navigate("/auth");
     }
   };
 
@@ -69,381 +53,287 @@ export default function Insights() {
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) return;
 
-      // Set date range based on timeframe
-      let startDate;
-      let previousStartDate;
-      let interval: 'day' | 'week' | 'month';
-      const now = new Date();
+      // Format dates for query
+      const fromDate = format(dateRange.from, "yyyy-MM-dd");
+      const toDate = format(dateRange.to, "yyyy-MM-dd");
+      
+      // Previous period for comparison
+      const daysDiff = Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
+      const prevFromDate = format(subDays(dateRange.from, daysDiff), "yyyy-MM-dd");
+      const prevToDate = format(subDays(dateRange.from, 1), "yyyy-MM-dd");
 
-      switch(timeframe) {
-        case 'day':
-          startDate = new Date(now);
-          startDate.setHours(0, 0, 0, 0);
-          previousStartDate = subDays(startDate, 1);
-          interval = 'day';
-          break;
-        case 'week':
-          startDate = startOfWeek(now);
-          previousStartDate = subDays(startDate, 7);
-          interval = 'day';
-          break;
-        case 'month':
-          startDate = startOfMonth(now);
-          previousStartDate = subDays(startDate, 30);
-          interval = 'week';
-          break;
-        case 'year':
-          startDate = startOfYear(now);
-          previousStartDate = subDays(startDate, 365);
-          interval = 'month';
-          break;
-      }
+      // Fetch bills for current period
+      const { data: currentBills, error: billsError } = await supabase
+        .from("bills")
+        .select("*")
+        .eq("user_id", user.id)
+        .gte("date", fromDate)
+        .lte("date", toDate);
 
-      // Fetch data for the current period
-      const { data: currentBills } = await supabase
-        .from('bills')
+      if (billsError) throw billsError;
+
+      // Fetch bills for previous period
+      const { data: prevBills, error: prevBillsError } = await supabase
+        .from("bills")
+        .select("*")
+        .eq("user_id", user.id)
+        .gte("date", prevFromDate)
+        .lte("date", prevToDate);
+
+      if (prevBillsError) throw prevBillsError;
+
+      // Calculate total sales (number of bills)
+      const currentSalesCount = currentBills?.length || 0;
+      const prevSalesCount = prevBills?.length || 0;
+      setTotalSales(currentSalesCount);
+      
+      // Calculate sales change percentage
+      const salesChangePercent = prevSalesCount > 0 
+        ? ((currentSalesCount - prevSalesCount) / prevSalesCount) * 100 
+        : 0;
+      setSalesChange(Math.round(salesChangePercent));
+
+      // Calculate monthly revenue
+      const currentRevenue = currentBills?.reduce((sum, bill) => sum + (bill.total_amount || 0), 0) || 0;
+      const prevRevenue = prevBills?.reduce((sum, bill) => sum + (bill.total_amount || 0), 0) || 0;
+      setMonthlyRevenue(currentRevenue);
+      
+      // Calculate revenue change percentage
+      const revenueChangePercent = prevRevenue > 0 
+        ? ((currentRevenue - prevRevenue) / prevRevenue) * 100 
+        : 0;
+      setRevenueChange(Math.round(revenueChangePercent));
+
+      // Calculate average order value
+      const currentAOV = currentSalesCount > 0 ? currentRevenue / currentSalesCount : 0;
+      const prevAOV = prevSalesCount > 0 ? prevRevenue / prevSalesCount : 0;
+      setAverageOrderValue(currentAOV);
+      
+      // Calculate AOV change percentage
+      const aovChangePercent = prevAOV > 0 
+        ? ((currentAOV - prevAOV) / prevAOV) * 100 
+        : 0;
+      setAovChange(Math.round(aovChangePercent));
+
+      // Fetch top products
+      const { data: billItems, error: itemsError } = await supabase
+        .from("bill_items")
         .select(`
-          id, 
-          date, 
-          total_amount,
-          bill_items (
-            inventory_item_id,
-            quantity
-          )
+          id,
+          inventory_item_id,
+          quantity,
+          unit_price,
+          total_price,
+          bill_id,
+          bills!inner(date, user_id),
+          inventory!inner(name)
         `)
-        .eq('user_id', user.id)
-        .gte('date', startDate.toISOString());
+        .eq("bills.user_id", user.id)
+        .gte("bills.date", fromDate)
+        .lte("bills.date", toDate);
 
-      // Fetch data for the previous period
-      const { data: previousBills } = await supabase
-        .from('bills')
-        .select('total_amount')
-        .eq('user_id', user.id)
-        .gte('date', previousStartDate.toISOString())
-        .lt('date', startDate.toISOString());
+      if (itemsError) throw itemsError;
 
-      // Fetch patients data
-      const { data: patients } = await supabase
-        .from('patients')
-        .select('id, created_at')
-        .eq('user_id', user.id);
-
-      // Fetch inventory data
-      const { data: inventory } = await supabase
-        .from('inventory')
-        .select('id, name, quantity, unit_cost')
-        .eq('user_id', user.id);
-
-      // Calculate stats
-      const currentRevenue = currentBills?.reduce((sum, bill) => sum + (Number(bill.total_amount) || 0), 0) || 0;
-      const previousRevenue = previousBills?.reduce((sum, bill) => sum + (Number(bill.total_amount) || 0), 0) || 0;
-      const revenueChange = previousRevenue ? ((currentRevenue - previousRevenue) / previousRevenue) * 100 : 0;
-
-      const currentPatients = patients?.filter(p => new Date(p.created_at) >= startDate).length || 0;
-      const previousPatients = patients?.filter(p => 
-        new Date(p.created_at) >= previousStartDate && new Date(p.created_at) < startDate
-      ).length || 0;
-      const patientsChange = previousPatients ? ((currentPatients - previousPatients) / previousPatients) * 100 : 0;
-
-      // Generate revenue trend data based on timeframe
-      const revenueChartData: Array<{ name: string; value: number }> = [];
-      
-      if (currentBills) {
-        if (timeframe === 'day') {
-          // Group by hour
-          const hourlyData: Record<number, number> = {};
-          for (let i = 0; i < 24; i++) {
-            hourlyData[i] = 0;
-          }
-          
-          currentBills.forEach(bill => {
-            const date = new Date(bill.date);
-            const hour = date.getHours();
-            hourlyData[hour] = (hourlyData[hour] || 0) + (Number(bill.total_amount) || 0);
+      // Process top products by revenue
+      const productMap = new Map();
+      billItems?.forEach(item => {
+        const productName = item.inventory?.name || `Product ${item.inventory_item_id}`;
+        const revenue = item.total_price || 0;
+        
+        if (productMap.has(productName)) {
+          const product = productMap.get(productName);
+          product.revenue += revenue;
+          product.quantity += item.quantity || 0;
+        } else {
+          productMap.set(productName, {
+            name: productName,
+            revenue,
+            quantity: item.quantity || 0,
           });
-          
-          for (let hour = 0; hour < 24; hour++) {
-            revenueChartData.push({
-              name: `${hour}:00`,
-              value: Number(hourlyData[hour])
-            });
-          }
-        } else if (timeframe === 'week') {
-          // Group by day of the week
-          const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-          const dailyData: Record<number, number> = {};
-          for (let i = 0; i < 7; i++) {
-            dailyData[i] = 0;
-          }
-          
-          currentBills.forEach(bill => {
-            const date = new Date(bill.date);
-            const day = date.getDay();
-            dailyData[day] = (dailyData[day] || 0) + (Number(bill.total_amount) || 0);
-          });
-          
-          for (let day = 0; day < 7; day++) {
-            revenueChartData.push({
-              name: daysOfWeek[day].substring(0, 3),
-              value: Number(dailyData[day])
-            });
-          }
-        } else if (timeframe === 'month') {
-          // Group by date
-          const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-          const dailyData: Record<number, number> = {};
-          for (let i = 1; i <= daysInMonth; i++) {
-            dailyData[i] = 0;
-          }
-          
-          currentBills.forEach(bill => {
-            const date = new Date(bill.date);
-            const day = date.getDate();
-            dailyData[day] = (dailyData[day] || 0) + (Number(bill.total_amount) || 0);
-          });
-          
-          for (let day = 1; day <= daysInMonth; day++) {
-            revenueChartData.push({
-              name: day.toString(),
-              value: Number(dailyData[day])
-            });
-          }
-        } else if (timeframe === 'year') {
-          // Group by month
-          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-          const monthlyData: Record<number, number> = {};
-          for (let i = 0; i < 12; i++) {
-            monthlyData[i] = 0;
-          }
-          
-          currentBills.forEach(bill => {
-            const date = new Date(bill.date);
-            const month = date.getMonth();
-            monthlyData[month] = (monthlyData[month] || 0) + (Number(bill.total_amount) || 0);
-          });
-          
-          for (let month = 0; month < 12; month++) {
-            revenueChartData.push({
-              name: months[month],
-              value: Number(monthlyData[month])
-            });
-          }
         }
+      });
+
+      // Convert to array and sort by revenue
+      const productsArray = Array.from(productMap.values())
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10)
+        .map(product => ({
+          name: product.name,
+          value: product.revenue,
+        }));
+      
+      setTopProducts(productsArray);
+
+      // Generate revenue data for chart
+      const revenueByDay = new Map();
+      const days = daysDiff + 1; // Include both start and end dates
+      
+      // Initialize all days with zero revenue
+      for (let i = 0; i < days; i++) {
+        const date = addDays(dateRange.from, i);
+        const dateStr = format(date, "yyyy-MM-dd");
+        revenueByDay.set(dateStr, 0);
       }
-
-      // Generate revenue distribution data (by product category)
-      const itemFrequency: {[key: number]: number} = {};
-      const itemRevenue: {[key: number]: number} = {};
       
-      if (currentBills && currentBills.length > 0) {
-        currentBills.forEach(bill => {
-          bill.bill_items.forEach((item: any) => {
-            const itemId = item.inventory_item_id;
-            if (itemFrequency[itemId]) {
-              itemFrequency[itemId] += item.quantity;
-            } else {
-              itemFrequency[itemId] = item.quantity;
-            }
-          });
-        });
-      }
-
-      // Map inventory items to their names
-      const inventoryMap = new Map();
-      inventory?.forEach(item => {
-        inventoryMap.set(item.id, { name: item.name, unit_cost: item.unit_cost });
-      });
-
-      // Calculate revenue for each product
-      Object.entries(itemFrequency).forEach(([itemId, quantity]) => {
-        const item = inventoryMap.get(parseInt(itemId));
-        if (item) {
-          itemRevenue[parseInt(itemId)] = Number(quantity) * (Number(item.unit_cost) || 0);
-        }
-      });
-
-      // Top 5 products by revenue
-      const productRevenueData: Array<{ name: string; value: number }> = [];
-      
-      Object.entries(itemRevenue).forEach(([itemId, revenue]) => {
-        const item = inventoryMap.get(parseInt(itemId));
-        if (item) {
-          productRevenueData.push({
-            name: item.name || `Item #${itemId}`,
-            value: Number(revenue)
-          });
+      // Fill in actual revenue data
+      currentBills?.forEach(bill => {
+        const dateStr = bill.date.substring(0, 10); // Get YYYY-MM-DD part
+        if (revenueByDay.has(dateStr)) {
+          revenueByDay.set(dateStr, revenueByDay.get(dateStr) + (bill.total_amount || 0));
         }
       });
       
-      // Sort and slice the product revenue data
-      productRevenueData.sort((a, b) => b.value - a.value);
-      const top5ProductsData = productRevenueData.slice(0, 4);
-
-      // Calculate total orders and order change
-      const currentOrders = currentBills?.length || 0;
-      const previousOrders = previousBills?.length || 0;
-      const ordersChange = previousOrders ? ((currentOrders - previousOrders) / previousOrders) * 100 : 0;
-
-      // Calculate total products and product change
-      // For this example, we'll count how many unique products were sold
-      const currentProductsSold = new Set();
-      if (currentBills) {
-        currentBills.forEach(bill => {
-          bill.bill_items.forEach((item: any) => {
-            currentProductsSold.add(item.inventory_item_id);
-          });
-        });
-      }
-      const productsCount = currentProductsSold.size;
-      const productsChange = (productsCount / (inventory?.length || 1)) * 100;
-
-      // Prepare top products data
-      const topProducts: Array<{ id: number; name: string; quantity: number; revenue: number }> = [];
+      // Convert to array for chart
+      const revenueChartData = Array.from(revenueByDay.entries())
+        .map(([date, value]) => ({
+          date,
+          value,
+        }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       
-      Object.entries(itemFrequency).forEach(([itemId, quantity]) => {
-        const item = inventoryMap.get(parseInt(itemId));
-        if (item) {
-          const revenue = Number(quantity) * (Number(item.unit_cost) || 0);
-          topProducts.push({
-            id: parseInt(itemId),
-            name: item.name || `Item #${itemId}`,
-            quantity: Number(quantity),
-            revenue: revenue
-          });
-        }
-      });
-      
-      // Sort and slice the top products data
-      topProducts.sort((a, b) => b.quantity - a.quantity);
-      const top10Products = topProducts.slice(0, 10);
-
-      // Update state with calculated data
-      setStats({
-        revenue: Number(currentRevenue),
-        revenueChange: Number(revenueChange),
-        patients: Number(currentPatients),
-        patientsChange: Number(patientsChange),
-        orders: Number(currentOrders),
-        ordersChange: Number(ordersChange),
-        products: Number(productsCount),
-        productsChange: Number(productsChange)
-      });
-
       setRevenueData(revenueChartData);
-      setDistributionData(top5ProductsData);
-      setProductsData(top10Products);
 
+      // Calculate customer retention (simplified)
+      // In a real app, this would be more complex, comparing repeat customers
+      setCustomerRetentionRate(65); // Placeholder value
+      setRetentionChange(5); // Placeholder value
+
+      setLoading(false);
     } catch (error) {
-      console.error("Error fetching insights data:", error);
+      console.error("Error fetching insights:", error);
       toast({
         title: "Error",
         description: "Failed to load insights data",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };
 
+  const handlePeriodChange = (newPeriod: string) => {
+    setPeriod(newPeriod);
+    
+    const today = new Date();
+    let fromDate;
+    
+    switch (newPeriod) {
+      case "7d":
+        fromDate = subDays(today, 7);
+        break;
+      case "30d":
+        fromDate = subDays(today, 30);
+        break;
+      case "90d":
+        fromDate = subDays(today, 90);
+        break;
+      case "6m":
+        fromDate = subMonths(today, 6);
+        break;
+      case "1y":
+        fromDate = subMonths(today, 12);
+        break;
+      default:
+        fromDate = subDays(today, 30);
+    }
+    
+    setDateRange({
+      from: fromDate,
+      to: today,
+    });
+  };
+
+  const stats = [
+    {
+      title: "Total Sales",
+      value: Number(totalSales),
+      icon: <CreditCard className="h-4 w-4" />,
+      description: `${salesChange > 0 ? "+" : ""}${salesChange}% from last period`,
+      trend: salesChange >= 0 ? "up" : "down",
+    },
+    {
+      title: "Monthly Revenue",
+      value: Number(monthlyRevenue),
+      icon: <DollarSign className="h-4 w-4" />,
+      description: `${revenueChange > 0 ? "+" : ""}${revenueChange}% from last month`,
+      trend: revenueChange >= 0 ? "up" : "down",
+    },
+    {
+      title: "Average Order Value",
+      value: Number(averageOrderValue),
+      icon: <ShoppingCart className="h-4 w-4" />,
+      description: `${aovChange > 0 ? "+" : ""}${aovChange}% from last period`,
+      trend: aovChange >= 0 ? "up" : "down",
+    },
+    {
+      title: "Customer Retention",
+      value: Number(customerRetentionRate),
+      suffix: "%",
+      icon: <Users className="h-4 w-4" />,
+      description: `${retentionChange > 0 ? "+" : ""}${retentionChange}% from last period`,
+      trend: retentionChange >= 0 ? "up" : "down",
+    },
+  ];
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <p>Loading insights...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
-      <div className="container mx-auto p-4 space-y-8">
-        <h1 className="text-3xl font-bold">Business Insights</h1>
-        
-        <TimeframeSelector timeframe={timeframe} onTimeframeChange={setTimeframe} />
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            title="Revenue"
-            value={`₹${stats.revenue.toLocaleString()}`}
-            description={`${Math.abs(stats.revenueChange).toFixed(1)}% ${stats.revenueChange >= 0 ? 'increase' : 'decrease'}`}
-            icon={DollarSign}
-            trend={stats.revenueChange >= 0 ? 'up' : 'down'}
-          />
-          <StatCard
-            title="New Patients"
-            value={stats.patients.toString()}
-            description={`${Math.abs(stats.patientsChange).toFixed(1)}% ${stats.patientsChange >= 0 ? 'increase' : 'decrease'}`}
-            icon={Users}
-            trend={stats.patientsChange >= 0 ? 'up' : 'down'}
-          />
-          <StatCard
-            title="Orders"
-            value={stats.orders.toString()}
-            description={`${Math.abs(stats.ordersChange).toFixed(1)}% ${stats.ordersChange >= 0 ? 'increase' : 'decrease'}`}
-            icon={ShoppingCart}
-            trend={stats.ordersChange >= 0 ? 'up' : 'down'}
-          />
-          <StatCard
-            title="Products Sold"
-            value={stats.products.toString()}
-            description={`${stats.productsChange.toFixed(1)}% of inventory`}
-            icon={Package}
-            trend="neutral"
-          />
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+          <h1 className="text-3xl font-bold mb-4 md:mb-0">Insights</h1>
+          
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Tabs 
+              value={period} 
+              onValueChange={handlePeriodChange}
+              className="w-full sm:w-auto"
+            >
+              <TabsList className="grid grid-cols-5 w-full sm:w-auto">
+                <TabsTrigger value="7d">7D</TabsTrigger>
+                <TabsTrigger value="30d">30D</TabsTrigger>
+                <TabsTrigger value="90d">90D</TabsTrigger>
+                <TabsTrigger value="6m">6M</TabsTrigger>
+                <TabsTrigger value="1y">1Y</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            
+            <DateRangePicker
+              value={dateRange}
+              onChange={setDateRange}
+            />
+          </div>
         </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2">
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+          {stats.map((stat, index) => (
+            <StatsCard key={index} {...stat} />
+          ))}
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 mb-8">
+          <Card>
             <CardHeader>
-              <CardTitle>Revenue Trend</CardTitle>
+              <CardTitle>Revenue Over Time</CardTitle>
             </CardHeader>
             <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center h-64">
-                  Loading...
-                </div>
-              ) : (
-                <RevenueTrendChart data={revenueData} timeframe={timeframe} />
-              )}
+              <RevenueChart data={revenueData} />
             </CardContent>
           </Card>
           
-          <Card>
-            <CardHeader>
-              <CardTitle>Revenue Distribution</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center h-64">
-                  Loading...
-                </div>
-              ) : (
-                distributionData.length > 0 ? (
-                  <RevenueDistribution data={distributionData} />
-                ) : (
-                  <div className="flex items-center justify-center h-64 text-gray-500">
-                    No product revenue data available for this period
-                  </div>
-                )
-              )}
-            </CardContent>
-          </Card>
+          <ProductsChart data={topProducts} />
         </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Top Products</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center h-64">
-                Loading...
-              </div>
-            ) : (
-              productsData.length > 0 ? (
-                <ProductsChart data={productsData} />
-              ) : (
-                <div className="flex items-center justify-center h-64 text-gray-500">
-                  No product sales data available for this period
-                </div>
-              )
-            )}
-          </CardContent>
-        </Card>
       </div>
     </DashboardLayout>
   );
