@@ -169,7 +169,7 @@ export default function Insights() {
           for (let hour = 0; hour < 24; hour++) {
             revenueChartData.push({
               name: `${hour}:00`,
-              value: hourlyData[hour]
+              value: Number(hourlyData[hour])
             });
           }
         } else if (timeframe === 'week') {
@@ -189,7 +189,7 @@ export default function Insights() {
           for (let day = 0; day < 7; day++) {
             revenueChartData.push({
               name: daysOfWeek[day].substring(0, 3),
-              value: dailyData[day]
+              value: Number(dailyData[day])
             });
           }
         } else if (timeframe === 'month') {
@@ -209,7 +209,7 @@ export default function Insights() {
           for (let day = 1; day <= daysInMonth; day++) {
             revenueChartData.push({
               name: day.toString(),
-              value: dailyData[day]
+              value: Number(dailyData[day])
             });
           }
         } else if (timeframe === 'year') {
@@ -229,7 +229,7 @@ export default function Insights() {
           for (let month = 0; month < 12; month++) {
             revenueChartData.push({
               name: months[month],
-              value: monthlyData[month]
+              value: Number(monthlyData[month])
             });
           }
         }
