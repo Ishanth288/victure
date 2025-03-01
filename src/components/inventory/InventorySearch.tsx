@@ -36,7 +36,7 @@ export default function InventorySearch({
             variant={activeFilter === "expiringSoon" ? "default" : "outline"} 
             size="sm" 
             className="gap-2"
-            onClick={() => onFilterChange(activeFilter === "expiringSoon" ? "" : "expiringSoon")}
+            onClick={() => onFilterChange("expiringSoon")}
           >
             <Clock className="h-4 w-4" />
             Expiring Soon
@@ -45,7 +45,7 @@ export default function InventorySearch({
             variant={activeFilter === "lowStock" ? "default" : "outline"} 
             size="sm" 
             className="gap-2"
-            onClick={() => onFilterChange(activeFilter === "lowStock" ? "" : "lowStock")}
+            onClick={() => onFilterChange("lowStock")}
           >
             <AlertTriangle className="h-4 w-4" />
             Low Stock

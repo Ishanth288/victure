@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Download, Printer } from "lucide-react";
@@ -14,14 +13,28 @@ import { calculateTotalAmount } from "@/utils/purchaseOrderUtils";
 import type { PurchaseOrder } from "@/types/purchases";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Purchases() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
   const [selectedBill, setSelectedBill] = useState<any>(null);
   const [showBillPreview, setShowBillPreview] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<number | null>(null);
   const ordersContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -151,6 +164,109 @@ export default function Purchases() {
     setShowBillPreview(true);
   };
 
+  const handleEditOrder = (order: PurchaseOrder) => {
+    setSelectedOrder(order);
+    setShowEditDialog(true);
+  };
+
+  const handleDeleteOrder = (orderId: number) => {
+    setOrderToDelete(orderId);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteOrder = async () => {
+    if (!orderToDelete) return;
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to delete orders",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Delete order items first
+      const { error: itemsError } = await supabase
+        .from("purchase_order_items")
+        .delete()
+        .eq("purchase_order_id", orderToDelete);
+        
+      if (itemsError) throw itemsError;
+      
+      // Then delete the order
+      const { error: orderError } = await supabase
+        .from("purchase_orders")
+        .delete()
+        .eq("id", orderToDelete)
+        .eq("user_id", user.id);
+        
+      if (orderError) throw orderError;
+
+      // Update local state
+      setOrders(prev => prev.filter(order => order.id !== orderToDelete));
+      
+      toast({
+        title: "Success",
+        description: "Purchase order deleted successfully",
+      });
+    } catch (error: any) {
+      console.error("Error deleting order:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete purchase order",
+        variant: "destructive",
+      });
+    } finally {
+      setShowDeleteDialog(false);
+      setOrderToDelete(null);
+    }
+  };
+
+  const handleUpdateOrder = async (data: any) => {
+    if (!selectedOrder) return;
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const totalAmount = calculateTotalAmount(data.items);
+      const orderData = {
+        supplier_name: data.supplier_name,
+        supplier_phone: data.supplier_phone,
+        order_date: data.order_date,
+        total_amount: totalAmount
+      };
+
+      // Update the order
+      const { error: orderError } = await supabase
+        .from("purchase_orders")
+        .update(orderData)
+        .eq("id", selectedOrder.id)
+        .eq("user_id", user.id);
+        
+      if (orderError) throw orderError;
+
+      toast({
+        title: "Success",
+        description: "Purchase order updated successfully",
+      });
+
+      setShowEditDialog(false);
+      setSelectedOrder(null);
+      loadOrders();
+    } catch (error) {
+      console.error("Error updating order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update purchase order",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleExportOrders = async () => {
     if (!ordersContainerRef.current) return;
     
@@ -271,6 +387,8 @@ export default function Purchases() {
               order={order}
               onUpdateDelivery={handleUpdateDelivery}
               onPreviewBill={handlePreviewBill}
+              onDelete={handleDeleteOrder}
+              onEdit={handleEditOrder}
             />
           ))}
         </div>
@@ -281,6 +399,16 @@ export default function Purchases() {
           onSubmit={handleCreateOrder}
         />
 
+        {selectedOrder && (
+          <AddPurchaseOrderDialog
+            open={showEditDialog}
+            onOpenChange={setShowEditDialog}
+            onSubmit={handleUpdateOrder}
+            initialData={selectedOrder}
+            isEditing={true}
+          />
+        )}
+
         {selectedBill && (
           <BillPreviewDialog
             open={showBillPreview}
@@ -289,6 +417,23 @@ export default function Purchases() {
             items={selectedBill.items}
           />
         )}
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Purchase Order</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this purchase order? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeleteOrder} className="bg-red-600 hover:bg-red-700">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

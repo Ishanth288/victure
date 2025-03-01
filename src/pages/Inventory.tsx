@@ -90,10 +90,23 @@ export default function Inventory() {
     if (!itemToDelete) return;
     
     try {
+      // Get current user to ensure we're only deleting their items
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to delete items",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Delete with both id and user_id conditions for safety
       const { error } = await supabase
         .from("inventory")
         .delete()
-        .eq("id", itemToDelete);
+        .eq("id", itemToDelete)
+        .eq("user_id", user.id); // Add user_id filter for security
 
       if (error) throw error;
 
@@ -121,7 +134,7 @@ export default function Inventory() {
   };
 
   const handleApplyFilter = (type: string) => {
-    setFilterType(type);
+    setFilterType(type === filterType ? null : type);
     setCurrentPage(1);
   };
 

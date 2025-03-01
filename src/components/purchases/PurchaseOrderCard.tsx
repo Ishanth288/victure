@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { formatDistance } from "date-fns";
-import { Edit2, FileCheck, Printer } from "lucide-react";
+import { Edit2, FileCheck, Printer, Trash2 } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,9 +14,17 @@ interface PurchaseOrderCardProps {
   order: PurchaseOrder;
   onUpdateDelivery: (orderId: number, items: PurchaseOrder['items'], notes: string) => Promise<void>;
   onPreviewBill: (order: PurchaseOrder) => void;
+  onDelete?: (orderId: number) => void;
+  onEdit?: (order: PurchaseOrder) => void;
 }
 
-export function PurchaseOrderCard({ order, onUpdateDelivery, onPreviewBill }: PurchaseOrderCardProps) {
+export function PurchaseOrderCard({ 
+  order, 
+  onUpdateDelivery, 
+  onPreviewBill,
+  onDelete,
+  onEdit
+}: PurchaseOrderCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [orderStatus, setOrderStatus] = useState(order.status);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
@@ -98,6 +106,18 @@ export function PurchaseOrderCard({ order, onUpdateDelivery, onPreviewBill }: Pu
     }
   };
 
+  const handleDelete = () => {
+    if (onDelete && order.id) {
+      onDelete(order.id);
+    }
+  };
+
+  const handleEdit = () => {
+    if (onEdit) {
+      onEdit(order);
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -162,11 +182,25 @@ export function PurchaseOrderCard({ order, onUpdateDelivery, onPreviewBill }: Pu
         </div>
       </CardContent>
       <CardFooter className="border-t pt-4 flex justify-between">
-        <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
-          <Edit2 className="h-4 w-4 mr-2" />
-          Update Delivery
-        </Button>
         <div className="flex space-x-2">
+          <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
+            <Edit2 className="h-4 w-4 mr-2" />
+            Update Delivery
+          </Button>
+          {onEdit && (
+            <Button variant="outline" size="sm" onClick={handleEdit}>
+              <Edit2 className="h-4 w-4 mr-2" />
+              Edit Order
+            </Button>
+          )}
+        </div>
+        <div className="flex space-x-2">
+          {onDelete && (
+            <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-500 hover:text-red-700 hover:bg-red-50">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => onPreviewBill(order)}>
             <Printer className="h-4 w-4 mr-2" />
             Print Order

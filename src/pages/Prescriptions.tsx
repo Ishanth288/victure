@@ -1,49 +1,46 @@
 
 import { useState, useEffect } from "react";
-import { format } from "date-fns";
-import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useToast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { Eye, Download, Printer, XCircle, CheckCircle } from "lucide-react";
-import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
-import { useToast } from "@/components/ui/use-toast";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-interface Prescription {
-  id: number;
-  prescription_number: string;
-  date: string;
-  doctor_name: string;
-  status: string;
-  patient: {
-    name: string;
-    phone_number: string;
-  };
-  bills: Array<{
-    id: number;
-    bill_number: string;
-    total_amount: number;
-    date: string;
-  }>;
-}
+import { Input } from "@/components/ui/input";
+import { format } from "date-fns";
+import { Link } from "react-router-dom";
+import { AlertCircle, ClipboardList, Filter, Search, Pill, User } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Prescriptions() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [prescriptions, setPrescriptions] = useState<any[]>([]);
+  const [filteredPrescriptions, setFilteredPrescriptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedBill, setSelectedBill] = useState<any>(null);
-  const [showBillPreview, setShowBillPreview] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("active");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("active");
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [prescriptionToUpdate, setPrescriptionToUpdate] = useState<number | null>(null);
+  const [currentStatus, setCurrentStatus] = useState<"active" | "inactive">("active");
 
   useEffect(() => {
     checkAuth();
     fetchPrescriptions();
   }, []);
+
+  useEffect(() => {
+    filterPrescriptions();
+  }, [searchQuery, statusFilter, prescriptions]);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -59,56 +56,86 @@ export default function Prescriptions() {
 
   const fetchPrescriptions = async () => {
     try {
-      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        return;
-      }
+      if (!user) return;
 
       const { data, error } = await supabase
         .from("prescriptions")
         .select(`
           *,
-          patient:patients (*),
-          bills (*)
+          patient:patients (
+            id,
+            name,
+            phone_number
+          )
         `)
-        .eq('user_id', user.id)
-        .order('date', { ascending: false });
+        .eq("user_id", user.id)
+        .order("date", { ascending: false });
 
       if (error) throw error;
+
       setPrescriptions(data || []);
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching prescriptions:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load prescriptions",
-        variant: "destructive",
-      });
-    } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleStatus = async (prescriptionId: number, currentStatus: string) => {
+  const filterPrescriptions = () => {
+    let filtered = [...prescriptions];
+    
+    // Filter by status
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(prescription => prescription.status === statusFilter);
+    }
+    
+    // Filter by search query
+    if (searchQuery) {
+      filtered = filtered.filter(prescription => 
+        prescription.patient?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        prescription.doctor_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        prescription.prescription_number.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    setFilteredPrescriptions(filtered);
+  };
+
+  const handleToggleStatus = (prescriptionId: number, status: "active" | "inactive") => {
+    setPrescriptionToUpdate(prescriptionId);
+    setCurrentStatus(status);
+    setShowStatusDialog(true);
+  };
+
+  const confirmStatusChange = async () => {
+    if (!prescriptionToUpdate) return;
+    
     try {
-      // Determine new status
-      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      const newStatus = currentStatus === "active" ? "inactive" : "active";
       
-      // Update in the database
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to update prescription status",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const { error } = await supabase
         .from("prescriptions")
         .update({ status: newStatus })
-        .eq("id", prescriptionId);
+        .eq("id", prescriptionToUpdate)
+        .eq("user_id", user.id);
 
-      if (error) {
-        console.error("Supabase update error:", error);
-        throw error;
-      }
+      if (error) throw error;
 
       // Update local state
       setPrescriptions(prevPrescriptions => 
         prevPrescriptions.map(prescription => 
-          prescription.id === prescriptionId
+          prescription.id === prescriptionToUpdate
             ? { ...prescription, status: newStatus }
             : prescription
         )
@@ -125,64 +152,19 @@ export default function Prescriptions() {
         description: error.message || "Failed to update prescription status",
         variant: "destructive",
       });
+    } finally {
+      setShowStatusDialog(false);
+      setPrescriptionToUpdate(null);
     }
   };
-
-  const viewBill = async (billId: number) => {
-    try {
-      const { data: billData, error } = await supabase
-        .from("bills")
-        .select(`
-          *,
-          prescription:prescriptions (
-            *,
-            patient:patients (
-              name,
-              phone_number
-            )
-          ),
-          bill_items:bill_items (
-            *,
-            inventory_item:inventory (
-              name,
-              unit_cost
-            )
-          )
-        `)
-        .eq("id", billId)
-        .single();
-
-      if (error) throw error;
-
-      const items = billData.bill_items.map((item: any) => ({
-        id: item.inventory_item?.id || 0,
-        name: item.inventory_item?.name || 'Unknown',
-        quantity: item.quantity,
-        unit_cost: item.unit_price,
-        total: item.total_price,
-      }));
-
-      setSelectedBill({ ...billData, items });
-      setShowBillPreview(true);
-    } catch (error) {
-      console.error("Error fetching bill details:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load bill details",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const filteredPrescriptions = prescriptions.filter(prescription => 
-    activeTab === "all" || prescription.status === activeTab
-  );
 
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-screen">
-          Loading...
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <p>Loading prescriptions...</p>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -190,127 +172,106 @@ export default function Prescriptions() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto px-4 py-6">
-        <Card className="mb-6">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-2xl">Prescriptions</CardTitle>
-            <Tabs defaultValue="active" value={activeTab} onValueChange={setActiveTab}>
-              <TabsList>
-                <TabsTrigger value="active">Active</TabsTrigger>
-                <TabsTrigger value="inactive">Inactive</TabsTrigger>
-                <TabsTrigger value="all">All</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </CardHeader>
-        </Card>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+          <h1 className="text-2xl font-bold mb-4 md:mb-0">Prescriptions</h1>
+          <div className="flex gap-2">
+            <Button onClick={() => setStatusFilter("all")} variant={statusFilter === "all" ? "default" : "outline"}>
+              All
+            </Button>
+            <Button onClick={() => setStatusFilter("active")} variant={statusFilter === "active" ? "default" : "outline"}>
+              Active
+            </Button>
+            <Button onClick={() => setStatusFilter("inactive")} variant={statusFilter === "inactive" ? "default" : "outline"}>
+              Inactive
+            </Button>
+          </div>
+        </div>
+        
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-neutral-400" />
+            <Input
+              placeholder="Search by patient name, doctor or prescription number..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
 
-        <div className="grid grid-cols-1 gap-6">
-          {filteredPrescriptions.length === 0 ? (
-            <Card>
-              <CardContent className="p-6 text-center text-gray-500">
-                No prescriptions found
-              </CardContent>
-            </Card>
-          ) : (
-            filteredPrescriptions.map((prescription) => (
-              <Card 
-                key={prescription.id} 
-                className={prescription.status === 'inactive' ? 'bg-gray-50' : ''}
-              >
-                <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row justify-between gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <p className="text-lg font-semibold">
-                          {prescription.patient.name}
-                        </p>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          prescription.status === 'active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {prescription.status}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-500">
-                        {prescription.patient.phone_number}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Dr. {prescription.doctor_name}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {format(new Date(prescription.date), "dd/MM/yyyy")}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {prescription.prescription_number}
-                      </p>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleToggleStatus(prescription.id, prescription.status)}
-                        className="mt-2"
-                      >
-                        {prescription.status === 'active' ? (
-                          <>
-                            <XCircle className="h-4 w-4 mr-2" />
-                            Mark Inactive
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Mark Active
-                          </>
-                        )}
-                      </Button>
+        {filteredPrescriptions.length === 0 ? (
+          <div className="text-center p-8 bg-gray-50 rounded-lg">
+            <ClipboardList className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-lg font-medium">No prescriptions found</h3>
+            <p className="mt-1 text-gray-500">Try adjusting your search or filter criteria.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            {filteredPrescriptions.map((prescription) => (
+              <Card key={prescription.id} className="overflow-hidden">
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg">{prescription.patient?.name || "Unknown Patient"}</CardTitle>
+                    <div className="flex items-center space-x-1">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        prescription.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+                      }`}>
+                        {prescription.status === "active" ? "Active" : "Inactive"}
+                      </span>
                     </div>
-
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Bills</p>
-                      {prescription.bills.length === 0 ? (
-                        <p className="text-sm text-gray-500">No bills</p>
-                      ) : (
-                        prescription.bills.map((bill) => (
-                          <div
-                            key={bill.id}
-                            className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                          >
-                            <div>
-                              <p className="text-sm font-medium">
-                                {bill.bill_number}
-                              </p>
-                              <p className="text-sm text-gray-500">
-                                ₹{bill.total_amount.toFixed(2)}
-                              </p>
-                              <p className="text-sm text-gray-500">
-                                {format(new Date(bill.date), "dd/MM/yyyy")}
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => viewBill(bill.id)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))
-                      )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex items-center text-sm">
+                      <User className="mr-2 h-4 w-4 text-gray-500" />
+                      <span>Dr. {prescription.doctor_name}</span>
                     </div>
+                    <div className="flex items-center text-sm">
+                      <Pill className="mr-2 h-4 w-4 text-gray-500" />
+                      <span>Rx #{prescription.prescription_number}</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <AlertCircle className="mr-2 h-4 w-4 text-gray-500" />
+                      <span>Date: {format(new Date(prescription.date), "MMM d, yyyy")}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 flex justify-between">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleToggleStatus(prescription.id, prescription.status)}
+                    >
+                      {prescription.status === "active" ? "Mark Inactive" : "Mark Active"}
+                    </Button>
+                    <Link to={`/billing?prescriptionId=${prescription.id}`}>
+                      <Button size="sm">Create Bill</Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
-            ))
-          )}
-        </div>
-
-        {selectedBill && (
-          <BillPreviewDialog
-            open={showBillPreview}
-            onOpenChange={setShowBillPreview}
-            billData={selectedBill}
-            items={selectedBill.items}
-          />
+            ))}
+          </div>
         )}
+
+        <AlertDialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Change Prescription Status</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to mark this prescription as {currentStatus === "active" ? "inactive" : "active"}?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmStatusChange}>
+                Confirm
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
