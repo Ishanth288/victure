@@ -1,223 +1,148 @@
 
-import { useState, useEffect } from "react";
-import { formatDistance } from "date-fns";
-import { Edit2, FileCheck, Printer, Trash2 } from "lucide-react";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { EditDeliveryDialog } from "./EditDeliveryDialog";
-import { PurchaseOrder } from "@/types/purchases";
+import { Edit, Printer, Trash2, FileCheck } from "lucide-react";
+import { PurchaseOrder, PurchaseOrderItem } from "@/types/purchases";
 
 interface PurchaseOrderCardProps {
   order: PurchaseOrder;
-  onUpdateDelivery: (orderId: number, items: PurchaseOrder['items'], notes: string) => Promise<void>;
-  onPreviewBill: (order: PurchaseOrder) => void;
-  onDelete?: (orderId: number) => void;
-  onEdit?: (order: PurchaseOrder) => void;
+  onUpdateDelivery: (orderId: number) => void;
+  onEditOrder: (order: PurchaseOrder) => void; 
+  onDeleteOrder: (orderId: number) => void;
+  onPrintOrder: (order: PurchaseOrder) => void;
+  onCompleteOrder: (orderId: number) => void;
 }
 
-export function PurchaseOrderCard({ 
-  order, 
-  onUpdateDelivery, 
-  onPreviewBill,
-  onDelete,
-  onEdit
+export default function PurchaseOrderCard({
+  order,
+  onUpdateDelivery,
+  onEditOrder,
+  onDeleteOrder,
+  onPrintOrder,
+  onCompleteOrder
 }: PurchaseOrderCardProps) {
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [orderStatus, setOrderStatus] = useState(order.status);
-  const [selectedItems, setSelectedItems] = useState<number[]>([]);
-  const [lastDelivery, setLastDelivery] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
-  useEffect(() => {
-    // Initialize selected items from order
-    const initialSelected = order.items
-      .filter(item => item.is_delivered)
-      .map(item => item.id!)
-      .filter(id => id !== undefined);
-    
-    setSelectedItems(initialSelected);
+  const totalItemsOrdered = order.items.reduce(
+    (sum, item) => sum + item.quantity_ordered,
+    0
+  );
+  
+  const totalItemsDelivered = order.items.reduce(
+    (sum, item) => sum + (item.quantity_delivered || 0),
+    0
+  );
 
-    // Calculate last delivery date
-    const deliveryDates = order.items
-      .filter(item => item.delivery_date)
-      .map(item => new Date(item.delivery_date!).getTime());
-    
-    if (deliveryDates.length > 0) {
-      const mostRecent = new Date(Math.max(...deliveryDates));
-      setLastDelivery(formatDistance(mostRecent, new Date(), { addSuffix: true }));
-    }
-  }, [order]);
+  const deliveryPercentage = totalItemsOrdered > 0
+    ? Math.round((totalItemsDelivered / totalItemsOrdered) * 100)
+    : 0;
 
-  const totalItemsDelivered = order.items.filter(item => item.is_delivered).length;
-  const totalItems = order.items.length;
-  const deliveryProgress = Math.round((totalItemsDelivered / totalItems) * 100);
-
-  const handleToggleItem = (itemId: number, checked: boolean) => {
-    // This function is just for UI display now, actual changes are made in the EditDeliveryDialog
-    if (checked) {
-      setSelectedItems(prev => [...prev, itemId]);
-    } else {
-      setSelectedItems(prev => prev.filter(id => id !== itemId));
-    }
-  };
-
-  const handleUpdateDelivery = async (items: PurchaseOrder['items'], notes: string) => {
-    // Update the local selections first
-    const updatedSelected = items
-      .filter(item => item.is_delivered)
-      .map(item => item.id!)
-      .filter(id => id !== undefined);
-    
-    setSelectedItems(updatedSelected);
-    
-    // Call the parent handler
-    await onUpdateDelivery(order.id!, items, notes);
-    
-    // Update status based on delivery
-    const allDelivered = items.every(item => item.is_delivered);
-    if (allDelivered) {
-      setOrderStatus('delivered');
-    } else if (items.some(item => item.is_delivered)) {
-      setOrderStatus('partially_delivered');
-    }
-    
-    setIsEditDialogOpen(false);
-  };
-
-  // Helper function to get status display text
-  const getStatusDisplayText = (status: 'pending' | 'delivered' | 'partially_delivered') => {
-    switch(status) {
-      case 'delivered': return 'Completed';
-      case 'partially_delivered': return 'Partially Delivered';
-      case 'pending': 
-      default: return 'Pending';
-    }
-  };
-
-  // Helper function to get badge variant based on status
-  const getStatusBadgeVariant = (status: 'pending' | 'delivered' | 'partially_delivered') => {
-    switch(status) {
-      case 'delivered': return 'default';
-      case 'partially_delivered': return 'outline';
-      case 'pending': 
-      default: return 'secondary';
-    }
-  };
-
-  const handleDelete = () => {
-    if (onDelete && order.id) {
-      onDelete(order.id);
-    }
-  };
-
-  const handleEdit = () => {
-    if (onEdit) {
-      onEdit(order);
-    }
-  };
+  const isCompleted = order.status === "completed";
+  const isPending = order.status === "pending";
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-lg">{order.supplier_name}</CardTitle>
-            <p className="text-sm text-muted-foreground">PO-{order.id}</p>
-          </div>
-          <Badge variant={getStatusBadgeVariant(orderStatus)}>
-            {getStatusDisplayText(orderStatus)}
+    <Card className="overflow-hidden">
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="text-xl font-semibold">{order.supplier_name}</h3>
+          <Badge variant={isCompleted ? "default" : "secondary"}>
+            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
           </Badge>
         </div>
-      </CardHeader>
-      <CardContent className="pt-2">
-        <div className="space-y-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Order Date: {new Date(order.order_date).toLocaleDateString()}</p>
-            {lastDelivery && <p className="text-sm text-muted-foreground">Last delivery update: {lastDelivery}</p>}
-            <p className="text-sm font-medium mt-2">Total: ₹{order.total_amount.toFixed(2)}</p>
+        
+        <p className="text-sm text-gray-500 mb-1">PO-{order.id}</p>
+        
+        <p className="mb-3">Order Date: {new Date(order.order_date).toLocaleDateString()}</p>
+        
+        <p className="font-semibold mb-2">Total: ₹{order.total_amount.toLocaleString()}</p>
+        
+        <div className="mb-4">
+          <div className="flex justify-between text-sm mb-1">
+            <span>Delivery Progress</span>
+            <span>{deliveryPercentage}% ({totalItemsDelivered}/{totalItemsOrdered})</span>
           </div>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Delivery Progress</span>
-              <span>{deliveryProgress}% ({totalItemsDelivered}/{totalItems})</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div 
-                className="bg-primary h-2.5 rounded-full" 
-                style={{ width: `${deliveryProgress}%` }}
-              ></div>
-            </div>
-          </div>
-
-          <div className="space-y-2 pt-2">
-            <p className="text-sm font-medium">Items:</p>
-            {order.items.map((item) => (
-              <div key={item.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`item-${item.id}`}
-                  checked={selectedItems.includes(item.id!)}
-                  onCheckedChange={(checked) => handleToggleItem(item.id!, checked as boolean)}
-                  disabled={orderStatus === 'delivered'}
-                  className="data-[state=checked]:bg-primary"
-                />
-                <Label 
-                  htmlFor={`item-${item.id}`}
-                  className={`text-sm ${item.is_delivered ? 'line-through text-muted-foreground' : ''}`}
-                >
-                  {item.item_name} ({item.quantity_ordered} × ₹{item.unit_cost.toFixed(2)})
-                </Label>
+          <Progress value={deliveryPercentage} className="h-2" />
+        </div>
+        
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => setExpanded(!expanded)}
+          className="mb-3 w-full justify-start border border-gray-200 hover:bg-gray-50"
+        >
+          {expanded ? "Hide Items" : "View Items"}
+        </Button>
+        
+        {expanded && (
+          <div className="space-y-2 mb-4 pl-2">
+            <p className="font-medium text-sm">Items:</p>
+            {order.items.map((item: PurchaseOrderItem) => (
+              <div key={item.id} className="flex items-center gap-2 text-sm">
+                <Checkbox checked={item.is_delivered} disabled />
+                <span className={item.is_delivered ? "line-through text-gray-400" : ""}>
+                  {item.item_name} ({item.quantity_delivered}/{item.quantity_ordered} × ₹{item.unit_cost})
+                </span>
               </div>
             ))}
           </div>
-
-          {order.notes && (
-            <div className="pt-2">
-              <p className="text-sm font-medium">Delivery Notes:</p>
-              <p className="text-sm text-muted-foreground">{order.notes}</p>
-            </div>
-          )}
-        </div>
-      </CardContent>
-      <CardFooter className="border-t pt-4 flex justify-between">
-        <div className="flex space-x-2">
-          <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
-            <Edit2 className="h-4 w-4 mr-2" />
+        )}
+        
+        <div className="flex flex-wrap gap-2 mt-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1" 
+            onClick={() => onUpdateDelivery(order.id)}
+            disabled={isCompleted}
+          >
             Update Delivery
           </Button>
-          {onEdit && (
-            <Button variant="outline" size="sm" onClick={handleEdit}>
-              <Edit2 className="h-4 w-4 mr-2" />
-              Edit Order
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1" 
+            onClick={() => onEditOrder(order)}
+            disabled={isCompleted}
+          >
+            <Edit className="h-4 w-4" /> Edit Order
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1 text-red-500 hover:bg-red-50 hover:text-red-600" 
+            onClick={() => onDeleteOrder(order.id)}
+            disabled={isCompleted}
+          >
+            <Trash2 className="h-4 w-4" /> Delete
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1" 
+            onClick={() => onPrintOrder(order)}
+          >
+            <Printer className="h-4 w-4" /> Print Order
+          </Button>
+          
+          {isPending && deliveryPercentage === 100 && (
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="flex items-center gap-1 bg-green-600 hover:bg-green-700" 
+              onClick={() => onCompleteOrder(order.id)}
+            >
+              <FileCheck className="h-4 w-4" /> Complete
             </Button>
           )}
         </div>
-        <div className="flex space-x-2">
-          {onDelete && (
-            <Button variant="outline" size="sm" onClick={handleDelete} className="text-red-500 hover:text-red-700 hover:bg-red-50">
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={() => onPreviewBill(order)}>
-            <Printer className="h-4 w-4 mr-2" />
-            Print Order
-          </Button>
-          <Button size="sm" disabled={orderStatus !== 'delivered'}>
-            <FileCheck className="h-4 w-4 mr-2" />
-            Complete
-          </Button>
-        </div>
-      </CardFooter>
-
-      <EditDeliveryDialog
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        order={order}
-        onSave={handleUpdateDelivery}
-      />
+      </div>
     </Card>
   );
 }

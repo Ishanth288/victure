@@ -108,7 +108,10 @@ export default function Inventory() {
         .eq("id", itemToDelete)
         .eq("user_id", user.id); // Add user_id filter for security
 
-      if (error) throw error;
+      if (error) {
+        console.error("Delete error:", error);
+        throw error;
+      }
 
       // Remove from local state
       setInventory(prev => prev.filter(item => item.id !== itemToDelete));
@@ -120,6 +123,10 @@ export default function Inventory() {
         title: "Item deleted",
         description: "The inventory item has been removed successfully."
       });
+      
+      // Refresh inventory data to make sure UI is in sync with database
+      fetchInventoryData(); 
+      
     } catch (error: any) {
       console.error("Error deleting item:", error);
       toast({

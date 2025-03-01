@@ -24,7 +24,7 @@ export function ProductsChart({ data }: ProductsChartProps) {
   // Transform data to ensure it has a value property if it doesn't already
   const chartData = data.map(item => ({
     ...item,
-    value: item.value !== undefined ? item.value : (item.revenue || 0)
+    value: item.value !== undefined ? Number(item.value) : Number(item.revenue || 0)
   }));
 
   return (
@@ -33,33 +33,39 @@ export function ProductsChart({ data }: ProductsChartProps) {
         <CardTitle>Top Products</CardTitle>
       </CardHeader>
       <CardContent className="h-[300px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-            <XAxis 
-              dataKey="name" 
-              stroke="#888888"
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-            />
-            <YAxis
-              stroke="#888888"
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(value) => `₹${value}`}
-            />
-            <Tooltip
-              formatter={(value: any) => [`₹${value}`, 'Revenue']}
-            />
-            <Bar 
-              dataKey="value" 
-              fill="#8884d8"
-              radius={[4, 4, 0, 0]}
-            />
-          </BarChart>
-        </ResponsiveContainer>
+        {data.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-gray-500">
+            No product data available for this period
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+              <XAxis 
+                dataKey="name" 
+                stroke="#888888"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                stroke="#888888"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `₹${value}`}
+              />
+              <Tooltip
+                formatter={(value: any) => [`₹${value}`, 'Revenue']}
+              />
+              <Bar 
+                dataKey="value" 
+                fill="#8884d8"
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   );

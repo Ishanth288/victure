@@ -16,7 +16,7 @@ import { useNavigate } from "react-router-dom";
 export default function Insights() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [timeframe, setTimeframe] = useState<'day' | 'week' | 'month' | 'year'>('month');
+  const [timeframe, setTimeframe] = useState<'day' | 'week' | 'month' | 'year'>('week');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     revenue: 0,
@@ -237,16 +237,20 @@ export default function Insights() {
 
       // Generate revenue distribution data (by product category)
       const itemFrequency: {[key: number]: number} = {};
-      currentBills?.forEach(bill => {
-        bill.bill_items.forEach((item: any) => {
-          const itemId = item.inventory_item_id;
-          if (itemFrequency[itemId]) {
-            itemFrequency[itemId] += item.quantity;
-          } else {
-            itemFrequency[itemId] = item.quantity;
-          }
+      const itemRevenue: {[key: number]: number} = {};
+      
+      if (currentBills && currentBills.length > 0) {
+        currentBills.forEach(bill => {
+          bill.bill_items.forEach((item: any) => {
+            const itemId = item.inventory_item_id;
+            if (itemFrequency[itemId]) {
+              itemFrequency[itemId] += item.quantity;
+            } else {
+              itemFrequency[itemId] = item.quantity;
+            }
+          });
         });
-      });
+      }
 
       // Map inventory items to their names
       const inventoryMap = new Map();
@@ -254,21 +258,30 @@ export default function Insights() {
         inventoryMap.set(item.id, { name: item.name, unit_cost: item.unit_cost });
       });
 
+      // Calculate revenue for each product
+      Object.entries(itemFrequency).forEach(([itemId, quantity]) => {
+        const item = inventoryMap.get(parseInt(itemId));
+        if (item) {
+          itemRevenue[parseInt(itemId)] = Number(quantity) * (Number(item.unit_cost) || 0);
+        }
+      });
+
       // Top 5 products by revenue
       const productRevenueData: Array<{ name: string; value: number }> = [];
       
-      Object.entries(itemFrequency).forEach(([itemId, quantity]) => {
+      Object.entries(itemRevenue).forEach(([itemId, revenue]) => {
         const item = inventoryMap.get(parseInt(itemId));
-        const value = Number(quantity) * (Number(item?.unit_cost) || 0);
-        productRevenueData.push({
-          name: item?.name || `Item #${itemId}`,
-          value: value
-        });
+        if (item) {
+          productRevenueData.push({
+            name: item.name || `Item #${itemId}`,
+            value: Number(revenue)
+          });
+        }
       });
       
       // Sort and slice the product revenue data
       productRevenueData.sort((a, b) => b.value - a.value);
-      const top5ProductsData = productRevenueData.slice(0, 5);
+      const top5ProductsData = productRevenueData.slice(0, 4);
 
       // Calculate total orders and order change
       const currentOrders = currentBills?.length || 0;
@@ -278,11 +291,13 @@ export default function Insights() {
       // Calculate total products and product change
       // For this example, we'll count how many unique products were sold
       const currentProductsSold = new Set();
-      currentBills?.forEach(bill => {
-        bill.bill_items.forEach((item: any) => {
-          currentProductsSold.add(item.inventory_item_id);
+      if (currentBills) {
+        currentBills.forEach(bill => {
+          bill.bill_items.forEach((item: any) => {
+            currentProductsSold.add(item.inventory_item_id);
+          });
         });
-      });
+      }
       const productsCount = currentProductsSold.size;
       const productsChange = (productsCount / (inventory?.length || 1)) * 100;
 
@@ -291,13 +306,15 @@ export default function Insights() {
       
       Object.entries(itemFrequency).forEach(([itemId, quantity]) => {
         const item = inventoryMap.get(parseInt(itemId));
-        const revenue = Number(quantity) * (Number(item?.unit_cost) || 0);
-        topProducts.push({
-          id: parseInt(itemId),
-          name: item?.name || `Item #${itemId}`,
-          quantity: Number(quantity),
-          revenue: revenue
-        });
+        if (item) {
+          const revenue = Number(quantity) * (Number(item.unit_cost) || 0);
+          topProducts.push({
+            id: parseInt(itemId),
+            name: item.name || `Item #${itemId}`,
+            quantity: Number(quantity),
+            revenue: revenue
+          });
+        }
       });
       
       // Sort and slice the top products data
@@ -396,7 +413,13 @@ export default function Insights() {
                   Loading...
                 </div>
               ) : (
-                <RevenueDistribution data={distributionData} />
+                distributionData.length > 0 ? (
+                  <RevenueDistribution data={distributionData} />
+                ) : (
+                  <div className="flex items-center justify-center h-64 text-gray-500">
+                    No product revenue data available for this period
+                  </div>
+                )
               )}
             </CardContent>
           </Card>
@@ -412,7 +435,13 @@ export default function Insights() {
                 Loading...
               </div>
             ) : (
-              <ProductsChart data={productsData} />
+              productsData.length > 0 ? (
+                <ProductsChart data={productsData} />
+              ) : (
+                <div className="flex items-center justify-center h-64 text-gray-500">
+                  No product sales data available for this period
+                </div>
+              )
             )}
           </CardContent>
         </Card>
