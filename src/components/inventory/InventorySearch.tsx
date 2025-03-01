@@ -19,6 +19,10 @@ export default function InventorySearch({
   onFilterChange,
   activeFilter
 }: InventorySearchProps) {
+  const handleFilterClick = (type: string) => {
+    onFilterChange(type);
+  };
+
   return (
     <Card className="p-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
@@ -36,7 +40,7 @@ export default function InventorySearch({
             variant={activeFilter === "expiringSoon" ? "default" : "outline"} 
             size="sm" 
             className="gap-2"
-            onClick={() => onFilterChange("expiringSoon")}
+            onClick={() => handleFilterClick("expiringSoon")}
           >
             <Clock className="h-4 w-4" />
             Expiring Soon
@@ -45,7 +49,7 @@ export default function InventorySearch({
             variant={activeFilter === "lowStock" ? "default" : "outline"} 
             size="sm" 
             className="gap-2"
-            onClick={() => onFilterChange("lowStock")}
+            onClick={() => handleFilterClick("lowStock")}
           >
             <AlertTriangle className="h-4 w-4" />
             Low Stock
