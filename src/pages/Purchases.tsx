@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AddPurchaseOrderDialog } from "@/components/purchases/AddPurchaseOrderDialog";
 import { EditDeliveryDialog } from "@/components/purchases/EditDeliveryDialog";
 import PurchaseOrderCard from "@/components/purchases/PurchaseOrderCard";
-import { PurchaseOrder } from "@/types/purchases";
+import { PurchaseOrder, PurchaseOrderItem } from "@/types/purchases";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -85,10 +84,12 @@ export default function Purchases() {
 
           if (itemsError) throw itemsError;
 
+          // Cast the order status to the expected type
           return {
             ...order,
+            status: order.status as PurchaseOrder['status'],
             items: items || [],
-          };
+          } as PurchaseOrder;
         })
       );
 
@@ -294,11 +295,11 @@ export default function Purchases() {
 
       if (error) throw error;
 
-      // Update local state
+      // Update local state with type safety
       setOrders(prev => 
         prev.map(order => 
           order.id === orderId
-            ? { ...order, status: "completed" }
+            ? { ...order, status: "completed" as PurchaseOrder['status'] }
             : order
         )
       );
@@ -320,7 +321,7 @@ export default function Purchases() {
   const handlePrintOrder = (order: PurchaseOrder) => {
     try {
       const pdf = new jsPDF();
-      
+    
       // Header
       pdf.setFontSize(20);
       pdf.text("Purchase Order", 105, 15, { align: "center" });
@@ -379,7 +380,7 @@ export default function Purchases() {
       }
       
       // Footer
-      const pageCount = pdf.internal.getNumberOfPages();
+      const pageCount = pdf.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         pdf.setPage(i);
         pdf.setFontSize(10);
@@ -410,7 +411,7 @@ export default function Purchases() {
   const handleExport = () => {
     try {
       const pdf = new jsPDF("landscape");
-      
+    
       // Header
       pdf.setFontSize(20);
       pdf.text("Purchase Orders Report", 150, 15, { align: "center" });
@@ -477,7 +478,7 @@ export default function Purchases() {
       });
       
       // Footer
-      const pageCount = pdf.internal.getNumberOfPages();
+      const pageCount = pdf.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         pdf.setPage(i);
         pdf.setFontSize(10);
@@ -598,9 +599,9 @@ export default function Purchases() {
       <EditDeliveryDialog
         open={isDeliveryDialogOpen}
         onOpenChange={setDeliveryDialogOpen}
-        orderId={selectedOrderId}
         orderItems={orders.find(o => o.id === selectedOrderId)?.items || []}
         onSubmit={handleUpdateDeliverySubmit}
+        orderId={selectedOrderId}
       />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

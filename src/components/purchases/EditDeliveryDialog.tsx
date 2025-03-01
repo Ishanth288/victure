@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,88 +10,124 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { PurchaseOrder, PurchaseOrderItem } from "@/types/purchases";
+import type { PurchaseOrderItem } from "@/types/purchases";
 
 interface EditDeliveryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  order: PurchaseOrder;
-  onSave: (items: PurchaseOrderItem[], notes: string) => void;
+  orderItems: PurchaseOrderItem[];
+  onSubmit: (items: any) => void;
+  orderId?: number; // Make orderId optional to match the external usage
 }
 
 export function EditDeliveryDialog({
   open,
   onOpenChange,
-  order,
-  onSave,
+  orderItems,
+  onSubmit,
+  orderId,
 }: EditDeliveryDialogProps) {
-  const [editedItems, setEditedItems] = useState<PurchaseOrderItem[]>(order?.items || []);
-  const [notes, setNotes] = useState(order?.notes || "");
+  const [editedItems, setEditedItems] = useState<any[]>([]);
+  const [deliveryNotes, setDeliveryNotes] = useState("");
 
-  const handleSave = () => {
-    onSave(editedItems, notes);
-  };
+  // Initialize edited items when orderItems change
+  useEffect(() => {
+    if (orderItems && orderItems.length > 0) {
+      const formattedItems = orderItems.map(item => ({
+        id: item.id,
+        item_name: item.item_name,
+        quantityOrdered: item.quantity_ordered,
+        quantityDelivered: item.quantity_delivered || 0,
+        notes: item.delivery_notes || "",
+      }));
+      setEditedItems(formattedItems);
+    }
+  }, [orderItems]);
 
   const handleQuantityChange = (index: number, quantity: number) => {
     const newItems = [...editedItems];
     newItems[index] = {
       ...newItems[index],
-      quantity_delivered: quantity,
-      is_delivered: quantity === newItems[index].quantity_ordered,
+      quantityDelivered: quantity,
     };
     setEditedItems(newItems);
+  };
+
+  const handleNotesChange = (index: number, notes: string) => {
+    const newItems = [...editedItems];
+    newItems[index] = {
+      ...newItems[index],
+      notes: notes,
+    };
+    setEditedItems(newItems);
+  };
+
+  const handleSubmit = () => {
+    onSubmit(editedItems);
+    onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Delivery Details</DialogTitle>
+          <DialogTitle>Update Delivery</DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
           <div className="space-y-4">
             {editedItems.map((item, index) => (
-              <div key={index} className="flex gap-4 items-center">
-                <div className="flex-1">
-                  <Label>{item.item_name}</Label>
-                </div>
-                <div className="w-32">
-                  <Label>Ordered: {item.quantity_ordered}</Label>
-                </div>
-                <div className="w-40">
-                  <Input
-                    type="number"
-                    value={item.quantity_delivered}
-                    onChange={(e) =>
-                      handleQuantityChange(index, parseInt(e.target.value))
-                    }
-                    min="0"
-                    max={item.quantity_ordered}
-                  />
+              <div key={index} className="space-y-2 border-b pb-4">
+                <div className="font-semibold">{item.item_name}</div>
+                <div className="flex items-center gap-4">
+                  <div className="w-1/2">
+                    <Label htmlFor={`quantity-${index}`}>Delivered Quantity</Label>
+                    <Input
+                      id={`quantity-${index}`}
+                      type="number"
+                      min="0"
+                      max={item.quantityOrdered}
+                      value={item.quantityDelivered}
+                      onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 0)}
+                    />
+                    <div className="text-xs text-gray-500 mt-1">
+                      Ordered: {item.quantityOrdered}
+                    </div>
+                  </div>
+                  <div className="w-1/2">
+                    <Label htmlFor={`notes-${index}`}>Item Notes</Label>
+                    <Input
+                      id={`notes-${index}`}
+                      type="text"
+                      value={item.notes}
+                      onChange={(e) => handleNotesChange(index, e.target.value)}
+                      placeholder="Optional notes for this item"
+                    />
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Delivery Notes</Label>
+            <Label htmlFor="delivery-notes">Delivery Notes</Label>
             <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any notes about expired items or other delivery issues..."
+              id="delivery-notes"
+              value={deliveryNotes}
+              onChange={(e) => setDeliveryNotes(e.target.value)}
+              placeholder="Add any notes about the delivery..."
             />
           </div>
 
-          <div className="flex justify-end gap-4">
+          <div className="flex justify-end gap-2">
             <Button
-              type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
               Cancel
             </Button>
-            <Button onClick={handleSave}>Save Changes</Button>
+            <Button onClick={handleSubmit}>
+              Save Changes
+            </Button>
           </div>
         </div>
       </DialogContent>

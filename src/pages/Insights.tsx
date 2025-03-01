@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -323,14 +322,14 @@ export default function Insights() {
 
       // Update state with calculated data
       setStats({
-        revenue: currentRevenue,
-        revenueChange: revenueChange,
-        patients: currentPatients,
-        patientsChange: patientsChange,
-        orders: currentOrders,
-        ordersChange: ordersChange,
-        products: productsCount,
-        productsChange: productsChange
+        revenue: Number(currentRevenue),
+        revenueChange: Number(revenueChange),
+        patients: Number(currentPatients),
+        patientsChange: Number(patientsChange),
+        orders: Number(currentOrders),
+        ordersChange: Number(ordersChange),
+        products: Number(productsCount),
+        productsChange: Number(productsChange)
       });
 
       setRevenueData(revenueChartData);

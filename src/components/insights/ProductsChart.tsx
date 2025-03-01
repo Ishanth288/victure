@@ -21,10 +21,12 @@ interface ProductsChartProps {
 }
 
 export function ProductsChart({ data }: ProductsChartProps) {
-  // Transform data to ensure it has a value property if it doesn't already
+  // Transform data to ensure it has a value property and it's a number
   const chartData = data.map(item => ({
     ...item,
-    value: item.value !== undefined ? Number(item.value) : Number(item.revenue || 0)
+    value: item.value !== undefined 
+      ? Number(item.value) 
+      : (item.revenue !== undefined ? Number(item.revenue) : 0)
   }));
 
   return (

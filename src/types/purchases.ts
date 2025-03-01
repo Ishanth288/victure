@@ -8,7 +8,7 @@ export interface PurchaseOrderItem {
   total_cost: number;
   is_delivered: boolean;
   delivery_notes?: string;
-  delivery_date?: string; // Add delivery_date property
+  delivery_date?: string;
 }
 
 export interface PurchaseOrder {
@@ -16,9 +16,9 @@ export interface PurchaseOrder {
   supplier_name: string;
   supplier_phone: string;
   order_date: string;
-  status: 'pending' | 'delivered' | 'partially_delivered';
+  status: 'pending' | 'delivered' | 'partially_delivered' | 'completed';
   notes?: string;
-  delivery_notes?: string; // Add delivery_notes property
+  delivery_notes?: string;
   total_amount: number;
   items: PurchaseOrderItem[];
 }

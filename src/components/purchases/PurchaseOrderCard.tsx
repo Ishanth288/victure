@@ -96,7 +96,7 @@ export default function PurchaseOrderCard({
             variant="outline" 
             size="sm" 
             className="flex items-center gap-1" 
-            onClick={() => onUpdateDelivery(order.id)}
+            onClick={() => onUpdateDelivery(order.id || 0)}
             disabled={isCompleted}
           >
             Update Delivery
@@ -116,7 +116,7 @@ export default function PurchaseOrderCard({
             variant="outline" 
             size="sm" 
             className="flex items-center gap-1 text-red-500 hover:bg-red-50 hover:text-red-600" 
-            onClick={() => onDeleteOrder(order.id)}
+            onClick={() => onDeleteOrder(order.id || 0)}
             disabled={isCompleted}
           >
             <Trash2 className="h-4 w-4" /> Delete
@@ -136,7 +136,7 @@ export default function PurchaseOrderCard({
               variant="default" 
               size="sm" 
               className="flex items-center gap-1 bg-green-600 hover:bg-green-700" 
-              onClick={() => onCompleteOrder(order.id)}
+              onClick={() => onCompleteOrder(order.id || 0)}
             >
               <FileCheck className="h-4 w-4" /> Complete
             </Button>
