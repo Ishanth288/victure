@@ -64,6 +64,7 @@ export default function InventorySearch({
             <button
               className="ml-1 rounded-full hover:bg-gray-200 p-0.5"
               onClick={() => onFilterChange(activeFilter)}
+              aria-label="Clear filter"
             >
               ×
             </button>

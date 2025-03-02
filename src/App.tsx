@@ -12,6 +12,7 @@ import Insights from "@/pages/Insights";
 import Purchases from "@/pages/Purchases";
 import NotFound from "@/pages/NotFound";
 import Settings from "@/pages/Settings";
+import ChatbotButton from "@/components/chatbot/ChatbotButton";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <ChatbotButton />
     </Router>
   );
 }

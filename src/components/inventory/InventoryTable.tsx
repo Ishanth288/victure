@@ -132,6 +132,7 @@ export default function InventoryTable({
                               size="sm"
                               onClick={() => onDeleteItem(item.id)}
                               className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                              aria-label={`Delete ${item.name}`}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

@@ -1,6 +1,6 @@
 
 import { motion } from "framer-motion";
-import { Filter, Plus, Download } from "lucide-react";
+import { Plus, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface InventoryHeaderProps {
@@ -25,10 +25,6 @@ export default function InventoryHeader({ onAddClick, onExportClick }: Inventory
         </p>
       </div>
       <div className="flex gap-2">
-        <Button variant="outline" className="gap-2">
-          <Filter className="h-4 w-4" />
-          Filter
-        </Button>
         <Button variant="outline" className="gap-2" onClick={onExportClick}>
           <Download className="h-4 w-4" />
           Export
