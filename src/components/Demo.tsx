@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { useState } from "react";
 import {
@@ -70,11 +69,11 @@ export default function Demo() {
 
         <motion.div
           key={currentSlide}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.5 }}
-          className={`rounded-2xl ${slide.bgColor} p-8 md:p-12 max-w-5xl mx-auto`}
+          className={`rounded-2xl ${slide.bgColor} p-8 md:p-12 max-w-5xl mx-auto slide-horizontal`}
         >
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div className="space-y-6">

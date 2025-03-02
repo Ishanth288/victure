@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, X } from "lucide-react";
 
 export default function SecuritySettings() {
   const [isLoading, setIsLoading] = useState(false);
@@ -18,6 +18,41 @@ export default function SecuritySettings() {
     type: null,
     message: null
   });
+  
+  // Password validation state
+  const [passwordValidation, setPasswordValidation] = useState({
+    minLength: false,
+    hasNumber: false,
+    matches: false,
+    isValid: false
+  });
+
+  // Check password validity on change
+  const validatePassword = (password: string, confirmPwd: string = confirmPassword) => {
+    const minLength = password.length >= 6;
+    const hasNumber = /\d/.test(password);
+    const matches = password === confirmPwd;
+    const isValid = minLength && hasNumber && matches;
+    
+    setPasswordValidation({
+      minLength,
+      hasNumber,
+      matches,
+      isValid
+    });
+  };
+
+  // Handle new password change
+  const handleNewPasswordChange = (value: string) => {
+    setNewPassword(value);
+    validatePassword(value, confirmPassword);
+  };
+
+  // Handle confirm password change
+  const handleConfirmPasswordChange = (value: string) => {
+    setConfirmPassword(value);
+    validatePassword(newPassword, value);
+  };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,6 +129,12 @@ export default function SecuritySettings() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      setPasswordValidation({
+        minLength: false,
+        hasNumber: false,
+        matches: false,
+        isValid: false
+      });
       
     } catch (error: any) {
       console.error("Password update error:", error);
@@ -154,10 +195,40 @@ export default function SecuritySettings() {
               id="newPassword"
               type="password"
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
+              onChange={(e) => handleNewPasswordChange(e.target.value)}
               required
               minLength={6}
+              className={newPassword ? (passwordValidation.minLength && passwordValidation.hasNumber ? "border-green-500" : "border-red-500") : ""}
             />
+            
+            {/* Real-time password validation feedback */}
+            {newPassword && (
+              <div className="mt-2 text-sm">
+                <p className="font-medium mb-1">Password requirements:</p>
+                <ul className="space-y-1">
+                  <li className="flex items-center">
+                    {passwordValidation.minLength ? (
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    ) : (
+                      <X className="h-4 w-4 text-red-500 mr-2" />
+                    )}
+                    <span className={passwordValidation.minLength ? "text-green-600" : "text-red-600"}>
+                      At least 6 characters
+                    </span>
+                  </li>
+                  <li className="flex items-center">
+                    {passwordValidation.hasNumber ? (
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    ) : (
+                      <X className="h-4 w-4 text-red-500 mr-2" />
+                    )}
+                    <span className={passwordValidation.hasNumber ? "text-green-600" : "text-red-600"}>
+                      Contains at least one number
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirm New Password</Label>
@@ -165,12 +236,33 @@ export default function SecuritySettings() {
               id="confirmPassword"
               type="password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => handleConfirmPasswordChange(e.target.value)}
               required
               minLength={6}
+              className={confirmPassword ? (passwordValidation.matches ? "border-green-500" : "border-red-500") : ""}
             />
+            
+            {/* Password match feedback */}
+            {confirmPassword && (
+              <div className="mt-2 flex items-center text-sm">
+                {passwordValidation.matches ? (
+                  <>
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    <span className="text-green-600">Passwords match</span>
+                  </>
+                ) : (
+                  <>
+                    <X className="h-4 w-4 text-red-500 mr-2" />
+                    <span className="text-red-600">Passwords don't match</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
-          <Button type="submit" disabled={isLoading}>
+          <Button 
+            type="submit" 
+            disabled={isLoading || (newPassword && (!passwordValidation.minLength || !passwordValidation.hasNumber || !passwordValidation.matches))}
+          >
             {isLoading ? "Updating..." : "Update Password"}
           </Button>
         </form>

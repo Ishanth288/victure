@@ -74,6 +74,27 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Fix transparent dropdowns */
+  .Select-content,
+  [data-radix-select-content],
+  [data-radix-popper-content] {
+    @apply bg-white dark:bg-neutral-800 !important;
+  }
+}
+
+/* Create a horizontal slider animation */
+@keyframes slide-horizontal {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.slide-horizontal {
+  animation: slide-horizontal 0.3s ease-out;
 }
 
 @media print {

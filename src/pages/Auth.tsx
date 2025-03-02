@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { INDIAN_STATES } from "@/constants/states";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, X } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -44,15 +43,39 @@ export default function Auth() {
     gstin: "",
   });
 
+  const [passwordValidation, setPasswordValidation] = useState({
+    minLength: false,
+    hasNumber: false,
+    isValid: false
+  });
+
+  const validatePassword = (password: string) => {
+    const minLength = password.length >= 6;
+    const hasNumber = /\d/.test(password);
+    const isValid = minLength && hasNumber;
+    
+    setPasswordValidation({
+      minLength,
+      hasNumber,
+      isValid
+    });
+  };
+
+  const updateFormData = (field: string, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    
+    if (field === 'password') {
+      validatePassword(value);
+    }
+  };
+
   useEffect(() => {
     const checkEmailVerificationToken = async () => {
       setIsVerifying(true);
       
-      // Parse URL parameters
       const hash = window.location.hash;
       const searchParams = new URLSearchParams(window.location.search);
       
-      // Look for token in both query params and hash
       const accessToken = searchParams.get('access_token') || (hash.includes('access_token=') ? hash.split('access_token=')[1]?.split('&')[0] : null);
       const refreshToken = searchParams.get('refresh_token') || (hash.includes('refresh_token=') ? hash.split('refresh_token=')[1]?.split('&')[0] : null);
       const tokenType = searchParams.get('type') || (hash.includes('type=') ? hash.split('type=')[1]?.split('&')[0] : null);
@@ -81,7 +104,6 @@ export default function Auth() {
             
             setIsLogin(true);
             
-            // Clean up URL by removing tokens
             if (window.history.pushState) {
               const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
               window.history.pushState({ path: newUrl }, '', newUrl);
@@ -142,12 +164,20 @@ export default function Auth() {
             description: "Welcome to your pharmacy dashboard.",
           });
           
-          // Short timeout to show success message before redirect
           setTimeout(() => {
             navigate("/dashboard");
           }, 1000);
         }
       } else {
+        if (!passwordValidation.isValid) {
+          setAuthMessage({
+            type: 'error',
+            message: "Please ensure your password meets all requirements."
+          });
+          setIsLoading(false);
+          return;
+        }
+
         const { data, error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -305,7 +335,7 @@ export default function Auth() {
                       id="pharmacyName"
                       value={formData.pharmacyName}
                       onChange={(e) =>
-                        setFormData({ ...formData, pharmacyName: e.target.value })
+                        updateFormData("pharmacyName", e.target.value)
                       }
                       required={!isLogin}
                       placeholder="Enter pharmacy name"
@@ -317,7 +347,7 @@ export default function Auth() {
                       id="ownerName"
                       value={formData.ownerName}
                       onChange={(e) =>
-                        setFormData({ ...formData, ownerName: e.target.value })
+                        updateFormData("ownerName", e.target.value)
                       }
                       required={!isLogin}
                       placeholder="Enter owner name"
@@ -330,7 +360,7 @@ export default function Auth() {
                       type="tel"
                       value={formData.phone}
                       onChange={(e) =>
-                        setFormData({ ...formData, phone: e.target.value })
+                        updateFormData("phone", e.target.value)
                       }
                       required={!isLogin}
                       placeholder="Enter phone number"
@@ -342,7 +372,7 @@ export default function Auth() {
                       id="address"
                       value={formData.address}
                       onChange={(e) =>
-                        setFormData({ ...formData, address: e.target.value })
+                        updateFormData("address", e.target.value)
                       }
                       required={!isLogin}
                       placeholder="Enter complete address"
@@ -355,7 +385,7 @@ export default function Auth() {
                         id="city"
                         value={formData.city}
                         onChange={(e) =>
-                          setFormData({ ...formData, city: e.target.value })
+                          updateFormData("city", e.target.value)
                         }
                         required={!isLogin}
                         placeholder="Enter city"
@@ -365,12 +395,12 @@ export default function Auth() {
                       <Label htmlFor="state">State*</Label>
                       <Select 
                         value={formData.state}
-                        onValueChange={(value) => setFormData({ ...formData, state: value })}
+                        onValueChange={(value) => updateFormData("state", value)}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Select state" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white">
                           {INDIAN_STATES.map((state) => (
                             <SelectItem key={state} value={state}>
                               {state}
@@ -387,7 +417,7 @@ export default function Auth() {
                         id="pincode"
                         value={formData.pincode}
                         onChange={(e) =>
-                          setFormData({ ...formData, pincode: e.target.value })
+                          updateFormData("pincode", e.target.value)
                         }
                         required={!isLogin}
                         placeholder="Enter PIN code"
@@ -399,7 +429,7 @@ export default function Auth() {
                         id="gstin"
                         value={formData.gstin}
                         onChange={(e) =>
-                          setFormData({ ...formData, gstin: e.target.value })
+                          updateFormData("gstin", e.target.value)
                         }
                         placeholder="Enter GSTIN"
                       />
@@ -414,7 +444,7 @@ export default function Auth() {
                   type="email"
                   value={formData.email}
                   onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
+                    updateFormData("email", e.target.value)
                   }
                   required
                   placeholder="Enter email address"
@@ -427,13 +457,42 @@ export default function Auth() {
                   type="password"
                   value={formData.password}
                   onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
+                    updateFormData("password", e.target.value)
                   }
                   required
                   placeholder="Enter password"
+                  className={!isLogin && formData.password ? (passwordValidation.isValid ? "border-green-500" : "border-red-500") : ""}
                 />
+                
+                {!isLogin && formData.password && (
+                  <div className="mt-2 text-sm">
+                    <p className="font-medium mb-1">Password requirements:</p>
+                    <ul className="space-y-1">
+                      <li className="flex items-center">
+                        {passwordValidation.minLength ? (
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                        ) : (
+                          <X className="h-4 w-4 text-red-500 mr-2" />
+                        )}
+                        <span className={passwordValidation.minLength ? "text-green-600" : "text-red-600"}>
+                          At least 6 characters
+                        </span>
+                      </li>
+                      <li className="flex items-center">
+                        {passwordValidation.hasNumber ? (
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                        ) : (
+                          <X className="h-4 w-4 text-red-500 mr-2" />
+                        )}
+                        <span className={passwordValidation.hasNumber ? "text-green-600" : "text-red-600"}>
+                          Contains at least one number
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
+                )}
               </div>
-              <Button className="w-full" type="submit" disabled={isLoading}>
+              <Button className="w-full" type="submit" disabled={isLoading || (!isLogin && formData.password && !passwordValidation.isValid)}>
                 {isLoading
                   ? isLogin
                     ? "Signing in..."
