@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CreditCard, DollarSign, ShoppingCart, Users } from "lucide-react";
@@ -29,8 +30,8 @@ export default function Insights() {
   const [aovChange, setAovChange] = useState(0);
   const [customerRetentionRate, setCustomerRetentionRate] = useState(0);
   const [retentionChange, setRetentionChange] = useState(0);
-  const [topProducts, setTopProducts] = useState([]);
-  const [revenueData, setRevenueData] = useState([]);
+  const [topProducts, setTopProducts] = useState<Array<{name: string, value: number}>>([]);
+  const [revenueData, setRevenueData] = useState<Array<{date: string, value: number}>>([]);
 
   useEffect(() => {
     checkAuth();
@@ -247,28 +248,28 @@ export default function Insights() {
   const stats = [
     {
       title: "Total Sales",
-      value: Number(totalSales),
+      value: totalSales,
       icon: <CreditCard className="h-4 w-4" />,
       description: `${salesChange > 0 ? "+" : ""}${salesChange}% from last period`,
       trend: salesChange >= 0 ? "up" : "down",
     },
     {
       title: "Monthly Revenue",
-      value: Number(monthlyRevenue),
+      value: monthlyRevenue,
       icon: <DollarSign className="h-4 w-4" />,
       description: `${revenueChange > 0 ? "+" : ""}${revenueChange}% from last month`,
       trend: revenueChange >= 0 ? "up" : "down",
     },
     {
       title: "Average Order Value",
-      value: Number(averageOrderValue),
+      value: averageOrderValue,
       icon: <ShoppingCart className="h-4 w-4" />,
       description: `${aovChange > 0 ? "+" : ""}${aovChange}% from last period`,
       trend: aovChange >= 0 ? "up" : "down",
     },
     {
       title: "Customer Retention",
-      value: Number(customerRetentionRate),
+      value: customerRetentionRate,
       suffix: "%",
       icon: <Users className="h-4 w-4" />,
       description: `${retentionChange > 0 ? "+" : ""}${retentionChange}% from last period`,

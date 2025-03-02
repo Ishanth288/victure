@@ -58,7 +58,7 @@ export function ProductsChart({ data }: ProductsChartProps) {
                 tickFormatter={(value) => `₹${value}`}
               />
               <Tooltip
-                formatter={(value: any) => [`₹${value}`, 'Revenue']}
+                formatter={(value: number) => [`₹${value}`, 'Revenue']}
               />
               <Bar 
                 dataKey="value" 
