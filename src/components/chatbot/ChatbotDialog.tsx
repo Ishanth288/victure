@@ -7,11 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'bot';
+  isLoading?: boolean;
 }
 
 interface ChatbotDialogProps {
@@ -22,7 +25,7 @@ export default function ChatbotDialog({ onClose }: ChatbotDialogProps) {
   const [messages, setMessages] = useState<Message[]>([
     { 
       id: '1', 
-      text: 'Hello! I\'m your assistant. How can I help you with Victure Healthcare Solutions?', 
+      text: 'Hello! I\'m Victure AI, your pharmacy assistant. How can I help you today?', 
       sender: 'bot' 
     }
   ]);
@@ -41,21 +44,53 @@ export default function ChatbotDialog({ onClose }: ChatbotDialogProps) {
     };
     
     setMessages(prev => [...prev, userMessage]);
+    
+    // Add a loading message
+    const loadingId = (Date.now() + 1).toString();
+    setMessages(prev => [...prev, { 
+      id: loadingId, 
+      text: 'Typing...', 
+      sender: 'bot',
+      isLoading: true 
+    }]);
+    
     setInput('');
     setIsLoading(true);
     
-    // In a real implementation, you would call your API endpoint here
-    // For now, we'll simulate a response after a delay
-    setTimeout(() => {
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "I'm sorry, but I'm currently in development. Please check back later for answers to your questions about Victure Healthcare Solutions.",
-        sender: 'bot'
-      };
+    try {
+      // Call the Supabase edge function
+      const { data, error } = await supabase.functions.invoke('victure-ai-chatbot', {
+        body: { message: input },
+      });
       
-      setMessages(prev => [...prev, botMessage]);
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      // Remove loading message and add response
+      setMessages(prev => prev.filter(msg => msg.id !== loadingId));
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 2).toString(),
+        text: data.text,
+        sender: 'bot'
+      }]);
+      
+    } catch (error) {
+      console.error('Error calling chatbot function:', error);
+      // Remove loading message
+      setMessages(prev => prev.filter(msg => msg.id !== loadingId));
+      
+      // Add error message
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 2).toString(),
+        text: "I'm sorry, I'm having trouble connecting to my knowledge base. Please try again later.",
+        sender: 'bot'
+      }]);
+      
+      toast.error("Failed to get response from Victure AI");
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -114,20 +149,13 @@ export default function ChatbotDialog({ onClose }: ChatbotDialogProps) {
                   className={`max-w-[80%] p-3 ${
                     message.sender === 'user' 
                       ? 'bg-primary text-primary-foreground' 
-                      : 'bg-white'
+                      : message.isLoading ? 'bg-gray-100' : 'bg-white'
                   }`}
                 >
                   <p className="text-sm">{message.text}</p>
                 </Card>
               </div>
             ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <Card className="max-w-[80%] p-3 bg-white">
-                  <p className="text-sm">Typing...</p>
-                </Card>
-              </div>
-            )}
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
@@ -139,7 +167,7 @@ export default function ChatbotDialog({ onClose }: ChatbotDialogProps) {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask a question..."
+              placeholder="Ask a question about pharmacy management..."
               className="resize-none"
               rows={1}
               disabled={isLoading}
