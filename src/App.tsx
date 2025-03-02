@@ -1,38 +1,97 @@
-
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Index from "@/pages/Index";
-import Auth from "@/pages/Auth";
-import Dashboard from "@/pages/Dashboard";
-import Inventory from "@/pages/Inventory";
-import Billing from "@/pages/Billing";
-import BillingCart from "@/pages/BillingCart";
-import Prescriptions from "@/pages/Prescriptions";
-import Patients from "@/pages/Patients";
-import Insights from "@/pages/Insights";
-import Purchases from "@/pages/Purchases";
-import NotFound from "@/pages/NotFound";
-import Settings from "@/pages/Settings";
-import ChatbotButton from "@/components/chatbot/ChatbotButton";
+import React from 'react';
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+} from 'react-router-dom';
+import { useAuth } from './contexts/AuthContext';
+import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
+import UpdateProfile from './pages/UpdateProfile';
+import Inventory from './pages/Inventory';
+import Sales from './pages/Sales';
+import PurchaseOrders from './pages/PurchaseOrders';
+import Customers from './pages/Customers';
+import Suppliers from './pages/Suppliers';
+import Reports from './pages/Reports';
+import Settings from './pages/Settings';
+import { Toaster } from 'sonner';
+import VictureAI from "./components/chatbot/VictureAI";
 
 function App() {
+  const { currentUser } = useAuth();
+
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/inventory" element={<Inventory />} />
-        <Route path="/billing" element={<Billing />} />
-        <Route path="/billing/cart/:prescriptionId" element={<BillingCart />} />
-        <Route path="/prescriptions" element={<Prescriptions />} />
-        <Route path="/patients" element={<Patients />} />
-        <Route path="/insights" element={<Insights />} />
-        <Route path="/purchases" element={<Purchases />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <ChatbotButton />
-    </Router>
+    <div className="min-h-screen bg-background">
+      <Router>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              currentUser ? <Dashboard /> : <Navigate to="/login" />
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              currentUser ? <Dashboard /> : <Navigate to="/login" />
+            }
+          />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route
+            path="/update-profile"
+            element={
+              currentUser ? <UpdateProfile /> : <Navigate to="/login" />
+            }
+          />
+          <Route
+            path="/inventory"
+            element={
+              currentUser ? <Inventory /> : <Navigate to="/login" />
+            }
+          />
+          <Route
+            path="/sales"
+            element={currentUser ? <Sales /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/purchase-orders"
+            element={
+              currentUser ? <PurchaseOrders /> : <Navigate to="/login" />
+            }
+          />
+          <Route
+            path="/customers"
+            element={
+              currentUser ? <Customers /> : <Navigate to="/login" />
+            }
+          />
+          <Route
+            path="/suppliers"
+            element={
+              currentUser ? <Suppliers /> : <Navigate to="/login" />
+            }
+          />
+          <Route
+            path="/reports"
+            element={currentUser ? <Reports /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/settings"
+            element={
+              currentUser ? <Settings /> : <Navigate to="/login" />
+            }
+          />
+        </Routes>
+      </Router>
+      <Toaster />
+      <VictureAI />
+    </div>
   );
 }
 

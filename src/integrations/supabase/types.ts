@@ -188,6 +188,27 @@ export type Database = {
         }
         Relationships: []
       }
+      pharmacy_knowledge: {
+        Row: {
+          answer: string
+          created_at: string | null
+          id: number
+          question: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string | null
+          id?: number
+          question: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string | null
+          id?: number
+          question?: string
+        }
+        Relationships: []
+      }
       prescriptions: {
         Row: {
           date: string
