@@ -248,32 +248,32 @@ export default function Insights() {
   const stats = [
     {
       title: "Total Sales",
-      value: totalSales,
+      value: Number(totalSales),
       icon: <CreditCard className="h-4 w-4" />,
       description: `${salesChange > 0 ? "+" : ""}${salesChange}% from last period`,
-      trend: salesChange >= 0 ? "up" : "down",
+      trend: salesChange >= 0 ? "up" : "down" as "up" | "down",
     },
     {
       title: "Monthly Revenue",
-      value: monthlyRevenue,
+      value: Number(monthlyRevenue),
       icon: <DollarSign className="h-4 w-4" />,
       description: `${revenueChange > 0 ? "+" : ""}${revenueChange}% from last month`,
-      trend: revenueChange >= 0 ? "up" : "down",
+      trend: revenueChange >= 0 ? "up" : "down" as "up" | "down",
     },
     {
       title: "Average Order Value",
-      value: averageOrderValue,
+      value: Number(averageOrderValue),
       icon: <ShoppingCart className="h-4 w-4" />,
       description: `${aovChange > 0 ? "+" : ""}${aovChange}% from last period`,
-      trend: aovChange >= 0 ? "up" : "down",
+      trend: aovChange >= 0 ? "up" : "down" as "up" | "down",
     },
     {
       title: "Customer Retention",
-      value: customerRetentionRate,
+      value: Number(customerRetentionRate),
       suffix: "%",
       icon: <Users className="h-4 w-4" />,
       description: `${retentionChange > 0 ? "+" : ""}${retentionChange}% from last period`,
-      trend: retentionChange >= 0 ? "up" : "down",
+      trend: retentionChange >= 0 ? "up" : "down" as "up" | "down",
     },
   ];
 
@@ -312,7 +312,14 @@ export default function Insights() {
             
             <DateRangePicker
               value={dateRange}
-              onChange={setDateRange}
+              onChange={(range) => {
+                if ('from' in range && 'to' in range) {
+                  setDateRange({
+                    from: range.from as Date,
+                    to: range.to as Date
+                  });
+                }
+              }}
             />
           </div>
         </div>
