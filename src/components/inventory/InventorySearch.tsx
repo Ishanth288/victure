@@ -1,64 +1,75 @@
 
-import { Search, AlertTriangle, Clock } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search, CircleDashed, AlertCircle, Package } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface InventorySearchProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   totalItems: number;
-  onFilterChange: (type: string) => void;
+  onFilterChange: (filterType: string) => void;
   activeFilter: string | null;
 }
 
-export default function InventorySearch({ 
-  searchQuery, 
-  onSearchChange, 
+export default function InventorySearch({
+  searchQuery,
+  onSearchChange,
   totalItems,
   onFilterChange,
   activeFilter
 }: InventorySearchProps) {
-  const handleFilterClick = (type: string) => {
-    onFilterChange(type);
-  };
-
   return (
-    <Card className="p-4">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center">
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-neutral-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
           <Input
-            placeholder="Search by name, NDC, or manufacturer..."
+            placeholder="Search inventory..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-10"
           />
         </div>
-        <div className="flex gap-2">
-          <Button 
-            variant={activeFilter === "expiringSoon" ? "default" : "outline"} 
-            size="sm" 
-            className="gap-2"
-            onClick={() => handleFilterClick("expiringSoon")}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={activeFilter === "lowStock" ? "default" : "outline"}
+            size="sm"
+            onClick={() => onFilterChange("lowStock")}
+            className="flex items-center gap-1"
           >
-            <Clock className="h-4 w-4" />
-            Expiring Soon
+            <AlertCircle className="h-4 w-4" />
+            <span>Low Stock</span>
           </Button>
-          <Button 
-            variant={activeFilter === "lowStock" ? "default" : "outline"} 
-            size="sm" 
-            className="gap-2"
-            onClick={() => handleFilterClick("lowStock")}
+          <Button
+            variant={activeFilter === "expiringSoon" ? "default" : "outline"}
+            size="sm"
+            onClick={() => onFilterChange("expiringSoon")}
+            className="flex items-center gap-1"
           >
-            <AlertTriangle className="h-4 w-4" />
-            Low Stock
+            <CircleDashed className="h-4 w-4" />
+            <span>Expiring Soon</span>
           </Button>
         </div>
       </div>
-      <div className="mt-2 text-sm text-gray-600">
-        Showing {totalItems} items
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-gray-500">
+          Showing <span className="font-medium">{totalItems}</span> items
+        </p>
+        {activeFilter && (
+          <Badge variant="outline" className="flex items-center gap-1">
+            <span>
+              {activeFilter === "lowStock" ? "Low Stock" : "Expiring Soon"}
+            </span>
+            <button
+              className="ml-1 rounded-full hover:bg-gray-200 p-0.5"
+              onClick={() => onFilterChange(activeFilter)}
+            >
+              ×
+            </button>
+          </Badge>
+        )}
       </div>
-    </Card>
+    </div>
   );
 }

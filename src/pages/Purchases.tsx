@@ -225,6 +225,16 @@ export default function Purchases() {
     if (!orderToDelete) return;
     
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to delete orders",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // First delete items related to this order
       const { error: itemsError } = await supabase
         .from("purchase_order_items")
@@ -237,7 +247,8 @@ export default function Purchases() {
       const { error: orderError } = await supabase
         .from("purchase_orders")
         .delete()
-        .eq("id", orderToDelete);
+        .eq("id", orderToDelete)
+        .eq("user_id", user.id); // Add user_id filter for security
 
       if (orderError) throw orderError;
 

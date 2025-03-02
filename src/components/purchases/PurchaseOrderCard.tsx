@@ -5,8 +5,21 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Edit, Printer, Trash2, FileCheck } from "lucide-react";
+import { 
+  Edit, 
+  Printer, 
+  Trash2, 
+  FileCheck, 
+  ChevronDown, 
+  ChevronUp 
+} from "lucide-react";
 import { PurchaseOrder, PurchaseOrderItem } from "@/types/purchases";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface PurchaseOrderCardProps {
   order: PurchaseOrder;
@@ -72,9 +85,14 @@ export default function PurchaseOrderCard({
           variant="ghost" 
           size="sm" 
           onClick={() => setExpanded(!expanded)}
-          className="mb-3 w-full justify-start border border-gray-200 hover:bg-gray-50"
+          className="mb-3 w-full justify-between border border-gray-200 hover:bg-gray-50"
         >
           {expanded ? "Hide Items" : "View Items"}
+          {expanded ? (
+            <ChevronUp className="h-4 w-4 ml-2" />
+          ) : (
+            <ChevronDown className="h-4 w-4 ml-2" />
+          )}
         </Button>
         
         {expanded && (
@@ -92,54 +110,99 @@ export default function PurchaseOrderCard({
         )}
         
         <div className="flex flex-wrap gap-2 mt-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1" 
-            onClick={() => onUpdateDelivery(order.id || 0)}
-            disabled={isCompleted}
-          >
-            Update Delivery
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center gap-1" 
+                  onClick={() => onUpdateDelivery(order.id || 0)}
+                  disabled={isCompleted}
+                >
+                  Update Delivery
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Update delivery status</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1" 
-            onClick={() => onEditOrder(order)}
-            disabled={isCompleted}
-          >
-            <Edit className="h-4 w-4" /> Edit Order
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center gap-1" 
+                  onClick={() => onEditOrder(order)}
+                  disabled={isCompleted}
+                >
+                  <Edit className="h-4 w-4" /> Edit
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Edit order details</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1 text-red-500 hover:bg-red-50 hover:text-red-600" 
-            onClick={() => onDeleteOrder(order.id || 0)}
-            disabled={isCompleted}
-          >
-            <Trash2 className="h-4 w-4" /> Delete
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center gap-1 text-red-500 hover:bg-red-50 hover:text-red-600" 
+                  onClick={() => onDeleteOrder(order.id || 0)}
+                  disabled={isCompleted}
+                >
+                  <Trash2 className="h-4 w-4" /> Delete
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Delete this order</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1" 
-            onClick={() => onPrintOrder(order)}
-          >
-            <Printer className="h-4 w-4" /> Print Order
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center gap-1" 
+                  onClick={() => onPrintOrder(order)}
+                >
+                  <Printer className="h-4 w-4" /> Print
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Print order details</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           
           {isPending && deliveryPercentage === 100 && (
-            <Button 
-              variant="default" 
-              size="sm" 
-              className="flex items-center gap-1 bg-green-600 hover:bg-green-700" 
-              onClick={() => onCompleteOrder(order.id || 0)}
-            >
-              <FileCheck className="h-4 w-4" /> Complete
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="flex items-center gap-1 bg-green-600 hover:bg-green-700" 
+                    onClick={() => onCompleteOrder(order.id || 0)}
+                  >
+                    <FileCheck className="h-4 w-4" /> Complete
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Mark order as completed</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
       </div>
