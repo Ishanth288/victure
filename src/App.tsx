@@ -63,7 +63,7 @@ function AppContent() {
           <Route path="/patients" element={<ProtectedRoute><Patients /></ProtectedRoute>} />
           <Route path="/prescriptions" element={<ProtectedRoute><Prescriptions /></ProtectedRoute>} />
           <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
-          <Route path="/billing-cart" element={<ProtectedRoute><BillingCart /></ProtectedRoute>} />
+          <Route path="/billing-cart/:prescriptionId" element={<ProtectedRoute><BillingCart /></ProtectedRoute>} />
           
           {/* Catch all route - 404 */}
           <Route path="*" element={<NotFound />} />
