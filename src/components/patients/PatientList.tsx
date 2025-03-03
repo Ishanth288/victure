@@ -6,9 +6,10 @@ interface PatientListProps {
   patients: Patient[];
   onViewBill: (billId: number) => void;
   onToggleStatus: (patientId: number, currentStatus: string) => void;
+  onCreateBill?: (prescriptionId: number) => void;
 }
 
-export function PatientList({ patients, onViewBill, onToggleStatus }: PatientListProps) {
+export function PatientList({ patients, onViewBill, onToggleStatus, onCreateBill }: PatientListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {patients.map((patient) => (
@@ -18,10 +19,12 @@ export function PatientList({ patients, onViewBill, onToggleStatus }: PatientLis
           name={patient.name}
           phoneNumber={patient.phone_number}
           bills={patient.bills}
+          prescriptions={patient.prescriptions}
           totalSpent={patient.total_spent}
           status={patient.status}
           onViewBill={onViewBill}
           onToggleStatus={onToggleStatus}
+          onCreateBill={onCreateBill}
         />
       ))}
     </div>

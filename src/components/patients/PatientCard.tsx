@@ -2,7 +2,7 @@
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, XCircle, CheckCircle } from "lucide-react";
+import { Eye, XCircle, CheckCircle, PlusCircle } from "lucide-react";
 import { PatientBill } from "@/types/patients";
 
 interface PatientCardProps {
@@ -10,10 +10,12 @@ interface PatientCardProps {
   name: string;
   phoneNumber: string;
   bills: PatientBill[];
+  prescriptions?: any[];
   totalSpent: number;
   status?: string;
   onViewBill: (billId: number) => void;
   onToggleStatus: (patientId: number, currentStatus: string) => void;
+  onCreateBill?: (prescriptionId: number) => void;
 }
 
 export function PatientCard({
@@ -21,10 +23,12 @@ export function PatientCard({
   name,
   phoneNumber,
   bills,
+  prescriptions = [],
   totalSpent,
   status = 'active',
   onViewBill,
   onToggleStatus,
+  onCreateBill,
 }: PatientCardProps) {
   const isInactive = status === 'inactive';
 
@@ -69,6 +73,37 @@ export function PatientCard({
             <span className="text-gray-500">Total Spent</span>
             <span className="font-medium">₹{totalSpent.toFixed(2)}</span>
           </div>
+
+          {prescriptions && prescriptions.length > 0 && onCreateBill && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Prescriptions</h4>
+              {prescriptions.slice(0, 2).map((prescription: any) => (
+                <div key={prescription.id} className="p-2 bg-gray-50 rounded flex justify-between items-center">
+                  <div>
+                    <p className="text-sm font-medium">Rx #{prescription.prescription_number}</p>
+                    <p className="text-xs text-gray-500">Dr. {prescription.doctor_name}</p>
+                    <p className="text-xs text-gray-500">
+                      {format(new Date(prescription.date), "MMM dd, yyyy")}
+                    </p>
+                  </div>
+                  
+                  {prescription.status === 'active' && prescription.bills.length === 0 && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => onCreateBill(prescription.id)}
+                    >
+                      <PlusCircle className="h-4 w-4 mr-1" />
+                      Create Bill
+                    </Button>
+                  )}
+                </div>
+              ))}
+              {prescriptions.length > 2 && (
+                <p className="text-xs text-gray-500 text-center">+ {prescriptions.length - 2} more prescriptions</p>
+              )}
+            </div>
+          )}
 
           <div className="flex-1">
             <h4 className="text-sm font-medium mb-2">Recent Bills</h4>

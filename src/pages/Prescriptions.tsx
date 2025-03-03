@@ -6,13 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, User, FileText } from "lucide-react";
+import { Clock, User, FileText, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 
-export default function Prescriptions() {
+export default function Patients() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -52,14 +52,25 @@ export default function Prescriptions() {
         .select(`
           *,
           patient:patients (name),
-          bills (id)
+          bills (id, total_amount)
         `)
         .eq("user_id", user.id)
         .order("date", { ascending: false });
 
       if (error) throw error;
+      
+      // Calculate total bill amount for each prescription
+      const prescriptionsWithTotal = data?.map(prescription => {
+        const totalAmount = prescription.bills?.reduce((sum: number, bill: any) => 
+          sum + (bill.total_amount || 0), 0);
+        
+        return {
+          ...prescription,
+          total_amount: totalAmount || 0
+        };
+      }) || [];
 
-      setPrescriptions(data || []);
+      setPrescriptions(prescriptionsWithTotal);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching prescriptions:", error);
@@ -144,7 +155,7 @@ export default function Prescriptions() {
     <DashboardLayout>
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-          <h1 className="text-3xl font-bold">Prescriptions</h1>
+          <h1 className="text-3xl font-bold">Patients</h1>
 
           <Tabs defaultValue="active" value={activeTab} onValueChange={setActiveTab} className="mt-4 sm:mt-0">
             <TabsList>
@@ -165,7 +176,7 @@ export default function Prescriptions() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredPrescriptions.length === 0 ? (
             <div className="col-span-full text-center p-8 bg-gray-50 rounded-lg">
-              <p className="text-gray-500">No prescriptions found</p>
+              <p className="text-gray-500">No patients found</p>
             </div>
           ) : (
             filteredPrescriptions.map((prescription) => (
@@ -194,6 +205,10 @@ export default function Prescriptions() {
                         <Clock className="w-4 h-4 mr-2" />
                         <span>{format(new Date(prescription.date), "MMM d, yyyy")}</span>
                       </div>
+                      <div className="flex items-center">
+                        <DollarSign className="w-4 h-4 mr-2" />
+                        <span>₹{prescription.total_amount.toFixed(2)}</span>
+                      </div>
                     </div>
                   </div>
 
@@ -206,7 +221,7 @@ export default function Prescriptions() {
                       Mark {prescription.status === 'active' ? 'Inactive' : 'Active'}
                     </Button>
                     
-                    {prescription.bills && prescription.bills.length === 0 && prescription.status === 'active' && (
+                    {(prescription.bills?.length === 0 || !prescription.bills) && prescription.status === 'active' && (
                       <Button 
                         variant="ghost" 
                         className="flex-1 rounded-none py-2 text-primary border-l border-gray-100"

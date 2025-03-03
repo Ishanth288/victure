@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { addDays, format } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -11,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export default function Patients() {
+export default function Prescriptions() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [patients, setPatients] = useState<any[]>([]);
@@ -58,6 +57,10 @@ export default function Patients() {
           *,
           bills:prescriptions (
             id,
+            prescription_number,
+            doctor_name,
+            date,
+            status,
             bills (
               id,
               bill_number,
@@ -74,7 +77,6 @@ export default function Patients() {
 
       if (error) throw error;
 
-      // Process data to flatten bills and calculate total spent
       const processedPatients = data.map((patient) => {
         const allBills: any[] = [];
         patient.bills.forEach((prescription: any) => {
@@ -96,8 +98,8 @@ export default function Patients() {
         return {
           ...patient,
           bills: allBills,
+          prescriptions: patient.bills,
           total_spent: totalSpent,
-          // The status field is now properly defined in the database
           status: patient.status || 'active' // Fallback to active if status is null
         };
       });
@@ -108,7 +110,7 @@ export default function Patients() {
       console.error("Error fetching patients:", error);
       toast({
         title: "Error",
-        description: "Failed to load patients",
+        description: "Failed to load prescriptions",
         variant: "destructive",
       });
       setLoading(false);
@@ -116,23 +118,19 @@ export default function Patients() {
   };
 
   const filterPatients = () => {
-    // Parse dates to timestamps for comparison
     const startTimestamp = new Date(startDate).getTime();
     const endTimestamp = new Date(endDate).getTime() + 86400000; // Add one day to include the end date
     
     const filtered = patients.filter((patient) => {
-      // Filter by status
       if (activeTab !== "all" && patient.status !== activeTab) {
         return false;
       }
 
-      // Filter by search query
       const matchesSearch =
         searchQuery === "" ||
         patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         patient.phone_number.includes(searchQuery);
 
-      // Filter by date (created_at)
       const createdAt = new Date(patient.created_at).getTime();
       const matchesDate = createdAt >= startTimestamp && createdAt <= endTimestamp;
 
@@ -199,7 +197,6 @@ export default function Patients() {
 
       if (error) throw error;
 
-      // Update local state
       setPatients(prevPatients => 
         prevPatients.map(patient => 
           patient.id === patientId
@@ -222,6 +219,10 @@ export default function Patients() {
     }
   };
 
+  const handleCreateBill = (prescriptionId: number) => {
+    navigate(`/billing?prescriptionId=${prescriptionId}`);
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -235,6 +236,8 @@ export default function Patients() {
   return (
     <DashboardLayout>
       <div className="container mx-auto px-4 py-6">
+        <h1 className="text-3xl font-bold mb-6">Prescriptions</h1>
+        
         <DateRangeFilter
           startDate={startDate}
           endDate={endDate}
@@ -260,13 +263,14 @@ export default function Patients() {
 
         {filteredPatients.length === 0 ? (
           <div className="text-center p-8 bg-gray-50 rounded-lg">
-            <p className="text-gray-500">No patients found</p>
+            <p className="text-gray-500">No prescriptions found</p>
           </div>
         ) : (
           <PatientList 
             patients={filteredPatients} 
             onViewBill={handleViewBill}
             onToggleStatus={handleTogglePatientStatus}
+            onCreateBill={handleCreateBill}
           />
         )}
 
