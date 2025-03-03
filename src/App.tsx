@@ -1,3 +1,4 @@
+
 import React from 'react';
 import {
   BrowserRouter as Router,
@@ -5,7 +6,7 @@ import {
   Routes,
   Navigate,
 } from 'react-router-dom';
-import { useAuth } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -21,7 +22,7 @@ import Settings from './pages/Settings';
 import { Toaster } from 'sonner';
 import VictureAI from "./components/chatbot/VictureAI";
 
-function App() {
+function AppContent() {
   const { currentUser } = useAuth();
 
   return (
@@ -92,6 +93,14 @@ function App() {
       <Toaster />
       <VictureAI />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
