@@ -89,9 +89,9 @@ function AppContent() {
             }
           />
         </Routes>
+        <VictureAI />
+        <Toaster />
       </Router>
-      <Toaster />
-      <VictureAI />
     </div>
   );
 }
