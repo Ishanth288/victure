@@ -1,5 +1,1 @@
-
 project_id = "aysdilfgxlyuplikmmdt"
-
-[functions.victure-ai-chatbot]
-verify_jwt = false
