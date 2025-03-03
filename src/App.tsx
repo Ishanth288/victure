@@ -19,8 +19,24 @@ import Customers from './pages/Customers';
 import Suppliers from './pages/Suppliers';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
-import { Toaster } from 'sonner';
+import Patients from './pages/Patients';
+import Prescriptions from './pages/Prescriptions';
+import Billing from './pages/Billing';
+import BillingCart from './pages/BillingCart';
 import VictureAI from "./components/chatbot/VictureAI";
+import { Toaster } from 'sonner';
+import DashboardLayout from './components/DashboardLayout';
+import NotFound from './pages/NotFound';
+
+function ProtectedRoute({ children }) {
+  const { currentUser } = useAuth();
+  
+  if (!currentUser) {
+    return <Navigate to="/login" />;
+  }
+  
+  return children;
+}
 
 function AppContent() {
   const { currentUser } = useAuth();
@@ -29,66 +45,30 @@ function AppContent() {
     <div className="min-h-screen bg-background">
       <Router>
         <Routes>
-          <Route
-            path="/"
-            element={
-              currentUser ? <Dashboard /> : <Navigate to="/login" />
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              currentUser ? <Dashboard /> : <Navigate to="/login" />
-            }
-          />
+          <Route path="/" element={currentUser ? <Dashboard /> : <Navigate to="/login" />} />
+          <Route path="/dashboard" element={currentUser ? <Dashboard /> : <Navigate to="/login" />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route
-            path="/update-profile"
-            element={
-              currentUser ? <UpdateProfile /> : <Navigate to="/login" />
-            }
-          />
-          <Route
-            path="/inventory"
-            element={
-              currentUser ? <Inventory /> : <Navigate to="/login" />
-            }
-          />
-          <Route
-            path="/sales"
-            element={currentUser ? <Sales /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/purchase-orders"
-            element={
-              currentUser ? <PurchaseOrders /> : <Navigate to="/login" />
-            }
-          />
-          <Route
-            path="/customers"
-            element={
-              currentUser ? <Customers /> : <Navigate to="/login" />
-            }
-          />
-          <Route
-            path="/suppliers"
-            element={
-              currentUser ? <Suppliers /> : <Navigate to="/login" />
-            }
-          />
-          <Route
-            path="/reports"
-            element={currentUser ? <Reports /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/settings"
-            element={
-              currentUser ? <Settings /> : <Navigate to="/login" />
-            }
-          />
+          
+          {/* Protected routes */}
+          <Route path="/update-profile" element={<ProtectedRoute><UpdateProfile /></ProtectedRoute>} />
+          <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
+          <Route path="/sales" element={<ProtectedRoute><Sales /></ProtectedRoute>} />
+          <Route path="/purchase-orders" element={<ProtectedRoute><PurchaseOrders /></ProtectedRoute>} />
+          <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+          <Route path="/suppliers" element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
+          <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/patients" element={<ProtectedRoute><Patients /></ProtectedRoute>} />
+          <Route path="/prescriptions" element={<ProtectedRoute><Prescriptions /></ProtectedRoute>} />
+          <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
+          <Route path="/billing-cart" element={<ProtectedRoute><BillingCart /></ProtectedRoute>} />
+          
+          {/* Catch all route - 404 */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
+        
         <VictureAI />
         <Toaster />
       </Router>
