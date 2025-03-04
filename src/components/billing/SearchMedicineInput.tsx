@@ -28,10 +28,23 @@ export function SearchMedicineInput({ onAddToCart }: SearchMedicineInputProps) {
 
     setIsLoading(true);
     try {
+      // Get current user - we'll ensure data isolation here
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to search inventory",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("inventory")
         .select("*")
         .or(`name.ilike.%${query}%,generic_name.ilike.%${query}%`)
+        .eq("user_id", user.id) // Only show items for the current user
         .order("name");
 
       if (error) {
