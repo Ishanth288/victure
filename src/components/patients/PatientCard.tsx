@@ -1,8 +1,7 @@
-
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, XCircle, CheckCircle, PlusCircle } from "lucide-react";
+import { Eye, XCircle, CheckCircle, PlusCircle, Trash2 } from "lucide-react";
 import { PatientBill } from "@/types/patients";
 
 interface PatientCardProps {
@@ -16,6 +15,7 @@ interface PatientCardProps {
   onViewBill: (billId: number) => void;
   onToggleStatus: (patientId: number, currentStatus: string) => void;
   onCreateBill?: (prescriptionId: number) => void;
+  onDeletePatient: (patientId: number) => void;
 }
 
 export function PatientCard({
@@ -29,6 +29,7 @@ export function PatientCard({
   onViewBill,
   onToggleStatus,
   onCreateBill,
+  onDeletePatient,
 }: PatientCardProps) {
   const isInactive = status === 'inactive';
 
@@ -50,23 +51,33 @@ export function PatientCard({
               </div>
               <p className="text-sm text-gray-500">{phoneNumber}</p>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => onToggleStatus(id, status)}
-            >
-              {!isInactive ? (
-                <>
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Mark Inactive
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Mark Active
-                </>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => onToggleStatus(id, status)}
+              >
+                {!isInactive ? (
+                  <>
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Mark Inactive
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Mark Active
+                  </>
+                )}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="text-destructive hover:bg-destructive hover:text-white"
+                onClick={() => onDeletePatient(id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           <div className="flex items-center justify-between text-sm">

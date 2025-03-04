@@ -5,11 +5,21 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, User, FileText, DollarSign } from "lucide-react";
+import { Clock, User, FileText, DollarSign, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { 
+  AlertDialog,
+  AlertDialogAction, 
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Prescriptions() {
   const { toast } = useToast();
@@ -19,6 +29,8 @@ export default function Prescriptions() {
   const [filteredPrescriptions, setFilteredPrescriptions] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<string>("active");
+  const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [prescriptionToDelete, setPrescriptionToDelete] = useState<number | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -136,6 +148,68 @@ export default function Prescriptions() {
     }
   };
 
+  const handleDeletePrescription = (id: number) => {
+    setPrescriptionToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeletePrescription = async () => {
+    if (!prescriptionToDelete) return;
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to delete prescriptions",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const { data: bills, error: billsError } = await supabase
+        .from("bills")
+        .select("id")
+        .eq("prescription_id", prescriptionToDelete);
+        
+      if (billsError) throw billsError;
+      
+      if (bills && bills.length > 0) {
+        const { error: deleteBillsError } = await supabase
+          .from("bills")
+          .delete()
+          .eq("prescription_id", prescriptionToDelete);
+          
+        if (deleteBillsError) throw deleteBillsError;
+      }
+      
+      const { error: prescriptionError } = await supabase
+        .from("prescriptions")
+        .delete()
+        .eq("id", prescriptionToDelete)
+        .eq("user_id", user.id);
+
+      if (prescriptionError) throw prescriptionError;
+
+      setPrescriptions(prev => prev.filter(prescription => prescription.id !== prescriptionToDelete));
+      
+      toast({
+        title: "Prescription deleted",
+        description: "Prescription has been removed successfully."
+      });
+    } catch (error: any) {
+      console.error("Error deleting prescription:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete prescription",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setPrescriptionToDelete(null);
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -171,7 +245,7 @@ export default function Prescriptions() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredPrescriptions.length === 0 ? (
             <div className="col-span-full text-center p-8 bg-gray-50 rounded-lg">
-              <p className="text-gray-500">No patients found</p>
+              <p className="text-gray-500">No prescriptions found</p>
             </div>
           ) : (
             filteredPrescriptions.map((prescription) => (
@@ -225,6 +299,15 @@ export default function Prescriptions() {
                         Create Bill
                       </Button>
                     )}
+                    
+                    <Button 
+                      variant="ghost" 
+                      className="flex-1 rounded-none py-2 text-destructive border-l border-gray-100"
+                      onClick={() => handleDeletePrescription(prescription.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -232,6 +315,23 @@ export default function Prescriptions() {
           )}
         </div>
       </div>
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this prescription?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the prescription and all related bills.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeletePrescription} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 }

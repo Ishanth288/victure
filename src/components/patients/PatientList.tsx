@@ -7,9 +7,16 @@ interface PatientListProps {
   onViewBill: (billId: number) => void;
   onToggleStatus: (patientId: number, currentStatus: string) => void;
   onCreateBill?: (prescriptionId: number) => void;
+  onDeletePatient: (patientId: number) => void;
 }
 
-export function PatientList({ patients, onViewBill, onToggleStatus, onCreateBill }: PatientListProps) {
+export function PatientList({ 
+  patients, 
+  onViewBill, 
+  onToggleStatus, 
+  onCreateBill,
+  onDeletePatient
+}: PatientListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {patients.map((patient) => (
@@ -25,6 +32,7 @@ export function PatientList({ patients, onViewBill, onToggleStatus, onCreateBill
           onViewBill={onViewBill}
           onToggleStatus={onToggleStatus}
           onCreateBill={onCreateBill}
+          onDeletePatient={onDeletePatient}
         />
       ))}
     </div>

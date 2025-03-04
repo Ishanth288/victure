@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -86,7 +85,6 @@ export default function Purchases() {
 
           if (itemsError) throw itemsError;
 
-          // Cast the order status to the expected type
           const orderWithTypedStatus: PurchaseOrder = {
             id: order.id,
             supplier_name: order.supplier_name,
@@ -126,12 +124,10 @@ export default function Purchases() {
 
   const filterOrders = () => {
     const filtered = orders.filter((order) => {
-      // Filter by status
       if (activeTab !== "all" && order.status !== activeTab) {
         return false;
       }
 
-      // Filter by search query
       const matchesSearch =
         searchQuery === "" ||
         order.supplier_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -144,23 +140,24 @@ export default function Purchases() {
     setFilteredOrders(filtered);
   };
 
-  const handleCreateOrder = async (orderData: any) => {
+  const handleCreateOrder = async (formData: any) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
-      // Create the purchase order
+      const totalAmount = formData.items.reduce(
+        (sum: number, item: any) => sum + (item.unit_cost * item.quantity_ordered),
+        0
+      );
+
       const { data: purchaseOrder, error: orderError } = await supabase
         .from("purchase_orders")
         .insert([
           {
-            supplier_name: orderData.supplierName,
-            supplier_phone: orderData.supplierPhone,
-            notes: orderData.notes,
-            total_amount: orderData.items.reduce(
-              (sum: number, item: any) => sum + (parseFloat(item.unitCost) * parseInt(item.quantity)),
-              0
-            ),
+            supplier_name: formData.supplier_name,
+            supplier_phone: formData.supplier_phone,
+            order_date: formData.order_date,
+            total_amount: totalAmount,
             user_id: user.id,
           },
         ])
@@ -169,13 +166,12 @@ export default function Purchases() {
 
       if (orderError) throw orderError;
 
-      // Create the purchase order items
-      const itemsToInsert = orderData.items.map((item: any) => ({
+      const itemsToInsert = formData.items.map((item: any) => ({
         purchase_order_id: purchaseOrder.id,
-        item_name: item.name,
-        quantity_ordered: parseInt(item.quantity),
-        unit_cost: parseFloat(item.unitCost),
-        total_cost: parseFloat(item.unitCost) * parseInt(item.quantity),
+        item_name: item.item_name,
+        quantity_ordered: item.quantity_ordered,
+        unit_cost: item.unit_cost,
+        total_cost: item.unit_cost * item.quantity_ordered,
       }));
 
       const { error: itemsError } = await supabase
@@ -184,25 +180,25 @@ export default function Purchases() {
 
       if (itemsError) throw itemsError;
 
-      // Refetch orders to update UI
       fetchOrders();
       
       toast({
         title: "Success",
         description: "Purchase order created successfully",
       });
-    } catch (error) {
+      
+      setPurchaseDialogOpen(false);
+    } catch (error: any) {
       console.error("Error creating order:", error);
       toast({
         title: "Error",
-        description: "Failed to create purchase order",
+        description: error.message || "Failed to create purchase order",
         variant: "destructive",
       });
     }
   };
 
   const handleUpdateDelivery = (orderId: number) => {
-    // Find the order and set its items as the selected items
     const order = orders.find(o => o.id === orderId);
     if (order) {
       setSelectedOrderItems(order.items);
@@ -235,7 +231,6 @@ export default function Purchases() {
         return;
       }
       
-      // First delete items related to this order
       const { error: itemsError } = await supabase
         .from("purchase_order_items")
         .delete()
@@ -243,16 +238,14 @@ export default function Purchases() {
 
       if (itemsError) throw itemsError;
 
-      // Then delete the order itself
       const { error: orderError } = await supabase
         .from("purchase_orders")
         .delete()
         .eq("id", orderToDelete)
-        .eq("user_id", user.id); // Add user_id filter for security
+        .eq("user_id", user.id);
 
       if (orderError) throw orderError;
 
-      // Update local state
       setOrders(prev => prev.filter(order => order.id !== orderToDelete));
       
       toast({
@@ -274,7 +267,6 @@ export default function Purchases() {
 
   const handleUpdateDeliverySubmit = async (itemUpdates: any) => {
     try {
-      // Update each item with the new delivery information
       for (const item of itemUpdates) {
         const { error } = await supabase
           .from("purchase_order_items")
@@ -288,7 +280,6 @@ export default function Purchases() {
         if (error) throw error;
       }
 
-      // Check if all items for the order are fully delivered
       const orderToUpdate = orders.find(o => o.id === selectedOrderId);
       if (!orderToUpdate) return;
       
@@ -305,7 +296,6 @@ export default function Purchases() {
 
       const allItemsDelivered = updatedItems.every(item => item.is_delivered);
       
-      // Update the order status if all items are delivered
       if (allItemsDelivered && orderToUpdate.status === 'pending') {
         const { error } = await supabase
           .from("purchase_orders")
@@ -315,7 +305,6 @@ export default function Purchases() {
         if (error) throw error;
       }
 
-      // Refetch orders to update UI
       fetchOrders();
       
       toast({
@@ -343,7 +332,6 @@ export default function Purchases() {
 
       if (error) throw error;
 
-      // Update local state
       setOrders(prev => 
         prev.map(order => 
           order.id === orderId
@@ -370,7 +358,6 @@ export default function Purchases() {
     try {
       const pdf = new jsPDF();
     
-      // Header
       pdf.setFontSize(20);
       pdf.text("Purchase Order", 105, 15, { align: "center" });
       
@@ -378,7 +365,6 @@ export default function Purchases() {
       pdf.text(`PO-${order.id}`, 20, 25);
       pdf.text(`Date: ${format(new Date(order.order_date), "dd/MM/yyyy")}`, 20, 32);
       
-      // Supplier info
       pdf.setFontSize(14);
       pdf.text("Supplier Details", 20, 42);
       pdf.setFontSize(12);
@@ -387,11 +373,9 @@ export default function Purchases() {
         pdf.text(`Phone: ${order.supplier_phone}`, 20, 56);
       }
       
-      // Items table
       pdf.setFontSize(14);
       pdf.text("Order Items", 20, 70);
       
-      // Table headers
       pdf.setFontSize(12);
       pdf.text("Item", 20, 78);
       pdf.text("Qty", 120, 78);
@@ -400,7 +384,6 @@ export default function Purchases() {
       
       pdf.line(20, 80, 190, 80);
       
-      // Table content
       let y = 88;
       order.items.forEach(item => {
         pdf.text(item.item_name, 20, y);
@@ -413,11 +396,9 @@ export default function Purchases() {
       pdf.line(20, y, 190, y);
       y += 8;
       
-      // Total
       pdf.text("Total:", 140, y);
       pdf.text(`₹${order.total_amount.toFixed(2)}`, 170, y);
       
-      // Notes
       if (order.notes) {
         y += 16;
         pdf.setFontSize(14);
@@ -427,7 +408,6 @@ export default function Purchases() {
         pdf.text(order.notes, 20, y);
       }
       
-      // Footer
       const pageCount = pdf.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         pdf.setPage(i);
@@ -460,14 +440,12 @@ export default function Purchases() {
     try {
       const pdf = new jsPDF("landscape");
     
-      // Header
       pdf.setFontSize(20);
       pdf.text("Purchase Orders Report", 150, 15, { align: "center" });
       
       pdf.setFontSize(12);
       pdf.text(`Generated on: ${format(new Date(), "dd/MM/yyyy")}`, 20, 25);
       
-      // Table headers
       pdf.setFontSize(12);
       pdf.text("ID", 20, 35);
       pdf.text("Supplier", 40, 35);
@@ -478,15 +456,12 @@ export default function Purchases() {
       
       pdf.line(20, 37, 280, 37);
       
-      // Table content
       let y = 45;
       filteredOrders.forEach((order, index) => {
-        // Add a new page if we're running out of space
         if (y > 180) {
           pdf.addPage();
           y = 35;
           
-          // Add headers to new page
           pdf.text("ID", 20, 25);
           pdf.text("Supplier", 40, 25);
           pdf.text("Date", 100, 25);
@@ -504,7 +479,6 @@ export default function Purchases() {
         pdf.text(order.status.charAt(0).toUpperCase() + order.status.slice(1), 140, y);
         pdf.text(`₹${order.total_amount.toFixed(2)}`, 180, y);
         
-        // List first 2 items with ellipsis if there are more
         const itemText = order.items
           .slice(0, 2)
           .map(item => `${item.item_name} (${item.quantity_ordered})`)
@@ -517,7 +491,6 @@ export default function Purchases() {
         
         y += 10;
         
-        // Add a light separator line between items
         if (index < filteredOrders.length - 1) {
           pdf.setDrawColor(200, 200, 200);
           pdf.line(20, y - 5, 280, y - 5);
@@ -525,7 +498,6 @@ export default function Purchases() {
         }
       });
       
-      // Footer
       const pageCount = pdf.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         pdf.setPage(i);

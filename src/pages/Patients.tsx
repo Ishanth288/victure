@@ -9,6 +9,16 @@ import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  AlertDialog,
+  AlertDialogAction, 
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Patients() {
   const navigate = useNavigate();
@@ -24,6 +34,8 @@ export default function Patients() {
   const [selectedBill, setSelectedBill] = useState<any>(null);
   const [showBillPreview, setShowBillPreview] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("active");
+  const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [patientToDelete, setPatientToDelete] = useState<number | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -223,6 +235,77 @@ export default function Patients() {
     navigate(`/billing?prescriptionId=${prescriptionId}`);
   };
 
+  const handleDeletePatient = (patientId: number) => {
+    setPatientToDelete(patientId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeletePatient = async () => {
+    if (!patientToDelete) return;
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to delete patients",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const { data: prescriptions, error: prescriptionsError } = await supabase
+        .from("prescriptions")
+        .select("id")
+        .eq("patient_id", patientToDelete);
+        
+      if (prescriptionsError) throw prescriptionsError;
+      
+      if (prescriptions && prescriptions.length > 0) {
+        const prescriptionIds = prescriptions.map(p => p.id);
+        
+        const { error: billsError } = await supabase
+          .from("bills")
+          .delete()
+          .in("prescription_id", prescriptionIds);
+          
+        if (billsError) throw billsError;
+        
+        const { error: deletePresError } = await supabase
+          .from("prescriptions")
+          .delete()
+          .in("id", prescriptionIds);
+          
+        if (deletePresError) throw deletePresError;
+      }
+      
+      const { error: patientError } = await supabase
+        .from("patients")
+        .delete()
+        .eq("id", patientToDelete)
+        .eq("user_id", user.id);
+
+      if (patientError) throw patientError;
+
+      setPatients(prev => prev.filter(patient => patient.id !== patientToDelete));
+      
+      toast({
+        title: "Patient deleted",
+        description: "Patient record has been removed successfully."
+      });
+    } catch (error: any) {
+      console.error("Error deleting patient:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete patient",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleteDialogOpen(false);
+      setPatientToDelete(null);
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -271,6 +354,7 @@ export default function Patients() {
             onViewBill={handleViewBill}
             onToggleStatus={handleTogglePatientStatus}
             onCreateBill={handleCreateBill}
+            onDeletePatient={handleDeletePatient}
           />
         )}
 
@@ -282,6 +366,23 @@ export default function Patients() {
             items={selectedBill.items}
           />
         )}
+        
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to delete this patient?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the patient record, all prescriptions, and all related bills.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeletePatient} className="bg-red-600 hover:bg-red-700">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
