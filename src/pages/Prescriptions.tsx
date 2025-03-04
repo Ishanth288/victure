@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -12,7 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 
-export default function Patients() {
+export default function Prescriptions() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -59,7 +58,6 @@ export default function Patients() {
 
       if (error) throw error;
       
-      // Calculate total bill amount for each prescription
       const prescriptionsWithTotal = data?.map(prescription => {
         const totalAmount = prescription.bills?.reduce((sum: number, bill: any) => 
           sum + (bill.total_amount || 0), 0);
@@ -85,12 +83,10 @@ export default function Patients() {
 
   const filterPrescriptions = () => {
     const filtered = prescriptions.filter((prescription) => {
-      // Filter by status
       if (activeTab !== "all" && prescription.status !== activeTab) {
         return false;
       }
 
-      // Filter by search query
       const matchesSearch =
         searchQuery === "" ||
         prescription.prescription_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -118,7 +114,6 @@ export default function Patients() {
 
       if (error) throw error;
 
-      // Update local state
       setPrescriptions(prev => 
         prev.map(prescription => 
           prescription.id === id
@@ -155,7 +150,7 @@ export default function Patients() {
     <DashboardLayout>
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-          <h1 className="text-3xl font-bold">Patients</h1>
+          <h1 className="text-3xl font-bold">Prescriptions</h1>
 
           <Tabs defaultValue="active" value={activeTab} onValueChange={setActiveTab} className="mt-4 sm:mt-0">
             <TabsList>

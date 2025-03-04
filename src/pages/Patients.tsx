@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export default function Prescriptions() {
+export default function Patients() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [patients, setPatients] = useState<any[]>([]);
@@ -73,7 +73,7 @@ export default function Prescriptions() {
           )
         `)
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false }); // Sorting from newest to oldest
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
@@ -100,7 +100,7 @@ export default function Prescriptions() {
           bills: allBills,
           prescriptions: patient.bills,
           total_spent: totalSpent,
-          status: patient.status || 'active' // Fallback to active if status is null
+          status: patient.status || 'active'
         };
       });
 
@@ -110,7 +110,7 @@ export default function Prescriptions() {
       console.error("Error fetching patients:", error);
       toast({
         title: "Error",
-        description: "Failed to load prescriptions",
+        description: "Failed to load patients",
         variant: "destructive",
       });
       setLoading(false);
@@ -119,8 +119,8 @@ export default function Prescriptions() {
 
   const filterPatients = () => {
     const startTimestamp = new Date(startDate).getTime();
-    const endTimestamp = new Date(endDate).getTime() + 86400000; // Add one day to include the end date
-    
+    const endTimestamp = new Date(endDate).getTime() + 86400000;
+
     const filtered = patients.filter((patient) => {
       if (activeTab !== "all" && patient.status !== activeTab) {
         return false;
@@ -236,7 +236,7 @@ export default function Prescriptions() {
   return (
     <DashboardLayout>
       <div className="container mx-auto px-4 py-6">
-        <h1 className="text-3xl font-bold mb-6">Prescriptions</h1>
+        <h1 className="text-3xl font-bold mb-6">Patients</h1>
         
         <DateRangeFilter
           startDate={startDate}
@@ -263,7 +263,7 @@ export default function Prescriptions() {
 
         {filteredPatients.length === 0 ? (
           <div className="text-center p-8 bg-gray-50 rounded-lg">
-            <p className="text-gray-500">No prescriptions found</p>
+            <p className="text-gray-500">No patients found</p>
           </div>
         ) : (
           <PatientList 
