@@ -40,10 +40,13 @@ export function SearchMedicineInput({ onAddToCart }: SearchMedicineInputProps) {
         return;
       }
 
+      // Explicitly add the user_id filter to ensure data isolation
+      // This is a belt-and-suspenders approach that works with RLS
       const { data, error } = await supabase
         .from("inventory")
         .select("*")
         .or(`name.ilike.%${query}%,generic_name.ilike.%${query}%`)
+        .eq("user_id", user.id) // Explicitly filter by user_id
         .order("name");
 
       if (error) {
