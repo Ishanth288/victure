@@ -44,7 +44,6 @@ export function SearchMedicineInput({ onAddToCart }: SearchMedicineInputProps) {
         .from("inventory")
         .select("*")
         .or(`name.ilike.%${query}%,generic_name.ilike.%${query}%`)
-        .eq("user_id", user.id) // Only show items for the current user
         .order("name");
 
       if (error) {
