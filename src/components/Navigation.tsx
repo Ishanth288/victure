@@ -1,10 +1,23 @@
 
 import { Button } from "@/components/ui/button";
 import { HashLink } from 'react-router-hash-link';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 
 export default function Navigation() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    // Check if URL contains signup parameter
+    const searchParams = new URLSearchParams(location.search);
+    const shouldSignup = searchParams.get('signup') === 'true';
+    
+    if (shouldSignup && location.pathname === '/auth') {
+      // If we're on the auth page with signup param, set isLogin to false
+      navigate('/auth', { state: { isLogin: false }, replace: true });
+    }
+  }, [location, navigate]);
 
   const handleLogin = () => {
     navigate('/auth', { state: { isLogin: true } });

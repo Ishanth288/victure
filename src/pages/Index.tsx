@@ -24,7 +24,7 @@ const pricingPlans = [
     ],
     description: "Perfect for trying out the system",
     buttonText: "Get Started",
-    href: "/auth",
+    href: "/auth?signup=true",
     isPopular: false,
   },
   {
