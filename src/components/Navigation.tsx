@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { HashLink } from 'react-router-hash-link';
 import { Link, useNavigate } from 'react-router-dom';
@@ -27,6 +28,9 @@ export default function Navigation() {
             </HashLink>
             <HashLink smooth to="#benefits" className="text-neutral-600 hover:text-primary transition-colors">
               Benefits
+            </HashLink>
+            <HashLink smooth to="#pricing" className="text-neutral-600 hover:text-primary transition-colors">
+              Pricing
             </HashLink>
           </div>
 
