@@ -49,8 +49,8 @@ const pricingPlans = [
   },
   {
     name: "PRO PLUS",
-    price: "6,899",
-    yearlyPrice: "69,699",
+    price: "4,899",
+    yearlyPrice: "38,999",
     period: "per month",
     features: [
       "Everything in Pro plan",
