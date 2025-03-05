@@ -1,12 +1,30 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChatbotDialog from "./ChatbotDialog";
+import { useLocation } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function ChatbotButton() {
   const [isOpen, setIsOpen] = useState(false);
+  const [shouldShow, setShouldShow] = useState(false);
+  const location = useLocation();
+  
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const path = location.pathname;
+      
+      // Only show on authenticated pages except auth and index
+      setShouldShow(!!session && path !== '/' && path !== '/auth');
+    };
+
+    checkAuth();
+  }, [location]);
+  
+  if (!shouldShow) return null;
   
   return (
     <>

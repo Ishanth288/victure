@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { X, Send, Bot } from "lucide-react";
@@ -7,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   id: string;
@@ -44,18 +44,31 @@ export default function ChatbotDialog({ onClose }: ChatbotDialogProps) {
     setInput('');
     setIsLoading(true);
     
-    // In a real implementation, you would call your API endpoint here
-    // For now, we'll simulate a response after a delay
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.functions.invoke('chatbot', {
+        body: { message: input }
+      });
+
+      if (error) throw error;
+
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: "I'm sorry, but I'm currently in development. Please check back later for answers to your questions about Victure Healthcare Solutions.",
+        text: data.response,
         sender: 'bot'
       };
       
       setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Chatbot error:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "I'm sorry, I encountered an error. Please try again later.",
+        sender: 'bot'
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
