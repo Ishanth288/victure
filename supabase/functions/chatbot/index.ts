@@ -15,10 +15,22 @@ serve(async (req) => {
   try {
     const { message } = await req.json()
     
+    // Log the input for debugging
+    console.log('Received message:', message)
+    
+    if (!message || typeof message !== 'string') {
+      throw new Error('Invalid message format. Expected a string.')
+    }
+
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
+    if (!openAIApiKey) {
+      throw new Error('OPENAI_API_KEY is not set in the environment variables')
+    }
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -36,17 +48,34 @@ serve(async (req) => {
       }),
     })
 
+    // Log the API response for debugging
     const data = await response.json()
+    console.log('OpenAI API response:', JSON.stringify(data))
+    
+    // Check if the API response is valid
+    if (!data || !data.choices) {
+      throw new Error('Invalid response from OpenAI API: ' + JSON.stringify(data))
+    }
+    
+    // Safely access the choice and message content
+    const generatedContent = data.choices && 
+                            data.choices.length > 0 && 
+                            data.choices[0].message ? 
+                            data.choices[0].message.content : 
+                            "I'm sorry, I couldn't generate a response at this time."
     
     return new Response(
-      JSON.stringify({ response: data.choices[0].message.content }),
+      JSON.stringify({ response: generatedContent }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
     console.error('Error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message, 
+        response: "I'm sorry, I encountered an error. Please try again later." 
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

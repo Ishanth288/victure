@@ -1,13 +1,12 @@
-
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { X, Send, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Message {
   id: string;
@@ -46,21 +45,33 @@ export default function ChatbotDialog({ onClose }: ChatbotDialogProps) {
     setIsLoading(true);
     
     try {
+      // Log for debugging
+      console.log('Sending to chatbot:', input);
+      
       const { data, error } = await supabase.functions.invoke('chatbot', {
         body: { message: input }
       });
 
+      console.log('Chatbot response:', data, 'Error:', error);
+
       if (error) throw error;
+      
+      // Check if response exists and is valid
+      if (!data || (!data.response && !data.error)) {
+        throw new Error('Invalid response from chatbot');
+      }
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: data.response,
+        text: data.response || "I'm sorry, I couldn't generate a response at this time.",
         sender: 'bot'
       };
       
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
       console.error('Chatbot error:', error);
+      toast.error('Chatbot error: ' + (error.message || 'Unknown error'));
+      
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: "I'm sorry, I encountered an error. Please try again later.",
