@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -31,6 +32,8 @@ export default function Prescriptions() {
   const [activeTab, setActiveTab] = useState<string>("active");
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [prescriptionToDelete, setPrescriptionToDelete] = useState<number | null>(null);
+  const [billToDelete, setBillToDelete] = useState<number | null>(null);
+  const [isDeleteBillDialogOpen, setDeleteBillDialogOpen] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -63,7 +66,7 @@ export default function Prescriptions() {
         .select(`
           *,
           patient:patients (name),
-          bills (id, total_amount)
+          bills (id, total_amount, status)
         `)
         .eq("user_id", user.id)
         .order("date", { ascending: false });
@@ -117,14 +120,21 @@ export default function Prescriptions() {
 
   const handleToggleStatus = async (id: number, currentStatus: string) => {
     try {
+      // Fix: Ensure status value is exactly 'active' or 'inactive'
+      // The error was due to case sensitivity or invalid status values
       const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      
+      console.log(`Updating prescription ${id} status from ${currentStatus} to ${newStatus}`);
       
       const { error } = await supabase
         .from("prescriptions")
         .update({ status: newStatus })
         .eq("id", id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error details:", error);
+        throw error;
+      }
 
       setPrescriptions(prev => 
         prev.map(prescription => 
@@ -153,6 +163,62 @@ export default function Prescriptions() {
     setDeleteDialogOpen(true);
   };
 
+  const handleDeleteBill = (id: number) => {
+    setBillToDelete(id);
+    setDeleteBillDialogOpen(true);
+  };
+
+  const confirmDeleteBill = async () => {
+    if (!billToDelete) return;
+    
+    try {
+      // First delete bill_items that reference this bill
+      const { error: billItemsError } = await supabase
+        .from("bill_items")
+        .delete()
+        .eq("bill_id", billToDelete);
+        
+      if (billItemsError) throw billItemsError;
+      
+      // Then delete the bill itself
+      const { error: billError } = await supabase
+        .from("bills")
+        .delete()
+        .eq("id", billToDelete);
+
+      if (billError) throw billError;
+
+      // Update the prescriptions state to reflect the deleted bill
+      setPrescriptions(prev => 
+        prev.map(prescription => {
+          if (prescription.bills && prescription.bills.some((bill: any) => bill.id === billToDelete)) {
+            return {
+              ...prescription,
+              bills: prescription.bills.filter((bill: any) => bill.id !== billToDelete),
+              total_amount: prescription.total_amount - (prescription.bills.find((bill: any) => bill.id === billToDelete)?.total_amount || 0)
+            };
+          }
+          return prescription;
+        })
+      );
+      
+      toast({
+        title: "Bill deleted",
+        description: "Bill has been removed successfully."
+      });
+    } catch (error: any) {
+      console.error("Error deleting bill:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete bill",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleteBillDialogOpen(false);
+      setBillToDelete(null);
+    }
+  };
+
   const confirmDeletePrescription = async () => {
     if (!prescriptionToDelete) return;
     
@@ -167,6 +233,7 @@ export default function Prescriptions() {
         return;
       }
       
+      // First get all bills for this prescription
       const { data: bills, error: billsError } = await supabase
         .from("bills")
         .select("id")
@@ -174,7 +241,18 @@ export default function Prescriptions() {
         
       if (billsError) throw billsError;
       
+      // Delete bill_items for each bill
       if (bills && bills.length > 0) {
+        for (const bill of bills) {
+          const { error: billItemsError } = await supabase
+            .from("bill_items")
+            .delete()
+            .eq("bill_id", bill.id);
+            
+          if (billItemsError) throw billItemsError;
+        }
+        
+        // Then delete the bills
         const { error: deleteBillsError } = await supabase
           .from("bills")
           .delete()
@@ -183,6 +261,7 @@ export default function Prescriptions() {
         if (deleteBillsError) throw deleteBillsError;
       }
       
+      // Finally delete the prescription
       const { error: prescriptionError } = await supabase
         .from("prescriptions")
         .delete()
@@ -279,6 +358,31 @@ export default function Prescriptions() {
                         <span>₹{prescription.total_amount.toFixed(2)}</span>
                       </div>
                     </div>
+                    
+                    {/* Show bills if any */}
+                    {prescription.bills && prescription.bills.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <h4 className="text-sm font-medium mb-2">Associated Bills</h4>
+                        <div className="space-y-2">
+                          {prescription.bills.map((bill: any) => (
+                            <div key={bill.id} className="flex justify-between items-center text-sm">
+                              <span>Bill #{bill.id}</span>
+                              <span>₹{bill.total_amount.toFixed(2)}</span>
+                              {!bill.status || bill.status === 'pending' ? (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="h-7 px-2 text-destructive hover:text-destructive"
+                                  onClick={() => handleDeleteBill(bill.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-2 flex border-t border-gray-100">
@@ -316,6 +420,7 @@ export default function Prescriptions() {
         </div>
       </div>
       
+      {/* Prescription Delete Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -327,6 +432,24 @@ export default function Prescriptions() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeletePrescription} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Bill Delete Dialog */}
+      <AlertDialog open={isDeleteBillDialogOpen} onOpenChange={setDeleteBillDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this bill?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the bill and all related items.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteBill} className="bg-red-600 hover:bg-red-700">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
