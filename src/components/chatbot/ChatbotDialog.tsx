@@ -84,7 +84,6 @@ export default function ChatbotDialog({ onClose }: ChatbotDialogProps) {
       }
     } catch (error: any) {
       console.error('Chatbot error details:', error);
-      toast.error('Chatbot error: ' + (error.message || 'Unknown error'));
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -92,6 +91,8 @@ export default function ChatbotDialog({ onClose }: ChatbotDialogProps) {
         sender: 'bot'
       };
       setMessages(prev => [...prev, errorMessage]);
+      
+      toast.error('Chatbot error: ' + (error.message || 'Unknown error'));
     } finally {
       setIsLoading(false);
     }

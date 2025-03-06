@@ -264,12 +264,30 @@ export default function Patients() {
       if (prescriptions && prescriptions.length > 0) {
         const prescriptionIds = prescriptions.map(p => p.id);
         
-        const { error: billsError } = await supabase
+        const { data: bills, error: billsFetchError } = await supabase
           .from("bills")
-          .delete()
+          .select("id")
           .in("prescription_id", prescriptionIds);
           
-        if (billsError) throw billsError;
+        if (billsFetchError) throw billsFetchError;
+        
+        if (bills && bills.length > 0) {
+          const billIds = bills.map(b => b.id);
+          
+          const { error: billItemsError } = await supabase
+            .from("bill_items")
+            .delete()
+            .in("bill_id", billIds);
+            
+          if (billItemsError) throw billItemsError;
+          
+          const { error: billsError } = await supabase
+            .from("bills")
+            .delete()
+            .in("id", billIds);
+            
+          if (billsError) throw billsError;
+        }
         
         const { error: deletePresError } = await supabase
           .from("prescriptions")

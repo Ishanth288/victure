@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -129,7 +128,7 @@ export default function Inventory() {
       console.log("User ID for deletion:", user.id);
       
       // Now safe to delete as the item is not referenced in bills
-      const { error, count } = await supabase
+      const { error } = await supabase
         .from("inventory")
         .delete()
         .eq("id", itemToDelete)
@@ -139,8 +138,6 @@ export default function Inventory() {
         console.error("Delete error:", error);
         throw error;
       }
-
-      console.log("Delete operation completed, affected rows:", count);
 
       // Remove from local state
       setInventory(prev => prev.filter(item => item.id !== itemToDelete));

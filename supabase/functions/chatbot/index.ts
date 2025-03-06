@@ -56,6 +56,7 @@ serve(async (req) => {
             content: message
           }
         ],
+        max_tokens: 1000, // Add a limit to ensure we get a complete response
       }),
     });
 
