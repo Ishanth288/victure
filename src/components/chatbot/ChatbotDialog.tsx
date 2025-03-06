@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { X, Send, Bot } from "lucide-react";
@@ -54,22 +55,35 @@ export default function ChatbotDialog({ onClose }: ChatbotDialogProps) {
 
       console.log('Chatbot response:', data, 'Error:', error);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(`Function error: ${error.message || 'Unknown error'}`);
+      }
       
-      // Check if response exists and is valid
-      if (!data || (!data.response && !data.error)) {
-        throw new Error('Invalid response from chatbot');
+      // Check if data exists
+      if (!data) {
+        throw new Error('No data received from chatbot function');
       }
 
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: data.response || "I'm sorry, I couldn't generate a response at this time.",
-        sender: 'bot'
-      };
-      
-      setMessages(prev => [...prev, botMessage]);
-    } catch (error) {
-      console.error('Chatbot error:', error);
+      // Check for error in the response data
+      if (data.error) {
+        console.error('Error in function response:', data.error);
+        throw new Error(`Response error: ${data.error}`);
+      }
+
+      // If we have a valid response
+      if (data.response) {
+        const botMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: data.response,
+          sender: 'bot'
+        };
+        setMessages(prev => [...prev, botMessage]);
+      } else {
+        throw new Error('Response field missing in function response');
+      }
+    } catch (error: any) {
+      console.error('Chatbot error details:', error);
       toast.error('Chatbot error: ' + (error.message || 'Unknown error'));
       
       const errorMessage: Message = {
