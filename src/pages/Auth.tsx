@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -231,8 +232,9 @@ export default function Auth() {
 
   if (isVerifying) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
+        <Card className="w-full max-w-md relative z-10 shadow-xl border-opacity-50">
           <CardHeader>
             <CardTitle className="text-2xl text-center">Verifying Your Email</CardTitle>
             <CardDescription className="text-center">
@@ -249,14 +251,15 @@ export default function Auth() {
 
   if (verificationSuccess) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-md"
+          className="w-full max-w-md relative z-10"
         >
-          <Card>
+          <Card className="shadow-xl border-opacity-50">
             <CardHeader>
               <CardTitle className="text-2xl text-center text-green-600">
                 Email Verified Successfully!
@@ -288,14 +291,22 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+    <div className="min-h-screen relative flex flex-col items-center justify-center p-4 overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+      {/* Decorative Background Elements */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
+      
+      {/* Animated shapes */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+      <div className="absolute top-0 right-0 w-96 h-96 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+      <div className="absolute -bottom-8 left-20 w-96 h-96 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+      
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
+        className="w-full max-w-md relative z-10"
       >
-        <Card>
+        <Card className="shadow-xl backdrop-blur-sm bg-white/90 border-opacity-50">
           <CardHeader>
             <CardTitle className="text-2xl text-center">
               {isLogin ? "Welcome Back" : "Create Account"}
