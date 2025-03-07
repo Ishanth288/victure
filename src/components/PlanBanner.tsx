@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Clock, Info } from "lucide-react";
+import { AlertCircle, Clock, Info, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, differenceInDays } from 'date-fns';
 import { Link } from 'react-router-dom';
@@ -52,9 +52,13 @@ export function PlanBanner() {
         }
         
         if (data) {
-          // Calculate days remaining
-          const expirationDate = new Date(data.trial_expiration_date);
-          const daysRemaining = differenceInDays(expirationDate, new Date());
+          // Calculate days remaining (only for Free Trial)
+          let daysRemaining = 0;
+          if (data.plan_type === 'Free Trial' && data.trial_expiration_date) {
+            const expirationDate = new Date(data.trial_expiration_date);
+            daysRemaining = differenceInDays(expirationDate, new Date());
+            daysRemaining = daysRemaining > 0 ? daysRemaining : 0;
+          }
           
           setPlanInfo({
             planType: data.plan_type,
@@ -62,7 +66,7 @@ export function PlanBanner() {
             trialExpirationDate: data.trial_expiration_date,
             monthlyBillsCount: data.monthly_bills_count,
             dailyBillsCount: data.daily_bills_count,
-            daysRemaining: daysRemaining > 0 ? daysRemaining : 0
+            daysRemaining: daysRemaining
           });
         }
       } catch (err: any) {
@@ -101,11 +105,80 @@ export function PlanBanner() {
     return null;
   }
   
-  // Don't show banner for non-free plans
+  // For paid plans, show a different banner
   if (planInfo.planType !== 'Free Trial') {
-    return null;
+    return (
+      <Card className="bg-green-50 border-green-200 mb-6">
+        <CardContent className="p-4">
+          <div className="flex items-start space-x-4">
+            <Crown className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-sm">
+                    {planInfo.planType} Plan - Thank you for your subscription!
+                  </h3>
+                  <p className="text-xs text-neutral-600 mt-1">
+                    {planInfo.registrationDate && (
+                      <>Started on {format(new Date(planInfo.registrationDate), 'PPP')}</>
+                    )}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                {planInfo.planType === 'PRO' ? (
+                  <>
+                    <div className="flex items-center space-x-1">
+                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                      <span>
+                        <strong>{planInfo.monthlyBillsCount || 0}</strong>/1501 monthly bills
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                      <span>
+                        <strong>{planInfo.dailyBillsCount || 0}</strong> bills today
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+                      <span>
+                        <strong>Up to 4001</strong> inventory items
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center space-x-1">
+                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                      <span>
+                        <strong>{planInfo.monthlyBillsCount || 0}</strong>/10,000 monthly bills
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                      <span>
+                        <strong>{planInfo.dailyBillsCount || 0}</strong> bills today
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+                      <span>
+                        <strong>Up to 10,000</strong> inventory items
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
   
+  // Below code is for Free Trial plan
   // Determine banner color based on days remaining
   const isExpiringSoon = planInfo.daysRemaining <= 5;
   const isExpired = planInfo.daysRemaining <= 0;

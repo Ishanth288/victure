@@ -32,6 +32,8 @@ const pricingPlans = [
     price: "2,899",
     yearlyPrice: "24,299",
     period: "per month",
+    stripePriceId: "price_1OvtSCQzZmgE2kUwXXFLnMWx", // Add your actual Stripe price ID here
+    stripeYearlyPriceId: "price_1OvtSTQzZmgE2kUwvLK6Yz8j", // Add your actual Stripe yearly price ID here
     features: [
       "Annual access",
       "Up to 4001 products in inventory",
@@ -43,8 +45,8 @@ const pricingPlans = [
       "Priority customer support",
     ],
     description: "Best for growing pharmacies",
-    buttonText: "Contact Sales",
-    href: "mailto:thugs.business@gmail.com",
+    buttonText: "Upgrade Now",
+    href: "#", // Not used anymore since we're using Stripe
     isPopular: true,
   },
   {
@@ -52,6 +54,8 @@ const pricingPlans = [
     price: "4,899",
     yearlyPrice: "38,999",
     period: "per month",
+    stripePriceId: "price_1OvtSfQzZmgE2kUwbVXSt4nP", // Add your actual Stripe price ID here
+    stripeYearlyPriceId: "price_1OvtSfQzZmgE2kUw8cFLbNsj", // Add your actual Stripe yearly price ID here
     features: [
       "Everything in Pro plan",
       "Up to 10,000 products in inventory",
@@ -64,8 +68,8 @@ const pricingPlans = [
       "Advanced data analytics",
     ],
     description: "For large pharmacy chains with multiple locations",
-    buttonText: "Contact Sales",
-    href: "mailto:thugs.business@gmail.com",
+    buttonText: "Upgrade Now",
+    href: "#", // Not used anymore since we're using Stripe
     isPopular: false,
   },
 ];
