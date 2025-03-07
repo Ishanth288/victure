@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Check, Star } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import confetti from "canvas-confetti";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -20,8 +20,7 @@ interface PricingPlan {
   features: string[];
   description: string;
   buttonText: string;
-  stripePriceId?: string;
-  stripeYearlyPriceId?: string;
+  planId?: string;
   href: string;
   isPopular: boolean;
 }
@@ -43,6 +42,22 @@ export function Pricing({
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [razorpayScript, setRazorpayScript] = useState(false);
+
+  // Load Razorpay script
+  useEffect(() => {
+    if (!razorpayScript) {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => setRazorpayScript(true);
+      document.body.appendChild(script);
+      
+      return () => {
+        document.body.removeChild(script);
+      };
+    }
+  }, [razorpayScript]);
 
   const handleToggle = (checked: boolean) => {
     setIsMonthly(!checked);
@@ -84,7 +99,7 @@ export function Pricing({
         return;
       }
       
-      // For paid plans, create a Stripe checkout session
+      // For paid plans, create a Razorpay order
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.user) {
@@ -104,29 +119,29 @@ export function Pricing({
         return;
       }
       
-      // Get the appropriate price ID based on billing cycle
-      const priceId = isMonthly 
-        ? plan.stripePriceId 
-        : plan.stripeYearlyPriceId;
-      
-      if (!priceId) {
+      if (!plan.planId) {
         toast({
           title: "Configuration error",
-          description: "Price information is missing. Please contact support.",
+          description: "Plan information is missing. Please contact support.",
           variant: "destructive",
         });
         setIsLoading(null);
         return;
       }
       
-      // Call Supabase Edge Function to create checkout session
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
+      // Get the price based on billing cycle
+      const amount = isMonthly 
+        ? parseInt(plan.price.replace(/,/g, ''))
+        : parseInt(plan.yearlyPrice.replace(/,/g, ''));
+      
+      // Call Supabase Edge Function to create Razorpay order
+      const { data, error } = await supabase.functions.invoke('create-razorpay-order', {
         body: {
-          priceId,
+          planId: plan.planId,
           planName: plan.name,
+          amount: amount,
+          currency: 'INR',
           userId: session.user.id,
-          success_url: `${window.location.origin}/dashboard`,
-          cancel_url: `${window.location.origin}/#pricing`,
         },
       });
       
@@ -134,15 +149,44 @@ export function Pricing({
         throw error;
       }
       
-      // Redirect to Stripe checkout
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No checkout URL returned');
+      if (!data.orderId || !data.keyId) {
+        throw new Error('Invalid response from payment server');
       }
       
+      // Open Razorpay checkout
+      const options = {
+        key: data.keyId,
+        amount: data.amount * 100, // Convert to paise
+        currency: data.currency,
+        name: "Victure Pharmacy",
+        description: `${plan.name} Plan - ${isMonthly ? 'Monthly' : 'Annual'} Subscription`,
+        order_id: data.orderId,
+        prefill: {
+          name: data.userName,
+          email: data.userEmail,
+        },
+        theme: {
+          color: "#0D9488",
+        },
+        handler: function(response: any) {
+          // The payment ID is available in response.razorpay_payment_id
+          toast({
+            title: "Payment successful",
+            description: `Your payment for the ${plan.name} plan was successful!`,
+            variant: "default",
+          });
+          
+          // Redirect to dashboard after successful payment
+          navigate('/dashboard');
+        },
+      };
+      
+      // @ts-ignore - Razorpay is loaded from CDN
+      const razorpayCheckout = new window.Razorpay(options);
+      razorpayCheckout.open();
+      
     } catch (error: any) {
-      console.error('Error creating checkout session:', error);
+      console.error('Error initiating payment:', error);
       toast({
         title: "Payment processing error",
         description: error.message || "Failed to initiate checkout. Please try again.",

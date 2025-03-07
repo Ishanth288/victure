@@ -32,8 +32,7 @@ const pricingPlans = [
     price: "2,899",
     yearlyPrice: "24,299",
     period: "per month",
-    stripePriceId: "price_1OvtSCQzZmgE2kUwXXFLnMWx", // Add your actual Stripe price ID here
-    stripeYearlyPriceId: "price_1OvtSTQzZmgE2kUwvLK6Yz8j", // Add your actual Stripe yearly price ID here
+    planId: "pro_monthly", // You should replace this with your actual Razorpay plan ID
     features: [
       "Annual access",
       "Up to 4001 products in inventory",
@@ -46,7 +45,7 @@ const pricingPlans = [
     ],
     description: "Best for growing pharmacies",
     buttonText: "Upgrade Now",
-    href: "#", // Not used anymore since we're using Stripe
+    href: "#",
     isPopular: true,
   },
   {
@@ -54,8 +53,7 @@ const pricingPlans = [
     price: "4,899",
     yearlyPrice: "38,999",
     period: "per month",
-    stripePriceId: "price_1OvtSfQzZmgE2kUwbVXSt4nP", // Add your actual Stripe price ID here
-    stripeYearlyPriceId: "price_1OvtSfQzZmgE2kUw8cFLbNsj", // Add your actual Stripe yearly price ID here
+    planId: "pro_plus_monthly", // You should replace this with your actual Razorpay plan ID
     features: [
       "Everything in Pro plan",
       "Up to 10,000 products in inventory",
@@ -69,7 +67,7 @@ const pricingPlans = [
     ],
     description: "For large pharmacy chains with multiple locations",
     buttonText: "Upgrade Now",
-    href: "#", // Not used anymore since we're using Stripe
+    href: "#",
     isPopular: false,
   },
 ];
