@@ -48,6 +48,9 @@ export default function Auth() {
   const fromPricing = location.state?.fromPricing || false;
   const planType = location.state?.planType || 'Free Trial';
 
+  // Show the Free Trial info even when switching from login to signup
+  const showFreePlanInfo = !isLogin;
+
   const [passwordValidation, setPasswordValidation] = useState({
     minLength: false,
     hasNumber: false,
@@ -344,8 +347,8 @@ export default function Auth() {
               </Alert>
             )}
 
-            {/* Free Trial Plan Notice */}
-            {!isLogin && fromPricing && (
+            {/* Free Trial Plan Notice - Show when not in login mode */}
+            {showFreePlanInfo && (
               <Alert className="mb-4 bg-blue-50 text-blue-800 border-blue-200">
                 <Info className="h-4 w-4" />
                 <AlertTitle>Free Trial Plan</AlertTitle>
