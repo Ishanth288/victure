@@ -6,7 +6,7 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Check, Star } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useRef } from "react";
 import confetti from "canvas-confetti";
 
@@ -36,6 +36,7 @@ export function Pricing({
   const [isMonthly, setIsMonthly] = useState(true);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const switchRef = useRef<HTMLButtonElement>(null);
+  const navigate = useNavigate();
 
   const handleToggle = (checked: boolean) => {
     setIsMonthly(!checked);
@@ -61,8 +62,24 @@ export function Pricing({
     }
   };
 
+  const handlePlanSelection = (plan: PricingPlan) => {
+    if (plan.name === "FREE") {
+      // For free plan, navigate to auth page with signup=true and plan=free-trial
+      navigate('/auth', { 
+        state: { 
+          isLogin: false, 
+          fromPricing: true,
+          planType: 'Free Trial'
+        } 
+      });
+    } else if (plan.href.startsWith('mailto:')) {
+      // For paid plans, redirect to email
+      window.location.href = plan.href;
+    }
+  };
+
   return (
-    <div className="container py-20">
+    <div className="container py-20" id="pricing">
       <div className="text-center space-y-4 mb-12">
         <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
           {title}
@@ -162,39 +179,22 @@ export function Pricing({
 
               <hr className="w-full my-4" />
 
-              {plan.href.startsWith('mailto:') ? (
-                <a
-                  href={plan.href}
-                  className={cn(
-                    buttonVariants({
-                      variant: "outline",
-                    }),
-                    "group relative w-full gap-2 overflow-hidden text-lg font-semibold tracking-tighter",
-                    "transform-gpu ring-offset-current transition-all duration-300 ease-out hover:ring-2 hover:ring-primary hover:ring-offset-1 hover:bg-primary hover:text-primary-foreground",
-                    plan.isPopular
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-background text-foreground"
-                  )}
-                >
-                  {plan.buttonText}
-                </a>
-              ) : (
-                <Link
-                  to={plan.href}
-                  className={cn(
-                    buttonVariants({
-                      variant: "outline",
-                    }),
-                    "group relative w-full gap-2 overflow-hidden text-lg font-semibold tracking-tighter",
-                    "transform-gpu ring-offset-current transition-all duration-300 ease-out hover:ring-2 hover:ring-primary hover:ring-offset-1 hover:bg-primary hover:text-primary-foreground",
-                    plan.isPopular
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-background text-foreground"
-                  )}
-                >
-                  {plan.buttonText}
-                </Link>
-              )}
+              <button
+                onClick={() => handlePlanSelection(plan)}
+                className={cn(
+                  buttonVariants({
+                    variant: "outline",
+                  }),
+                  "group relative w-full gap-2 overflow-hidden text-lg font-semibold tracking-tighter",
+                  "transform-gpu ring-offset-current transition-all duration-300 ease-out hover:ring-2 hover:ring-primary hover:ring-offset-1 hover:bg-primary hover:text-primary-foreground",
+                  plan.isPopular
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-background text-foreground"
+                )}
+              >
+                {plan.buttonText}
+              </button>
+
               <p className="mt-6 text-xs leading-5 text-neutral-600">
                 {plan.description}
               </p>

@@ -15,7 +15,7 @@ export default function Navigation() {
     
     if (shouldSignup && location.pathname === '/auth') {
       // If we're on the auth page with signup param, set isLogin to false
-      navigate('/auth', { state: { isLogin: false }, replace: true });
+      navigate('/auth', { state: { isLogin: false, fromPricing: true }, replace: true });
     }
   }, [location, navigate]);
 
@@ -24,7 +24,16 @@ export default function Navigation() {
   };
 
   const handleGetStarted = () => {
-    navigate('/auth', { state: { isLogin: false } });
+    // If we're on the home page, scroll to pricing section
+    if (location.pathname === '/') {
+      const pricingSection = document.getElementById('pricing');
+      if (pricingSection) {
+        pricingSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // If we're on another page, navigate to home and then to pricing
+      navigate('/#pricing');
+    }
   };
 
   return (

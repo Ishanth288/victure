@@ -1,14 +1,24 @@
 
 import { HashLink } from 'react-router-hash-link';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
 export default function Hero() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleGetStarted = () => {
-    navigate('/auth', { state: { isLogin: false } });
+    // If we're on the home page, scroll to pricing section
+    if (location.pathname === '/') {
+      const pricingSection = document.getElementById('pricing');
+      if (pricingSection) {
+        pricingSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // If we're on another page, navigate to home and then to pricing
+      navigate('/#pricing');
+    }
   };
 
   return (

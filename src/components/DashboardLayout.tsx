@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import {
   X, DollarSign, Pill, LogOut, LineChart, ShoppingCart, FileTerminal
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { PlanBanner } from "@/components/PlanBanner";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -77,7 +77,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="flex h-screen overflow-hidden bg-gray-50">
       <BackButton />
       <aside
         className={`fixed top-0 left-0 z-40 h-screen transition-transform ${
@@ -168,37 +168,42 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className={`transition-all duration-300 ${
         isSidebarOpen ? "md:ml-64" : ""
       }`}>
-        <header className="sticky top-0 z-30 bg-white border-b border-neutral-200">
-          <div className="flex items-center h-16">
-            <div className="flex items-center justify-between w-full px-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-                onClick={() => setIsSidebarOpen(true)}
-              >
-                <Menu className="h-6 w-6" />
-              </Button>
-
-              <div className="flex-1 flex justify-center">
-                <span className="text-2xl font-bold text-neutral-900">
-                  Victure Healthcare Solutions
-                </span>
-              </div>
-
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-medium">
-                  {profileData?.owner_name || 'Loading...'}
-                </span>
-                <Button variant="ghost" size="icon" onClick={handleSignOut}>
-                  <LogOut className="h-5 w-5" />
+        <div className="flex-1 overflow-y-auto">
+          <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 border-b bg-white shadow-sm">
+            <div className="flex items-center h-16">
+              <div className="flex items-center justify-between w-full px-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden"
+                  onClick={() => setIsSidebarOpen(true)}
+                >
+                  <Menu className="h-6 w-6" />
                 </Button>
+
+                <div className="flex-1 flex justify-center">
+                  <span className="text-2xl font-bold text-neutral-900">
+                    Victure Healthcare Solutions
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm font-medium">
+                    {profileData?.owner_name || 'Loading...'}
+                  </span>
+                  <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                    <LogOut className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        </header>
-
-        <main className="p-4">{children}</main>
+          </header>
+          
+          <main className="p-4 md:p-6">
+            <PlanBanner />
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );

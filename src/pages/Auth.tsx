@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { INDIAN_STATES } from "@/constants/states";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle, X } from "lucide-react";
+import { AlertCircle, CheckCircle, X, Info } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -27,7 +27,7 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationSuccess, setVerificationSuccess] = useState(false);
-  const [authMessage, setAuthMessage] = useState<{ type: 'error' | 'success' | null; message: string | null }>({
+  const [authMessage, setAuthMessage] = useState<{ type: 'error' | 'success' | 'info' | null; message: string | null }>({
     type: null,
     message: null
   });
@@ -43,6 +43,10 @@ export default function Auth() {
     pincode: "",
     gstin: "",
   });
+
+  // Get plan information from location state
+  const fromPricing = location.state?.fromPricing || false;
+  const planType = location.state?.planType || 'Free Trial';
 
   const [passwordValidation, setPasswordValidation] = useState({
     minLength: false,
@@ -192,6 +196,7 @@ export default function Auth() {
               state: formData.state,
               pincode: formData.pincode,
               gstin: formData.gstin,
+              plan_type: planType,
             },
             emailRedirectTo: `${window.location.origin}/auth`,
           },
@@ -321,18 +326,38 @@ export default function Auth() {
             {authMessage.type && (
               <Alert 
                 variant={authMessage.type === 'error' ? 'destructive' : 'default'} 
-                className={`mb-4 ${authMessage.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : ''}`}
+                className={`mb-4 ${authMessage.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : authMessage.type === 'info' ? 'bg-blue-50 text-blue-800 border-blue-200' : ''}`}
               >
                 {authMessage.type === 'error' ? (
                   <AlertCircle className="h-4 w-4" />
+                ) : authMessage.type === 'info' ? (
+                  <Info className="h-4 w-4" />
                 ) : (
                   <CheckCircle className="h-4 w-4" />
                 )}
                 <AlertTitle>
-                  {authMessage.type === 'error' ? 'Error' : 'Success'}
+                  {authMessage.type === 'error' ? 'Error' : authMessage.type === 'info' ? 'Information' : 'Success'}
                 </AlertTitle>
                 <AlertDescription>
                   {authMessage.message}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Free Trial Plan Notice */}
+            {!isLogin && fromPricing && (
+              <Alert className="mb-4 bg-blue-50 text-blue-800 border-blue-200">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Free Trial Plan</AlertTitle>
+                <AlertDescription>
+                  You are signing up for the Free Plan. This includes:
+                  <ul className="list-disc pl-5 mt-2 space-y-1 text-sm">
+                    <li>30-day trial access</li>
+                    <li>Limited to 501 products in inventory</li>
+                    <li>30 bills per day</li>
+                    <li>600 bills per month</li>
+                    <li>Basic pharmacy management features</li>
+                  </ul>
                 </AlertDescription>
               </Alert>
             )}
