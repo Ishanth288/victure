@@ -46,7 +46,10 @@ export function PlanBanner() {
           .eq('id', user.id)
           .single();
         
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error('Profile error:', profileError);
+          throw new Error('Failed to fetch plan information');
+        }
         
         if (data) {
           // Calculate days remaining

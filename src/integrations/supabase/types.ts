@@ -252,40 +252,58 @@ export type Database = {
           address: string | null
           city: string | null
           created_at: string
+          daily_bills_count: number
           gstin: string | null
           id: string
+          last_bill_date: string | null
+          monthly_bills_count: number
           owner_name: string
           pharmacy_name: string
           phone: string | null
           pincode: string | null
+          plan_type: string
+          registration_date: string
           role: string | null
           state: string | null
+          trial_expiration_date: string
         }
         Insert: {
           address?: string | null
           city?: string | null
           created_at?: string
+          daily_bills_count?: number
           gstin?: string | null
           id: string
+          last_bill_date?: string | null
+          monthly_bills_count?: number
           owner_name: string
           pharmacy_name: string
           phone?: string | null
           pincode?: string | null
+          plan_type?: string
+          registration_date?: string
           role?: string | null
           state?: string | null
+          trial_expiration_date?: string
         }
         Update: {
           address?: string | null
           city?: string | null
           created_at?: string
+          daily_bills_count?: number
           gstin?: string | null
           id?: string
+          last_bill_date?: string | null
+          monthly_bills_count?: number
           owner_name?: string
           pharmacy_name?: string
           phone?: string | null
           pincode?: string | null
+          plan_type?: string
+          registration_date?: string
           role?: string | null
           state?: string | null
+          trial_expiration_date?: string
         }
         Relationships: []
       }
@@ -374,7 +392,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      reset_monthly_bills_count: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
