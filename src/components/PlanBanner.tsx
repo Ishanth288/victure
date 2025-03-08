@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Clock, Info, Crown } from "lucide-react";
+import { AlertCircle, Clock, Info, Crown, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, differenceInDays } from 'date-fns';
 import { Link } from 'react-router-dom';
@@ -105,18 +105,51 @@ export function PlanBanner() {
     return null;
   }
   
+  // Get plan-specific limits
+  const getPlanLimits = () => {
+    switch (planInfo.planType) {
+      case 'PRO':
+        return {
+          monthlyBillsLimit: 1501,
+          inventoryLimit: 4001,
+          icon: <Zap className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />,
+          bgColor: "bg-blue-50 border-blue-200",
+          description: "Pro Plan - Enhanced capabilities for your pharmacy"
+        };
+      case 'PRO PLUS':
+        return {
+          monthlyBillsLimit: 10000,
+          inventoryLimit: 10000,
+          icon: <Crown className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />,
+          bgColor: "bg-green-50 border-green-200",
+          description: "Pro Plus Plan - Premium features for your business"
+        };
+      default: // Free Trial
+        return {
+          monthlyBillsLimit: 600,
+          dailyBillsLimit: 30,
+          inventoryLimit: 501,
+          icon: <Info className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />,
+          bgColor: "bg-blue-50 border-blue-200",
+          description: "Free Trial"
+        };
+    }
+  };
+  
+  const planLimits = getPlanLimits();
+  
   // For paid plans, show a different banner
   if (planInfo.planType !== 'Free Trial') {
     return (
-      <Card className="bg-green-50 border-green-200 mb-6">
+      <Card className={planLimits.bgColor + " mb-6"}>
         <CardContent className="p-4">
           <div className="flex items-start space-x-4">
-            <Crown className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+            {planLimits.icon}
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between">
                 <div>
                   <h3 className="font-medium text-sm">
-                    {planInfo.planType} Plan - Thank you for your subscription!
+                    {planLimits.description}
                   </h3>
                   <p className="text-xs text-neutral-600 mt-1">
                     {planInfo.registrationDate && (
@@ -124,52 +157,36 @@ export function PlanBanner() {
                     )}
                   </p>
                 </div>
+                {planInfo.planType === 'PRO' && (
+                  <div className="mt-3 sm:mt-0">
+                    <Link to="/#pricing">
+                      <Button size="sm" variant="outline" className="text-xs">
+                        Upgrade to Pro Plus
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </div>
               
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                {planInfo.planType === 'PRO' ? (
-                  <>
-                    <div className="flex items-center space-x-1">
-                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                      <span>
-                        <strong>{planInfo.monthlyBillsCount || 0}</strong>/1501 monthly bills
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                      <span>
-                        <strong>{planInfo.dailyBillsCount || 0}</strong> bills today
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="h-2 w-2 rounded-full bg-purple-500"></div>
-                      <span>
-                        <strong>Up to 4001</strong> inventory items
-                      </span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center space-x-1">
-                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                      <span>
-                        <strong>{planInfo.monthlyBillsCount || 0}</strong>/10,000 monthly bills
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                      <span>
-                        <strong>{planInfo.dailyBillsCount || 0}</strong> bills today
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="h-2 w-2 rounded-full bg-purple-500"></div>
-                      <span>
-                        <strong>Up to 10,000</strong> inventory items
-                      </span>
-                    </div>
-                  </>
-                )}
+                <div className="flex items-center space-x-1">
+                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                  <span>
+                    <strong>{planInfo.monthlyBillsCount || 0}</strong>/{planLimits.monthlyBillsLimit} monthly bills
+                  </span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                  <span>
+                    <strong>{planInfo.dailyBillsCount || 0}</strong> bills today
+                  </span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+                  <span>
+                    <strong>Up to {planLimits.inventoryLimit}</strong> inventory items
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -242,19 +259,19 @@ export function PlanBanner() {
               <div className="flex items-center space-x-1">
                 <div className="h-2 w-2 rounded-full bg-green-500"></div>
                 <span>
-                  <strong>{planInfo.monthlyBillsCount || 0}</strong>/600 monthly bills
+                  <strong>{planInfo.monthlyBillsCount || 0}</strong>/{planLimits.monthlyBillsLimit} monthly bills
                 </span>
               </div>
               <div className="flex items-center space-x-1">
                 <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                 <span>
-                  <strong>{planInfo.dailyBillsCount || 0}</strong>/30 daily bills
+                  <strong>{planInfo.dailyBillsCount || 0}</strong>/{planLimits.dailyBillsLimit} daily bills
                 </span>
               </div>
               <div className="flex items-center space-x-1">
                 <div className="h-2 w-2 rounded-full bg-purple-500"></div>
                 <span>
-                  <strong>0</strong>/501 inventory items
+                  <strong>0</strong>/{planLimits.inventoryLimit} inventory items
                 </span>
               </div>
             </div>

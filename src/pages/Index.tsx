@@ -32,7 +32,7 @@ const pricingPlans = [
     price: "2,899",
     yearlyPrice: "24,299",
     period: "per month",
-    planId: "pro_monthly", // You should replace this with your actual Razorpay plan ID
+    planId: "pro_monthly", // Replace with your actual Razorpay plan ID
     features: [
       "Annual access",
       "Up to 4001 products in inventory",
@@ -53,7 +53,7 @@ const pricingPlans = [
     price: "4,899",
     yearlyPrice: "38,999",
     period: "per month",
-    planId: "pro_plus_monthly", // You should replace this with your actual Razorpay plan ID
+    planId: "pro_plus_monthly", // Replace with your actual Razorpay plan ID
     features: [
       "Everything in Pro plan",
       "Up to 10,000 products in inventory",
@@ -85,7 +85,7 @@ const Index = () => {
           <Pricing 
             plans={pricingPlans}
             title="Choose Your Perfect Plan"
-            description="Select the plan that best fits your pharmacy needs. All plans include our powerful pharmacy management features."
+            description="Select the plan that best fits your pharmacy needs. All plans include our powerful pharmacy management features with specific usage limits for each tier."
           />
         </div>
         <CTA />

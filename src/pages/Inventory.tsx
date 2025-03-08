@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -6,6 +7,7 @@ import InventorySearch from "@/components/inventory/InventorySearch";
 import InventoryTable from "@/components/inventory/InventoryTable";
 import InventoryPagination from "@/components/inventory/InventoryPagination";
 import InventoryModals from "@/components/inventory/InventoryModals";
+import { PlanLimitAlert } from "@/components/PlanLimitAlert";
 import { supabase } from "@/integrations/supabase/client";
 import { InventoryItem } from "@/types/inventory";
 import { useToast } from "@/components/ui/use-toast";
@@ -37,6 +39,8 @@ export default function Inventory() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [filterType, setFilterType] = useState<string | null>(null);
+  const [userPlan, setUserPlan] = useState<string>("Free Trial");
+  const [inventoryLimit, setInventoryLimit] = useState<number>(501);
   const tableRef = useRef<HTMLDivElement>(null);
 
   const itemsPerPage = 10;
@@ -44,6 +48,7 @@ export default function Inventory() {
   useEffect(() => {
     checkAuth();
     fetchInventoryData();
+    fetchUserPlan();
   }, []);
 
   const checkAuth = async () => {
@@ -55,6 +60,36 @@ export default function Inventory() {
         variant: "destructive",
       });
       navigate("/auth");
+    }
+  };
+
+  const fetchUserPlan = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("plan_type")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setUserPlan(data.plan_type);
+        
+        // Set inventory limit based on plan
+        if (data.plan_type === "PRO") {
+          setInventoryLimit(4001);
+        } else if (data.plan_type === "PRO PLUS") {
+          setInventoryLimit(10000);
+        } else {
+          setInventoryLimit(501); // Free Trial
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user plan:", error);
     }
   };
 
@@ -316,6 +351,14 @@ export default function Inventory() {
   return (
     <DashboardLayout>
       <div className="container mx-auto px-4 py-8">
+        {/* Show inventory limit alert based on plan */}
+        <PlanLimitAlert 
+          currentValue={inventory.length} 
+          maxValue={inventoryLimit}
+          resourceName="inventory items"
+          variant={inventory.length > inventoryLimit * 0.9 ? "warning" : "info"}
+        />
+
         <InventoryHeader 
           onAddClick={() => setIsAddModalOpen(true)} 
           onExportClick={handleExportInventory} 
