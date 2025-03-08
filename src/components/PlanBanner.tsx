@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle, Clock, Info, Crown, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, differenceInDays } from 'date-fns';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -25,6 +25,7 @@ export function PlanBanner() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const fetchPlanInfo = async () => {
     try {
@@ -176,6 +177,10 @@ export function PlanBanner() {
   
   const planLimits = getPlanLimits();
   
+  const handleUpgradeClick = () => {
+    navigate('/#pricing');
+  };
+  
   // For paid plans, show a different banner
   if (planInfo.planType !== 'Free Trial') {
     return (
@@ -197,11 +202,14 @@ export function PlanBanner() {
                 </div>
                 {planInfo.planType === 'PRO' && (
                   <div className="mt-3 sm:mt-0">
-                    <Link to="/#pricing">
-                      <Button size="sm" variant="outline" className="text-xs">
-                        Upgrade to Pro Plus
-                      </Button>
-                    </Link>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="text-xs"
+                      onClick={handleUpgradeClick}
+                    >
+                      Upgrade to Pro Plus
+                    </Button>
                   </div>
                 )}
               </div>
@@ -285,11 +293,13 @@ export function PlanBanner() {
                 </p>
               </div>
               <div className="mt-3 sm:mt-0">
-                <Link to="/#pricing">
-                  <Button size="sm" variant={isExpiringSoon || isExpired ? "default" : "outline"}>
-                    Upgrade Now
-                  </Button>
-                </Link>
+                <Button 
+                  size="sm" 
+                  variant={isExpiringSoon || isExpired ? "default" : "outline"}
+                  onClick={handleUpgradeClick}
+                >
+                  Upgrade Now
+                </Button>
               </div>
             </div>
             

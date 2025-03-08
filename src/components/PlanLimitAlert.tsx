@@ -3,7 +3,7 @@ import React from 'react';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 interface PlanLimitAlertProps {
   currentValue: number;
@@ -20,6 +20,8 @@ export function PlanLimitAlert({
   showUpgradeButton = true,
   variant = "info"
 }: PlanLimitAlertProps) {
+  const navigate = useNavigate();
+  
   // Calculate percentage of limit used
   const percentageUsed = (currentValue / maxValue) * 100;
   const isNearLimit = percentageUsed >= 80;
@@ -58,6 +60,10 @@ export function PlanLimitAlert({
     }
   };
 
+  const handleUpgradeClick = () => {
+    navigate('/#pricing');
+  };
+
   return (
     <Alert className={`${getBgColor()} mb-4`}>
       <div className="flex items-start">
@@ -70,11 +76,14 @@ export function PlanLimitAlert({
             {getMessage()}
             {showUpgradeButton && (currentValue / maxValue) > 0.7 && (
               <div className="mt-2">
-                <Link to="/#pricing">
-                  <Button size="sm" variant="outline" className="bg-white">
-                    Upgrade Plan
-                  </Button>
-                </Link>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="bg-white"
+                  onClick={handleUpgradeClick}
+                >
+                  Upgrade Plan
+                </Button>
               </div>
             )}
           </AlertDescription>
