@@ -13,12 +13,11 @@ import Purchases from "@/pages/Purchases";
 import NotFound from "@/pages/NotFound";
 import Settings from "@/pages/Settings";
 import ChatbotButton from "@/components/chatbot/ChatbotButton";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 function App() {
   return (
     <Router>
-      <ScrollArea className="h-screen">
+      <div className="h-screen">
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
@@ -34,7 +33,7 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
         <ChatbotButton />
-      </ScrollArea>
+      </div>
     </Router>
   );
 }
