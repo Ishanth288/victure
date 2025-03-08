@@ -1,13 +1,15 @@
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import BackButton from "./BackButton";
 import {
-  LayoutGrid, Package, Users, FileText, BarChart3, Settings, Menu,
-  X, DollarSign, Pill, LogOut, LineChart, ShoppingCart, FileTerminal
+  LayoutGrid, Package, Users, FileText, LineChart, Settings, Menu,
+  X, DollarSign, LogOut, ShoppingCart, FileTerminal
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PlanBanner } from "@/components/PlanBanner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -85,11 +87,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         } bg-white border-r border-neutral-200 w-64 md:translate-x-0`}
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-neutral-200">
-          <div className="pl-12">
+          <Link to="/dashboard" className="pl-2 flex items-center">
             <span className="text-lg font-medium text-primary">
-              {profileData?.pharmacy_name || 'Loading...'}
+              {profileData?.pharmacy_name || 'Medplus'}
             </span>
-          </div>
+          </Link>
           <Button
             variant="ghost"
             size="icon"
@@ -101,50 +103,52 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         <div className="flex flex-col h-[calc(100%-4rem)] justify-between">
-          <nav className="p-4 space-y-2">
-            <Link to="/dashboard">
-              <Button variant="ghost" className="w-full justify-start">
-                <LayoutGrid className="mr-2 h-5 w-5" />
-                Dashboard
-              </Button>
-            </Link>
-            <Link to="/inventory">
-              <Button variant="ghost" className="w-full justify-start">
-                <Package className="mr-2 h-5 w-5" />
-                Inventory
-              </Button>
-            </Link>
-            <Link to="/billing">
-              <Button variant="ghost" className="w-full justify-start">
-                <DollarSign className="mr-2 h-5 w-5" />
-                Billing
-              </Button>
-            </Link>
-            <Link to="/prescriptions">
-              <Button variant="ghost" className="w-full justify-start">
-                <FileText className="mr-2 h-5 w-5" />
-                Prescriptions
-              </Button>
-            </Link>
-            <Link to="/patients">
-              <Button variant="ghost" className="w-full justify-start">
-                <Users className="mr-2 h-5 w-5" />
-                Patients
-              </Button>
-            </Link>
-            <Link to="/purchases">
-              <Button variant="ghost" className="w-full justify-start">
-                <ShoppingCart className="mr-2 h-5 w-5" />
-                Purchases
-              </Button>
-            </Link>
-            <Link to="/insights">
-              <Button variant="ghost" className="w-full justify-start">
-                <LineChart className="mr-2 h-5 w-5" />
-                Insights
-              </Button>
-            </Link>
-          </nav>
+          <ScrollArea className="flex-1">
+            <nav className="p-4 space-y-2">
+              <Link to="/dashboard">
+                <Button variant="ghost" className="w-full justify-start">
+                  <LayoutGrid className="mr-2 h-5 w-5" />
+                  Dashboard
+                </Button>
+              </Link>
+              <Link to="/inventory">
+                <Button variant="ghost" className="w-full justify-start">
+                  <Package className="mr-2 h-5 w-5" />
+                  Inventory
+                </Button>
+              </Link>
+              <Link to="/billing">
+                <Button variant="ghost" className="w-full justify-start">
+                  <DollarSign className="mr-2 h-5 w-5" />
+                  Billing
+                </Button>
+              </Link>
+              <Link to="/prescriptions">
+                <Button variant="ghost" className="w-full justify-start">
+                  <FileText className="mr-2 h-5 w-5" />
+                  Prescriptions
+                </Button>
+              </Link>
+              <Link to="/patients">
+                <Button variant="ghost" className="w-full justify-start">
+                  <Users className="mr-2 h-5 w-5" />
+                  Patients
+                </Button>
+              </Link>
+              <Link to="/purchases">
+                <Button variant="ghost" className="w-full justify-start">
+                  <ShoppingCart className="mr-2 h-5 w-5" />
+                  Purchases
+                </Button>
+              </Link>
+              <Link to="/insights">
+                <Button variant="ghost" className="w-full justify-start">
+                  <LineChart className="mr-2 h-5 w-5" />
+                  Insights
+                </Button>
+              </Link>
+            </nav>
+          </ScrollArea>
 
           <div className="p-4 space-y-2 border-t border-neutral-200">
             <Link to="/settings">
@@ -165,45 +169,43 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       </aside>
 
-      <div className={`transition-all duration-300 ${
-        isSidebarOpen ? "md:ml-64" : ""
-      }`}>
-        <div className="flex-1 overflow-y-auto">
-          <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 border-b bg-white shadow-sm">
-            <div className="flex items-center h-16">
-              <div className="flex items-center justify-between w-full px-4">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="md:hidden"
-                  onClick={() => setIsSidebarOpen(true)}
-                >
-                  <Menu className="h-6 w-6" />
+      <div className={`flex-1 ${isSidebarOpen ? "md:ml-64" : ""}`}>
+        <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 border-b bg-white shadow-sm">
+          <div className="flex items-center h-16">
+            <div className="flex items-center justify-between w-full px-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setIsSidebarOpen(true)}
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
+
+              <div className="flex-1 flex justify-center">
+                <span className="text-2xl font-bold text-neutral-900">
+                  Victure Healthcare Solutions
+                </span>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <span className="text-sm font-medium">
+                  {profileData?.owner_name || 'Loading...'}
+                </span>
+                <Button variant="ghost" size="icon" onClick={handleSignOut}>
+                  <LogOut className="h-5 w-5" />
                 </Button>
-
-                <div className="flex-1 flex justify-center">
-                  <span className="text-2xl font-bold text-neutral-900">
-                    Victure Healthcare Solutions
-                  </span>
-                </div>
-
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm font-medium">
-                    {profileData?.owner_name || 'Loading...'}
-                  </span>
-                  <Button variant="ghost" size="icon" onClick={handleSignOut}>
-                    <LogOut className="h-5 w-5" />
-                  </Button>
-                </div>
               </div>
             </div>
-          </header>
-          
-          <main className="p-4 md:p-6">
-            <PlanBanner />
+          </div>
+        </header>
+        
+        <main className="p-4 md:p-6 overflow-y-auto h-[calc(100vh-4rem)]">
+          <PlanBanner />
+          <ScrollArea className="h-full">
             {children}
-          </main>
-        </div>
+          </ScrollArea>
+        </main>
       </div>
     </div>
   );

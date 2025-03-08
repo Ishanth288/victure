@@ -59,7 +59,7 @@ export function PlanLimitAlert({
   };
 
   return (
-    <Alert className={`${getBgColor()} mb-6`}>
+    <Alert className={`${getBgColor()} mb-4`}>
       <div className="flex items-start">
         <AlertCircle className={`h-5 w-5 ${getIconColor()} mt-0.5 flex-shrink-0 mr-3`} />
         <div className="flex-1">

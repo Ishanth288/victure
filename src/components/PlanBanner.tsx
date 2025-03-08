@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, differenceInDays } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Add types for plan information
 interface PlanInfo {
@@ -15,6 +16,7 @@ interface PlanInfo {
   trialExpirationDate: string | null;
   monthlyBillsCount: number | null;
   dailyBillsCount: number | null;
+  inventoryCount: number | null;
   daysRemaining: number;
 }
 
@@ -24,65 +26,101 @@ export function PlanBanner() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    async function fetchPlanInfo() {
-      try {
-        setIsLoading(true);
-        
-        // Get the current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) throw userError;
-        
-        if (!user) {
-          setIsLoading(false);
-          return;
-        }
-        
-        // Fetch plan information from profiles
-        const { data, error: profileError } = await supabase
-          .from('profiles')
-          .select('plan_type, registration_date, trial_expiration_date, monthly_bills_count, daily_bills_count')
-          .eq('id', user.id)
-          .single();
-        
-        if (profileError) {
-          console.error('Profile error:', profileError);
-          throw new Error('Failed to fetch plan information');
-        }
-        
-        if (data) {
-          // Calculate days remaining (only for Free Trial)
-          let daysRemaining = 0;
-          if (data.plan_type === 'Free Trial' && data.trial_expiration_date) {
-            const expirationDate = new Date(data.trial_expiration_date);
-            daysRemaining = differenceInDays(expirationDate, new Date());
-            daysRemaining = daysRemaining > 0 ? daysRemaining : 0;
-          }
-          
-          setPlanInfo({
-            planType: data.plan_type,
-            registrationDate: data.registration_date,
-            trialExpirationDate: data.trial_expiration_date,
-            monthlyBillsCount: data.monthly_bills_count,
-            dailyBillsCount: data.daily_bills_count,
-            daysRemaining: daysRemaining
-          });
-        }
-      } catch (err: any) {
-        console.error('Error fetching plan info:', err);
-        setError(err.message);
-        toast({
-          title: "Error fetching plan information",
-          description: err.message,
-          variant: "destructive",
-        });
-      } finally {
+  const fetchPlanInfo = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Get the current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) throw userError;
+      
+      if (!user) {
         setIsLoading(false);
+        return;
       }
+      
+      // Fetch plan information from profiles
+      const { data, error: profileError } = await supabase
+        .from('profiles')
+        .select('plan_type, registration_date, trial_expiration_date, monthly_bills_count, daily_bills_count')
+        .eq('id', user.id)
+        .single();
+      
+      if (profileError) {
+        console.error('Profile error:', profileError);
+        throw new Error('Failed to fetch plan information');
+      }
+      
+      // Count inventory items
+      const { count: inventoryCount, error: inventoryError } = await supabase
+        .from('inventory')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+        
+      if (inventoryError) {
+        console.error('Inventory error:', inventoryError);
+      }
+      
+      if (data) {
+        // Calculate days remaining (only for Free Trial)
+        let daysRemaining = 0;
+        if (data.plan_type === 'Free Trial' && data.trial_expiration_date) {
+          const expirationDate = new Date(data.trial_expiration_date);
+          daysRemaining = differenceInDays(expirationDate, new Date());
+          daysRemaining = daysRemaining > 0 ? daysRemaining : 0;
+        }
+        
+        setPlanInfo({
+          planType: data.plan_type,
+          registrationDate: data.registration_date,
+          trialExpirationDate: data.trial_expiration_date,
+          monthlyBillsCount: data.monthly_bills_count || 0,
+          dailyBillsCount: data.daily_bills_count || 0,
+          inventoryCount: inventoryCount || 0,
+          daysRemaining: daysRemaining
+        });
+      }
+    } catch (err: any) {
+      console.error('Error fetching plan info:', err);
+      setError(err.message);
+      toast({
+        title: "Error fetching plan information",
+        description: err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-    
+  };
+
+  useEffect(() => {
     fetchPlanInfo();
+    
+    // Set up real-time subscription for bills and inventory changes
+    const channel = supabase
+      .channel('plan-status-changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'bills' }, 
+        () => fetchPlanInfo()
+      )
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'inventory' }, 
+        () => fetchPlanInfo()
+      )
+      .on('postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'profiles' }, 
+        () => fetchPlanInfo()
+      )
+      .subscribe();
+    
+    // Refresh data every 5 minutes as a fallback
+    const interval = setInterval(fetchPlanInfo, 5 * 60 * 1000);
+    
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, [toast]);
   
   if (isLoading) {
@@ -172,19 +210,19 @@ export function PlanBanner() {
                 <div className="flex items-center space-x-1">
                   <div className="h-2 w-2 rounded-full bg-green-500"></div>
                   <span>
-                    <strong>{planInfo.monthlyBillsCount || 0}</strong>/{planLimits.monthlyBillsLimit} monthly bills
+                    <strong>{planInfo.monthlyBillsCount}</strong>/{planLimits.monthlyBillsLimit} monthly bills
                   </span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                   <span>
-                    <strong>{planInfo.dailyBillsCount || 0}</strong> bills today
+                    <strong>{planInfo.dailyBillsCount}</strong> bills today
                   </span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <div className="h-2 w-2 rounded-full bg-purple-500"></div>
                   <span>
-                    <strong>Up to {planLimits.inventoryLimit}</strong> inventory items
+                    <strong>{planInfo.inventoryCount}</strong>/{planLimits.inventoryLimit} inventory items
                   </span>
                 </div>
               </div>
@@ -259,19 +297,19 @@ export function PlanBanner() {
               <div className="flex items-center space-x-1">
                 <div className="h-2 w-2 rounded-full bg-green-500"></div>
                 <span>
-                  <strong>{planInfo.monthlyBillsCount || 0}</strong>/{planLimits.monthlyBillsLimit} monthly bills
+                  <strong>{planInfo.monthlyBillsCount}</strong>/{planLimits.monthlyBillsLimit} monthly bills
                 </span>
               </div>
               <div className="flex items-center space-x-1">
                 <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                 <span>
-                  <strong>{planInfo.dailyBillsCount || 0}</strong>/{planLimits.dailyBillsLimit} daily bills
+                  <strong>{planInfo.dailyBillsCount}</strong>/{planLimits.dailyBillsLimit} daily bills
                 </span>
               </div>
               <div className="flex items-center space-x-1">
                 <div className="h-2 w-2 rounded-full bg-purple-500"></div>
                 <span>
-                  <strong>0</strong>/{planLimits.inventoryLimit} inventory items
+                  <strong>{planInfo.inventoryCount}</strong>/{planLimits.inventoryLimit} inventory items
                 </span>
               </div>
             </div>
