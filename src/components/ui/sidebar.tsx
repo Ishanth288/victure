@@ -70,11 +70,21 @@ export const Sidebar = ({
   );
 };
 
-export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
+// Separate interface for shared props
+interface SidebarBodyProps {
+  className?: string;
+  children?: React.ReactNode;
+}
+
+export const SidebarBody = ({ className, children, ...props }: SidebarBodyProps & Omit<React.ComponentProps<typeof motion.div>, 'className' | 'children'>) => {
   return (
     <>
-      <DesktopSidebar {...props} />
-      <MobileSidebar {...props} />
+      <DesktopSidebar className={className} {...props}>
+        {children}
+      </DesktopSidebar>
+      <MobileSidebar className={className}>
+        {children}
+      </MobileSidebar>
     </>
   );
 };
