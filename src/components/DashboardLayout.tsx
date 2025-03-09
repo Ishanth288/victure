@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   LayoutGrid, Package, Users, FileText, LineChart, Settings, Menu,
@@ -9,6 +8,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { PlanBanner } from "@/components/PlanBanner";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -72,11 +72,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   const handleBack = () => {
-    // If there's a previous page in history, go back
     if (window.history.length > 2) {
       navigate(-1);
     } else {
-      // If no history, navigate to a default page based on context
       navigate('/dashboard');
     }
   };
@@ -87,124 +85,121 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     </div>;
   }
 
+  const sidebarLinks = [
+    {
+      label: "Dashboard",
+      href: "/dashboard",
+      icon: <LayoutGrid className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Inventory",
+      href: "/inventory",
+      icon: <Package className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Billing",
+      href: "/billing",
+      icon: <DollarSign className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Prescriptions",
+      href: "/prescriptions",
+      icon: <FileText className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Patients",
+      href: "/patients",
+      icon: <Users className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Purchases",
+      href: "/purchases",
+      icon: <ShoppingCart className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Insights",
+      href: "/insights",
+      icon: <LineChart className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Settings",
+      href: "/settings",
+      icon: <Settings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Terms & Conditions",
+      href: "#",
+      icon: <FileTerminal className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Sign Out",
+      href: "#",
+      icon: <LogOut className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    }
+  ];
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      <aside
-        className={`fixed top-0 left-0 z-40 h-screen transition-transform ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } bg-white border-r border-neutral-200 w-64 md:translate-x-0`}
-      >
-        <div className="flex items-center h-16 px-4 border-b border-neutral-200">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="mr-2"
-            onClick={handleBack}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <Link to="/dashboard" className="flex items-center">
-            <span className="text-lg font-medium text-primary">
-              {profileData?.pharmacy_name || 'Medplus'}
-            </span>
-          </Link>
-        </div>
-
-        <div className="flex flex-col h-[calc(100%-4rem)] justify-between">
-          <ScrollArea className="flex-1">
-            <nav className="p-4 space-y-2">
-              <Link to="/dashboard">
-                <Button variant="ghost" className="w-full justify-start">
-                  <LayoutGrid className="mr-2 h-5 w-5" />
-                  Dashboard
-                </Button>
-              </Link>
-              <Link to="/inventory">
-                <Button variant="ghost" className="w-full justify-start">
-                  <Package className="mr-2 h-5 w-5" />
-                  Inventory
-                </Button>
-              </Link>
-              <Link to="/billing">
-                <Button variant="ghost" className="w-full justify-start">
-                  <DollarSign className="mr-2 h-5 w-5" />
-                  Billing
-                </Button>
-              </Link>
-              <Link to="/prescriptions">
-                <Button variant="ghost" className="w-full justify-start">
-                  <FileText className="mr-2 h-5 w-5" />
-                  Prescriptions
-                </Button>
-              </Link>
-              <Link to="/patients">
-                <Button variant="ghost" className="w-full justify-start">
-                  <Users className="mr-2 h-5 w-5" />
-                  Patients
-                </Button>
-              </Link>
-              <Link to="/purchases">
-                <Button variant="ghost" className="w-full justify-start">
-                  <ShoppingCart className="mr-2 h-5 w-5" />
-                  Purchases
-                </Button>
-              </Link>
-              <Link to="/insights">
-                <Button variant="ghost" className="w-full justify-start">
-                  <LineChart className="mr-2 h-5 w-5" />
-                  Insights
-                </Button>
-              </Link>
-            </nav>
-          </ScrollArea>
-
-          <div className="p-4 space-y-2 border-t border-neutral-200">
-            <Link to="/settings">
-              <Button variant="ghost" className="w-full justify-start">
-                <Settings className="mr-2 h-5 w-5" />
-                Settings
+      <Sidebar open={isSidebarOpen} setOpen={setIsSidebarOpen}>
+        <SidebarBody className="justify-between gap-8">
+          <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+            <div className="flex items-center h-16 px-4 border-b border-neutral-200">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="mr-2"
+                onClick={handleBack}
+              >
+                <ChevronLeft className="h-5 w-5" />
               </Button>
-            </Link>
-            <Button variant="ghost" className="w-full justify-start" onClick={handleTermsClick}>
-              <FileTerminal className="mr-2 h-5 w-5" />
-              Terms & Conditions
-            </Button>
-            <Button variant="ghost" className="w-full justify-start" onClick={handleSignOut}>
-              <LogOut className="mr-2 h-5 w-5" />
-              Sign Out
-            </Button>
+              <div className="flex items-center">
+                <span className="text-lg font-medium text-primary">
+                  {profileData?.pharmacy_name || 'Medplus'}
+                </span>
+              </div>
+            </div>
+            
+            <div className="mt-4 flex flex-col gap-2 px-2">
+              {sidebarLinks.slice(0, 7).map((link, idx) => (
+                <SidebarLink 
+                  key={idx} 
+                  link={link} 
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      </aside>
+          
+          <div className="border-t border-neutral-200 pt-4 px-2 flex flex-col gap-2">
+            <SidebarLink
+              link={sidebarLinks[7]} // Settings
+            />
+            <SidebarLink
+              link={sidebarLinks[8]} // Terms
+              className="cursor-pointer"
+              onClick={handleTermsClick}
+            />
+            <SidebarLink
+              link={sidebarLinks[9]} // Sign Out
+              className="cursor-pointer"
+              onClick={handleSignOut}
+            />
+          </div>
+        </SidebarBody>
+      </Sidebar>
 
-      <div className={`flex-1 ${isSidebarOpen ? "md:ml-64" : ""}`}>
-        <header className="sticky top-0 z-10 flex items-center h-16 px-4 border-b bg-white shadow-sm">
-          <div className="flex items-center justify-between w-full">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsSidebarOpen(true)}
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-
-            <div className="text-2xl font-bold text-neutral-900 flex-grow text-center">
-              Victure Healthcare Solutions
-            </div>
-
-            <div className="flex items-center">
-              <span className="text-sm font-medium mr-4">
-                {profileData?.owner_name || 'Loading...'}
-              </span>
-              <Button variant="ghost" size="icon" onClick={handleSignOut}>
-                <LogOut className="h-5 w-5" />
-              </Button>
-            </div>
+      <div className="flex-1 flex flex-col">
+        <header className="sticky top-0 z-10 flex items-center h-16 px-6 border-b bg-white shadow-sm">
+          <div className="text-2xl font-bold text-neutral-900 text-center w-full">
+            Victure Healthcare Solutions
+          </div>
+          <div className="flex items-center">
+            <span className="text-sm font-medium mr-4">
+              {profileData?.owner_name || 'Loading...'}
+            </span>
           </div>
         </header>
         
-        <main className="p-4 md:p-6 overflow-y-auto h-[calc(100vh-4rem)]">
+        <main className="p-4 md:p-6 overflow-y-auto flex-1">
           <PlanBanner />
           <ScrollArea className="h-full">
             {children}

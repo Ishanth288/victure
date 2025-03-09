@@ -17,7 +17,7 @@ import ChatbotButton from "@/components/chatbot/ChatbotButton";
 function App() {
   return (
     <Router>
-      <div className="h-screen">
+      <div className="h-screen w-full">
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
