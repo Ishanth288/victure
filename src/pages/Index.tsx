@@ -8,6 +8,7 @@ import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
 import { Pricing } from "@/components/blocks/Pricing";
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
+import { LampContainer } from "@/components/ui/lamp";
 import { motion } from "framer-motion";
 
 const pricingPlans = [
@@ -77,6 +78,22 @@ const pricingPlans = [
 const Index = () => {
   return (
     <div className="min-h-screen bg-white">
+      {/* Lamp Container Section */}
+      <LampContainer>
+        <motion.h1
+          initial={{ opacity: 0.5, y: 100 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{
+            delay: 0.3,
+            duration: 0.8,
+            ease: "easeInOut",
+          }}
+          className="mt-8 bg-gradient-to-br from-primary-light to-primary py-4 bg-clip-text text-center text-4xl font-medium tracking-tight text-transparent md:text-7xl"
+        >
+          Transform Your Pharmacy <br /> With AI-Powered Management
+        </motion.h1>
+      </LampContainer>
+
       <Navigation />
       <main>
         <Hero />
@@ -128,8 +145,8 @@ const Index = () => {
               
               <div className="hidden md:block bg-primary/10 rounded-xl p-6 h-full">
                 <img 
-                  src="/placeholder.svg" 
-                  alt="Pharmacy Dashboard" 
+                  src="/lovable-uploads/794840a4-3a05-489a-8731-95a1ea3709bd.png" 
+                  alt="Pharmacy Dashboard with AI" 
                   className="w-full h-full object-cover rounded-lg shadow-lg"
                 />
               </div>
