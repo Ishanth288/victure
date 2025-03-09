@@ -7,6 +7,8 @@ import Demo from "@/components/Demo";
 import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
 import { Pricing } from "@/components/blocks/Pricing";
+import { ContainerScroll } from "@/components/ui/container-scroll-animation";
+import { motion } from "framer-motion";
 
 const pricingPlans = [
   {
@@ -78,6 +80,63 @@ const Index = () => {
       <Navigation />
       <main>
         <Hero />
+        
+        {/* Scroll Animation Section */}
+        <div className="overflow-hidden">
+          <ContainerScroll
+            titleComponent={
+              <>
+                <span className="text-primary font-semibold">Experience</span>
+                <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 mt-2 mb-4">
+                  Modern Pharmacy Management
+                </h2>
+                <p className="text-xl md:text-[2.5rem] font-bold text-primary leading-tight">
+                  Streamlined Operations at Your Fingertips
+                </p>
+              </>
+            }
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4 h-full items-center">
+              <div className="flex flex-col space-y-4">
+                <motion.div 
+                  className="bg-white p-6 rounded-lg shadow-md"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <h3 className="text-xl font-bold text-primary mb-2">Inventory Management</h3>
+                  <p className="text-neutral-700">Track stock levels, manage expiry dates, and automate reordering with our intelligent inventory system.</p>
+                </motion.div>
+                
+                <motion.div 
+                  className="bg-white p-6 rounded-lg shadow-md"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <h3 className="text-xl font-bold text-primary mb-2">Patient Care</h3>
+                  <p className="text-neutral-700">Store patient records securely and access medication histories instantly for better care.</p>
+                </motion.div>
+                
+                <motion.div 
+                  className="bg-white p-6 rounded-lg shadow-md"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <h3 className="text-xl font-bold text-primary mb-2">Billing & Reporting</h3>
+                  <p className="text-neutral-700">Generate invoices in seconds and gain valuable insights with comprehensive analytics.</p>
+                </motion.div>
+              </div>
+              
+              <div className="hidden md:block bg-primary/10 rounded-xl p-6 h-full">
+                <img 
+                  src="/placeholder.svg" 
+                  alt="Pharmacy Dashboard" 
+                  className="w-full h-full object-cover rounded-lg shadow-lg"
+                />
+              </div>
+            </div>
+          </ContainerScroll>
+        </div>
+        
         <Features />
         <Benefits />
         <Demo />
