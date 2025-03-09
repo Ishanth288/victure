@@ -76,6 +76,11 @@ export default {
           "66%": { transform: "translate(-20px, 20px) scale(0.9)" },
           "100%": { transform: "translate(0px, 0px) scale(1)" },
         },
+        "aurora": {
+          "0%": { backgroundPosition: "50% 50%, 50% 50%" },
+          "50%": { backgroundPosition: "0% 100%, 10% 90%" },
+          "100%": { backgroundPosition: "50% 50%, 50% 50%" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -83,6 +88,7 @@ export default {
         "fade-in": "fade-in 0.3s ease-out",
         "fade-out": "fade-out 0.3s ease-out",
         "blob": "blob 7s infinite",
+        "aurora": "aurora 10s ease infinite alternate",
       },
     },
   },
