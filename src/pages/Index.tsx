@@ -1,3 +1,4 @@
+
 import Navigation from "@/components/Navigation";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
@@ -84,8 +85,8 @@ const Index = () => {
           <Hero />
         </AuroraBackground>
         
-        {/* Scroll Animation Section */}
-        <div className="overflow-hidden">
+        {/* Scroll Animation Section - Reduced top padding */}
+        <div className="overflow-hidden -mt-20">
           <ContainerScroll
             titleComponent={
               <>
