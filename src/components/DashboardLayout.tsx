@@ -142,7 +142,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar open={isSidebarOpen} setOpen={setIsSidebarOpen}>
-        <SidebarBody className="justify-between gap-8">
+        <SidebarBody className="justify-between gap-4">
           <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
             <div className="flex items-center h-16 px-4 border-b border-neutral-200">
               <Button
@@ -160,7 +160,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
             </div>
             
-            <div className="mt-4 flex flex-col gap-2 px-2">
+            <div className="mt-2 flex flex-col gap-1 px-2">
               {sidebarLinks.slice(0, 7).map((link, idx) => (
                 <SidebarLink 
                   key={idx} 
@@ -170,7 +170,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </div>
           
-          <div className="border-t border-neutral-200 pt-4 px-2 flex flex-col gap-2">
+          <div className="border-t border-neutral-200 pt-2 px-2 flex flex-col gap-1">
             <SidebarLink
               link={sidebarLinks[7]} // Settings
             />
