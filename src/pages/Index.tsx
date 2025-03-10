@@ -85,8 +85,8 @@ const Index = () => {
           <Hero />
         </AuroraBackground>
         
-        {/* Scroll Animation Section - Reduced top padding */}
-        <div className="overflow-hidden -mt-20">
+        {/* Scroll Animation Section - Further reduced top padding */}
+        <div className="overflow-hidden -mt-32">
           <ContainerScroll
             titleComponent={
               <>

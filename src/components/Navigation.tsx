@@ -36,7 +36,7 @@ export default function Navigation() {
     }
   };
 
-  // Show home button only when not on the index page
+  // Show home button on all pages except the index page
   const showHomeButton = location.pathname !== '/';
 
   return (
