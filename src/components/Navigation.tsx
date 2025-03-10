@@ -57,33 +57,43 @@ export default function Navigation() {
             </HashLink>
           </div>
 
-          <div className="hidden md:flex items-center space-x-8">
-            <HashLink smooth to="#features" className="text-neutral-600 hover:text-primary transition-colors">
-              Features
-            </HashLink>
-            <HashLink smooth to="#benefits" className="text-neutral-600 hover:text-primary transition-colors">
-              Benefits
-            </HashLink>
-            <HashLink smooth to="#pricing" className="text-neutral-600 hover:text-primary transition-colors">
-              Pricing
-            </HashLink>
-          </div>
+          {/* Only show these navigation links on the home page */}
+          {location.pathname === '/' && (
+            <div className="hidden md:flex items-center space-x-8">
+              <HashLink smooth to="#features" className="text-neutral-600 hover:text-primary transition-colors">
+                Features
+              </HashLink>
+              <HashLink smooth to="#benefits" className="text-neutral-600 hover:text-primary transition-colors">
+                Benefits
+              </HashLink>
+              <HashLink smooth to="#pricing" className="text-neutral-600 hover:text-primary transition-colors">
+                Pricing
+              </HashLink>
+            </div>
+          )}
 
-          <div className="flex items-center space-x-4">
-            <Button 
-              variant="ghost" 
-              className="text-neutral-600 hover:text-primary"
-              onClick={handleLogin}
-            >
-              Login
-            </Button>
-            <Button 
-              className="bg-primary hover:bg-primary-dark text-white"
-              onClick={handleGetStarted}
-            >
-              Get Started
-            </Button>
-          </div>
+          {/* Only show these buttons on the home page or auth page */}
+          {(location.pathname === '/' || location.pathname === '/auth') && (
+            <div className="flex items-center space-x-4">
+              {location.pathname !== '/auth' && (
+                <Button 
+                  variant="ghost" 
+                  className="text-neutral-600 hover:text-primary"
+                  onClick={handleLogin}
+                >
+                  Login
+                </Button>
+              )}
+              {location.pathname !== '/auth' && (
+                <Button 
+                  className="bg-primary hover:bg-primary-dark text-white"
+                  onClick={handleGetStarted}
+                >
+                  Get Started
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </nav>
