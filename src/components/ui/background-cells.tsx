@@ -12,7 +12,7 @@ interface BackgroundCellsProps {
 
 export const BackgroundCells = ({ children, className }: BackgroundCellsProps) => {
   return (
-    <div className={cn("absolute inset-0 h-screen w-full overflow-hidden", className)}>
+    <div className={cn("fixed inset-0 w-full h-full", className)}>
       <BackgroundCellCore />
       {children}
     </div>
@@ -38,13 +38,12 @@ const BackgroundCellCore = () => {
     <div
       ref={ref}
       onMouseMove={handleMouseMove}
-      className="h-full w-full absolute inset-0"
-      style={{ position: "relative" }} // Add this to fix the position warning
+      className="fixed inset-0 w-full h-full"
     >
-      <div className="absolute h-full w-full inset-0 overflow-hidden">
-        <div className="absolute h-full w-full pointer-events-none -bottom-2 z-10 bg-slate-950 [mask-image:linear-gradient(to_bottom,transparent,black)]" />
+      <div className="fixed inset-0 w-full h-full overflow-hidden">
+        <div className="fixed inset-0 w-full h-full pointer-events-none -bottom-2 z-10 bg-slate-950 [mask-image:linear-gradient(to_bottom,transparent,black)]" />
         <div
-          className="absolute inset-0 z-20 bg-transparent"
+          className="fixed inset-0 w-full h-full z-20 bg-transparent"
           style={{
             maskImage: `radial-gradient(${size / 4}px circle at center, white, transparent)`,
             WebkitMaskImage: `radial-gradient(${size / 4}px circle at center, white, transparent)`,
@@ -73,12 +72,12 @@ interface PatternProps {
 
 const Pattern = ({ className, cellClassName }: PatternProps) => {
   const x = new Array(47).fill(0);
-  const y = new Array(30).fill(0);
+  const y = new Array(50).fill(0); // Increased the number of cells vertically
   const matrix = x.map((_, i) => y.map((_, j) => [i, j]));
   const [clickedCell, setClickedCell] = useState<[number, number] | null>(null);
 
   return (
-    <div className={cn("flex flex-row relative z-30", className)}>
+    <div className={cn("flex flex-row fixed inset-0 w-full h-full z-30", className)}>
       {matrix.map((row, rowIdx) => (
         <div
           key={`matrix-row-${rowIdx}`}

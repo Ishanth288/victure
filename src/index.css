@@ -93,6 +93,21 @@
   }
 }
 
+/* Auth page specific styles */
+.auth-input:focus {
+  outline: 2px solid theme('colors.indigo.500');
+  border-color: theme('colors.indigo.700');
+}
+
+.auth-input::placeholder {
+  color: theme('colors.gray.500');
+}
+
+.auth-select:focus {
+  outline: 2px solid theme('colors.indigo.500');
+  border-color: theme('colors.indigo.700');
+}
+
 /* Create a grid pattern background */
 .bg-grid-pattern {
   background-image: 
