@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,9 +17,9 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { INDIAN_STATES } from "@/constants/states";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle, X, Info } from "lucide-react";
+import { AlertCircle, CheckCircle, X, Info, Home } from "lucide-react";
 import { BackgroundCells } from "@/components/ui/background-cells";
-import Navigation from "@/components/Navigation";
+import { Link } from "react-router-dom";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -241,7 +242,14 @@ export default function Auth() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <BackgroundCells className="bg-slate-950" />
-        <Navigation />
+        <div className="absolute top-4 left-4 z-50">
+          <Button asChild variant="ghost" className="text-white hover:text-indigo-300 hover:bg-indigo-950/50">
+            <Link to="/">
+              <Home className="h-5 w-5 mr-2" />
+              Home
+            </Link>
+          </Button>
+        </div>
         <div className="relative z-30">
           <Card className="w-full max-w-md shadow-xl border-opacity-50 bg-black/30 backdrop-blur-md border-white/10 text-white">
             <CardHeader>
@@ -263,7 +271,14 @@ export default function Auth() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <BackgroundCells className="bg-slate-950" />
-        <Navigation />
+        <div className="absolute top-4 left-4 z-50">
+          <Button asChild variant="ghost" className="text-white hover:text-indigo-300 hover:bg-indigo-950/50">
+            <Link to="/">
+              <Home className="h-5 w-5 mr-2" />
+              Home
+            </Link>
+          </Button>
+        </div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -304,7 +319,14 @@ export default function Auth() {
   return (
     <div className="min-h-screen relative flex flex-col items-center justify-center p-4 overflow-hidden">
       <BackgroundCells className="bg-slate-950" />
-      <Navigation />
+      <div className="absolute top-4 left-4 z-50">
+        <Button asChild variant="ghost" className="text-white hover:text-indigo-300 hover:bg-indigo-950/50">
+          <Link to="/">
+            <Home className="h-5 w-5 mr-2" />
+            Home
+          </Link>
+        </Button>
+      </div>
       
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -366,7 +388,7 @@ export default function Auth() {
               {!isLogin && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="pharmacyName">Pharmacy Name*</Label>
+                    <Label htmlFor="pharmacyName" className="text-white">Pharmacy Name*</Label>
                     <Input
                       id="pharmacyName"
                       value={formData.pharmacyName}
@@ -375,10 +397,11 @@ export default function Auth() {
                       }
                       required={!isLogin}
                       placeholder="Enter pharmacy name"
+                      className="bg-black/50 border-indigo-800/50 focus:border-indigo-500 text-white placeholder:text-gray-400"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="ownerName">Owner Name*</Label>
+                    <Label htmlFor="ownerName" className="text-white">Owner Name*</Label>
                     <Input
                       id="ownerName"
                       value={formData.ownerName}
@@ -387,10 +410,11 @@ export default function Auth() {
                       }
                       required={!isLogin}
                       placeholder="Enter owner name"
+                      className="bg-black/50 border-indigo-800/50 focus:border-indigo-500 text-white placeholder:text-gray-400"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number*</Label>
+                    <Label htmlFor="phone" className="text-white">Phone Number*</Label>
                     <Input
                       id="phone"
                       type="tel"
@@ -400,10 +424,11 @@ export default function Auth() {
                       }
                       required={!isLogin}
                       placeholder="Enter phone number"
+                      className="bg-black/50 border-indigo-800/50 focus:border-indigo-500 text-white placeholder:text-gray-400"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="address">Address*</Label>
+                    <Label htmlFor="address" className="text-white">Address*</Label>
                     <Input
                       id="address"
                       value={formData.address}
@@ -412,11 +437,12 @@ export default function Auth() {
                       }
                       required={!isLogin}
                       placeholder="Enter complete address"
+                      className="bg-black/50 border-indigo-800/50 focus:border-indigo-500 text-white placeholder:text-gray-400"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="city">City*</Label>
+                      <Label htmlFor="city" className="text-white">City*</Label>
                       <Input
                         id="city"
                         value={formData.city}
@@ -425,20 +451,21 @@ export default function Auth() {
                         }
                         required={!isLogin}
                         placeholder="Enter city"
+                        className="bg-black/50 border-indigo-800/50 focus:border-indigo-500 text-white placeholder:text-gray-400"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="state">State*</Label>
+                      <Label htmlFor="state" className="text-white">State*</Label>
                       <Select 
                         value={formData.state}
                         onValueChange={(value) => updateFormData("state", value)}
                       >
-                        <SelectTrigger className="bg-white">
-                          <SelectValue placeholder="Select state" />
+                        <SelectTrigger className="bg-black/50 border-indigo-800/50 text-white focus:ring-indigo-500">
+                          <SelectValue placeholder="Select state" className="text-gray-400" />
                         </SelectTrigger>
-                        <SelectContent className="bg-white">
+                        <SelectContent className="bg-slate-900 border-indigo-800 text-white">
                           {INDIAN_STATES.map((state) => (
-                            <SelectItem key={state} value={state}>
+                            <SelectItem key={state} value={state} className="focus:bg-indigo-900 focus:text-white">
                               {state}
                             </SelectItem>
                           ))}
@@ -448,7 +475,7 @@ export default function Auth() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="pincode">PIN Code*</Label>
+                      <Label htmlFor="pincode" className="text-white">PIN Code*</Label>
                       <Input
                         id="pincode"
                         value={formData.pincode}
@@ -457,10 +484,11 @@ export default function Auth() {
                         }
                         required={!isLogin}
                         placeholder="Enter PIN code"
+                        className="bg-black/50 border-indigo-800/50 focus:border-indigo-500 text-white placeholder:text-gray-400"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="gstin">GSTIN (Optional)</Label>
+                      <Label htmlFor="gstin" className="text-white">GSTIN (Optional)</Label>
                       <Input
                         id="gstin"
                         value={formData.gstin}
@@ -468,13 +496,14 @@ export default function Auth() {
                           updateFormData("gstin", e.target.value)
                         }
                         placeholder="Enter GSTIN"
+                        className="bg-black/50 border-indigo-800/50 focus:border-indigo-500 text-white placeholder:text-gray-400"
                       />
                     </div>
                   </div>
                 </>
               )}
               <div className="space-y-2">
-                <Label htmlFor="email">Email*</Label>
+                <Label htmlFor="email" className="text-white">Email*</Label>
                 <Input
                   id="email"
                   type="email"
@@ -484,10 +513,11 @@ export default function Auth() {
                   }
                   required
                   placeholder="Enter email address"
+                  className="bg-black/50 border-indigo-800/50 focus:border-indigo-500 text-white placeholder:text-gray-400"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password*</Label>
+                <Label htmlFor="password" className="text-white">Password*</Label>
                 <Input
                   id="password"
                   type="password"
@@ -497,12 +527,12 @@ export default function Auth() {
                   }
                   required
                   placeholder="Enter password"
-                  className={!isLogin && formData.password ? (passwordValidation.isValid ? "border-indigo-500" : "border-red-500") : ""}
+                  className={`bg-black/50 focus:border-indigo-500 text-white placeholder:text-gray-400 ${!isLogin && formData.password ? (passwordValidation.isValid ? "border-indigo-500" : "border-red-500") : "border-indigo-800/50"}`}
                 />
                 
                 {!isLogin && formData.password && (
                   <div className="mt-2 text-sm">
-                    <p className="font-medium mb-1">Password requirements:</p>
+                    <p className="font-medium mb-1 text-white">Password requirements:</p>
                     <ul className="space-y-1">
                       <li className="flex items-center">
                         {passwordValidation.minLength ? (
@@ -529,7 +559,7 @@ export default function Auth() {
                 )}
               </div>
               <Button 
-                className="w-full bg-indigo-600 hover:bg-indigo-700" 
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" 
                 type="submit" 
                 disabled={isLoading || (!isLogin && formData.password && !passwordValidation.isValid)}
               >

@@ -38,7 +38,8 @@ const BackgroundCellCore = () => {
     <div
       ref={ref}
       onMouseMove={handleMouseMove}
-      className="h-full absolute inset-0"
+      className="h-full w-full absolute inset-0"
+      style={{ position: "relative" }} // Add this to fix the position warning
     >
       <div className="absolute h-full w-full inset-0 overflow-hidden">
         <div className="absolute h-full w-full pointer-events-none -bottom-2 z-10 bg-slate-950 [mask-image:linear-gradient(to_bottom,transparent,black)]" />
