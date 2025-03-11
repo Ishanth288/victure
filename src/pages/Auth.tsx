@@ -18,6 +18,8 @@ import { motion } from "framer-motion";
 import { INDIAN_STATES } from "@/constants/states";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle, X, Info } from "lucide-react";
+import { BackgroundCells } from "@/components/ui/background-cells";
+import Navigation from "@/components/Navigation";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -240,50 +242,54 @@ export default function Auth() {
 
   if (isVerifying) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-        <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
-        <Card className="w-full max-w-md relative z-10 shadow-xl border-opacity-50">
-          <CardHeader>
-            <CardTitle className="text-2xl text-center">Verifying Your Email</CardTitle>
-            <CardDescription className="text-center">
-              Please wait while we verify your email address...
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center py-6">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <BackgroundCells className="bg-slate-950" />
+        <Navigation />
+        <div className="relative z-30">
+          <Card className="w-full max-w-md shadow-xl border-opacity-50 bg-black/30 backdrop-blur-md border-white/10 text-white">
+            <CardHeader>
+              <CardTitle className="text-2xl text-center">Verifying Your Email</CardTitle>
+              <CardDescription className="text-center text-gray-300">
+                Please wait while we verify your email address...
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center py-6">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   if (verificationSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-        <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <BackgroundCells className="bg-slate-950" />
+        <Navigation />
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-md relative z-10"
+          className="w-full max-w-md relative z-30"
         >
-          <Card className="shadow-xl border-opacity-50">
+          <Card className="shadow-xl border-opacity-50 bg-black/30 backdrop-blur-md border-white/10 text-white">
             <CardHeader>
-              <CardTitle className="text-2xl text-center text-green-600">
+              <CardTitle className="text-2xl text-center text-green-400">
                 Email Verified Successfully!
               </CardTitle>
-              <CardDescription className="text-center">
+              <CardDescription className="text-center text-gray-300">
                 Your account has been verified. You can now log in.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center space-y-4">
-              <div className="rounded-full bg-green-100 p-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="rounded-full bg-green-900/50 p-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               <Button 
-                className="w-full" 
+                className="w-full bg-green-600 hover:bg-green-700 text-white" 
                 onClick={() => {
                   setVerificationSuccess(false);
                   setIsLogin(true);
@@ -299,27 +305,22 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen relative flex flex-col items-center justify-center p-4 overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-      {/* Decorative Background Elements */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
-      
-      {/* Animated shapes */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-      <div className="absolute top-0 right-0 w-96 h-96 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
-      <div className="absolute -bottom-8 left-20 w-96 h-96 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+    <div className="min-h-screen relative flex flex-col items-center justify-center p-4 overflow-hidden">
+      <BackgroundCells className="bg-slate-950" />
+      <Navigation />
       
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md relative z-10"
+        className="w-full max-w-md relative z-30"
       >
-        <Card className="shadow-xl backdrop-blur-sm bg-white/90 border-opacity-50">
+        <Card className="shadow-xl backdrop-blur-md bg-black/30 border-white/10 text-white">
           <CardHeader>
             <CardTitle className="text-2xl text-center">
               {isLogin ? "Welcome Back" : "Create Account"}
             </CardTitle>
-            <CardDescription className="text-center">
+            <CardDescription className="text-center text-gray-300">
               {isLogin
                 ? "Sign in to your pharmacy account"
                 : "Register your pharmacy"}
@@ -329,7 +330,7 @@ export default function Auth() {
             {authMessage.type && (
               <Alert 
                 variant={authMessage.type === 'error' ? 'destructive' : 'default'} 
-                className={`mb-4 ${authMessage.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : authMessage.type === 'info' ? 'bg-blue-50 text-blue-800 border-blue-200' : ''}`}
+                className={`mb-4 ${authMessage.type === 'success' ? 'bg-green-900/50 text-green-300 border-green-700' : authMessage.type === 'info' ? 'bg-blue-900/50 text-blue-300 border-blue-700' : 'bg-red-900/50 text-red-300 border-red-700'}`}
               >
                 {authMessage.type === 'error' ? (
                   <AlertCircle className="h-4 w-4" />
@@ -349,7 +350,7 @@ export default function Auth() {
 
             {/* Free Trial Plan Notice - Show when not in login mode */}
             {showFreePlanInfo && (
-              <Alert className="mb-4 bg-blue-50 text-blue-800 border-blue-200">
+              <Alert className="mb-4 bg-blue-900/50 text-blue-300 border-blue-700">
                 <Info className="h-4 w-4" />
                 <AlertTitle>Free Trial Plan</AlertTitle>
                 <AlertDescription>

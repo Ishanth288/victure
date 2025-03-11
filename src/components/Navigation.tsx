@@ -37,15 +37,26 @@ export default function Navigation() {
     }
   };
 
-  // Show home button on all pages except the index page
-  const showHomeButton = location.pathname !== '/';
+  // Don't show navigation bar on auth page
+  if (location.pathname === '/auth') {
+    return (
+      <div className="absolute top-4 left-4 z-50">
+        <Link to="/">
+          <Button variant="outline" size="icon" className="bg-black/20 backdrop-blur-sm border-white/10 hover:bg-black/30 text-white">
+            <Home className="h-5 w-5" />
+          </Button>
+        </Link>
+      </div>
+    );
+  }
 
+  // On other pages, render the full navigation bar
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-2">
-            {showHomeButton && (
+            {location.pathname !== '/' && (
               <Link to="/" className="mr-2">
                 <Button variant="ghost" size="icon" className="text-primary">
                   <Home className="h-5 w-5" />
@@ -72,26 +83,22 @@ export default function Navigation() {
             </div>
           )}
 
-          {/* Only show these buttons on the home page or auth page */}
-          {(location.pathname === '/' || location.pathname === '/auth') && (
+          {/* Only show these buttons on the home page */}
+          {location.pathname === '/' && (
             <div className="flex items-center space-x-4">
-              {location.pathname !== '/auth' && (
-                <Button 
-                  variant="ghost" 
-                  className="text-neutral-600 hover:text-primary"
-                  onClick={handleLogin}
-                >
-                  Login
-                </Button>
-              )}
-              {location.pathname !== '/auth' && (
-                <Button 
-                  className="bg-primary hover:bg-primary-dark text-white"
-                  onClick={handleGetStarted}
-                >
-                  Get Started
-                </Button>
-              )}
+              <Button 
+                variant="ghost" 
+                className="text-neutral-600 hover:text-primary"
+                onClick={handleLogin}
+              >
+                Login
+              </Button>
+              <Button 
+                className="bg-primary hover:bg-primary-dark text-white"
+                onClick={handleGetStarted}
+              >
+                Get Started
+              </Button>
             </div>
           )}
         </div>
