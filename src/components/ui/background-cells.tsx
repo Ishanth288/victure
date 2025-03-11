@@ -40,7 +40,7 @@ const BackgroundCellCore = () => {
       onMouseMove={handleMouseMove}
       className="h-full absolute inset-0"
     >
-      <div className="absolute h-[100vh] inset-y-0 w-full overflow-hidden">
+      <div className="absolute h-full w-full inset-0 overflow-hidden">
         <div className="absolute h-full w-full pointer-events-none -bottom-2 z-10 bg-slate-950 [mask-image:linear-gradient(to_bottom,transparent,black)]" />
         <div
           className="absolute inset-0 z-20 bg-transparent"
@@ -57,7 +57,7 @@ const BackgroundCellCore = () => {
             WebkitMaskRepeat: "no-repeat",
           }}
         >
-          <Pattern cellClassName="border-blue-600 relative z-[100]" />
+          <Pattern cellClassName="border-indigo-600 relative z-[100]" />
         </div>
         <Pattern className="opacity-[0.5]" cellClassName="border-neutral-700" />
       </div>
@@ -120,7 +120,7 @@ const Pattern = ({ className, cellClassName }: PatternProps) => {
                     ease: "backOut",
                   }}
                   animate={controls}
-                  className="bg-[rgba(14,165,233,0.3)] h-12 w-12"
+                  className="bg-[rgba(79,70,229,0.3)] h-12 w-12"
                 />
               </div>
             );

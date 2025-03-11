@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -46,11 +45,9 @@ export default function Auth() {
     gstin: "",
   });
 
-  // Get plan information from location state
   const fromPricing = location.state?.fromPricing || false;
   const planType = location.state?.planType || 'Free Trial';
 
-  // Show the Free Trial info even when switching from login to signup
   const showFreePlanInfo = !isLogin;
 
   const [passwordValidation, setPasswordValidation] = useState({
@@ -254,7 +251,7 @@ export default function Auth() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center py-6">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-400"></div>
             </CardContent>
           </Card>
         </div>
@@ -275,7 +272,7 @@ export default function Auth() {
         >
           <Card className="shadow-xl border-opacity-50 bg-black/30 backdrop-blur-md border-white/10 text-white">
             <CardHeader>
-              <CardTitle className="text-2xl text-center text-green-400">
+              <CardTitle className="text-2xl text-center text-indigo-400">
                 Email Verified Successfully!
               </CardTitle>
               <CardDescription className="text-center text-gray-300">
@@ -283,13 +280,13 @@ export default function Auth() {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center space-y-4">
-              <div className="rounded-full bg-green-900/50 p-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="rounded-full bg-indigo-900/50 p-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               <Button 
-                className="w-full bg-green-600 hover:bg-green-700 text-white" 
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" 
                 onClick={() => {
                   setVerificationSuccess(false);
                   setIsLogin(true);
@@ -330,7 +327,7 @@ export default function Auth() {
             {authMessage.type && (
               <Alert 
                 variant={authMessage.type === 'error' ? 'destructive' : 'default'} 
-                className={`mb-4 ${authMessage.type === 'success' ? 'bg-green-900/50 text-green-300 border-green-700' : authMessage.type === 'info' ? 'bg-blue-900/50 text-blue-300 border-blue-700' : 'bg-red-900/50 text-red-300 border-red-700'}`}
+                className={`mb-4 ${authMessage.type === 'success' ? 'bg-indigo-900/50 text-indigo-300 border-indigo-700' : authMessage.type === 'info' ? 'bg-blue-900/50 text-blue-300 border-blue-700' : 'bg-red-900/50 text-red-300 border-red-700'}`}
               >
                 {authMessage.type === 'error' ? (
                   <AlertCircle className="h-4 w-4" />
@@ -348,9 +345,8 @@ export default function Auth() {
               </Alert>
             )}
 
-            {/* Free Trial Plan Notice - Show when not in login mode */}
             {showFreePlanInfo && (
-              <Alert className="mb-4 bg-blue-900/50 text-blue-300 border-blue-700">
+              <Alert className="mb-4 bg-indigo-900/50 text-indigo-300 border-indigo-700">
                 <Info className="h-4 w-4" />
                 <AlertTitle>Free Trial Plan</AlertTitle>
                 <AlertDescription>
@@ -501,7 +497,7 @@ export default function Auth() {
                   }
                   required
                   placeholder="Enter password"
-                  className={!isLogin && formData.password ? (passwordValidation.isValid ? "border-green-500" : "border-red-500") : ""}
+                  className={!isLogin && formData.password ? (passwordValidation.isValid ? "border-indigo-500" : "border-red-500") : ""}
                 />
                 
                 {!isLogin && formData.password && (
@@ -510,21 +506,21 @@ export default function Auth() {
                     <ul className="space-y-1">
                       <li className="flex items-center">
                         {passwordValidation.minLength ? (
-                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          <CheckCircle className="h-4 w-4 text-indigo-500 mr-2" />
                         ) : (
                           <X className="h-4 w-4 text-red-500 mr-2" />
                         )}
-                        <span className={passwordValidation.minLength ? "text-green-600" : "text-red-600"}>
+                        <span className={passwordValidation.minLength ? "text-indigo-400" : "text-red-400"}>
                           At least 6 characters
                         </span>
                       </li>
                       <li className="flex items-center">
                         {passwordValidation.hasNumber ? (
-                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          <CheckCircle className="h-4 w-4 text-indigo-500 mr-2" />
                         ) : (
                           <X className="h-4 w-4 text-red-500 mr-2" />
                         )}
-                        <span className={passwordValidation.hasNumber ? "text-green-600" : "text-red-600"}>
+                        <span className={passwordValidation.hasNumber ? "text-indigo-400" : "text-red-400"}>
                           Contains at least one number
                         </span>
                       </li>
@@ -532,7 +528,11 @@ export default function Auth() {
                   </div>
                 )}
               </div>
-              <Button className="w-full" type="submit" disabled={isLoading || (!isLogin && formData.password && !passwordValidation.isValid)}>
+              <Button 
+                className="w-full bg-indigo-600 hover:bg-indigo-700" 
+                type="submit" 
+                disabled={isLoading || (!isLogin && formData.password && !passwordValidation.isValid)}
+              >
                 {isLoading
                   ? isLogin
                     ? "Signing in..."
@@ -545,7 +545,7 @@ export default function Auth() {
             <div className="mt-4 text-center">
               <button
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-sm text-primary hover:underline"
+                className="text-sm text-indigo-400 hover:underline"
               >
                 {isLogin
                   ? "Don't have an account? Sign up"
