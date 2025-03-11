@@ -71,8 +71,9 @@ interface PatternProps {
 }
 
 const Pattern = ({ className, cellClassName }: PatternProps) => {
-  const x = new Array(47).fill(0);
-  const y = new Array(50).fill(0); // Increased the number of cells vertically
+  // Increased the number of cells to ensure full coverage
+  const x = new Array(60).fill(0);
+  const y = new Array(60).fill(0);
   const matrix = x.map((_, i) => y.map((_, j) => [i, j]));
   const [clickedCell, setClickedCell] = useState<[number, number] | null>(null);
 
@@ -120,7 +121,7 @@ const Pattern = ({ className, cellClassName }: PatternProps) => {
                     ease: "backOut",
                   }}
                   animate={controls}
-                  className="bg-[rgba(79,70,229,0.3)] h-12 w-12"
+                  className="bg-[rgba(79,70,229,0.3)] h-8 w-8" // Slightly smaller cells to fit more
                 />
               </div>
             );
