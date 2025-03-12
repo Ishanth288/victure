@@ -112,7 +112,6 @@ export type Database = {
           ndc: string | null
           quantity: number
           reorder_point: number | null
-          selling_price: number | null
           status: string
           storage_condition: string | null
           strength: string | null
@@ -131,7 +130,6 @@ export type Database = {
           ndc?: string | null
           quantity?: number
           reorder_point?: number | null
-          selling_price?: number | null
           status?: string
           storage_condition?: string | null
           strength?: string | null
@@ -150,7 +148,6 @@ export type Database = {
           ndc?: string | null
           quantity?: number
           reorder_point?: number | null
-          selling_price?: number | null
           status?: string
           storage_condition?: string | null
           strength?: string | null

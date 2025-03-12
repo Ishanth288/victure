@@ -169,7 +169,7 @@ export function useInventoryForm(onSuccess: () => void) {
         strength: formData.strength.trim() || null,
         reorder_point: parseInt(formData.reorderPoint || "10"),
         storage_condition: formData.storage || null,
-        user_id: user.id // Add the user_id here
+        user_id: user.id
       };
 
       const { data: updatedItem, error } = await supabase
