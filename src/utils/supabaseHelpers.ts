@@ -5,6 +5,8 @@
 
 import { PostgrestFilterBuilder } from "@supabase/postgrest-js";
 import { PostgrestSingleResponse } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
 
 // Type guard to check if response is an error
 export function isQueryError(data: any): boolean {
@@ -49,12 +51,12 @@ export function safelySpreadObject<T>(obj: any, defaultValues: T): T {
   return { ...defaultValues, ...obj } as T;
 }
 
-// Type-safe filter for queries
-export function filterById(columnName: string, value: string | number, tableName?: string) {
-  // Return a function that accepts a query builder and applies the filter
-  return function <T extends PostgrestFilterBuilder<any, any, any>>(query: T): T {
-    return query.eq(columnName, value) as T;
-  };
+// Simplified filterById function
+export function filterById(tableName: string, id: any) {
+  return supabase
+    .from(tableName)
+    .select('*')
+    .eq('id', id);
 }
 
 // Type-safe insert for table data

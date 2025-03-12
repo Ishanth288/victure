@@ -6,6 +6,9 @@
 import { PostgrestError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { isQueryError, safelyGetProperty } from './supabaseHelpers';
+import { Database } from '@/integrations/supabase/types';
+
+type TableNames = keyof Database['public']['Tables'];
 
 /**
  * Safely handle any Supabase operation result
@@ -53,13 +56,16 @@ export async function safeOperation<T>(
  * Type-safe way to query by ID with error handling
  */
 export async function safeQueryById<T>(
-  table: string,
+  table: TableNames,
   id: string | number,
   defaultValue: T,
   idColumn: string = 'id'
 ): Promise<T> {
   return safeOperation(
-    () => supabase.from(table).select('*').eq(idColumn, id).single(),
+    async () => {
+      const result = await supabase.from(table).select('*').eq(idColumn, id).single();
+      return result;
+    },
     defaultValue
   );
 }
@@ -68,12 +74,15 @@ export async function safeQueryById<T>(
  * Type-safe way to insert a record
  */
 export async function safeInsert<T>(
-  table: string,
+  table: TableNames,
   data: Record<string, any>,
   defaultValue: T
 ): Promise<T> {
   return safeOperation(
-    () => supabase.from(table).insert([data as any]).select().single(),
+    async () => {
+      const result = await supabase.from(table).insert([data as any]).select().single();
+      return result;
+    },
     defaultValue
   );
 }
@@ -82,14 +91,17 @@ export async function safeInsert<T>(
  * Type-safe way to update a record
  */
 export async function safeUpdate<T>(
-  table: string,
+  table: TableNames,
   id: string | number,
   data: Record<string, any>,
   defaultValue: T,
   idColumn: string = 'id'
 ): Promise<T> {
   return safeOperation(
-    () => supabase.from(table).update(data as any).eq(idColumn, id).select().single(),
+    async () => {
+      const result = await supabase.from(table).update(data as any).eq(idColumn, id).select().single();
+      return result;
+    },
     defaultValue
   );
 }

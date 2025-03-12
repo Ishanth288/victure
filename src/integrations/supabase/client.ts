@@ -12,11 +12,6 @@ const SITE_URL = typeof window !== 'undefined' ? window.location.origin : 'https
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-interface CustomAuthOptions {
-  redirectTo?: string;
-  [key: string]: any;
-}
-
 export const supabase = createClient<Database>(
   SUPABASE_URL, 
   SUPABASE_PUBLISHABLE_KEY,
@@ -26,10 +21,8 @@ export const supabase = createClient<Database>(
       persistSession: true,
       detectSessionInUrl: true,
       flowType: 'implicit',
-      // Add custom type to support redirectTo
-      ...(({
-        redirectTo: `${SITE_URL}/auth`
-      } as CustomAuthOptions))
+      // Add the redirectTo property in a type-safe way
+      redirectTo: `${SITE_URL}/auth`
     }
   }
 );
