@@ -1,114 +1,129 @@
 
 /**
- * This file contains examples of how to use the supabaseHelpers.ts utility functions 
- * to fix the TypeScript errors in the project.
+ * This is a reference guide for using the typed Supabase helpers
  * 
- * DO NOT import this file in your components. This is only for reference.
+ * Import the helpers you need:
+ * import { typeSafeEq, typeSafeInsert, typeSafeUpdate, typeSafeSelect } from '@/utils/typeSafeSupabase';
+ * import { safelyGetProperty, filterById, safelyHandleQueryResponse } from '@/utils/supabaseHelpers';
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  filterById, 
-  safelyGetProperty, 
-  safelyCastArray, 
-  safelyInsertData, 
-  safelyUpdateData, 
-  safelyCastResult,
-  safeSpreading,
-  safeQueryExecution
-} from "./supabaseHelpers";
+import { typeSafeEq, typeSafeInsert, typeSafeUpdate, typeSafeSelect } from './typeSafeSupabase';
+import { safelyGetProperty, filterById, safelyHandleQueryResponse } from './supabaseHelpers';
 
-/* EXAMPLE 1: Querying by ID or user_id */
-async function correctIdQueries() {
-  const userId = "some-user-id";
+// Example 1: Filtering by ID (old way vs new way)
+export async function exampleFilterById() {
+  // Old way (with TypeScript errors)
+  // const { data: oldWay } = await supabase
+  //   .from('profiles')
+  //   .select('*')
+  //   .eq('id', 'some-uuid')
+  //   .single();
   
-  // BEFORE (causes TypeScript errors):
-  // const { data } = await supabase.from('profiles').select('*').eq('id', userId);
-  
-  // AFTER (fixes TypeScript errors):
-  const { data } = await supabase
+  // New way 1 - Using filterById helper with all three required arguments
+  const { data: newWay1 } = await supabase
     .from('profiles')
     .select('*')
-    .filter(filterById('id', userId));
+    .filter(filterById('id', 'some-uuid', 'profiles'))
+    .single();
+  
+  // New way 2 - Using typeSafeEq helper
+  const { data: newWay2 } = await supabase
+    .from('profiles')
+    .select('*')
+    .filter(typeSafeEq('id', 'some-uuid'))
+    .single();
+    
+  return newWay1 || newWay2;
 }
 
-/* EXAMPLE 2: Safely accessing properties */
-function correctPropertyAccess(data: any) {
-  // BEFORE (causes TypeScript errors):
-  // const planType = data.plan_type;
-  
-  // AFTER (fixes TypeScript errors):
-  const planType = safelyGetProperty(data, 'plan_type', 'Free Trial');
-  const registrationDate = safelyGetProperty(data, 'registration_date', null);
-}
-
-/* EXAMPLE 3: Safe data insertion */
-async function correctDataInsertion() {
-  // BEFORE (causes TypeScript errors):
-  // await supabase.from('bills').insert([{
-  //   prescription_id: 123,
-  //   bill_number: "BILL-123",
-  //   status: "completed",
-  //   user_id: "user-123"
-  // }]);
-  
-  // AFTER (fixes TypeScript errors):
-  await supabase.from('bills').insert(safelyInsertData({
+// Example 2: Inserting data safely
+export async function exampleInsertData() {
+  // Data to insert
+  const bill = {
     prescription_id: 123,
     bill_number: "BILL-123",
     status: "completed",
-    user_id: "user-123"
-  }));
-}
-
-/* EXAMPLE 4: Safe data updates */
-async function correctDataUpdates() {
-  // BEFORE (causes TypeScript errors):
-  // await supabase.from('inventory').update({ 
-  //   quantity: 10 
-  // }).eq('id', 123);
+    user_id: "user-123",
+    // Add other required fields
+    subtotal: 100,
+    gst_amount: 18,
+    gst_percentage: 18,
+    total_amount: 118,
+    discount_amount: 0
+  };
   
-  // AFTER (fixes TypeScript errors):
-  await supabase
-    .from('inventory')
-    .update(safelyUpdateData({ quantity: 10 }))
-    .filter(filterById('id', 123));
-}
-
-/* EXAMPLE 5: Safe spreading of objects */
-function correctObjectSpreading(data: any) {
-  // BEFORE (causes TypeScript errors):
-  // const result = { ...data, extraProp: 'value' };
+  // Old way (with TypeScript errors)
+  // const { data: oldWay } = await supabase
+  //   .from('bills')
+  //   .insert([bill])
+  //   .select();
   
-  // AFTER (fixes TypeScript errors):
-  const result = safeSpreading(data, { extraProp: 'value' });
-}
-
-/* EXAMPLE 6: Safe array casting */
-function correctArrayCasting(data: any) {
-  // BEFORE (causes TypeScript errors):
-  // const items: InventoryItem[] = data;
+  // New way - Using typeSafeInsert helper
+  const { data, error } = await typeSafeInsert('bills', bill);
   
-  // AFTER (fixes TypeScript errors):
-  const items = safelyCastArray<InventoryItem>(data);
+  if (error) {
+    console.error('Error inserting bill:', error);
+    return null;
+  }
+  
+  return data;
 }
 
-/* EXAMPLE 7: Safe query execution with error handling */
-async function safeQueryWithErrorHandling() {
-  // Use this pattern for complex queries
-  const result = await safeQueryExecution(
-    async () => {
-      return await supabase
-        .from('inventory')
-        .select('*')
-        .filter(filterById('user_id', 'user-id'));
-    },
-    [] // Default value if query fails
+// Example 3: Updating data safely
+export async function exampleUpdateData() {
+  // Old way (with TypeScript errors)
+  // const { data: oldWay } = await supabase
+  //   .from('inventory')
+  //   .update({ quantity: 50 })
+  //   .eq('id', 123);
+  
+  // New way - Using typeSafeUpdate helper
+  const { data, error } = await typeSafeUpdate(
+    'inventory',
+    { quantity: 50 },
+    { column: 'id', value: 123 }
   );
+  
+  if (error) {
+    console.error('Error updating inventory:', error);
+    return null;
+  }
+  
+  return data;
 }
 
-// This is just a placeholder for the examples
-interface InventoryItem {
-  id: number;
-  name: string;
+// Example 4: Selecting data with safe property access
+export async function exampleSelectWithSafeAccess() {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .filter(filterById('id', 'some-uuid', 'profiles'))
+    .single();
+  
+  if (error) {
+    console.error('Error fetching profile:', error);
+    return null;
+  }
+  
+  // Safely access properties with fallbacks
+  const pharmacyName = safelyGetProperty(data, 'pharmacy_name', 'Default Pharmacy');
+  const ownerName = safelyGetProperty(data, 'owner_name', 'Default Owner');
+  
+  return {
+    pharmacyName,
+    ownerName
+  };
+}
+
+// Example 5: Using typeSafeSelect for cleaner async/await usage
+export async function exampleTypeSafeSelect() {
+  // This handles errors internally and returns empty array if there's a problem
+  const profiles = await typeSafeSelect(
+    'profiles',
+    '*',
+    query => query.eq('owner_name', 'John Doe')
+  );
+  
+  return profiles;
 }

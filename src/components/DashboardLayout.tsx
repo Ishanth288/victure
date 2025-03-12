@@ -10,7 +10,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { PlanBanner } from "@/components/PlanBanner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
-import { safelyGetProperty, filterById } from "@/utils/supabaseHelpers";
+import { 
+  safelyGetProperty, 
+  filterById, 
+  safelyHandleQueryResponse, 
+  safelySpreadObject 
+} from "@/utils/supabaseHelpers";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -54,7 +59,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .filter(filterById('id', session.user.id))
+        .filter(filterById('id', session.user.id, 'profiles'))
         .single();
 
       if (!error && data) {
@@ -211,3 +216,57 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     </div>
   );
 }
+
+// Define sidebarLinks here, outside the component to avoid recalculating it on every render
+const sidebarLinks = [
+  {
+    label: "Dashboard",
+    href: "/dashboard",
+    icon: <LayoutGrid className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+  },
+  {
+    label: "Inventory",
+    href: "/inventory",
+    icon: <Package className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+  },
+  {
+    label: "Billing",
+    href: "/billing",
+    icon: <DollarSign className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+  },
+  {
+    label: "Prescriptions",
+    href: "/prescriptions",
+    icon: <FileText className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+  },
+  {
+    label: "Patients",
+    href: "/patients",
+    icon: <Users className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+  },
+  {
+    label: "Purchases",
+    href: "/purchases",
+    icon: <ShoppingCart className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+  },
+  {
+    label: "Insights",
+    href: "/insights",
+    icon: <LineChart className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+  },
+  {
+    label: "Settings",
+    href: "/settings",
+    icon: <Settings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+  },
+  {
+    label: "Terms & Conditions",
+    href: "#",
+    icon: <FileTerminal className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+  },
+  {
+    label: "Sign Out",
+    href: "#",
+    icon: <LogOut className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+  }
+];

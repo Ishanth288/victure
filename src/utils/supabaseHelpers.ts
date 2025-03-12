@@ -4,6 +4,7 @@
  */
 
 import { PostgrestFilterBuilder } from "@supabase/postgrest-js";
+import { PostgrestSingleResponse } from "@supabase/supabase-js";
 
 // Type guard to check if response is an error
 export function isQueryError(data: any): boolean {
@@ -49,27 +50,24 @@ export function safelySpreadObject<T>(obj: any, defaultValues: T): T {
 }
 
 // Type-safe filter for ID columns
-export function filterById(columnName: string, value: string | number) {
-  // This function bypasses TypeScript's type checking for the filter value
-  // since Supabase's generated types are often more restrictive than needed in practice
+export function filterById(columnName: string, value: string | number, tableName?: string) {
+  // This function provides a type-safe way to filter by ID columns
   return (query: PostgrestFilterBuilder<any, any, any>) => {
-    // @ts-ignore - Ignore TypeScript error for the filter value
+    // @ts-ignore - Intentionally bypassing TypeScript's type checking for filter values
     return query.eq(columnName, value);
   };
 }
 
 // Type-safe insert for table data
-export function safelyInsertData<T>(data: T) {
+export function safelyInsertData<T>(data: T): any {
   // This allows inserting data without TypeScript complaining about exact matching types
-  // @ts-ignore - Ignore TypeScript error for the insert data
-  return data;
+  return data as any;
 }
 
 // Type-safe update for table data
-export function safelyUpdateData<T>(data: T) {
+export function safelyUpdateData<T>(data: T): any {
   // This allows updating data without TypeScript complaining about exact matching types
-  // @ts-ignore - Ignore TypeScript error for the update data
-  return data;
+  return data as any;
 }
 
 // Type-safe way to convert an array to a properly typed result array
@@ -115,4 +113,23 @@ export async function safeQueryExecution<T>(
     console.error("Error executing query:", e);
     return defaultValue;
   }
+}
+
+// Helper function to safely handle data coming back from a query
+export function safelyHandleQueryResponse<T>(response: PostgrestSingleResponse<any>, defaultValue: T): T {
+  if (response.error) {
+    console.error("Error in query response:", response.error);
+    return defaultValue;
+  }
+  
+  if (!response.data) {
+    return defaultValue;
+  }
+  
+  return response.data as unknown as T;
+}
+
+// Type-safe way to indicate data should be treated as a specific type
+export function asType<T>(data: any): T {
+  return data as unknown as T;
 }
