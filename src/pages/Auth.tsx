@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,9 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { INDIAN_STATES } from "@/constants/states";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle, X, Info, Home } from "lucide-react";
-import { BackgroundCells } from "@/components/ui/background-cells";
-import { Link } from "react-router-dom";
+import { AlertCircle, CheckCircle, X, Info } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -45,9 +44,11 @@ export default function Auth() {
     gstin: "",
   });
 
+  // Get plan information from location state
   const fromPricing = location.state?.fromPricing || false;
   const planType = location.state?.planType || 'Free Trial';
 
+  // Show the Free Trial info even when switching from login to signup
   const showFreePlanInfo = !isLogin;
 
   const [passwordValidation, setPasswordValidation] = useState({
@@ -83,14 +84,9 @@ export default function Auth() {
       const hash = window.location.hash;
       const searchParams = new URLSearchParams(window.location.search);
       
-      const accessToken = searchParams.get('access_token') || 
-                           (hash.includes('access_token=') ? hash.split('access_token=')[1]?.split('&')[0] : null);
-      const refreshToken = searchParams.get('refresh_token') || 
-                           (hash.includes('refresh_token=') ? hash.split('refresh_token=')[1]?.split('&')[0] : null);
-      const tokenType = searchParams.get('type') || 
-                        (hash.includes('type=') ? hash.split('type=')[1]?.split('&')[0] : null);
-      
-      console.log("Verification check:", { accessToken: !!accessToken, tokenType, hash, params: Object.fromEntries(searchParams) });
+      const accessToken = searchParams.get('access_token') || (hash.includes('access_token=') ? hash.split('access_token=')[1]?.split('&')[0] : null);
+      const refreshToken = searchParams.get('refresh_token') || (hash.includes('refresh_token=') ? hash.split('refresh_token=')[1]?.split('&')[0] : null);
+      const tokenType = searchParams.get('type') || (hash.includes('type=') ? hash.split('type=')[1]?.split('&')[0] : null);
       
       if (tokenType === 'recovery' || tokenType === 'signup' || tokenType === 'email_verification' || accessToken) {
         try {
@@ -244,68 +240,50 @@ export default function Auth() {
 
   if (isVerifying) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <BackgroundCells className="bg-slate-950" />
-        <div className="absolute top-4 left-4 z-50">
-          <Button asChild variant="ghost" className="text-white hover:text-indigo-300 hover:bg-indigo-950/50">
-            <Link to="/">
-              <Home className="h-5 w-5 mr-2" />
-              Home
-            </Link>
-          </Button>
-        </div>
-        <div className="relative z-30">
-          <Card className="w-full max-w-md shadow-xl border-opacity-50 bg-black/30 backdrop-blur-md border-white/10 text-white">
-            <CardHeader>
-              <CardTitle className="text-2xl text-center">Verifying Your Email</CardTitle>
-              <CardDescription className="text-center text-gray-300">
-                Please wait while we verify your email address...
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center py-6">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-400"></div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
+        <Card className="w-full max-w-md relative z-10 shadow-xl border-opacity-50">
+          <CardHeader>
+            <CardTitle className="text-2xl text-center">Verifying Your Email</CardTitle>
+            <CardDescription className="text-center">
+              Please wait while we verify your email address...
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center py-6">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (verificationSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <BackgroundCells className="bg-slate-950" />
-        <div className="absolute top-4 left-4 z-50">
-          <Button asChild variant="ghost" className="text-white hover:text-indigo-300 hover:bg-indigo-950/50">
-            <Link to="/">
-              <Home className="h-5 w-5 mr-2" />
-              Home
-            </Link>
-          </Button>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-md relative z-30"
+          className="w-full max-w-md relative z-10"
         >
-          <Card className="shadow-xl border-opacity-50 bg-black/30 backdrop-blur-md border-white/10 text-white">
+          <Card className="shadow-xl border-opacity-50">
             <CardHeader>
-              <CardTitle className="text-2xl text-center text-indigo-400">
+              <CardTitle className="text-2xl text-center text-green-600">
                 Email Verified Successfully!
               </CardTitle>
-              <CardDescription className="text-center text-gray-300">
+              <CardDescription className="text-center">
                 Your account has been verified. You can now log in.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center space-y-4">
-              <div className="rounded-full bg-indigo-900/50 p-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="rounded-full bg-green-100 p-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               <Button 
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" 
+                className="w-full" 
                 onClick={() => {
                   setVerificationSuccess(false);
                   setIsLogin(true);
@@ -321,29 +299,27 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen relative flex flex-col items-center justify-center p-4 overflow-hidden">
-      <BackgroundCells className="bg-slate-950" />
-      <div className="absolute top-4 left-4 z-50">
-        <Button asChild variant="ghost" className="text-white hover:text-indigo-300 hover:bg-indigo-950/50">
-          <Link to="/">
-            <Home className="h-5 w-5 mr-2" />
-            Home
-          </Link>
-        </Button>
-      </div>
+    <div className="min-h-screen relative flex flex-col items-center justify-center p-4 overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+      {/* Decorative Background Elements */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
+      
+      {/* Animated shapes */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+      <div className="absolute top-0 right-0 w-96 h-96 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+      <div className="absolute -bottom-8 left-20 w-96 h-96 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
       
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md relative z-30"
+        className="w-full max-w-md relative z-10"
       >
-        <Card className="shadow-xl backdrop-blur-md bg-black/30 border-white/10 text-white">
+        <Card className="shadow-xl backdrop-blur-sm bg-white/90 border-opacity-50">
           <CardHeader>
             <CardTitle className="text-2xl text-center">
               {isLogin ? "Welcome Back" : "Create Account"}
             </CardTitle>
-            <CardDescription className="text-center text-gray-300">
+            <CardDescription className="text-center">
               {isLogin
                 ? "Sign in to your pharmacy account"
                 : "Register your pharmacy"}
@@ -353,7 +329,7 @@ export default function Auth() {
             {authMessage.type && (
               <Alert 
                 variant={authMessage.type === 'error' ? 'destructive' : 'default'} 
-                className={`mb-4 ${authMessage.type === 'success' ? 'bg-indigo-900/50 text-indigo-300 border-indigo-700' : authMessage.type === 'info' ? 'bg-blue-900/50 text-blue-300 border-blue-700' : 'bg-red-900/50 text-red-300 border-red-700'}`}
+                className={`mb-4 ${authMessage.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : authMessage.type === 'info' ? 'bg-blue-50 text-blue-800 border-blue-200' : ''}`}
               >
                 {authMessage.type === 'error' ? (
                   <AlertCircle className="h-4 w-4" />
@@ -371,8 +347,9 @@ export default function Auth() {
               </Alert>
             )}
 
+            {/* Free Trial Plan Notice - Show when not in login mode */}
             {showFreePlanInfo && (
-              <Alert className="mb-4 bg-indigo-900/50 text-indigo-300 border-indigo-700">
+              <Alert className="mb-4 bg-blue-50 text-blue-800 border-blue-200">
                 <Info className="h-4 w-4" />
                 <AlertTitle>Free Trial Plan</AlertTitle>
                 <AlertDescription>
@@ -392,7 +369,7 @@ export default function Auth() {
               {!isLogin && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="pharmacyName" className="text-white">Pharmacy Name*</Label>
+                    <Label htmlFor="pharmacyName">Pharmacy Name*</Label>
                     <Input
                       id="pharmacyName"
                       value={formData.pharmacyName}
@@ -401,11 +378,10 @@ export default function Auth() {
                       }
                       required={!isLogin}
                       placeholder="Enter pharmacy name"
-                      className="bg-black/50 border-indigo-800/50 focus:border-indigo-500 text-white placeholder:text-gray-400"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="ownerName" className="text-white">Owner Name*</Label>
+                    <Label htmlFor="ownerName">Owner Name*</Label>
                     <Input
                       id="ownerName"
                       value={formData.ownerName}
@@ -414,11 +390,10 @@ export default function Auth() {
                       }
                       required={!isLogin}
                       placeholder="Enter owner name"
-                      className="bg-black/50 border-indigo-800/50 focus:border-indigo-500 text-white placeholder:text-gray-400"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-white">Phone Number*</Label>
+                    <Label htmlFor="phone">Phone Number*</Label>
                     <Input
                       id="phone"
                       type="tel"
@@ -428,11 +403,10 @@ export default function Auth() {
                       }
                       required={!isLogin}
                       placeholder="Enter phone number"
-                      className="bg-black/50 border-indigo-800/50 focus:border-indigo-500 text-white placeholder:text-gray-400"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="address" className="text-white">Address*</Label>
+                    <Label htmlFor="address">Address*</Label>
                     <Input
                       id="address"
                       value={formData.address}
@@ -441,12 +415,11 @@ export default function Auth() {
                       }
                       required={!isLogin}
                       placeholder="Enter complete address"
-                      className="bg-black/50 border-indigo-800/50 focus:border-indigo-500 text-white placeholder:text-gray-400"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="city" className="text-white">City*</Label>
+                      <Label htmlFor="city">City*</Label>
                       <Input
                         id="city"
                         value={formData.city}
@@ -455,21 +428,20 @@ export default function Auth() {
                         }
                         required={!isLogin}
                         placeholder="Enter city"
-                        className="bg-black/50 border-indigo-800/50 focus:border-indigo-500 text-white placeholder:text-gray-400"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="state" className="text-white">State*</Label>
+                      <Label htmlFor="state">State*</Label>
                       <Select 
                         value={formData.state}
                         onValueChange={(value) => updateFormData("state", value)}
                       >
-                        <SelectTrigger className="bg-black/50 border-indigo-800/50 text-white focus:ring-indigo-500">
-                          <SelectValue placeholder="Select state" className="text-gray-400" />
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Select state" />
                         </SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-indigo-800 text-white">
+                        <SelectContent className="bg-white">
                           {INDIAN_STATES.map((state) => (
-                            <SelectItem key={state} value={state} className="focus:bg-indigo-900 focus:text-white">
+                            <SelectItem key={state} value={state}>
                               {state}
                             </SelectItem>
                           ))}
@@ -479,7 +451,7 @@ export default function Auth() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="pincode" className="text-white">PIN Code*</Label>
+                      <Label htmlFor="pincode">PIN Code*</Label>
                       <Input
                         id="pincode"
                         value={formData.pincode}
@@ -488,11 +460,10 @@ export default function Auth() {
                         }
                         required={!isLogin}
                         placeholder="Enter PIN code"
-                        className="bg-black/50 border-indigo-800/50 focus:border-indigo-500 text-white placeholder:text-gray-400"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="gstin" className="text-white">GSTIN (Optional)</Label>
+                      <Label htmlFor="gstin">GSTIN (Optional)</Label>
                       <Input
                         id="gstin"
                         value={formData.gstin}
@@ -500,14 +471,13 @@ export default function Auth() {
                           updateFormData("gstin", e.target.value)
                         }
                         placeholder="Enter GSTIN"
-                        className="bg-black/50 border-indigo-800/50 focus:border-indigo-500 text-white placeholder:text-gray-400"
                       />
                     </div>
                   </div>
                 </>
               )}
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-white">Email*</Label>
+                <Label htmlFor="email">Email*</Label>
                 <Input
                   id="email"
                   type="email"
@@ -517,11 +487,10 @@ export default function Auth() {
                   }
                   required
                   placeholder="Enter email address"
-                  className="bg-black/50 border-indigo-800/50 focus:border-indigo-500 text-white placeholder:text-gray-400"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-white">Password*</Label>
+                <Label htmlFor="password">Password*</Label>
                 <Input
                   id="password"
                   type="password"
@@ -531,30 +500,30 @@ export default function Auth() {
                   }
                   required
                   placeholder="Enter password"
-                  className={`bg-black/50 focus:border-indigo-500 text-white placeholder:text-gray-400 ${!isLogin && formData.password ? (passwordValidation.isValid ? "border-indigo-500" : "border-red-500") : "border-indigo-800/50"}`}
+                  className={!isLogin && formData.password ? (passwordValidation.isValid ? "border-green-500" : "border-red-500") : ""}
                 />
                 
                 {!isLogin && formData.password && (
                   <div className="mt-2 text-sm">
-                    <p className="font-medium mb-1 text-white">Password requirements:</p>
+                    <p className="font-medium mb-1">Password requirements:</p>
                     <ul className="space-y-1">
                       <li className="flex items-center">
                         {passwordValidation.minLength ? (
-                          <CheckCircle className="h-4 w-4 text-indigo-500 mr-2" />
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
                         ) : (
                           <X className="h-4 w-4 text-red-500 mr-2" />
                         )}
-                        <span className={passwordValidation.minLength ? "text-indigo-400" : "text-red-400"}>
+                        <span className={passwordValidation.minLength ? "text-green-600" : "text-red-600"}>
                           At least 6 characters
                         </span>
                       </li>
                       <li className="flex items-center">
                         {passwordValidation.hasNumber ? (
-                          <CheckCircle className="h-4 w-4 text-indigo-500 mr-2" />
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
                         ) : (
                           <X className="h-4 w-4 text-red-500 mr-2" />
                         )}
-                        <span className={passwordValidation.hasNumber ? "text-indigo-400" : "text-red-400"}>
+                        <span className={passwordValidation.hasNumber ? "text-green-600" : "text-red-600"}>
                           Contains at least one number
                         </span>
                       </li>
@@ -562,11 +531,7 @@ export default function Auth() {
                   </div>
                 )}
               </div>
-              <Button 
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" 
-                type="submit" 
-                disabled={isLoading || (!isLogin && formData.password && !passwordValidation.isValid)}
-              >
+              <Button className="w-full" type="submit" disabled={isLoading || (!isLogin && formData.password && !passwordValidation.isValid)}>
                 {isLoading
                   ? isLogin
                     ? "Signing in..."
@@ -579,7 +544,7 @@ export default function Auth() {
             <div className="mt-4 text-center">
               <button
                 onClick={() => setIsLogin(!isLogin)}
-                className="text-sm text-indigo-400 hover:underline"
+                className="text-sm text-primary hover:underline"
               >
                 {isLogin
                   ? "Don't have an account? Sign up"

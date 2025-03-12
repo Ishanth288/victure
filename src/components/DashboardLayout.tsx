@@ -10,12 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { PlanBanner } from "@/components/PlanBanner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
-import { 
-  safelyGetProperty, 
-  safeSpreading,
-  safelyHandleQueryResponse 
-} from "@/utils/supabaseHelpers";
-import { fetchByColumn } from "@/utils/typeSafeSupabase";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -64,7 +58,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       if (!error && data) {
         setProfileData(data);
-        localStorage.setItem('pharmacyName', safelyGetProperty(data, 'pharmacy_name', 'My Pharmacy'));
+        localStorage.setItem('pharmacyName', data.pharmacy_name);
       }
     }
   };
@@ -92,6 +86,59 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     </div>;
   }
 
+  const sidebarLinks = [
+    {
+      label: "Dashboard",
+      href: "/dashboard",
+      icon: <LayoutGrid className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Inventory",
+      href: "/inventory",
+      icon: <Package className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Billing",
+      href: "/billing",
+      icon: <DollarSign className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Prescriptions",
+      href: "/prescriptions",
+      icon: <FileText className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Patients",
+      href: "/patients",
+      icon: <Users className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Purchases",
+      href: "/purchases",
+      icon: <ShoppingCart className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Insights",
+      href: "/insights",
+      icon: <LineChart className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Settings",
+      href: "/settings",
+      icon: <Settings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Terms & Conditions",
+      href: "#",
+      icon: <FileTerminal className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
+      label: "Sign Out",
+      href: "#",
+      icon: <LogOut className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    }
+  ];
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar open={isSidebarOpen} setOpen={setIsSidebarOpen}>
@@ -108,7 +155,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </Button>
               <div className="flex items-center">
                 <span className="text-lg font-medium text-primary">
-                  {safelyGetProperty(profileData, 'pharmacy_name', 'Medplus')}
+                  {profileData?.pharmacy_name || 'Medplus'}
                 </span>
               </div>
             </div>
@@ -148,7 +195,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
           <div className="flex items-center">
             <span className="text-sm font-medium mr-4">
-              {safelyGetProperty(profileData, 'owner_name', 'Loading...')}
+              {profileData?.owner_name || 'Loading...'}
             </span>
           </div>
         </header>
@@ -163,57 +210,3 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     </div>
   );
 }
-
-// Define sidebarLinks here, outside the component to avoid recalculating it on every render
-const sidebarLinks = [
-  {
-    label: "Dashboard",
-    href: "/dashboard",
-    icon: <LayoutGrid className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-  },
-  {
-    label: "Inventory",
-    href: "/inventory",
-    icon: <Package className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-  },
-  {
-    label: "Billing",
-    href: "/billing",
-    icon: <DollarSign className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-  },
-  {
-    label: "Prescriptions",
-    href: "/prescriptions",
-    icon: <FileText className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-  },
-  {
-    label: "Patients",
-    href: "/patients",
-    icon: <Users className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-  },
-  {
-    label: "Purchases",
-    href: "/purchases",
-    icon: <ShoppingCart className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-  },
-  {
-    label: "Insights",
-    href: "/insights",
-    icon: <LineChart className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-  },
-  {
-    label: "Settings",
-    href: "/settings",
-    icon: <Settings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-  },
-  {
-    label: "Terms & Conditions",
-    href: "#",
-    icon: <FileTerminal className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-  },
-  {
-    label: "Sign Out",
-    href: "#",
-    icon: <LogOut className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-  }
-];

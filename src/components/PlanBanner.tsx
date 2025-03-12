@@ -8,12 +8,6 @@ import { format, differenceInDays } from 'date-fns';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  safelyGetProperty,
-  safelyHandleQueryResponse,
-  safelySpreadObject
-} from "@/utils/supabaseHelpers";
-import { fetchByColumn } from "@/utils/typeSafeSupabase";
 
 // Add types for plan information
 interface PlanInfo {
@@ -72,21 +66,18 @@ export function PlanBanner() {
       if (data) {
         // Calculate days remaining (only for Free Trial)
         let daysRemaining = 0;
-        const planType = safelyGetProperty(data, 'plan_type', 'Free Trial');
-        const trialExpirationDate = safelyGetProperty(data, 'trial_expiration_date', null);
-        
-        if (planType === 'Free Trial' && trialExpirationDate) {
-          const expirationDate = new Date(trialExpirationDate);
+        if (data.plan_type === 'Free Trial' && data.trial_expiration_date) {
+          const expirationDate = new Date(data.trial_expiration_date);
           daysRemaining = differenceInDays(expirationDate, new Date());
           daysRemaining = daysRemaining > 0 ? daysRemaining : 0;
         }
         
         setPlanInfo({
-          planType: safelyGetProperty(data, 'plan_type', 'Free Trial'),
-          registrationDate: safelyGetProperty(data, 'registration_date', null),
-          trialExpirationDate: safelyGetProperty(data, 'trial_expiration_date', null),
-          monthlyBillsCount: safelyGetProperty(data, 'monthly_bills_count', 0),
-          dailyBillsCount: safelyGetProperty(data, 'daily_bills_count', 0),
+          planType: data.plan_type,
+          registrationDate: data.registration_date,
+          trialExpirationDate: data.trial_expiration_date,
+          monthlyBillsCount: data.monthly_bills_count || 0,
+          dailyBillsCount: data.daily_bills_count || 0,
           inventoryCount: inventoryCount || 0,
           daysRemaining: daysRemaining
         });
@@ -252,8 +243,8 @@ export function PlanBanner() {
   
   // Below code is for Free Trial plan
   // Determine banner color based on days remaining
-  const isExpiringSoon = planInfo?.daysRemaining <= 5;
-  const isExpired = planInfo?.daysRemaining <= 0;
+  const isExpiringSoon = planInfo.daysRemaining <= 5;
+  const isExpired = planInfo.daysRemaining <= 0;
   
   // Banner colors
   const bannerClasses = isExpired 

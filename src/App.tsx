@@ -21,7 +21,7 @@ function App() {
       <div className="h-screen w-full">
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
+          <Route path="/auth" element={<><Navigation /><Auth /></>} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/billing" element={<Billing />} />
