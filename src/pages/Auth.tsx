@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -84,9 +83,14 @@ export default function Auth() {
       const hash = window.location.hash;
       const searchParams = new URLSearchParams(window.location.search);
       
-      const accessToken = searchParams.get('access_token') || (hash.includes('access_token=') ? hash.split('access_token=')[1]?.split('&')[0] : null);
-      const refreshToken = searchParams.get('refresh_token') || (hash.includes('refresh_token=') ? hash.split('refresh_token=')[1]?.split('&')[0] : null);
-      const tokenType = searchParams.get('type') || (hash.includes('type=') ? hash.split('type=')[1]?.split('&')[0] : null);
+      const accessToken = searchParams.get('access_token') || 
+                           (hash.includes('access_token=') ? hash.split('access_token=')[1]?.split('&')[0] : null);
+      const refreshToken = searchParams.get('refresh_token') || 
+                           (hash.includes('refresh_token=') ? hash.split('refresh_token=')[1]?.split('&')[0] : null);
+      const tokenType = searchParams.get('type') || 
+                        (hash.includes('type=') ? hash.split('type=')[1]?.split('&')[0] : null);
+      
+      console.log("Verification check:", { accessToken: !!accessToken, tokenType, hash, params: Object.fromEntries(searchParams) });
       
       if (tokenType === 'recovery' || tokenType === 'signup' || tokenType === 'email_verification' || accessToken) {
         try {
