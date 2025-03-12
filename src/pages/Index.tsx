@@ -132,8 +132,8 @@ const Index = () => {
               
               <div className="hidden md:block bg-primary/10 rounded-xl p-6 h-full">
                 <img 
-                  src="/placeholder.svg" 
-                  alt="Pharmacy Dashboard" 
+                  src="/lovable-uploads/93e91152-c4a8-4723-9a9b-dca03c7f8236.png" 
+                  alt="Pharmacy Management Dashboard" 
                   className="w-full h-full object-cover rounded-lg shadow-lg"
                 />
               </div>
