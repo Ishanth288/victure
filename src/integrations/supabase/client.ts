@@ -17,7 +17,10 @@ export const supabase = createClient<Database>(
   SUPABASE_PUBLISHABLE_KEY,
   {
     auth: {
-      // This ensures auth redirects go to the correct URL instead of localhost
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      flowType: 'implicit',
       redirectTo: `${SITE_URL}/auth`
     }
   }

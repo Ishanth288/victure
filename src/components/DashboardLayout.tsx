@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PlanBanner } from "@/components/PlanBanner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
+import { safelyGetProperty, safelyUnwrapData, toFilterValue } from "@/utils/supabaseHelpers";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -53,12 +54,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', session.user.id)
+        .eq('id', toFilterValue(session.user.id))
         .single();
 
       if (!error && data) {
         setProfileData(data);
-        localStorage.setItem('pharmacyName', data.pharmacy_name);
+        localStorage.setItem('pharmacyName', safelyGetProperty(data, 'pharmacy_name', 'My Pharmacy'));
       }
     }
   };
@@ -155,7 +156,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </Button>
               <div className="flex items-center">
                 <span className="text-lg font-medium text-primary">
-                  {profileData?.pharmacy_name || 'Medplus'}
+                  {safelyGetProperty(profileData, 'pharmacy_name', 'Medplus')}
                 </span>
               </div>
             </div>
@@ -195,7 +196,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
           <div className="flex items-center">
             <span className="text-sm font-medium mr-4">
-              {profileData?.owner_name || 'Loading...'}
+              {safelyGetProperty(profileData, 'owner_name', 'Loading...')}
             </span>
           </div>
         </header>
