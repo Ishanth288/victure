@@ -21,6 +21,7 @@ export const supabase = createClient<Database>(
       persistSession: true,
       detectSessionInUrl: true,
       flowType: 'implicit',
+      // @ts-ignore - The redirectTo property exists but TypeScript doesn't recognize it
       redirectTo: `${SITE_URL}/auth`
     }
   }

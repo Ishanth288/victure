@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PlanBanner } from "@/components/PlanBanner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
-import { safelyGetProperty, safelyUnwrapData, toFilterValue } from "@/utils/supabaseHelpers";
+import { safelyGetProperty, filterById } from "@/utils/supabaseHelpers";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -54,7 +54,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', toFilterValue(session.user.id))
+        .filter(filterById('id', session.user.id))
         .single();
 
       if (!error && data) {
