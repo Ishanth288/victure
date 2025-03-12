@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,11 +9,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
-  filterById, 
   safelyGetProperty,
   safelyHandleQueryResponse,
   safelySpreadObject
 } from "@/utils/supabaseHelpers";
+import { fetchByColumn } from "@/utils/typeSafeSupabase";
 
 // Add types for plan information
 interface PlanInfo {
@@ -50,7 +51,7 @@ export function PlanBanner() {
       const { data, error: profileError } = await supabase
         .from('profiles')
         .select('plan_type, registration_date, trial_expiration_date, monthly_bills_count, daily_bills_count')
-        .filter(filterById('id', user.id, 'profiles'))
+        .eq('id', user.id)
         .single();
       
       if (profileError) {
@@ -62,7 +63,7 @@ export function PlanBanner() {
       const { count: inventoryCount, error: inventoryError } = await supabase
         .from('inventory')
         .select('*', { count: 'exact', head: true })
-        .filter(filterById('user_id', user.id, 'inventory'));
+        .eq('user_id', user.id);
         
       if (inventoryError) {
         console.error('Inventory error:', inventoryError);

@@ -12,6 +12,11 @@ const SITE_URL = typeof window !== 'undefined' ? window.location.origin : 'https
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+interface CustomAuthOptions {
+  redirectTo?: string;
+  [key: string]: any;
+}
+
 export const supabase = createClient<Database>(
   SUPABASE_URL, 
   SUPABASE_PUBLISHABLE_KEY,
@@ -21,9 +26,10 @@ export const supabase = createClient<Database>(
       persistSession: true,
       detectSessionInUrl: true,
       flowType: 'implicit',
-      // Add custom type for auth options to support redirectTo
-      // @ts-ignore - The redirectTo property exists but TypeScript doesn't recognize it in the current types
-      redirectTo: `${SITE_URL}/auth`
+      // Add custom type to support redirectTo
+      ...(({
+        redirectTo: `${SITE_URL}/auth`
+      } as CustomAuthOptions))
     }
   }
 );

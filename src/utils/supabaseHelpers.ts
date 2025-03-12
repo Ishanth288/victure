@@ -49,25 +49,22 @@ export function safelySpreadObject<T>(obj: any, defaultValues: T): T {
   return { ...defaultValues, ...obj } as T;
 }
 
-// Type-safe filter for ID columns
+// Type-safe filter for queries
 export function filterById(columnName: string, value: string | number, tableName?: string) {
-  // This function provides a type-safe way to filter by ID columns
-  return (query: PostgrestFilterBuilder<any, any, any>) => {
-    // @ts-ignore - Intentionally bypassing TypeScript's type checking for filter values
-    return query.eq(columnName, value);
+  // Return a function that accepts a query builder and applies the filter
+  return function <T extends PostgrestFilterBuilder<any, any, any>>(query: T): T {
+    return query.eq(columnName, value) as T;
   };
 }
 
 // Type-safe insert for table data
-export function safelyInsertData<T>(data: T): any {
-  // This allows inserting data without TypeScript complaining about exact matching types
-  return data as any;
+export function safelyInsertData<T>(data: T): T {
+  return data;
 }
 
 // Type-safe update for table data
-export function safelyUpdateData<T>(data: T): any {
-  // This allows updating data without TypeScript complaining about exact matching types
-  return data as any;
+export function safelyUpdateData<T>(data: T): T {
+  return data;
 }
 
 // Type-safe way to convert an array to a properly typed result array
@@ -76,13 +73,11 @@ export function safelyCastResult<T>(data: any): T[] {
     return [] as T[];
   }
   
-  // @ts-ignore - Force the type conversion
   return data as T[];
 }
 
 // Convert a value to the proper format for filter matching with eq()
 export function toFilterValue(value: string | number): string | number {
-  // Handle UUIDs or IDs depending on your schema
   return value;
 }
 
@@ -132,4 +127,21 @@ export function safelyHandleQueryResponse<T>(response: PostgrestSingleResponse<a
 // Type-safe way to indicate data should be treated as a specific type
 export function asType<T>(data: any): T {
   return data as unknown as T;
+}
+
+// Type-safe insertion helper for Supabase
+export function safeInsert<T extends Record<string, any>>(data: T) {
+  return [data];
+}
+
+// Cast data to unknown first, then to the target type
+export function safeCast<T>(data: any): T {
+  return data as unknown as T;
+}
+
+// Safe spread to prevent type errors with possibly undefined objects
+export function safeSpread<T extends Record<string, any>>(obj: any | null | undefined, defaultValue: T): T {
+  if (!obj) return defaultValue;
+  if (isQueryError(obj)) return defaultValue;
+  return { ...defaultValue, ...obj } as T;
 }

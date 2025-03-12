@@ -12,10 +12,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { 
   safelyGetProperty, 
-  filterById, 
-  safelyHandleQueryResponse, 
-  safelySpreadObject 
+  safeSpreading,
+  safelyHandleQueryResponse 
 } from "@/utils/supabaseHelpers";
+import { fetchByColumn } from "@/utils/typeSafeSupabase";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -59,7 +59,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .filter(filterById('id', session.user.id, 'profiles'))
+        .eq('id', session.user.id)
         .single();
 
       if (!error && data) {
@@ -91,59 +91,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       Loading...
     </div>;
   }
-
-  const sidebarLinks = [
-    {
-      label: "Dashboard",
-      href: "/dashboard",
-      icon: <LayoutGrid className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-    },
-    {
-      label: "Inventory",
-      href: "/inventory",
-      icon: <Package className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-    },
-    {
-      label: "Billing",
-      href: "/billing",
-      icon: <DollarSign className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-    },
-    {
-      label: "Prescriptions",
-      href: "/prescriptions",
-      icon: <FileText className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-    },
-    {
-      label: "Patients",
-      href: "/patients",
-      icon: <Users className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-    },
-    {
-      label: "Purchases",
-      href: "/purchases",
-      icon: <ShoppingCart className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-    },
-    {
-      label: "Insights",
-      href: "/insights",
-      icon: <LineChart className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-    },
-    {
-      label: "Settings",
-      href: "/settings",
-      icon: <Settings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-    },
-    {
-      label: "Terms & Conditions",
-      href: "#",
-      icon: <FileTerminal className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-    },
-    {
-      label: "Sign Out",
-      href: "#",
-      icon: <LogOut className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-    }
-  ];
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
