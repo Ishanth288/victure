@@ -130,12 +130,32 @@ const Index = () => {
                 </motion.div>
               </div>
               
-              <div className="hidden md:block bg-primary/10 rounded-xl p-6 h-full">
-                <img 
-                  src="/lovable-uploads/93e91152-c4a8-4723-9a9b-dca03c7f8236.png" 
-                  alt="Pharmacy Management Dashboard" 
-                  className="w-full h-full object-cover rounded-lg shadow-lg"
-                />
+              <div className="hidden md:flex md:justify-center md:items-center md:h-full">
+                <div className="pharmacy-gradient w-full h-[400px] relative overflow-hidden rounded-xl shadow-xl">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-white text-center p-6">
+                      <h3 className="text-3xl font-bold mb-4">PharmaSys</h3>
+                      <p className="text-lg mb-6">Complete Pharmacy Management Solution</p>
+                      <div className="flex justify-center space-x-4">
+                        <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                        </div>
+                        <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                          </svg>
+                        </div>
+                        <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </ContainerScroll>
