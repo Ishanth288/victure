@@ -13,7 +13,6 @@ const initialFormData: InventoryItemFormData = {
   strength: "",
   unitSize: "",
   unitCost: "",
-  sellingPrice: "",
   quantity: "",
   reorderPoint: "10",
   expiryDate: "",
@@ -69,7 +68,6 @@ export function useInventoryForm(onSuccess: () => void) {
       const unitCost = parseFloat(formData.unitCost);
       const quantity = parseInt(formData.quantity);
       const reorderPoint = parseInt(formData.reorderPoint || "10");
-      const sellingPrice = formData.sellingPrice ? parseFloat(formData.sellingPrice) : null;
 
       if (isNaN(unitCost) || isNaN(quantity)) {
         toast({
@@ -93,7 +91,6 @@ export function useInventoryForm(onSuccess: () => void) {
         status: 'in stock',
         generic_name: formData.genericName.trim() || null,
         strength: formData.strength.trim() || null,
-        selling_price: sellingPrice,
         reorder_point: reorderPoint,
         storage_condition: formData.storage || null,
         user_id: user.id // Add the user_id here
@@ -170,7 +167,6 @@ export function useInventoryForm(onSuccess: () => void) {
         supplier: formData.supplier.trim() || null,
         generic_name: formData.genericName.trim() || null,
         strength: formData.strength.trim() || null,
-        selling_price: formData.sellingPrice ? parseFloat(formData.sellingPrice) : null,
         reorder_point: parseInt(formData.reorderPoint || "10"),
         storage_condition: formData.storage || null,
         user_id: user.id // Add the user_id here

@@ -58,7 +58,6 @@ export function SearchMedicineInput({ onAddToCart }: SearchMedicineInputProps) {
         ...item,
         generic_name: item.generic_name || null,
         strength: item.strength || null,
-        selling_price: item.selling_price || null,
         reorder_point: item.reorder_point || 10,
         storage_condition: item.storage_condition || null
       }));

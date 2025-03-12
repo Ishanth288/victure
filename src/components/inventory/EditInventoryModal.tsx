@@ -1,3 +1,4 @@
+
 import {
   Dialog,
   DialogContent,
@@ -62,7 +63,6 @@ export function EditInventoryModal({ open, onOpenChange, item, onSuccess }: Edit
         strength: item.strength || "",
         unitSize: item.unit_size || "",
         unitCost: item.unit_cost.toString(),
-        sellingPrice: item.selling_price?.toString() || "",
         quantity: item.quantity.toString(),
         reorderPoint: item.reorder_point?.toString() || "10",
         expiryDate: item.expiry_date || "",
@@ -122,7 +122,6 @@ export function EditInventoryModal({ open, onOpenChange, item, onSuccess }: Edit
       const unitCost = parseFloat(formData.unitCost);
       const quantity = parseInt(formData.quantity);
       const reorderPoint = parseInt(formData.reorderPoint || "10");
-      const sellingPrice = formData.sellingPrice ? parseFloat(formData.sellingPrice) : null;
 
       if (isNaN(unitCost) || isNaN(quantity)) {
         toast({
@@ -146,7 +145,6 @@ export function EditInventoryModal({ open, onOpenChange, item, onSuccess }: Edit
         status: determineStatus(quantity, reorderPoint),
         generic_name: formData.genericName.trim() || null,
         strength: formData.strength.trim() || null,
-        selling_price: sellingPrice,
         reorder_point: reorderPoint,
         storage_condition: formData.storage || null,
         user_id: userId

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +22,6 @@ export interface InventoryItemFormData {
   strength: string;
   unitSize: string;
   unitCost: string;
-  sellingPrice: string;
   quantity: string;
   reorderPoint: string;
   expiryDate: string;
@@ -119,7 +119,7 @@ export default function InventoryForm({
             <SelectContent className="bg-white border shadow-lg">
               <SelectItem value="tablet">Tablet</SelectItem>
               <SelectItem value="capsule">Capsule</SelectItem>
-              <SelectItem value="liquid">Liquid</SelectItem>
+              <SelectItem value="syrup">Syrup</SelectItem>
               <SelectItem value="injection">Injection</SelectItem>
               <SelectItem value="ointment">Ointment</SelectItem>
             </SelectContent>
@@ -146,18 +146,6 @@ export default function InventoryForm({
             value={formData.unitCost}
             onChange={onInputChange}
             placeholder="Enter unit cost"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="sellingPrice">Selling Price (₹)</Label>
-          <Input
-            id="sellingPrice"
-            name="sellingPrice"
-            type="number"
-            value={formData.sellingPrice}
-            onChange={onInputChange}
-            placeholder="Enter selling price"
           />
         </div>
 
