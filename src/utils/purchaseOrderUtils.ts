@@ -4,7 +4,7 @@ import type { DBPurchaseOrder } from "@/types/database";
 
 export const formatOrderData = (order: DBPurchaseOrder): PurchaseOrder => {
   const status = order.status as PurchaseOrder['status'];
-  if (!['pending', 'delivered', 'partially_delivered'].includes(status)) {
+  if (!['pending', 'delivered', 'partially_delivered', 'completed'].includes(status)) {
     throw new Error(`Invalid status: ${status}`);
   }
 
@@ -15,6 +15,7 @@ export const formatOrderData = (order: DBPurchaseOrder): PurchaseOrder => {
     order_date: order.order_date,
     status,
     notes: order.notes || undefined,
+    delivery_notes: order.delivery_notes || undefined,
     total_amount: order.total_amount,
     items: order.items.map((item): PurchaseOrderItem => ({
       id: item.id,

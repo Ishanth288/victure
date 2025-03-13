@@ -36,11 +36,11 @@ export default function Purchases() {
   const [isPurchaseDialogOpen, setPurchaseDialogOpen] = useState(false);
   const [isDeliveryDialogOpen, setDeliveryDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
-  const [selectedOrderForEdit, setSelectedOrderForEdit] = useState<PurchaseOrder | null>(null);
+  const [selectedOrderItems, setSelectedOrderItems] = useState<PurchaseOrderItem[]>([]);
   const [isEditDialogOpen, setEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<number | null>(null);
-  const [selectedOrderItems, setSelectedOrderItems] = useState<PurchaseOrderItem[]>([]);
+  const [selectedOrderForEdit, setSelectedOrderForEdit] = useState<PurchaseOrder | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -93,6 +93,7 @@ export default function Purchases() {
             status: (order.status || 'pending') as PurchaseOrder['status'],
             notes: order.notes || undefined,
             total_amount: order.total_amount || 0,
+            delivery_notes: order.delivery_notes || undefined,
             items: items?.map(item => ({
               id: item.id,
               item_name: item.item_name,
@@ -660,4 +661,3 @@ export default function Purchases() {
     </DashboardLayout>
   );
 }
-

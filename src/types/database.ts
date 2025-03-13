@@ -6,6 +6,7 @@ export type DBPurchaseOrder = {
   order_date: string;
   status: string;
   notes: string | null;
+  delivery_notes: string | null;
   total_amount: number;
   items: DBPurchaseOrderItem[];
 };
