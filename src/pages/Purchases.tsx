@@ -123,20 +123,21 @@ export default function Purchases() {
   };
 
   const filterOrders = () => {
-    const filtered = orders.filter((order) => {
-      if (activeTab !== "all" && order.status !== activeTab) {
-        return false;
-      }
-
-      const matchesSearch =
-        searchQuery === "" ||
-        order.supplier_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.notes?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        String(order.id).includes(searchQuery);
-
-      return matchesSearch;
-    });
-
+    let filtered = orders;
+    
+    if (activeTab !== "all") {
+      filtered = filtered.filter(order => order.status === activeTab);
+    }
+    
+    if (searchQuery !== "") {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(order => 
+        order.supplier_name.toLowerCase().includes(query) ||
+        (order.notes?.toLowerCase().includes(query) || false) ||
+        String(order.id).includes(query)
+      );
+    }
+    
     setFilteredOrders(filtered);
   };
 
@@ -526,6 +527,10 @@ export default function Purchases() {
     }
   };
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -578,7 +583,7 @@ export default function Purchases() {
           <Tabs
             defaultValue="all"
             value={activeTab}
-            onValueChange={setActiveTab}
+            onValueChange={handleTabChange}
             className="flex-shrink-0"
           >
             <TabsList>

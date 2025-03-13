@@ -57,13 +57,34 @@ export default function PurchaseOrderCard({
   const isCompleted = order.status === "completed";
   const isPending = order.status === "pending";
 
+  // Status badge variant and text formatting
+  const getBadgeVariant = () => {
+    switch (order.status) {
+      case "completed":
+        return "default";
+      case "pending":
+        return "secondary";
+      case "partially_delivered":
+        return "warning";
+      default:
+        return "secondary";
+    }
+  };
+
+  const formatStatus = (status: string) => {
+    return status
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   return (
     <Card className="overflow-hidden">
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-xl font-semibold">{order.supplier_name}</h3>
-          <Badge variant={isCompleted ? "default" : "secondary"}>
-            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+          <Badge variant={getBadgeVariant()}>
+            {formatStatus(order.status)}
           </Badge>
         </div>
         
