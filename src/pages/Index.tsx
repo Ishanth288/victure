@@ -134,7 +134,7 @@ const Index = () => {
                 <div className="pharmacy-gradient w-full h-[400px] relative overflow-hidden rounded-xl shadow-xl">
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-white text-center p-6">
-                      <h3 className="text-3xl font-bold mb-4">PharmaSys</h3>
+                      <h3 className="text-3xl font-bold mb-4">Victure</h3>
                       <p className="text-lg mb-6">Complete Pharmacy Management Solution</p>
                       <div className="flex justify-center space-x-4">
                         <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
