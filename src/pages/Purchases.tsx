@@ -266,7 +266,7 @@ export default function Purchases() {
     }
   };
 
-  const handleUpdateDeliverySubmit = async (itemUpdates: any) => {
+  const handleUpdateDeliverySubmit = async (itemUpdates: any, deliveryNotes?: string) => {
     try {
       for (const item of itemUpdates) {
         const { error } = await supabase
@@ -278,6 +278,17 @@ export default function Purchases() {
           })
           .eq("id", item.id);
 
+        if (error) throw error;
+      }
+
+      if (selectedOrderId && deliveryNotes !== undefined) {
+        const { error } = await supabase
+          .from("purchase_orders")
+          .update({ 
+            delivery_notes: deliveryNotes 
+          })
+          .eq("id", selectedOrderId);
+          
         if (error) throw error;
       }
 
@@ -649,3 +660,4 @@ export default function Purchases() {
     </DashboardLayout>
   );
 }
+

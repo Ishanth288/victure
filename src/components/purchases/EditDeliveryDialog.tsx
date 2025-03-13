@@ -18,8 +18,8 @@ interface EditDeliveryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orderItems: PurchaseOrderItem[];
-  onSubmit: (items: any) => void;
-  onComplete?: (items: any) => void;
+  onSubmit: (items: any, notes?: string) => void;
+  onComplete?: (orderId: number) => void;
   orderId?: number;
 }
 
@@ -67,11 +67,13 @@ export function EditDeliveryDialog({
   };
 
   const handleSubmit = () => {
-    onSubmit(editedItems);
+    onSubmit(editedItems, deliveryNotes);
     onOpenChange(false);
   };
 
   const handleMarkComplete = () => {
+    if (!orderId) return;
+    
     // Set all items to fully delivered
     const completedItems = editedItems.map(item => ({
       ...item,
@@ -79,10 +81,10 @@ export function EditDeliveryDialog({
     }));
     
     // First submit the delivery update
-    onSubmit(completedItems);
+    onSubmit(completedItems, deliveryNotes);
     
     // Then mark the order as complete if the callback exists
-    if (onComplete && orderId) {
+    if (onComplete) {
       onComplete(orderId);
     }
     
@@ -161,7 +163,7 @@ export function EditDeliveryDialog({
               variant="default"
               className="bg-green-600 hover:bg-green-700 text-white"
               onClick={handleMarkComplete}
-              disabled={allItemsFullyDelivered}
+              disabled={!orderId || allItemsFullyDelivered}
             >
               <PackageCheck className="h-4 w-4 mr-2" />
               Mark Delivery Complete

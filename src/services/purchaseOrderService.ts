@@ -14,6 +14,7 @@ export const fetchPurchaseOrders = async (userId: string): Promise<PurchaseOrder
       order_date,
       status,
       notes,
+      delivery_notes,
       total_amount,
       items:purchase_order_items (
         id,
@@ -61,25 +62,41 @@ export const updatePurchaseOrderDelivery = async (
   items: PurchaseOrder["items"],
   notes: string
 ) => {
+  // Update order with notes and status
+  const allItemsDelivered = items.every(item => 
+    Number(item.quantity_delivered) >= Number(item.quantity_ordered)
+  );
+  
   const { error: orderError } = await supabase
     .from('purchase_orders')
     .update({ 
-      notes,
-      status: items.every(item => item.is_delivered) ? 'delivered' : 'partially_delivered'
+      delivery_notes: notes,
+      status: allItemsDelivered ? 'delivered' : 'partially_delivered'
     })
     .eq('id', orderId);
 
   if (orderError) throw orderError;
 
+  // Update each item
   for (const item of items) {
     const { error: itemError } = await supabase
       .from('purchase_order_items')
       .update({
         quantity_delivered: item.quantity_delivered,
-        is_delivered: item.is_delivered,
+        is_delivered: Number(item.quantity_delivered) >= Number(item.quantity_ordered),
+        delivery_notes: item.delivery_notes,
       })
       .eq('id', item.id);
 
     if (itemError) throw itemError;
   }
+};
+
+export const markOrderComplete = async (orderId: number) => {
+  const { error } = await supabase
+    .from('purchase_orders')
+    .update({ status: 'completed' })
+    .eq('id', orderId);
+
+  if (error) throw error;
 };
