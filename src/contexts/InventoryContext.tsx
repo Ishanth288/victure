@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from "react";
 import { type InventoryItem, type InventoryItemFormData, type InventoryItemDB } from "@/types/inventory";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,7 +39,6 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
     strength: "",
     unitSize: "",
     unitCost: "",
-    sellingPrice: "",
     quantity: "",
     reorderPoint: "",
     expiryDate: "",
@@ -61,7 +61,6 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
         ...item,
         generic_name: item.generic_name || null,
         strength: item.strength || null,
-        selling_price: item.selling_price || null,
         reorder_point: item.reorder_point || 10,
         storage_condition: item.storage_condition || null
       }));
