@@ -626,6 +626,8 @@ export default function Purchases() {
         onOpenChange={setDeliveryDialogOpen}
         orderItems={selectedOrderItems}
         onSubmit={handleUpdateDeliverySubmit}
+        onComplete={handleCompleteOrder}
+        orderId={selectedOrderId || undefined}
       />
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

@@ -5,11 +5,13 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { PackageCheck } from "lucide-react";
 import type { PurchaseOrderItem } from "@/types/purchases";
 
 interface EditDeliveryDialogProps {
@@ -17,7 +19,8 @@ interface EditDeliveryDialogProps {
   onOpenChange: (open: boolean) => void;
   orderItems: PurchaseOrderItem[];
   onSubmit: (items: any) => void;
-  orderId?: number; // Make orderId optional to match the external usage
+  onComplete?: (items: any) => void;
+  orderId?: number;
 }
 
 export function EditDeliveryDialog({
@@ -25,6 +28,7 @@ export function EditDeliveryDialog({
   onOpenChange,
   orderItems,
   onSubmit,
+  onComplete,
   orderId,
 }: EditDeliveryDialogProps) {
   const [editedItems, setEditedItems] = useState<any[]>([]);
@@ -66,6 +70,28 @@ export function EditDeliveryDialog({
     onSubmit(editedItems);
     onOpenChange(false);
   };
+
+  const handleMarkComplete = () => {
+    // Set all items to fully delivered
+    const completedItems = editedItems.map(item => ({
+      ...item,
+      quantityDelivered: item.quantityOrdered,
+    }));
+    
+    // First submit the delivery update
+    onSubmit(completedItems);
+    
+    // Then mark the order as complete if the callback exists
+    if (onComplete && orderId) {
+      onComplete(orderId);
+    }
+    
+    onOpenChange(false);
+  };
+
+  const allItemsFullyDelivered = editedItems.every(
+    item => Number(item.quantityDelivered) >= Number(item.quantityOrdered)
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -118,17 +144,29 @@ export function EditDeliveryDialog({
             />
           </div>
 
-          <div className="flex justify-end gap-2">
+          <DialogFooter className="flex justify-end gap-2">
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
               Cancel
             </Button>
-            <Button onClick={handleSubmit}>
+            <Button 
+              variant="outline" 
+              onClick={handleSubmit}
+            >
               Save Changes
             </Button>
-          </div>
+            <Button
+              variant="default"
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleMarkComplete}
+              disabled={allItemsFullyDelivered}
+            >
+              <PackageCheck className="h-4 w-4 mr-2" />
+              Mark Delivery Complete
+            </Button>
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>
