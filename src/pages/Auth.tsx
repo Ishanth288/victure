@@ -9,6 +9,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { INDIAN_STATES } from "@/constants/states";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle, X, Info } from "lucide-react";
+import { AlertCircle, CheckCircle, X, Info, Mail, HelpCircle } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -236,6 +237,14 @@ export default function Auth() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Function to handle contact administrator click
+  const handleContactAdmin = () => {
+    toast({
+      title: "Contact information",
+      description: "Please email support@victurepharmease.com for password reset assistance.",
+    });
   };
 
   if (isVerifying) {
@@ -552,6 +561,21 @@ export default function Auth() {
               </button>
             </div>
           </CardContent>
+          
+          {/* Add Contact Administrator link only on login page */}
+          {isLogin && (
+            <CardFooter className="flex justify-center pb-4">
+              <Button 
+                variant="link" 
+                className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
+                onClick={handleContactAdmin}
+              >
+                <Mail className="h-3.5 w-3.5" />
+                <span>Contact Administrator</span>
+                <HelpCircle className="h-3.5 w-3.5 ml-1" />
+              </Button>
+            </CardFooter>
+          )}
         </Card>
       </motion.div>
     </div>
