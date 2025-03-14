@@ -9,15 +9,30 @@ export default function Hero() {
   const location = useLocation();
 
   const handleGetStarted = () => {
-    // If we're on the home page, scroll to pricing section
+    // Navigate to pricing section
     if (location.pathname === '/') {
+      // On home page, scroll directly
       const pricingSection = document.getElementById('pricing');
       if (pricingSection) {
         pricingSection.scrollIntoView({ behavior: 'smooth' });
       }
     } else {
-      // If we're on another page, navigate to home and then to pricing
+      // From other pages, navigate to home with pricing anchor
       navigate('/#pricing');
+    }
+  };
+
+  const handleLearnMore = () => {
+    // Navigate to features section
+    if (location.pathname === '/') {
+      // On home page, scroll directly
+      const featuresSection = document.getElementById('features');
+      if (featuresSection) {
+        featuresSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // From other pages, navigate to home with features anchor
+      navigate('/#features');
     }
   };
 
@@ -54,15 +69,14 @@ export default function Hero() {
             >
               Get Started
             </Button>
-            <HashLink smooth to="/#features">
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="px-8 border-neutral-300 dark:border-white/20 bg-transparent backdrop-blur-sm hover:bg-white/10 text-neutral-800 dark:text-white"
-              >
-                Learn More
-              </Button>
-            </HashLink>
+            <Button 
+              variant="outline" 
+              size="lg"
+              className="px-8 border-neutral-300 dark:border-white/20 bg-transparent backdrop-blur-sm hover:bg-white/10 text-neutral-800 dark:text-white"
+              onClick={handleLearnMore}
+            >
+              Learn More
+            </Button>
           </motion.div>
         </div>
       </div>
