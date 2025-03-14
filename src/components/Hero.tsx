@@ -54,11 +54,11 @@ export default function Hero() {
             >
               Get Started
             </Button>
-            <HashLink smooth to="#features">
+            <HashLink smooth to="/#features">
               <Button 
                 variant="outline" 
                 size="lg"
-                className="px-8 border-white/20 bg-transparent backdrop-blur-sm hover:bg-white/10 text-neutral-800 dark:text-white"
+                className="px-8 border-neutral-300 dark:border-white/20 bg-transparent backdrop-blur-sm hover:bg-white/10 text-neutral-800 dark:text-white"
               >
                 Learn More
               </Button>
