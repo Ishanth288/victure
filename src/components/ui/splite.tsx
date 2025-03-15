@@ -1,7 +1,7 @@
 
 'use client'
 
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useState } from 'react'
 const Spline = lazy(() => import('@splinetool/react-spline'))
 
 interface SplineSceneProps {
@@ -10,6 +10,12 @@ interface SplineSceneProps {
 }
 
 export function SplineScene({ scene, className }: SplineSceneProps) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return null; // Return nothing if there's an error loading the scene
+  }
+
   return (
     <Suspense 
       fallback={
@@ -21,6 +27,7 @@ export function SplineScene({ scene, className }: SplineSceneProps) {
       <Spline
         scene={scene}
         className={className}
+        onError={() => setHasError(true)}
       />
     </Suspense>
   )
