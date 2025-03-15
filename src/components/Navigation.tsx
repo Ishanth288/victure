@@ -107,12 +107,11 @@ export default function Navigation() {
               >
                 Login
               </Button>
-              <Button 
-                className="bg-primary hover:bg-primary-dark text-white"
-                onClick={handleGetStarted}
-              >
-                Get Started
-              </Button>
+              <HashLink smooth to="#pricing">
+                <Button className="bg-primary hover:bg-primary-dark text-white">
+                  Get Started
+                </Button>
+              </HashLink>
             </div>
           )}
         </div>

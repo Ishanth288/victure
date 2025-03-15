@@ -62,21 +62,23 @@ export default function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <Button 
-              size="lg"
-              className="bg-primary hover:bg-primary/90 text-white px-8"
-              onClick={handleGetStarted}
-            >
-              Get Started
-            </Button>
-            <Button 
-              variant="outline" 
-              size="lg"
-              className="px-8 border-neutral-300 dark:border-white/20 bg-transparent backdrop-blur-sm hover:bg-white/10 text-neutral-800 dark:text-white"
-              onClick={handleLearnMore}
-            >
-              Learn More
-            </Button>
+            <HashLink smooth to="#pricing">
+              <Button 
+                size="lg"
+                className="bg-primary hover:bg-primary/90 text-white px-8 w-full sm:w-auto"
+              >
+                Get Started
+              </Button>
+            </HashLink>
+            <HashLink smooth to="#features">
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="px-8 border-neutral-300 dark:border-white/20 bg-transparent backdrop-blur-sm hover:bg-white/10 text-neutral-800 dark:text-white w-full sm:w-auto"
+              >
+                Learn More
+              </Button>
+            </HashLink>
           </motion.div>
         </div>
       </div>
