@@ -1,4 +1,3 @@
-
 import Navigation from "@/components/Navigation";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
@@ -11,6 +10,7 @@ import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 import { motion } from "framer-motion";
 import { AuroraBackground } from "@/components/ui/aurora-background";
 import { Button } from "@/components/ui/button";
+import { SplineScene } from "@/components/ui/splite";
 
 const pricingPlans = [
   {
@@ -81,11 +81,18 @@ const Index = () => {
     <div className="min-h-screen bg-white">
       <Navigation />
       <main>
-        <AuroraBackground className="h-auto">
-          <Hero />
+        <AuroraBackground className="h-auto relative">
+          <div className="absolute inset-0 z-0 pointer-events-none opacity-80 md:opacity-100">
+            <SplineScene 
+              scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
+              className="w-full h-full"
+            />
+          </div>
+          <div className="relative z-10">
+            <Hero />
+          </div>
         </AuroraBackground>
         
-        {/* Scroll Animation Section - Further reduced top padding */}
         <div className="overflow-hidden -mt-32">
           <ContainerScroll
             titleComponent={
