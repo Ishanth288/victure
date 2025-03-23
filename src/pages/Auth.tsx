@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -45,11 +44,9 @@ export default function Auth() {
     gstin: "",
   });
 
-  // Get plan information from location state
   const fromPricing = location.state?.fromPricing || false;
   const planType = location.state?.planType || 'Free Trial';
 
-  // Show the Free Trial info even when switching from login to signup
   const showFreePlanInfo = !isLogin;
 
   const [passwordValidation, setPasswordValidation] = useState({
@@ -239,12 +236,11 @@ export default function Auth() {
     }
   };
 
-  // Function to handle contact administrator click
   const handleContactAdmin = () => {
     const subject = "Password Reset Request";
     const body = "Hello,\n\nI forgot my password and need assistance resetting it.\n\nMy contact details:\nEmail: [Your Email]\nPhone: [Your Phone Number]\n\nThank you,\n[Your Name]";
     
-    window.location.href = `mailto:victurehealthcaresolutions@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=victurehealthcaresolutions@gmail.com&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
   };
 
   if (isVerifying) {
@@ -309,10 +305,8 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen relative flex flex-col items-center justify-center p-4 overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-      {/* Decorative Background Elements */}
       <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
       
-      {/* Animated shapes */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
       <div className="absolute top-0 right-0 w-96 h-96 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
       <div className="absolute -bottom-8 left-20 w-96 h-96 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
@@ -356,7 +350,6 @@ export default function Auth() {
               </Alert>
             )}
 
-            {/* Free Trial Plan Notice - Show when not in login mode */}
             {showFreePlanInfo && (
               <Alert className="mb-4 bg-blue-50 text-blue-800 border-blue-200">
                 <Info className="h-4 w-4" />
@@ -562,7 +555,6 @@ export default function Auth() {
             </div>
           </CardContent>
           
-          {/* Add Contact Administrator link only on login page */}
           {isLogin && (
             <CardFooter className="flex justify-center pb-4">
               <Button 

@@ -1,10 +1,13 @@
-
 import { HashLink } from 'react-router-hash-link';
 
 export default function Footer() {
   const handlePricingClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    alert("Contact us at victurehealthcaresolutions@gmail.com");
+    // Open Gmail compose for pricing inquiries
+    const subject = "Pricing Inquiry";
+    const body = "Hello,\n\nI would like to inquire about your pricing plans.\n\nThank you.";
+    
+    window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=victurehealthcaresolutions@gmail.com&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
   };
 
   const handleLegalClick = (e: React.MouseEvent) => {
@@ -14,7 +17,11 @@ export default function Footer() {
 
   const handleContactClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    alert("Contact us at victurehealthcaresolutions@gmail.com");
+    // Open Gmail compose for general contact
+    const subject = "General Inquiry";
+    const body = "Hello,\n\nI would like to get in touch regarding the following:\n\n[Your message here]\n\nThank you,\n[Your Name]";
+    
+    window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=victurehealthcaresolutions@gmail.com&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
   };
 
   return (
