@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PlanBanner } from "@/components/PlanBanner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
+import { motion } from "framer-motion";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -144,20 +145,27 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <Sidebar open={isSidebarOpen} setOpen={setIsSidebarOpen}>
         <SidebarBody className="justify-between gap-4">
           <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-            <div className="flex items-center h-16 px-4 border-b border-neutral-200">
+            <div className="flex items-center h-16 px-4 border-b border-neutral-200 overflow-hidden">
               <Button
                 variant="ghost"
                 size="icon"
-                className="mr-2"
+                className="mr-2 flex-shrink-0"
                 onClick={handleBack}
               >
                 <ChevronLeft className="h-5 w-5" />
               </Button>
-              <div className="flex items-center">
-                <span className="text-lg font-medium text-primary">
+              <motion.div 
+                className="flex items-center overflow-hidden"
+                animate={{ 
+                  width: isSidebarOpen ? "auto" : "0px",
+                  opacity: isSidebarOpen ? 1 : 0
+                }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+              >
+                <span className="text-lg font-medium text-primary truncate">
                   {profileData?.pharmacy_name || 'Medplus'}
                 </span>
-              </div>
+              </motion.div>
             </div>
             
             <div className="mt-2 flex flex-col gap-1 px-2">
