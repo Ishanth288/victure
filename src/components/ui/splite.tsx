@@ -33,7 +33,7 @@ export function SplineScene({ scene, className }: SplineSceneProps) {
   // If we had an error loading the scene, show a simple gradient instead
   if (hasError) {
     return (
-      <div className={`pharmacy-gradient w-full h-full rounded-xl opacity-30 ${className}`}>
+      <div className={`pharmacy-gradient w-full h-full rounded-xl opacity-20 ${className}`}>
         {/* Fallback gradient background when 3D scene fails to load */}
       </div>
     );

@@ -1,3 +1,4 @@
+
 import Navigation from "@/components/Navigation";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
@@ -83,7 +84,7 @@ const Index = () => {
       <Navigation />
       <main>
         <AuroraBackground className="h-auto relative">
-          <div className="absolute inset-0 z-0 pointer-events-none opacity-80 md:opacity-100">
+          <div className="absolute inset-0 z-0 pointer-events-none opacity-30 md:opacity-40">
             <SplineScene 
               scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
               className="w-full h-full"
