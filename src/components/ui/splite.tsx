@@ -1,13 +1,18 @@
 
 'use client'
 
-import { Suspense, lazy, useState, useEffect } from 'react'
+import { Suspense, lazy, useState, useEffect, memo } from 'react'
 const Spline = lazy(() => import('@splinetool/react-spline'))
 
 interface SplineSceneProps {
   scene: string
   className?: string
 }
+
+// Memoizing the Spline component to prevent unnecessary re-renders
+const SplineComponent = memo(({ scene, onError, onLoad }: any) => (
+  <Spline scene={scene} onError={onError} onLoad={onLoad} />
+));
 
 export function SplineScene({ scene, className }: SplineSceneProps) {
   const [hasError, setHasError] = useState(false);
@@ -47,9 +52,8 @@ export function SplineScene({ scene, className }: SplineSceneProps) {
         </div>
       }
     >
-      <Spline
+      <SplineComponent
         scene={scene}
-        className={className}
         onError={handleError}
         onLoad={handleLoad}
       />

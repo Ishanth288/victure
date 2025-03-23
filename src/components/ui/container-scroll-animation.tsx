@@ -1,5 +1,5 @@
 
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useScroll, useTransform, motion, MotionValue } from "framer-motion";
 
 export const ContainerScroll = ({
@@ -12,17 +12,29 @@ export const ContainerScroll = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
+    offset: ["start end", "end start"]
   });
-  const [isMobile, setIsMobile] = React.useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  React.useEffect(() => {
+  // Debounced resize handler for better performance
+  useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
     };
+    
     checkMobile();
-    window.addEventListener("resize", checkMobile);
+    
+    // Use a debounced resize handler
+    let resizeTimer: ReturnType<typeof setTimeout>;
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(checkMobile, 100);
+    };
+    
+    window.addEventListener("resize", handleResize);
     return () => {
-      window.removeEventListener("resize", checkMobile);
+      window.removeEventListener("resize", handleResize);
+      clearTimeout(resizeTimer);
     };
   }, []);
 
@@ -30,14 +42,16 @@ export const ContainerScroll = ({
     return isMobile ? [0.7, 0.9] : [1.05, 1];
   };
 
-  const rotate = useTransform(scrollYProgress, [0, 1], [20, 0]);
-  const scale = useTransform(scrollYProgress, [0, 1], scaleDimensions());
-  const translate = useTransform(scrollYProgress, [0, 1], [0, -100]);
+  // Set cacheValues to true for better performance
+  const rotate = useTransform(scrollYProgress, [0, 1], [20, 0], { clamp: true });
+  const scale = useTransform(scrollYProgress, [0, 1], scaleDimensions(), { clamp: true });
+  const translate = useTransform(scrollYProgress, [0, 1], [0, -100], { clamp: true });
 
   return (
     <div
       className="h-[60rem] md:h-[80rem] flex items-center justify-center relative p-2 md:p-20"
       ref={containerRef}
+      style={{ willChange: "transform" }}
     >
       <div
         className="py-10 md:py-40 w-full relative"
@@ -54,7 +68,8 @@ export const ContainerScroll = ({
   );
 };
 
-export const Header = ({ translate, titleComponent }: any) => {
+// Memoize the Header component
+const Header = React.memo(({ translate, titleComponent }: any) => {
   return (
     <motion.div
       style={{
@@ -65,9 +80,10 @@ export const Header = ({ translate, titleComponent }: any) => {
       {titleComponent}
     </motion.div>
   );
-};
+});
 
-export const Card = ({
+// Memoize the Card component
+const Card = React.memo(({
   rotate,
   scale,
   translate,
@@ -93,4 +109,8 @@ export const Card = ({
       </div>
     </motion.div>
   );
-};
+});
+
+// Add display names for React DevTools
+Header.displayName = 'ScrollHeader';
+Card.displayName = 'ScrollCard';
