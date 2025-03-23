@@ -241,10 +241,10 @@ export default function Auth() {
 
   // Function to handle contact administrator click
   const handleContactAdmin = () => {
-    toast({
-      title: "Contact information",
-      description: "Please email support@victurepharmease.com for password reset assistance.",
-    });
+    const subject = "Password Reset Request";
+    const body = "Hello,\n\nI forgot my password and need assistance resetting it.\n\nMy contact details:\nEmail: [Your Email]\nPhone: [Your Phone Number]\n\nThank you,\n[Your Name]";
+    
+    window.location.href = `mailto:victurehealthcaresolutions@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   if (isVerifying) {

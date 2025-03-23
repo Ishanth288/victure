@@ -4,7 +4,7 @@ import { HashLink } from 'react-router-hash-link';
 export default function Footer() {
   const handlePricingClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    alert("Contact us at thugs.business@gmail.com");
+    alert("Contact us at victurehealthcaresolutions@gmail.com");
   };
 
   const handleLegalClick = (e: React.MouseEvent) => {
@@ -14,7 +14,7 @@ export default function Footer() {
 
   const handleContactClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    alert("Contact us at thugs.business@gmail.com");
+    alert("Contact us at victurehealthcaresolutions@gmail.com");
   };
 
   return (
