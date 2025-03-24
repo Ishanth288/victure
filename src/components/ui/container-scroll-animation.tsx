@@ -46,10 +46,10 @@ export const ContainerScroll = ({
     return isMobile ? mobileScale : desktopScale;
   };
 
-  // Optimize transform calculations - use cacheValues for better performance
-  const rotate = useTransform(scrollYProgress, [0, 1], [20, 0], { clamp: true, cache: true });
-  const scale = useTransform(scrollYProgress, [0, 1], scaleDimensions(), { clamp: true, cache: true });
-  const translate = useTransform(scrollYProgress, [0, 1], [0, -100], { clamp: true, cache: true });
+  // Optimize transform calculations
+  const rotate = useTransform(scrollYProgress, [0, 1], [20, 0], { clamp: true });
+  const scale = useTransform(scrollYProgress, [0, 1], scaleDimensions(), { clamp: true });
+  const translate = useTransform(scrollYProgress, [0, 1], [0, -100], { clamp: true });
 
   return (
     <div
