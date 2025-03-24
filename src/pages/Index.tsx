@@ -1,3 +1,4 @@
+
 import Navigation from "@/components/Navigation";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
@@ -12,6 +13,11 @@ import { AuroraBackground } from "@/components/ui/aurora-background";
 import { Button } from "@/components/ui/button";
 import { SplineScene } from "@/components/ui/splite";
 import { Suspense, lazy } from "react";
+import { TechParticles } from "@/components/ui/tech-particles";
+import { TechCard } from "@/components/ui/tech-card";
+import { FloatingIcon } from "@/components/ui/floating-icon";
+import { TypingEffect } from "@/components/ui/typing-effect";
+import { Pill, PencilRuler, Rocket, Database, CloudCog, Cpu } from "lucide-react";
 
 const Spotlight = lazy(() => import("@/components/ui/spotlight").then(mod => ({ default: mod.Spotlight })));
 
@@ -92,12 +98,69 @@ const Index = () => {
                 className="w-full h-full"
               />
             </div>
+            <div className="absolute inset-0 z-0 pointer-events-none">
+              <TechParticles />
+            </div>
             <div className="relative z-10">
               <Hero />
+              <div className="container mx-auto px-4 pb-8">
+                <div className="flex flex-wrap justify-center gap-4 mt-8">
+                  <TechCard className="w-full md:w-auto px-6 py-3">
+                    <div className="flex items-center">
+                      <Cpu className="text-primary mr-2" />
+                      <span className="text-neutral-800 font-medium">AI-Powered</span>
+                    </div>
+                  </TechCard>
+                  <TechCard className="w-full md:w-auto px-6 py-3">
+                    <div className="flex items-center">
+                      <CloudCog className="text-primary mr-2" />
+                      <span className="text-neutral-800 font-medium">Cloud-Based</span>
+                    </div>
+                  </TechCard>
+                  <TechCard className="w-full md:w-auto px-6 py-3">
+                    <div className="flex items-center">
+                      <Database className="text-primary mr-2" />
+                      <span className="text-neutral-800 font-medium">Secure Storage</span>
+                    </div>
+                  </TechCard>
+                </div>
+                <div className="mt-12 text-center">
+                  <TypingEffect 
+                    text={[
+                      "Streamline your pharmacy operations",
+                      "Enhance patient care with AI",
+                      "Improve inventory management",
+                      "Analyze your business with precision"
+                    ]}
+                    className="text-xl font-medium text-primary"
+                  />
+                </div>
+              </div>
             </div>
           </AuroraBackground>
           
-          <div className="overflow-hidden -mt-32">
+          <div className="overflow-hidden -mt-32 relative">
+            <FloatingIcon 
+              icon={Pill} 
+              color="text-blue-500" 
+              size={32} 
+              className="top-20 left-[10%]" 
+              delay={0.2}
+            />
+            <FloatingIcon 
+              icon={PencilRuler} 
+              color="text-indigo-500" 
+              size={28} 
+              className="top-40 right-[15%]" 
+              delay={0.5}
+            />
+            <FloatingIcon 
+              icon={Rocket} 
+              color="text-primary" 
+              size={24} 
+              className="top-80 left-[25%]" 
+              delay={0.8}
+            />
             <ContainerScroll
               titleComponent={
                 <>
