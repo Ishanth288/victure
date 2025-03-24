@@ -72,10 +72,7 @@ export const ContainerScroll = ({
 };
 
 // Memoize the Header component for performance
-const Header = React.memo(({ translate, titleComponent }: { 
-  translate: MotionValue<number>; 
-  titleComponent: string | React.ReactNode;
-}) => {
+const Header = React.memo(({ translate, titleComponent }: any) => {
   return (
     <motion.div
       style={{

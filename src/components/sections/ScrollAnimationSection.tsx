@@ -10,6 +10,7 @@ export const ScrollAnimationSection = () => {
     <ContainerScroll
       titleComponent={
         <>
+          <span className="text-primary font-semibold">Victure</span>
           <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 mt-2 mb-4">
             Modern Pharmacy Management
           </h2>
