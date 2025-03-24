@@ -21,7 +21,6 @@ import { TextScramble } from "@/components/ui/text-scramble";
 import { CardTilt } from "@/components/ui/card-tilt";
 import { AnimatedGradientBorder } from "@/components/ui/animated-gradient-border";
 import { HoverInfoCard } from "@/components/ui/hover-info-card";
-import { ProgressCircle } from "@/components/ui/progress-circle";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { Pill, PencilRuler, Rocket, Database, CloudCog, Cpu, BrainCircuit, Microscope, Leaf, Stethoscope } from "lucide-react";
 
@@ -145,7 +144,7 @@ const Index = () => {
                       "The future of pharmacy management is here",
                       "Experience next-generation pharmacy tools"
                     ]}
-                    className="text-xl font-medium text-primary mb-4"
+                    className="text-xl font-medium text-neutral-800 mb-4"
                   />
                   <TypingEffect 
                     text={[
@@ -154,27 +153,7 @@ const Index = () => {
                       "Improve inventory management",
                       "Analyze your business with precision"
                     ]}
-                    className="text-xl font-medium text-primary"
-                  />
-                </div>
-                
-                <div className="flex justify-center mt-8 gap-6">
-                  <ProgressCircle 
-                    progress={92} 
-                    size={80} 
-                    label={<span className="text-sm font-bold">92%</span>}
-                  />
-                  <ProgressCircle 
-                    progress={85} 
-                    size={80}
-                    label={<span className="text-sm font-bold">85%</span>}
-                    color="var(--secondary)"
-                  />
-                  <ProgressCircle 
-                    progress={78} 
-                    size={80}
-                    label={<span className="text-sm font-bold">78%</span>}
-                    color="#0F766E"
+                    className="text-xl font-medium text-neutral-800"
                   />
                 </div>
               </div>
@@ -220,7 +199,7 @@ const Index = () => {
             <ContainerScroll
               titleComponent={
                 <>
-                  <span className="text-primary font-semibold">Experience</span>
+                  <span className="text-primary font-semibold">Victure</span>
                   <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 mt-2 mb-4">
                     Modern Pharmacy Management
                   </h2>

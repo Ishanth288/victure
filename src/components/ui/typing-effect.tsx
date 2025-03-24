@@ -47,7 +47,7 @@ export function TypingEffect({
   return (
     <div className={className}>
       <span>{currentText}</span>
-      <span className="inline-block w-0.5 h-5 ml-1 bg-primary animate-blink"></span>
+      <span className="inline-block w-0.5 h-5 ml-1 bg-neutral-800 animate-blink"></span>
     </div>
   );
 }

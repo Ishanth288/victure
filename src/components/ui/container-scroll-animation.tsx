@@ -16,6 +16,10 @@ export const ContainerScroll = ({
   });
   const [isMobile, setIsMobile] = useState(false);
 
+  // Performance optimization - memoize constant values
+  const mobileScale = [0.7, 0.9];
+  const desktopScale = [1.05, 1];
+
   // Debounced resize handler for better performance
   useEffect(() => {
     const checkMobile = () => {
@@ -39,19 +43,18 @@ export const ContainerScroll = ({
   }, []);
 
   const scaleDimensions = () => {
-    return isMobile ? [0.7, 0.9] : [1.05, 1];
+    return isMobile ? mobileScale : desktopScale;
   };
 
-  // Set cacheValues to true for better performance
-  const rotate = useTransform(scrollYProgress, [0, 1], [20, 0], { clamp: true });
-  const scale = useTransform(scrollYProgress, [0, 1], scaleDimensions(), { clamp: true });
-  const translate = useTransform(scrollYProgress, [0, 1], [0, -100], { clamp: true });
+  // Optimize transform calculations - use cacheValues for better performance
+  const rotate = useTransform(scrollYProgress, [0, 1], [20, 0], { clamp: true, cache: true });
+  const scale = useTransform(scrollYProgress, [0, 1], scaleDimensions(), { clamp: true, cache: true });
+  const translate = useTransform(scrollYProgress, [0, 1], [0, -100], { clamp: true, cache: true });
 
   return (
     <div
-      className="h-[60rem] md:h-[80rem] flex items-center justify-center relative p-2 md:p-20"
+      className="h-[60rem] md:h-[80rem] flex items-center justify-center relative p-2 md:p-20 will-change-transform"
       ref={containerRef}
-      style={{ willChange: "transform" }}
     >
       <div
         className="py-10 md:py-40 w-full relative"
@@ -68,7 +71,7 @@ export const ContainerScroll = ({
   );
 };
 
-// Memoize the Header component
+// Memoize the Header component for performance
 const Header = React.memo(({ translate, titleComponent }: any) => {
   return (
     <motion.div
@@ -82,7 +85,7 @@ const Header = React.memo(({ translate, titleComponent }: any) => {
   );
 });
 
-// Memoize the Card component
+// Memoize the Card component for performance
 const Card = React.memo(({
   rotate,
   scale,
@@ -102,7 +105,7 @@ const Card = React.memo(({
         boxShadow:
           "0 0 #0000004d, 0 9px 20px #0000004a, 0 37px 37px #00000042, 0 84px 50px #00000026, 0 149px 60px #0000000a, 0 233px 65px #00000003",
       }}
-      className="max-w-5xl -mt-12 mx-auto h-[30rem] md:h-[40rem] w-full border-4 border-[#6C6C6C] p-2 md:p-6 bg-[#222222] rounded-[30px] shadow-2xl"
+      className="max-w-5xl -mt-12 mx-auto h-[30rem] md:h-[40rem] w-full border-4 border-[#6C6C6C] p-2 md:p-6 bg-[#222222] rounded-[30px] shadow-2xl will-change-transform"
     >
       <div className="h-full w-full overflow-hidden rounded-2xl bg-gray-100 dark:bg-zinc-900 md:rounded-2xl md:p-4">
         {children}

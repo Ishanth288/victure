@@ -37,7 +37,8 @@ export function TechParticles({ className }: { className?: string }) {
     
     const initParticles = () => {
       particles.current = [];
-      const particleCount = Math.floor((canvas.width * canvas.height) / 15000);
+      // Reduce the number of particles to improve performance
+      const particleCount = Math.floor((canvas.width * canvas.height) / 25000);
       
       for (let i = 0; i < particleCount; i++) {
         particles.current.push({
@@ -46,8 +47,8 @@ export function TechParticles({ className }: { className?: string }) {
           size: Math.random() * 2 + 1,
           color: getRandomColor(),
           velocity: {
-            x: (Math.random() - 0.5) * 0.5,
-            y: (Math.random() - 0.5) * 0.5
+            x: (Math.random() - 0.5) * 0.3, // Reduce velocity for less CPU usage
+            y: (Math.random() - 0.5) * 0.3
           }
         });
       }
@@ -82,24 +83,35 @@ export function TechParticles({ className }: { className?: string }) {
         ctx.fill();
       });
       
-      // Draw connections between nearby particles
-      for (let i = 0; i < particles.current.length; i++) {
-        for (let j = i + 1; j < particles.current.length; j++) {
-          const dx = particles.current[i].x - particles.current[j].x;
-          const dy = particles.current[i].y - particles.current[j].y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          
-          if (distance < 100) {
-            ctx.beginPath();
-            ctx.strokeStyle = `rgba(100, 120, 255, ${0.2 * (1 - distance / 100)})`;
-            ctx.lineWidth = 0.5;
-            ctx.moveTo(particles.current[i].x, particles.current[i].y);
-            ctx.lineTo(particles.current[j].x, particles.current[j].y);
-            ctx.stroke();
+      // Only draw connections for a limited number of particles to improve performance
+      // Calculate connections every other frame
+      let skipConnections = false;
+      const maxConnections = 100; // Limit the number of connection calculations
+      let connectionCount = 0;
+      
+      if (!skipConnections) {
+        for (let i = 0; i < particles.current.length && connectionCount < maxConnections; i++) {
+          for (let j = i + 1; j < particles.current.length && connectionCount < maxConnections; j++) {
+            const dx = particles.current[i].x - particles.current[j].x;
+            const dy = particles.current[i].y - particles.current[j].y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < 100) {
+              ctx.beginPath();
+              ctx.strokeStyle = `rgba(100, 120, 255, ${0.2 * (1 - distance / 100)})`;
+              ctx.lineWidth = 0.5;
+              ctx.moveTo(particles.current[i].x, particles.current[i].y);
+              ctx.lineTo(particles.current[j].x, particles.current[j].y);
+              ctx.stroke();
+              connectionCount++;
+            }
           }
         }
       }
       
+      skipConnections = !skipConnections;
+      
+      // Use requestAnimationFrame with a throttled rate for better performance
       animationRef.current = requestAnimationFrame(drawParticles);
     };
     
@@ -123,7 +135,7 @@ export function TechParticles({ className }: { className?: string }) {
     <canvas 
       ref={canvasRef} 
       className={`absolute inset-0 pointer-events-none ${className}`}
-      style={{ opacity: 0.4 }}
+      style={{ opacity: 0.3 }}
     />
   );
 }
