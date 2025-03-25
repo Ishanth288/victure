@@ -8,15 +8,19 @@ import { AnimatedGradientBorder } from "@/components/ui/animated-gradient-border
 import { TextScramble } from "@/components/ui/text-scramble";
 import { TypingEffect } from "@/components/ui/typing-effect";
 import { Cpu, CloudCog, Database } from "lucide-react";
+import { memo, Suspense, lazy } from "react";
 
-export const HeroSection = () => {
+// Memoize the HeroSection component to prevent unnecessary re-renders
+export const HeroSection = memo(() => {
   return (
     <AuroraBackground className="h-auto relative">
-      <div className="absolute inset-0 z-0 pointer-events-none opacity-30 md:opacity-40">
-        <SplineScene 
-          scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
-          className="w-full h-full"
-        />
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-20 md:opacity-30">
+        <Suspense fallback={<div className="pharmacy-gradient w-full h-full rounded-xl opacity-20" />}>
+          <SplineScene 
+            scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
+            className="w-full h-full"
+          />
+        </Suspense>
       </div>
       <div className="absolute inset-0 z-0 pointer-events-none">
         <TechParticles />
@@ -75,4 +79,6 @@ export const HeroSection = () => {
       </div>
     </AuroraBackground>
   );
-};
+});
+
+HeroSection.displayName = 'HeroSection';

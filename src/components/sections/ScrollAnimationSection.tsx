@@ -4,13 +4,14 @@ import { AnimatedGradientBorder } from "@/components/ui/animated-gradient-border
 import { CardTilt } from "@/components/ui/card-tilt";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { Database, Stethoscope, Rocket } from "lucide-react";
+import { memo } from "react";
 
-export const ScrollAnimationSection = () => {
+// Memoize the component to prevent unnecessary re-renders
+export const ScrollAnimationSection = memo(() => {
   return (
     <ContainerScroll
       titleComponent={
         <>
-          <span className="text-primary font-semibold">Victure</span>
           <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 mt-2 mb-4">
             Modern Pharmacy Management
           </h2>
@@ -42,7 +43,7 @@ export const ScrollAnimationSection = () => {
             <ScrollReveal 
               key={index}
               animation="slide-right" 
-              delay={index * 0.2}
+              delay={index * 0.1} // Reduced delay for better performance
             >
               <CardTilt className="bg-white p-6 rounded-lg shadow-md">
                 <div className="flex items-start gap-4">
@@ -58,11 +59,11 @@ export const ScrollAnimationSection = () => {
         </div>
         
         <div className="hidden md:flex md:justify-center md:items-center md:h-full">
-          <AnimatedGradientBorder borderWidth={3}>
+          <AnimatedGradientBorder borderWidth={2}>
             <div className="pharmacy-gradient w-full h-[400px] relative overflow-hidden rounded-xl shadow-xl">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-white text-center p-6">
-                  <h3 className="text-3xl font-bold mb-4">Victure</h3>
+                  <h3 className="text-3xl font-bold mb-4">Pharmacy Management</h3>
                   <p className="text-lg mb-6">Complete Pharmacy Management Solution</p>
                   <div className="flex justify-center space-x-4">
                     <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
@@ -89,4 +90,6 @@ export const ScrollAnimationSection = () => {
       </div>
     </ContainerScroll>
   );
-};
+});
+
+ScrollAnimationSection.displayName = 'ScrollAnimationSection';

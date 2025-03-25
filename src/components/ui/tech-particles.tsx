@@ -1,8 +1,7 @@
 
 'use client';
 
-import React, { useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useRef, useEffect, memo } from 'react';
 
 interface Particle {
   x: number;
@@ -12,43 +11,55 @@ interface Particle {
   velocity: { x: number; y: number };
 }
 
-export function TechParticles({ className }: { className?: string }) {
+// Memoize the component to prevent unnecessary re-renders
+export const TechParticles = memo(({ className }: { className?: string }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particles = useRef<Particle[]>([]);
   const animationRef = useRef<number>();
+  const lastFrameTimeRef = useRef<number>(0);
+  const throttleFrameRate = useRef<boolean>(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
     
     const resizeCanvas = () => {
       const parent = canvas.parentElement;
       if (!parent) return;
       
-      canvas.width = parent.clientWidth;
-      canvas.height = parent.clientHeight;
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      const rect = parent.getBoundingClientRect();
       
-      // Initialize particles on resize
+      // Set logical size
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      
+      // Clear and redraw at the new resolution
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+      
+      // Significantly reduce the number of particles
       initParticles();
     };
     
     const initParticles = () => {
       particles.current = [];
-      // Reduce the number of particles to improve performance
-      const particleCount = Math.floor((canvas.width * canvas.height) / 25000);
+      
+      // Drastically reduce particle count for better performance
+      const density = window.innerWidth < 768 ? 40000 : 30000;
+      const particleCount = Math.min(50, Math.floor((canvas.width * canvas.height) / density));
       
       for (let i = 0; i < particleCount; i++) {
         particles.current.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          size: Math.random() * 2 + 1,
+          size: Math.random() * 1.5 + 0.5, // Smaller particles
           color: getRandomColor(),
           velocity: {
-            x: (Math.random() - 0.5) * 0.3, // Reduce velocity for less CPU usage
-            y: (Math.random() - 0.5) * 0.3
+            x: (Math.random() - 0.5) * 0.15, // Slower movement
+            y: (Math.random() - 0.5) * 0.15
           }
         });
       }
@@ -59,8 +70,19 @@ export function TechParticles({ className }: { className?: string }) {
       return colors[Math.floor(Math.random() * colors.length)];
     };
     
-    const drawParticles = () => {
+    const drawParticles = (timestamp: number) => {
       if (!ctx || !canvas) return;
+      
+      // Frame rate limiting for better performance
+      if (throttleFrameRate.current) {
+        // Target 30fps for particles (33.33ms between frames)
+        const elapsed = timestamp - lastFrameTimeRef.current;
+        if (elapsed < 33.33) {
+          animationRef.current = requestAnimationFrame(drawParticles);
+          return;
+        }
+        lastFrameTimeRef.current = timestamp;
+      }
       
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
@@ -83,23 +105,27 @@ export function TechParticles({ className }: { className?: string }) {
         ctx.fill();
       });
       
-      // Only draw connections for a limited number of particles to improve performance
-      // Calculate connections every other frame
-      let skipConnections = false;
-      const maxConnections = 100; // Limit the number of connection calculations
-      let connectionCount = 0;
+      // Only draw connections every 3rd frame
+      const currentFrame = Math.floor(timestamp / 33.33) % 3;
       
-      if (!skipConnections) {
+      if (currentFrame === 0) {
+        // Limit the total number of connections to improve performance
+        const maxConnections = 30;
+        let connectionCount = 0;
+        
+        // Calculate connections with a maximum distance threshold
+        const maxDistance = 80; // Reduced connection distance
+        
         for (let i = 0; i < particles.current.length && connectionCount < maxConnections; i++) {
           for (let j = i + 1; j < particles.current.length && connectionCount < maxConnections; j++) {
             const dx = particles.current[i].x - particles.current[j].x;
             const dy = particles.current[i].y - particles.current[j].y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             
-            if (distance < 100) {
+            if (distance < maxDistance) {
               ctx.beginPath();
-              ctx.strokeStyle = `rgba(100, 120, 255, ${0.2 * (1 - distance / 100)})`;
-              ctx.lineWidth = 0.5;
+              ctx.strokeStyle = `rgba(100, 120, 255, ${0.1 * (1 - distance / maxDistance)})`;
+              ctx.lineWidth = 0.3;
               ctx.moveTo(particles.current[i].x, particles.current[i].y);
               ctx.lineTo(particles.current[j].x, particles.current[j].y);
               ctx.stroke();
@@ -109,25 +135,36 @@ export function TechParticles({ className }: { className?: string }) {
         }
       }
       
-      skipConnections = !skipConnections;
-      
-      // Use requestAnimationFrame with a throttled rate for better performance
       animationRef.current = requestAnimationFrame(drawParticles);
     };
     
-    // Set up resize listener
-    window.addEventListener('resize', resizeCanvas);
+    // Implement a debounced resize handler
+    let resizeTimer: ReturnType<typeof setTimeout>;
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(resizeCanvas, 200);
+    };
+    
+    window.addEventListener('resize', handleResize);
     resizeCanvas();
     
     // Start animation
-    drawParticles();
+    animationRef.current = requestAnimationFrame(drawParticles);
+    
+    // Check if we should use reduced animation quality
+    const checkPerformance = () => {
+      // Enable throttling on mobile or low-power devices
+      throttleFrameRate.current = window.innerWidth < 1024;
+    };
+    checkPerformance();
     
     // Clean up
     return () => {
-      window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('resize', handleResize);
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
+      clearTimeout(resizeTimer);
     };
   }, []);
   
@@ -135,7 +172,9 @@ export function TechParticles({ className }: { className?: string }) {
     <canvas 
       ref={canvasRef} 
       className={`absolute inset-0 pointer-events-none ${className}`}
-      style={{ opacity: 0.3 }}
+      style={{ opacity: 0.2 }} // Reduced opacity for better performance
     />
   );
-}
+});
+
+TechParticles.displayName = 'TechParticles';
