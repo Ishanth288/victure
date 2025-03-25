@@ -3,7 +3,7 @@ import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 import { AnimatedGradientBorder } from "@/components/ui/animated-gradient-border";
 import { CardTilt } from "@/components/ui/card-tilt";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
-import { Database, Stethoscope, Rocket } from "lucide-react";
+import { Database, Stethoscope, Rocket, BellRing, Clock, Shield } from "lucide-react";
 import { memo } from "react";
 
 // Memoize the component to prevent unnecessary re-renders
@@ -43,7 +43,7 @@ export const ScrollAnimationSection = memo(() => {
             <ScrollReveal 
               key={index}
               animation="slide-right" 
-              delay={index * 0.1} // Reduced delay for better performance
+              delay={index * 0.1}
             >
               <CardTilt className="bg-white p-6 rounded-lg shadow-md">
                 <div className="flex items-start gap-4">
@@ -58,34 +58,40 @@ export const ScrollAnimationSection = memo(() => {
           ))}
         </div>
         
-        <div className="hidden md:flex md:justify-center md:items-center md:h-full">
-          <AnimatedGradientBorder borderWidth={2}>
-            <div className="pharmacy-gradient w-full h-[400px] relative overflow-hidden rounded-xl shadow-xl">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-white text-center p-6">
-                  <h3 className="text-3xl font-bold mb-4">Pharmacy Management</h3>
-                  <p className="text-lg mb-6">Complete Pharmacy Management Solution</p>
-                  <div className="flex justify-center space-x-4">
-                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                    </div>
-                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                      </svg>
-                    </div>
-                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                      </svg>
-                    </div>
+        <div className="flex flex-col space-y-4">
+          {[
+            {
+              title: "Notifications",
+              description: "Stay informed with real-time alerts for low stock, upcoming expiry dates, and prescription refills.",
+              icon: <BellRing className="h-6 w-6" />
+            },
+            {
+              title: "Appointment Scheduling",
+              description: "Manage patient appointments and follow-ups with an intuitive calendar interface.",
+              icon: <Clock className="h-6 w-6" />
+            },
+            {
+              title: "Secure Access",
+              description: "Role-based access control ensures that staff members can only access the information they need.",
+              icon: <Shield className="h-6 w-6" />
+            }
+          ].map((item, index) => (
+            <ScrollReveal 
+              key={index}
+              animation="slide-left" 
+              delay={index * 0.1}
+            >
+              <CardTilt className="bg-white p-6 rounded-lg shadow-md">
+                <div className="flex items-start gap-4">
+                  <div className="text-primary">{item.icon}</div>
+                  <div>
+                    <h3 className="text-xl font-bold text-primary mb-2">{item.title}</h3>
+                    <p className="text-neutral-700">{item.description}</p>
                   </div>
                 </div>
-              </div>
-            </div>
-          </AnimatedGradientBorder>
+              </CardTilt>
+            </ScrollReveal>
+          ))}
         </div>
       </div>
     </ContainerScroll>
