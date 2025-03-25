@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
 interface AnimatedGradientBorderProps {
   children: React.ReactNode;
@@ -15,7 +15,7 @@ export function AnimatedGradientBorder({
 }: AnimatedGradientBorderProps) {
   return (
     <div className={`relative ${className}`}>
-      <motion.div 
+      <m.div 
         className="absolute inset-0 rounded-xl z-0 overflow-hidden"
         style={{ padding: borderWidth }}
         animate={{ 
@@ -30,7 +30,7 @@ export function AnimatedGradientBorder({
         transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
       >
         <div className="h-full w-full absolute" />
-      </motion.div>
+      </m.div>
       <div className="relative rounded-xl h-full z-10 bg-card">
         {children}
       </div>

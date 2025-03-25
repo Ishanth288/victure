@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
 export default function CTA() {
@@ -24,7 +24,7 @@ export default function CTA() {
   return (
     <section className="py-20">
       <div className="container mx-auto px-4">
-        <motion.div 
+        <m.div 
           className="max-w-3xl mx-auto text-center"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -52,7 +52,7 @@ export default function CTA() {
               Request a Demo
             </Button>
           </div>
-        </motion.div>
+        </m.div>
       </div>
     </section>
   );

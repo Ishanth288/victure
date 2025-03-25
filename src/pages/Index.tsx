@@ -6,7 +6,7 @@ import { FloatingIconsSection } from "@/components/sections/FloatingIconsSection
 import { ScrollAnimationSection } from "@/components/sections/ScrollAnimationSection";
 import { ContentSection } from "@/components/sections/ContentSection";
 import { Suspense, lazy, useEffect } from "react";
-import { LazyMotion, domAnimation } from "framer-motion";
+import { LazyMotion, domAnimation, m } from "framer-motion";
 
 // Helper function to detect if the browser supports hover
 const isHoverSupported = () => {

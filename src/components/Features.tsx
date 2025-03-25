@@ -1,6 +1,6 @@
 
 import { BarChart4, UserCircle2, Package, Syringe, Link, FileText } from "lucide-react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { memo } from "react";
 
 const features = [
@@ -50,7 +50,7 @@ export default memo(function Features() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
-            <motion.div
+            <m.div
               key={feature.title}
               className="glass-card rounded-xl p-6"
               initial={{ opacity: 0, y: 20 }}
@@ -65,7 +65,7 @@ export default memo(function Features() {
               <p className="text-neutral-600">
                 {feature.description}
               </p>
-            </motion.div>
+            </m.div>
           ))}
         </div>
       </div>

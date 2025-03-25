@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChatbotDialog from "./ChatbotDialog";
@@ -28,7 +28,7 @@ export default function ChatbotButton() {
   
   return (
     <>
-      <motion.div 
+      <m.div 
         className="fixed bottom-4 right-4 z-50"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -42,7 +42,7 @@ export default function ChatbotButton() {
         >
           <MessageSquare className="h-6 w-6" />
         </Button>
-      </motion.div>
+      </m.div>
       
       <AnimatePresence>
         {isOpen && <ChatbotDialog onClose={() => setIsOpen(false)} />}

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
 interface ProgressCircleProps {
   progress: number; // 0 to 100
@@ -42,7 +42,7 @@ export function ProgressCircle({
           strokeWidth={strokeWidth}
           fill="none"
         />
-        <motion.circle
+        <m.circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
