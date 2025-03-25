@@ -1,8 +1,6 @@
-
 import React, { useRef, useState, useEffect, memo } from "react";
 import { useScroll, useTransform, m, MotionValue } from "framer-motion";
 
-// Optimize the ContainerScroll component
 export const ContainerScroll = memo(({
   titleComponent,
   children,
@@ -17,11 +15,9 @@ export const ContainerScroll = memo(({
   });
   const [isMobile, setIsMobile] = useState(false);
 
-  // Cache static values
   const mobileScale = [0.7, 0.9];
   const desktopScale = [1.05, 1];
 
-  // Optimize resize handler with debounce
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -42,15 +38,12 @@ export const ContainerScroll = memo(({
     };
   }, []);
 
-  // Memoize transform calculations
   const scaleDimensions = () => isMobile ? mobileScale : desktopScale;
-  
-  // Optimize transform calculations with clamping and reduced motion
+
   const rotate = useTransform(scrollYProgress, [0, 1], [20, 0], { clamp: true });
   const scale = useTransform(scrollYProgress, [0, 1], scaleDimensions(), { clamp: true });
   const translate = useTransform(scrollYProgress, [0, 1], [0, -100], { clamp: true });
 
-  // Add shouldReduceMotion check for accessibility and performance
   const shouldReduceMotion = useRef(
     typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
   ).current;
@@ -80,7 +73,6 @@ export const ContainerScroll = memo(({
   );
 });
 
-// Optimize the Header component with memoization
 const Header = memo(({ translate, titleComponent }: { 
   translate: MotionValue<number>; 
   titleComponent: React.ReactNode | string;
@@ -97,7 +89,6 @@ const Header = memo(({ translate, titleComponent }: {
   );
 });
 
-// Optimize the Card component with memoization
 const Card = memo(({
   rotate,
   scale,
@@ -130,7 +121,6 @@ const Card = memo(({
   );
 });
 
-// Add display names for React DevTools
 ContainerScroll.displayName = 'ContainerScroll';
 Header.displayName = 'ScrollHeader';
 Card.displayName = 'ScrollCard';

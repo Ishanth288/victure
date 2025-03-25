@@ -1,6 +1,5 @@
-
 import { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { X, Send, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,7 +33,6 @@ export default function ChatbotDialog({ onClose }: ChatbotDialogProps) {
   const handleSend = async () => {
     if (!input.trim()) return;
     
-    // Add user message
     const userMessage: Message = { 
       id: Date.now().toString(), 
       text: input, 
@@ -46,7 +44,6 @@ export default function ChatbotDialog({ onClose }: ChatbotDialogProps) {
     setIsLoading(true);
     
     try {
-      // Log for debugging
       console.log('Sending to chatbot:', input);
       
       const { data, error } = await supabase.functions.invoke('chatbot', {
@@ -60,18 +57,15 @@ export default function ChatbotDialog({ onClose }: ChatbotDialogProps) {
         throw new Error(`Function error: ${error.message || 'Unknown error'}`);
       }
       
-      // Check if data exists
       if (!data) {
         throw new Error('No data received from chatbot function');
       }
 
-      // Check for error in the response data
       if (data.error) {
         console.error('Error in function response:', data.error);
         throw new Error(`Response error: ${data.error}`);
       }
 
-      // If we have a valid response
       if (data.response) {
         const botMessage: Message = {
           id: (Date.now() + 1).toString(),
@@ -105,27 +99,25 @@ export default function ChatbotDialog({ onClose }: ChatbotDialogProps) {
     }
   };
 
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   return (
-    <motion.div 
+    <m.div 
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
     >
-      <motion.div
+      <m.div
         className="w-full max-w-md bg-white rounded-lg shadow-xl overflow-hidden"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="bg-primary p-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary-foreground">
             <Bot className="h-5 w-5" />
@@ -142,7 +134,6 @@ export default function ChatbotDialog({ onClose }: ChatbotDialogProps) {
           </Button>
         </div>
         
-        {/* Messages */}
         <ScrollArea className="h-[400px] p-4 bg-gray-50">
           <div className="space-y-4">
             {messages.map(message => (
@@ -172,7 +163,6 @@ export default function ChatbotDialog({ onClose }: ChatbotDialogProps) {
           </div>
         </ScrollArea>
         
-        {/* Input */}
         <div className="p-4 border-t border-gray-200">
           <div className="flex gap-2">
             <Textarea
@@ -193,7 +183,7 @@ export default function ChatbotDialog({ onClose }: ChatbotDialogProps) {
             </Button>
           </div>
         </div>
-      </motion.div>
-    </motion.div>
+      </m.div>
+    </m.div>
   );
 }

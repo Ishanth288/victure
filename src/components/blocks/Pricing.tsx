@@ -1,10 +1,9 @@
-
 import { buttonVariants } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Check, Star } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
@@ -44,7 +43,6 @@ export function Pricing({
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [razorpayScript, setRazorpayScript] = useState(false);
 
-  // Load Razorpay script
   useEffect(() => {
     if (!razorpayScript) {
       const script = document.createElement('script');
@@ -88,7 +86,6 @@ export function Pricing({
     
     try {
       if (plan.name === "FREE") {
-        // For free plan, navigate to auth page with signup=true and plan=free-trial
         navigate('/auth', { 
           state: { 
             isLogin: false, 
@@ -99,11 +96,9 @@ export function Pricing({
         return;
       }
       
-      // For paid plans, create a Razorpay order
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.user) {
-        // If user is not logged in, redirect to auth page
         toast({
           title: "Authentication required",
           description: "Please sign in or create an account first",
@@ -129,12 +124,10 @@ export function Pricing({
         return;
       }
       
-      // Get the price based on billing cycle
       const amount = isMonthly 
         ? parseInt(plan.price.replace(/,/g, ''))
         : parseInt(plan.yearlyPrice.replace(/,/g, ''));
       
-      // Call Supabase Edge Function to create Razorpay order
       const { data, error } = await supabase.functions.invoke('create-razorpay-order', {
         body: {
           planId: plan.planId,
@@ -153,10 +146,9 @@ export function Pricing({
         throw new Error('Invalid response from payment server');
       }
       
-      // Open Razorpay checkout
       const options = {
         key: data.keyId,
-        amount: data.amount * 100, // Convert to paise
+        amount: data.amount * 100,
         currency: data.currency,
         name: "Victure Pharmacy",
         description: `${plan.name} Plan - ${isMonthly ? 'Monthly' : 'Annual'} Subscription`,
@@ -169,19 +161,16 @@ export function Pricing({
           color: "#0D9488",
         },
         handler: function(response: any) {
-          // The payment ID is available in response.razorpay_payment_id
           toast({
             title: "Payment successful",
             description: `Your payment for the ${plan.name} plan was successful!`,
             variant: "default",
           });
           
-          // Redirect to dashboard after successful payment
           navigate('/dashboard');
         },
       };
       
-      // @ts-ignore - Razorpay is loaded from CDN
       const razorpayCheckout = new window.Razorpay(options);
       razorpayCheckout.open();
       
@@ -226,7 +215,7 @@ export function Pricing({
 
       <div className="grid grid-cols-1 md:grid-cols-3 sm:2 gap-4">
         {plans.map((plan, index) => (
-          <motion.div
+          <m.div
             key={index}
             initial={{ y: 50, opacity: 1 }}
             whileInView={
@@ -329,7 +318,7 @@ export function Pricing({
                 {plan.description}
               </p>
             </div>
-          </motion.div>
+          </m.div>
         ))}
       </div>
     </div>

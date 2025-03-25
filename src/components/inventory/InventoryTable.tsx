@@ -1,5 +1,4 @@
-
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import { ArrowUpDown, Edit, Trash2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -78,7 +77,7 @@ export default function InventoryTable({
           <tbody>
             <AnimatePresence>
               {items.map((item) => (
-                <motion.tr
+                <m.tr
                   key={item.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -144,7 +143,7 @@ export default function InventoryTable({
                       </TooltipProvider>
                     </div>
                   </td>
-                </motion.tr>
+                </m.tr>
               ))}
             </AnimatePresence>
           </tbody>
