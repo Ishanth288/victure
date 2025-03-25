@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { m } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface CardTiltProps {
   children: React.ReactNode;
@@ -33,7 +33,7 @@ export function CardTilt({ children, className }: CardTiltProps) {
   };
 
   return (
-    <m.div
+    <motion.div
       className={`relative overflow-hidden rounded-xl ${className}`}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
@@ -48,6 +48,6 @@ export function CardTilt({ children, className }: CardTiltProps) {
     >
       {children}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-secondary/10 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-    </m.div>
+    </motion.div>
   );
 }

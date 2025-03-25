@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { m } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { LucideIcon } from 'lucide-react';
 
 interface FloatingIconProps {
@@ -21,7 +21,7 @@ export function FloatingIcon({
   className
 }: FloatingIconProps) {
   return (
-    <m.div
+    <motion.div
       className={`absolute ${className}`}
       animate={{
         y: [0, -10, 0],
@@ -36,6 +36,6 @@ export function FloatingIcon({
       }}
     >
       <Icon className={`${color}`} size={size} />
-    </m.div>
+    </motion.div>
   );
 }

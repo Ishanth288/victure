@@ -1,5 +1,5 @@
 
-import { m } from "framer-motion";
+import { motion } from "framer-motion";
 import { Plus, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -12,14 +12,14 @@ export default function InventoryHeader({ onAddClick, onExportClick }: Inventory
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
-        <m.h1
+        <motion.h1
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
           className="text-3xl font-bold text-neutral-900"
         >
           Inventory Management
-        </m.h1>
+        </motion.h1>
         <p className="text-neutral-600 mt-1">
           Manage and track your pharmacy inventory
         </p>

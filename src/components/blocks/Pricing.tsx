@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
-import { m } from "framer-motion";
+import { motion } from "framer-motion";
 import { Check, Star } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
@@ -226,7 +226,7 @@ export function Pricing({
 
       <div className="grid grid-cols-1 md:grid-cols-3 sm:2 gap-4">
         {plans.map((plan, index) => (
-          <m.div
+          <motion.div
             key={index}
             initial={{ y: 50, opacity: 1 }}
             whileInView={
@@ -329,7 +329,7 @@ export function Pricing({
                 {plan.description}
               </p>
             </div>
-          </m.div>
+          </motion.div>
         ))}
       </div>
     </div>

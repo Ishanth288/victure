@@ -1,5 +1,5 @@
 
-import { m } from "framer-motion";
+import { motion } from "framer-motion";
 
 const testimonials = [
   {
@@ -35,7 +35,7 @@ export default function Testimonials() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {testimonials.map((testimonial, index) => (
-            <m.div
+            <motion.div
               key={testimonial.author}
               className="glass-card rounded-xl p-6"
               initial={{ opacity: 0, y: 20 }}
@@ -59,7 +59,7 @@ export default function Testimonials() {
                 </cite>
                 <p className="text-neutral-600 text-sm">{testimonial.role}</p>
               </div>
-            </m.div>
+            </motion.div>
           ))}
         </div>
       </div>

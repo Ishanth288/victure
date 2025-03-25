@@ -2,7 +2,7 @@
 import { HashLink } from 'react-router-hash-link';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { m } from "framer-motion";
+import { motion } from "framer-motion";
 
 export default function Hero() {
   const navigate = useNavigate();
@@ -40,23 +40,23 @@ export default function Hero() {
     <section className="pt-32 pb-20">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <m.h1 
+          <motion.h1 
             className="text-4xl md:text-6xl font-bold text-neutral-900 dark:text-white mb-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
             Transform Your Pharmacy Management
-          </m.h1>
-          <m.p 
+          </motion.h1>
+          <motion.p 
             className="text-xl text-neutral-600 dark:text-neutral-300 mb-8 max-w-2xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             Streamline operations, enhance patient care, and grow your business with our comprehensive pharmacy management system
-          </m.p>
-          <m.div 
+          </motion.p>
+          <motion.div 
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -79,7 +79,7 @@ export default function Hero() {
                 Learn More
               </Button>
             </HashLink>
-          </m.div>
+          </motion.div>
         </div>
       </div>
     </section>

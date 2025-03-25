@@ -1,5 +1,5 @@
 
-import { m } from "framer-motion";
+import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 
 const benefits = [
@@ -26,7 +26,7 @@ export default function Benefits() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {benefits.map((benefit, index) => (
-            <m.div
+            <motion.div
               key={benefit}
               className="flex items-start space-x-3"
               initial={{ opacity: 0, x: -20 }}
@@ -40,7 +40,7 @@ export default function Benefits() {
                 </div>
               </div>
               <p className="text-neutral-700 font-medium">{benefit}</p>
-            </m.div>
+            </motion.div>
           ))}
         </div>
       </div>

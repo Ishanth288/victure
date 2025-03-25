@@ -1,5 +1,4 @@
-
-import { m } from "framer-motion";
+import { motion } from "framer-motion";
 import { useState } from "react";
 import {
   LayoutGrid, Package, ShoppingCart, LineChart, FileText, Pill,
@@ -68,7 +67,7 @@ export default function Demo() {
           </p>
         </div>
 
-        <m.div
+        <motion.div
           key={currentSlide}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -133,7 +132,7 @@ export default function Demo() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-        </m.div>
+        </motion.div>
       </div>
     </section>
   );

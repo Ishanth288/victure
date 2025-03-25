@@ -1,6 +1,6 @@
 
 import React, { useRef, useState, useEffect, memo } from "react";
-import { useScroll, useTransform, m, MotionValue } from "framer-motion";
+import { useScroll, useTransform, motion, MotionValue } from "framer-motion";
 
 // Optimize the ContainerScroll component
 export const ContainerScroll = memo(({
@@ -86,14 +86,14 @@ const Header = memo(({ translate, titleComponent }: {
   titleComponent: React.ReactNode | string;
 }) => {
   return (
-    <m.div
+    <motion.div
       style={{
         translateY: translate,
       }}
       className="div max-w-5xl mx-auto text-center"
     >
       {titleComponent}
-    </m.div>
+    </motion.div>
   );
 });
 
@@ -112,7 +112,7 @@ const Card = memo(({
   shouldReduceMotion: boolean;
 }) => {
   return (
-    <m.div
+    <motion.div
       style={{
         rotateX: shouldReduceMotion ? 0 : rotate,
         scale,
@@ -126,7 +126,7 @@ const Card = memo(({
       <div className="h-full w-full overflow-hidden rounded-2xl bg-gray-100 dark:bg-zinc-900 md:rounded-2xl md:p-4">
         {children}
       </div>
-    </m.div>
+    </motion.div>
   );
 });
 
