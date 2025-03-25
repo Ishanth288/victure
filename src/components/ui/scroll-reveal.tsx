@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
 interface ScrollRevealProps {
   children: React.ReactNode;
@@ -75,13 +75,13 @@ export function ScrollReveal({
   };
 
   return (
-    <motion.div
+    <m.div
       ref={ref}
       className={className}
       {...getAnimationProps()}
       transition={{ duration, delay, ease: 'easeOut' }}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
