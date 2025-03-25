@@ -78,7 +78,7 @@ export const ScrollAnimationSection = memo(() => {
           ].map((item, index) => (
             <ScrollReveal 
               key={index}
-              animation="slide-left" 
+              animation="fade" 
               delay={index * 0.1}
             >
               <CardTilt className="bg-white p-6 rounded-lg shadow-md">
