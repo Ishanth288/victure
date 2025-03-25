@@ -1,6 +1,6 @@
 
 import { BarChart4, UserCircle2, Package, Syringe, Link, FileText } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { memo, useState } from "react";
 import { CardTilt } from "./ui/card-tilt";
 
@@ -46,7 +46,7 @@ const FeatureCard = memo(({ feature, isActive, onClick }: {
   const prefersReducedMotion = useReducedMotion();
   
   return (
-    <motion.div
+    <m.div
       className={`rounded-xl p-6 cursor-pointer transition-all duration-300 ${
         isActive ? "bg-white shadow-lg" : "bg-transparent hover:bg-white/50"
       }`}
@@ -61,16 +61,16 @@ const FeatureCard = memo(({ feature, isActive, onClick }: {
         {feature.title}
       </h3>
       {isActive && (
-        <motion.p 
+        <m.p 
           className="text-neutral-600"
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           transition={{ duration: 0.3 }}
         >
           {feature.description}
-        </motion.p>
+        </m.p>
       )}
-    </motion.div>
+    </m.div>
   );
 });
 
@@ -79,7 +79,7 @@ FeatureCard.displayName = 'FeatureCard';
 // Company logo component
 const CompanyPromotion = memo(() => {
   return (
-    <motion.div 
+    <m.div 
       className="relative h-full flex flex-col items-center justify-center"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -89,7 +89,7 @@ const CompanyPromotion = memo(() => {
       <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-secondary/30 rounded-xl opacity-40 animate-pulse-glow"></div>
       
       <div className="relative z-10 text-center">
-        <motion.div
+        <m.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.3 }}
@@ -100,18 +100,18 @@ const CompanyPromotion = memo(() => {
             alt="Victure Logo" 
             className="w-32 h-32 object-contain mx-auto" 
           />
-        </motion.div>
+        </m.div>
         
-        <motion.h2 
+        <m.h2 
           className="text-3xl md:text-4xl font-bold mb-4 text-gradient-primary"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
           Victure
-        </motion.h2>
+        </m.h2>
         
-        <motion.p 
+        <m.p 
           className="text-lg text-neutral-800 max-w-md mx-auto font-medium"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -119,7 +119,7 @@ const CompanyPromotion = memo(() => {
         >
           The future of pharmacy management is here.
           Experience the next generation of pharmacy tools.
-        </motion.p>
+        </m.p>
         
         <CardTilt className="mt-8 bg-white/80 backdrop-blur-sm p-4 max-w-xs mx-auto">
           <p className="text-neutral-700 text-sm">
@@ -127,7 +127,7 @@ const CompanyPromotion = memo(() => {
           </p>
         </CardTilt>
       </div>
-    </motion.div>
+    </m.div>
   );
 });
 
