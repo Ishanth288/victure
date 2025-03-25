@@ -146,7 +146,7 @@ export function Pricing({
         throw new Error('Invalid response from payment server');
       }
       
-      const options = {
+      const options: RazorpayOptions = {
         key: data.keyId,
         amount: data.amount * 100,
         currency: data.currency,
