@@ -44,6 +44,10 @@ export const ScrollAnimationSection = memo(() => {
     }
   ], []);
 
+  // Check for reduced motion preference on mount only
+  const shouldReduceMotion = typeof window !== 'undefined' && 
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
   return (
     <ContainerScroll
       titleComponent={
@@ -57,17 +61,17 @@ export const ScrollAnimationSection = memo(() => {
         </>
       }
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4 h-full items-center">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4 h-full items-center contain-layout">
         <div className="flex flex-col space-y-4">
           {leftColumnCards.map((item, index) => (
             <ScrollReveal 
               key={index}
-              animation="fade" 
-              delay={index * 0.05} // Reduced delay for smoother animations
-              threshold={0.1} // Lower threshold for earlier animation triggering
-              duration={0.3} // Faster animation duration
+              animation={shouldReduceMotion ? 'fade' : 'fade'} 
+              delay={index * 0.03} // Further reduced delay for smoother animations
+              threshold={0.05} // Lower threshold for earlier animation triggering
+              duration={0.2} // Faster animation duration
             >
-              <CardTilt className="bg-white p-6 rounded-lg shadow-md">
+              <CardTilt className="bg-white p-6 rounded-lg shadow-md" disabled={shouldReduceMotion}>
                 <div className="flex items-start gap-4">
                   <div className="text-primary">{item.icon}</div>
                   <div>
@@ -84,12 +88,12 @@ export const ScrollAnimationSection = memo(() => {
           {rightColumnCards.map((item, index) => (
             <ScrollReveal 
               key={index}
-              animation="fade" 
-              delay={index * 0.05} // Reduced delay for smoother animations
-              threshold={0.1} // Lower threshold for earlier animation triggering
-              duration={0.3} // Faster animation duration
+              animation={shouldReduceMotion ? 'fade' : 'fade'} 
+              delay={index * 0.03} // Further reduced delay for smoother animations
+              threshold={0.05} // Lower threshold for earlier animation triggering
+              duration={0.2} // Faster animation duration
             >
-              <CardTilt className="bg-white p-6 rounded-lg shadow-md">
+              <CardTilt className="bg-white p-6 rounded-lg shadow-md" disabled={shouldReduceMotion}>
                 <div className="flex items-start gap-4">
                   <div className="text-primary">{item.icon}</div>
                   <div>
