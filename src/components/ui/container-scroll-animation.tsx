@@ -22,8 +22,7 @@ export const ContainerScroll = memo(({
 
   useEffect(() => {
     // Check for reduced motion preference
-    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    setShouldReduceMotion(prefersReducedMotion);
+    setShouldReduceMotion(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
     
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
@@ -31,17 +30,35 @@ export const ContainerScroll = memo(({
     
     checkMobile();
     
-    // Use passive event listener for better scroll performance
+    let resizeTimer: ReturnType<typeof setTimeout>;
     const handleResize = () => {
-      requestAnimationFrame(() => {
+      // Skip during scroll to improve performance
+      if (document.body.classList.contains('is-scrolling')) return;
+      
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
         checkMobile();
-      });
+      }, 250); // Longer debounce time
+    };
+    
+    // Add scroll flag to reduce work during active scrolling
+    let scrollTimer: ReturnType<typeof setTimeout>;
+    const handleScroll = () => {
+      document.body.classList.add('is-scrolling');
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => {
+        document.body.classList.remove('is-scrolling');
+      }, 150);
     };
     
     window.addEventListener("resize", handleResize, { passive: true });
+    window.addEventListener("scroll", handleScroll, { passive: true });
     
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("scroll", handleScroll);
+      clearTimeout(resizeTimer);
+      clearTimeout(scrollTimer);
     };
   }, []);
 
@@ -58,7 +75,6 @@ export const ContainerScroll = memo(({
       ref={containerRef}
       style={{ 
         contain: 'content', // Improve performance by creating a new stacking context
-        contentVisibility: 'auto', // Improves rendering performance
       }}
     >
       <div
@@ -121,9 +137,7 @@ const Card = memo(({
           : "0 0 #0000004d, 0 9px 20px #0000004a, 0 37px 37px #00000042",
         transform: shouldReduceMotion ? "none" : undefined,
         willChange: "transform", // Hint for browser optimization
-        WebkitFontSmoothing: "subpixel-antialiased", // Improve text rendering
-        backfaceVisibility: "hidden", // Reduce composite layers
-        transformStyle: "preserve-3d", // Better 3D rendering
+        WebkitFontSmoothing: "subpixel-antialiased" // Improve text rendering
       }}
       className="max-w-5xl -mt-12 mx-auto h-[30rem] md:h-[40rem] w-full border-4 border-[#6C6C6C] p-2 md:p-6 bg-[#222222] rounded-[30px] shadow-2xl will-change-transform"
     >

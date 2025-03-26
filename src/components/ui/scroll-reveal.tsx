@@ -9,28 +9,20 @@ interface ScrollRevealProps {
   animation?: 'fade' | 'slide-up' | 'slide-right' | 'scale';
   delay?: number;
   duration?: number;
-  disabled?: boolean;
 }
 
 export function ScrollReveal({ 
   children, 
   className = '',
-  threshold = 0.1,
+  threshold = 0.2,
   animation = 'fade',
   delay = 0,
-  duration = 0.3,
-  disabled = false
+  duration = 0.5
 }: ScrollRevealProps) {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
-    // Skip animation if explicitly disabled
-    if (disabled) {
-      setIsVisible(true);
-      return;
-    }
-    
     // Use a lightweight version of the animation on mobile 
     const isMobile = window.innerWidth <= 768;
     const shouldReduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -41,42 +33,36 @@ export function ScrollReveal({
       return;
     }
     
-    let observer: IntersectionObserver;
-    const currentRef = ref.current;
+    // Use a more performant intersection observer configuration
+    const observerOptions = {
+      threshold: isMobile ? 0.05 : threshold, // Lower threshold on mobile
+      rootMargin: "0px 0px 100px 0px" // Start animations a bit earlier
+    };
     
-    // Only create observer if needed and if browser supports it
-    if (currentRef && !isVisible && 'IntersectionObserver' in window) {
-      // Use a more performant intersection observer configuration
-      observer = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting) {
-            // Use requestAnimationFrame for smoother animations
-            requestAnimationFrame(() => {
-              setIsVisible(true);
-            });
-            observer.unobserve(entries[0].target);
-          }
-        },
-        {
-          threshold: isMobile ? 0.01 : threshold, // Lower threshold on mobile
-          rootMargin: "0px 0px 100px 0px" // Start animations a bit earlier
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          // Use requestAnimationFrame for smoother animations
+          requestAnimationFrame(() => {
+            setIsVisible(true);
+          });
+          observer.unobserve(entry.target);
         }
-      );
-      
+      },
+      observerOptions
+    );
+
+    const currentRef = ref.current;
+    if (currentRef) {
       observer.observe(currentRef);
     }
 
     return () => {
-      if (observer && currentRef) {
+      if (currentRef) {
         observer.unobserve(currentRef);
       }
     };
-  }, [threshold, disabled]);
-
-  // If animations are disabled, just render children
-  if (disabled) {
-    return <div className={className}>{children}</div>;
-  }
+  }, [threshold]);
 
   const getAnimationProps = () => {
     // Reduce animation complexity on mobile
@@ -122,12 +108,14 @@ export function ScrollReveal({
         delay, 
         ease: 'easeOut',
         // Add these properties for better performance with framer-motion
-        type: "tween"
+        type: "tween",
+        willChange: "transform, opacity" 
       }}
       style={{ 
         willChange: "transform, opacity",
         backfaceVisibility: "hidden", // Reduce composite layers
         WebkitFontSmoothing: "subpixel-antialiased", // Better text rendering
+        perspective: 1000
       }}
     >
       {children}

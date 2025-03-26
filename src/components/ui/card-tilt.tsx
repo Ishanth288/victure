@@ -5,17 +5,15 @@ import { m } from 'framer-motion';
 interface CardTiltProps {
   children: React.ReactNode;
   className?: string;
-  disabled?: boolean; // Added disabled prop to the interface
 }
 
 // Using memo for better performance
-const CardTilt = memo(function CardTilt({ children, className, disabled = false }: CardTiltProps) {
+const CardTilt = memo(function CardTilt({ children, className }: CardTiltProps) {
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
   
   // Check if we should disable animations for better performance
-  const shouldDisableEffects = disabled || 
-    window.innerWidth < 768 || 
+  const shouldDisableEffects = window.innerWidth < 768 || 
     window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
   // Memoize the handler to prevent unnecessary re-renders
@@ -77,4 +75,3 @@ const CardTilt = memo(function CardTilt({ children, className, disabled = false 
 
 // Export the component properly
 export { CardTilt };
-export type { CardTiltProps }; // Export the interface for type checking

@@ -16,85 +16,83 @@ export const TechParticles = memo(({ className }: { className?: string }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particles = useRef<Particle[]>([]);
   const animationRef = useRef<number>();
-  const lastTimeRef = useRef<number>(0);
-  
+  const lastFrameTimeRef = useRef<number>(0);
+  const throttleFrameRate = useRef<boolean>(true);
+
   useEffect(() => {
-    // Check for reduced motion preference
-    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    
     const canvas = canvasRef.current;
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
     
-    // Set up the canvas with the right pixel ratio for crisp rendering
-    const setupCanvas = () => {
+    const resizeCanvas = () => {
       const parent = canvas.parentElement;
       if (!parent) return;
       
+      const devicePixelRatio = window.devicePixelRatio || 1;
       const rect = parent.getBoundingClientRect();
       
-      // Logical size matches the element size
+      // Set logical size
       canvas.width = rect.width;
       canvas.height = rect.height;
       
-      // Drastically reduce particle count on mobile and for users who prefer reduced motion
+      // Clear and redraw at the new resolution
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+      
+      // Significantly reduce the number of particles
       initParticles();
     };
     
     const initParticles = () => {
-      const isMobile = window.innerWidth < 768;
-      
-      // Drastically reduce particles for better performance
-      const maxParticles = prefersReducedMotion ? 15 : (isMobile ? 20 : 40);
-      
       particles.current = [];
-      for (let i = 0; i < maxParticles; i++) {
+      
+      // Drastically reduce particle count for better performance
+      const density = window.innerWidth < 768 ? 40000 : 30000;
+      const particleCount = Math.min(50, Math.floor((canvas.width * canvas.height) / density));
+      
+      for (let i = 0; i < particleCount; i++) {
         particles.current.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          size: Math.random() * 1.5 + 0.3, // Smaller particles
+          size: Math.random() * 1.5 + 0.5, // Smaller particles
           color: getRandomColor(),
           velocity: {
-            x: (Math.random() - 0.5) * 0.1, // Much slower movement
-            y: (Math.random() - 0.5) * 0.1
+            x: (Math.random() - 0.5) * 0.15, // Slower movement
+            y: (Math.random() - 0.5) * 0.15
           }
         });
       }
     };
     
     const getRandomColor = () => {
-      const colors = ['#3b82f660', '#60a5fa60', '#93c5fd60', '#a5b4fc60', '#ddd6fe60'];
+      const colors = ['#3b82f6', '#60a5fa', '#93c5fd', '#a5b4fc', '#ddd6fe'];
       return colors[Math.floor(Math.random() * colors.length)];
     };
     
-    const drawParticles = (time: number) => {
+    const drawParticles = (timestamp: number) => {
       if (!ctx || !canvas) return;
       
-      // Skip frames for better performance, especially on mobile
-      // Aim for ~15fps for particles instead of 60fps
-      if (time - lastTimeRef.current < 66) { // ~15fps
-        animationRef.current = requestAnimationFrame(drawParticles);
-        return;
+      // Frame rate limiting for better performance
+      if (throttleFrameRate.current) {
+        // Target 30fps for particles (33.33ms between frames)
+        const elapsed = timestamp - lastFrameTimeRef.current;
+        if (elapsed < 33.33) {
+          animationRef.current = requestAnimationFrame(drawParticles);
+          return;
+        }
+        lastFrameTimeRef.current = timestamp;
       }
-      
-      lastTimeRef.current = time;
       
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Low connection threshold for better performance
-      const maxConnections = prefersReducedMotion ? 5 : 10;
-      const connectionDistance = prefersReducedMotion ? 60 : 80;
-      let connectionCount = 0;
-      
-      // Draw particles and minimal connections
-      particles.current.forEach((particle, i) => {
-        // Update position with reduced calculations
+      // Update and draw particles
+      particles.current.forEach(particle => {
+        // Update position
         particle.x += particle.velocity.x;
         particle.y += particle.velocity.y;
         
-        // Simple boundary checks
+        // Wrap around edges
         if (particle.x < 0) particle.x = canvas.width;
         if (particle.x > canvas.width) particle.x = 0;
         if (particle.y < 0) particle.y = canvas.height;
@@ -105,18 +103,29 @@ export const TechParticles = memo(({ className }: { className?: string }) => {
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         ctx.fillStyle = particle.color;
         ctx.fill();
+      });
+      
+      // Only draw connections every 3rd frame
+      const currentFrame = Math.floor(timestamp / 33.33) % 3;
+      
+      if (currentFrame === 0) {
+        // Limit the total number of connections to improve performance
+        const maxConnections = 30;
+        let connectionCount = 0;
         
-        // Draw only a very limited number of connections
-        if (connectionCount < maxConnections) {
+        // Calculate connections with a maximum distance threshold
+        const maxDistance = 80; // Reduced connection distance
+        
+        for (let i = 0; i < particles.current.length && connectionCount < maxConnections; i++) {
           for (let j = i + 1; j < particles.current.length && connectionCount < maxConnections; j++) {
             const dx = particles.current[i].x - particles.current[j].x;
             const dy = particles.current[i].y - particles.current[j].y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             
-            if (distance < connectionDistance) {
+            if (distance < maxDistance) {
               ctx.beginPath();
-              ctx.strokeStyle = `rgba(100, 120, 255, ${0.05 * (1 - distance / connectionDistance)})`;
-              ctx.lineWidth = 0.2;
+              ctx.strokeStyle = `rgba(100, 120, 255, ${0.1 * (1 - distance / maxDistance)})`;
+              ctx.lineWidth = 0.3;
               ctx.moveTo(particles.current[i].x, particles.current[i].y);
               ctx.lineTo(particles.current[j].x, particles.current[j].y);
               ctx.stroke();
@@ -124,25 +133,30 @@ export const TechParticles = memo(({ className }: { className?: string }) => {
             }
           }
         }
-      });
+      }
       
       animationRef.current = requestAnimationFrame(drawParticles);
     };
     
-    // Set up debounced resize handler
-    let resizeTimeout: ReturnType<typeof setTimeout>;
+    // Implement a debounced resize handler
+    let resizeTimer: ReturnType<typeof setTimeout>;
     const handleResize = () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(setupCanvas, 300);
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(resizeCanvas, 200);
     };
     
-    window.addEventListener('resize', handleResize, { passive: true });
+    window.addEventListener('resize', handleResize);
+    resizeCanvas();
     
-    // Initial setup
-    setupCanvas();
-    
-    // Start animation with requestAnimationFrame
+    // Start animation
     animationRef.current = requestAnimationFrame(drawParticles);
+    
+    // Check if we should use reduced animation quality
+    const checkPerformance = () => {
+      // Enable throttling on mobile or low-power devices
+      throttleFrameRate.current = window.innerWidth < 1024;
+    };
+    checkPerformance();
     
     // Clean up
     return () => {
@@ -150,7 +164,7 @@ export const TechParticles = memo(({ className }: { className?: string }) => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
-      clearTimeout(resizeTimeout);
+      clearTimeout(resizeTimer);
     };
   }, []);
   
@@ -158,7 +172,7 @@ export const TechParticles = memo(({ className }: { className?: string }) => {
     <canvas 
       ref={canvasRef} 
       className={`absolute inset-0 pointer-events-none ${className}`}
-      style={{ opacity: 0.15 }} // Further reduced opacity for better performance
+      style={{ opacity: 0.2 }} // Reduced opacity for better performance
     />
   );
 });

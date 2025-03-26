@@ -1,9 +1,17 @@
 
 import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import FormField from "./form/FormField";
-import SelectField from "./form/SelectField";
-import FormActions from "./form/FormActions";
 
 export interface InventoryItemFormData {
   name: string;
@@ -52,129 +60,169 @@ export default function InventoryForm({
     }
   };
 
-  const dosageFormOptions = [
-    { value: "tablet", label: "Tablet" },
-    { value: "capsule", label: "Capsule" },
-    { value: "syrup", label: "Syrup" },
-    { value: "injection", label: "Injection" },
-    { value: "ointment", label: "Ointment" },
-  ];
-
-  const storageOptions = [
-    { value: "room", label: "Room Temperature" },
-    { value: "refrigerated", label: "Refrigerated" },
-    { value: "frozen", label: "Frozen" },
-  ];
-
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <FormField
-          id="name"
-          label="Medicine Name"
-          value={formData.name}
-          onChange={onInputChange}
-          placeholder="Enter medicine name"
-          required={true}
-        />
+        <div className="space-y-2">
+          <Label htmlFor="name">Medicine Name</Label>
+          <Input
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={onInputChange}
+            placeholder="Enter medicine name"
+          />
+        </div>
 
-        <FormField
-          id="genericName"
-          label="Generic Name (Optional)"
-          value={formData.genericName}
-          onChange={onInputChange}
-          placeholder="Enter generic name"
-        />
+        <div className="space-y-2">
+          <Label htmlFor="genericName">Generic Name</Label>
+          <Input
+            id="genericName"
+            name="genericName"
+            value={formData.genericName}
+            onChange={onInputChange}
+            placeholder="Enter generic name"
+          />
+        </div>
 
-        <FormField
-          id="ndc"
-          label="NDC (Optional)"
-          value={formData.ndc}
-          onChange={onInputChange}
-          placeholder="Enter NDC"
-        />
+        <div className="space-y-2">
+          <Label htmlFor="ndc">NDC</Label>
+          <Input
+            id="ndc"
+            name="ndc"
+            value={formData.ndc}
+            onChange={onInputChange}
+            placeholder="Enter NDC"
+          />
+        </div>
 
-        <FormField
-          id="manufacturer"
-          label="Manufacturer (Optional)"
-          value={formData.manufacturer}
-          onChange={onInputChange}
-          placeholder="Enter manufacturer"
-        />
+        <div className="space-y-2">
+          <Label htmlFor="manufacturer">Manufacturer</Label>
+          <Input
+            id="manufacturer"
+            name="manufacturer"
+            value={formData.manufacturer}
+            onChange={onInputChange}
+            placeholder="Enter manufacturer"
+          />
+        </div>
 
-        <SelectField
-          id="dosageForm"
-          label="Dosage Form (Optional)"
-          value={formData.dosageForm}
-          options={dosageFormOptions}
-          onChange={(value) => onSelectChange("dosageForm", value)}
-          placeholder="Select dosage form"
-        />
+        <div className="space-y-2">
+          <Label htmlFor="dosageForm">Dosage Form</Label>
+          <Select
+            value={formData.dosageForm}
+            onValueChange={(value) => onSelectChange("dosageForm", value)}
+          >
+            <SelectTrigger className="bg-white">
+              <SelectValue placeholder="Select dosage form" />
+            </SelectTrigger>
+            <SelectContent className="bg-white border shadow-lg">
+              <SelectItem value="tablet">Tablet</SelectItem>
+              <SelectItem value="capsule">Capsule</SelectItem>
+              <SelectItem value="syrup">Syrup</SelectItem>
+              <SelectItem value="injection">Injection</SelectItem>
+              <SelectItem value="ointment">Ointment</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-        <FormField
-          id="strength"
-          label="Strength/Concentration (Optional)"
-          value={formData.strength}
-          onChange={onInputChange}
-          placeholder="e.g., 500mg"
-        />
+        <div className="space-y-2">
+          <Label htmlFor="strength">Strength/Concentration</Label>
+          <Input
+            id="strength"
+            name="strength"
+            value={formData.strength}
+            onChange={onInputChange}
+            placeholder="e.g., 500mg"
+          />
+        </div>
 
-        <FormField
-          id="unitCost"
-          label="Unit Cost (₹)"
-          value={formData.unitCost}
-          onChange={onInputChange}
-          placeholder="Enter unit cost"
-          type="number"
-          required={true}
-        />
+        <div className="space-y-2">
+          <Label htmlFor="unitCost">Unit Cost (₹)</Label>
+          <Input
+            id="unitCost"
+            name="unitCost"
+            type="number"
+            value={formData.unitCost}
+            onChange={onInputChange}
+            placeholder="Enter unit cost"
+          />
+        </div>
 
-        <FormField
-          id="quantity"
-          label="Quantity"
-          value={formData.quantity}
-          onChange={onInputChange}
-          placeholder="Enter quantity"
-          type="number"
-          required={true}
-        />
+        <div className="space-y-2">
+          <Label htmlFor="quantity">Quantity</Label>
+          <Input
+            id="quantity"
+            name="quantity"
+            type="number"
+            value={formData.quantity}
+            onChange={onInputChange}
+            placeholder="Enter quantity"
+          />
+        </div>
 
-        <FormField
-          id="reorderPoint"
-          label="Reorder Point (Optional)"
-          value={formData.reorderPoint}
-          onChange={onInputChange}
-          placeholder="Enter reorder point"
-          type="number"
-        />
+        <div className="space-y-2">
+          <Label htmlFor="reorderPoint">Reorder Point</Label>
+          <Input
+            id="reorderPoint"
+            name="reorderPoint"
+            type="number"
+            value={formData.reorderPoint}
+            onChange={onInputChange}
+            placeholder="Enter reorder point"
+          />
+        </div>
 
-        <FormField
-          id="expiryDate"
-          label="Expiry Date (Optional)"
-          value={formData.expiryDate}
-          onChange={onInputChange}
-          type="date"
-        />
+        <div className="space-y-2">
+          <Label htmlFor="expiryDate">Expiry Date</Label>
+          <Input
+            id="expiryDate"
+            name="expiryDate"
+            type="date"
+            value={formData.expiryDate}
+            onChange={onInputChange}
+          />
+        </div>
 
-        <SelectField
-          id="storage"
-          label="Storage Conditions (Optional)"
-          value={formData.storage}
-          options={storageOptions}
-          onChange={(value) => onSelectChange("storage", value)}
-          placeholder="Select storage condition"
-        />
+        <div className="space-y-2">
+          <Label htmlFor="storage">Storage Conditions</Label>
+          <Select
+            value={formData.storage}
+            onValueChange={(value) => onSelectChange("storage", value)}
+          >
+            <SelectTrigger className="bg-white">
+              <SelectValue placeholder="Select storage condition" />
+            </SelectTrigger>
+            <SelectContent className="bg-white border shadow-lg">
+              <SelectItem value="room">Room Temperature</SelectItem>
+              <SelectItem value="refrigerated">Refrigerated</SelectItem>
+              <SelectItem value="frozen">Frozen</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <FormActions
-        onCancel={onCancel}
-        onSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
-        isEdit={isEdit}
-      />
-
-      <div className="text-sm text-gray-500">
-        Fields marked with <span className="text-red-500">*</span> are required.
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          onClick={onCancel}
+          disabled={isSubmitting}
+        >
+          Cancel
+        </Button>
+        <Button 
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {isEdit ? "Saving..." : "Adding..."}
+            </>
+          ) : (
+            isEdit ? "Save Changes" : "Add Item"
+          )}
+        </Button>
       </div>
     </div>
   );
