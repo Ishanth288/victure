@@ -1,49 +1,13 @@
 
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
+import { AnimatedGradientBorder } from "@/components/ui/animated-gradient-border";
 import { CardTilt } from "@/components/ui/card-tilt";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { Database, Stethoscope, Rocket, BellRing, Clock, Shield } from "lucide-react";
-import { memo, useMemo } from "react";
+import { memo } from "react";
 
 // Memoize the component to prevent unnecessary re-renders
 export const ScrollAnimationSection = memo(() => {
-  // Use useMemo to avoid recreating the card data on each render
-  const leftColumnCards = useMemo(() => [
-    {
-      title: "Inventory Management",
-      description: "Track stock levels, manage expiry dates, and automate reordering with our intelligent inventory system.",
-      icon: <Database className="h-6 w-6" />
-    },
-    {
-      title: "Patient Care",
-      description: "Store patient records securely and access medication histories instantly for better care.",
-      icon: <Stethoscope className="h-6 w-6" />
-    },
-    {
-      title: "Billing & Reporting",
-      description: "Generate invoices in seconds and gain valuable insights with comprehensive analytics.",
-      icon: <Rocket className="h-6 w-6" />
-    }
-  ], []);
-
-  const rightColumnCards = useMemo(() => [
-    {
-      title: "Notifications",
-      description: "Stay informed with real-time alerts for low stock, upcoming expiry dates, and prescription refills.",
-      icon: <BellRing className="h-6 w-6" />
-    },
-    {
-      title: "Appointment Scheduling",
-      description: "Manage patient appointments and follow-ups with an intuitive calendar interface.",
-      icon: <Clock className="h-6 w-6" />
-    },
-    {
-      title: "Secure Access",
-      description: "Role-based access control ensures that staff members can only access the information they need.",
-      icon: <Shield className="h-6 w-6" />
-    }
-  ], []);
-
   return (
     <ContainerScroll
       titleComponent={
@@ -59,13 +23,27 @@ export const ScrollAnimationSection = memo(() => {
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4 h-full items-center">
         <div className="flex flex-col space-y-4">
-          {leftColumnCards.map((item, index) => (
+          {[
+            {
+              title: "Inventory Management",
+              description: "Track stock levels, manage expiry dates, and automate reordering with our intelligent inventory system.",
+              icon: <Database className="h-6 w-6" />
+            },
+            {
+              title: "Patient Care",
+              description: "Store patient records securely and access medication histories instantly for better care.",
+              icon: <Stethoscope className="h-6 w-6" />
+            },
+            {
+              title: "Billing & Reporting",
+              description: "Generate invoices in seconds and gain valuable insights with comprehensive analytics.",
+              icon: <Rocket className="h-6 w-6" />
+            }
+          ].map((item, index) => (
             <ScrollReveal 
               key={index}
-              animation="fade" 
-              delay={index * 0.05} // Reduced delay for smoother animations
-              threshold={0.1} // Lower threshold for earlier animation triggering
-              duration={0.3} // Faster animation duration
+              animation="slide-right" 
+              delay={index * 0.1}
             >
               <CardTilt className="bg-white p-6 rounded-lg shadow-md">
                 <div className="flex items-start gap-4">
@@ -81,13 +59,27 @@ export const ScrollAnimationSection = memo(() => {
         </div>
         
         <div className="flex flex-col space-y-4">
-          {rightColumnCards.map((item, index) => (
+          {[
+            {
+              title: "Notifications",
+              description: "Stay informed with real-time alerts for low stock, upcoming expiry dates, and prescription refills.",
+              icon: <BellRing className="h-6 w-6" />
+            },
+            {
+              title: "Appointment Scheduling",
+              description: "Manage patient appointments and follow-ups with an intuitive calendar interface.",
+              icon: <Clock className="h-6 w-6" />
+            },
+            {
+              title: "Secure Access",
+              description: "Role-based access control ensures that staff members can only access the information they need.",
+              icon: <Shield className="h-6 w-6" />
+            }
+          ].map((item, index) => (
             <ScrollReveal 
               key={index}
               animation="fade" 
-              delay={index * 0.05} // Reduced delay for smoother animations
-              threshold={0.1} // Lower threshold for earlier animation triggering
-              duration={0.3} // Faster animation duration
+              delay={index * 0.1}
             >
               <CardTilt className="bg-white p-6 rounded-lg shadow-md">
                 <div className="flex items-start gap-4">
