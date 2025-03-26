@@ -60,22 +60,30 @@ export default function InventoryForm({
     }
   };
 
+  // Helper component for required field label
+  const RequiredLabel = ({ htmlFor, children }: { htmlFor: string; children: React.ReactNode }) => (
+    <Label htmlFor={htmlFor}>
+      {children} <span className="text-red-500">*</span>
+    </Label>
+  );
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <Label htmlFor="name">Medicine Name</Label>
+          <RequiredLabel htmlFor="name">Medicine Name</RequiredLabel>
           <Input
             id="name"
             name="name"
             value={formData.name}
             onChange={onInputChange}
             placeholder="Enter medicine name"
+            required
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="genericName">Generic Name</Label>
+          <Label htmlFor="genericName">Generic Name (Optional)</Label>
           <Input
             id="genericName"
             name="genericName"
@@ -86,7 +94,7 @@ export default function InventoryForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="ndc">NDC</Label>
+          <Label htmlFor="ndc">NDC (Optional)</Label>
           <Input
             id="ndc"
             name="ndc"
@@ -97,7 +105,7 @@ export default function InventoryForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="manufacturer">Manufacturer</Label>
+          <Label htmlFor="manufacturer">Manufacturer (Optional)</Label>
           <Input
             id="manufacturer"
             name="manufacturer"
@@ -108,7 +116,7 @@ export default function InventoryForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="dosageForm">Dosage Form</Label>
+          <Label htmlFor="dosageForm">Dosage Form (Optional)</Label>
           <Select
             value={formData.dosageForm}
             onValueChange={(value) => onSelectChange("dosageForm", value)}
@@ -127,7 +135,7 @@ export default function InventoryForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="strength">Strength/Concentration</Label>
+          <Label htmlFor="strength">Strength/Concentration (Optional)</Label>
           <Input
             id="strength"
             name="strength"
@@ -138,7 +146,7 @@ export default function InventoryForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="unitCost">Unit Cost (₹)</Label>
+          <RequiredLabel htmlFor="unitCost">Unit Cost (₹)</RequiredLabel>
           <Input
             id="unitCost"
             name="unitCost"
@@ -146,11 +154,12 @@ export default function InventoryForm({
             value={formData.unitCost}
             onChange={onInputChange}
             placeholder="Enter unit cost"
+            required
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="quantity">Quantity</Label>
+          <RequiredLabel htmlFor="quantity">Quantity</RequiredLabel>
           <Input
             id="quantity"
             name="quantity"
@@ -158,11 +167,12 @@ export default function InventoryForm({
             value={formData.quantity}
             onChange={onInputChange}
             placeholder="Enter quantity"
+            required
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="reorderPoint">Reorder Point</Label>
+          <Label htmlFor="reorderPoint">Reorder Point (Optional)</Label>
           <Input
             id="reorderPoint"
             name="reorderPoint"
@@ -174,7 +184,7 @@ export default function InventoryForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="expiryDate">Expiry Date</Label>
+          <Label htmlFor="expiryDate">Expiry Date (Optional)</Label>
           <Input
             id="expiryDate"
             name="expiryDate"
@@ -185,7 +195,7 @@ export default function InventoryForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="storage">Storage Conditions</Label>
+          <Label htmlFor="storage">Storage Conditions (Optional)</Label>
           <Select
             value={formData.storage}
             onValueChange={(value) => onSelectChange("storage", value)}
@@ -223,6 +233,10 @@ export default function InventoryForm({
             isEdit ? "Save Changes" : "Add Item"
           )}
         </Button>
+      </div>
+
+      <div className="text-sm text-gray-500">
+        Fields marked with <span className="text-red-500">*</span> are required.
       </div>
     </div>
   );
