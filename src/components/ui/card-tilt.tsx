@@ -72,4 +72,4 @@ export const CardTilt = memo(function CardTilt({ children, className }: CardTilt
   );
 });
 
-export { CardTilt };
+// Removed duplicate export { CardTilt }; from here
