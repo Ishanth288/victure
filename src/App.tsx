@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
@@ -31,7 +31,9 @@ function App() {
           <Route path="/insights" element={<Insights />} />
           <Route path="/purchases" element={<Purchases />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<NotFound />} />
+          {/* Catch all route for 404 */}
+          <Route path="/not-found" element={<NotFound />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <ChatbotButton />
       </div>

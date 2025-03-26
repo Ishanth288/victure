@@ -5,8 +5,8 @@ import { HeroSection } from "@/components/sections/HeroSection";
 import { FloatingIconsSection } from "@/components/sections/FloatingIconsSection";
 import { ScrollAnimationSection } from "@/components/sections/ScrollAnimationSection";
 import { ContentSection } from "@/components/sections/ContentSection";
-import { Suspense, lazy, useEffect, useState, useCallback } from "react";
-import { LazyMotion, domAnimation, m } from "framer-motion";
+import { Suspense, lazy, useEffect, useState } from "react";
+import { LazyMotion, domAnimation } from "framer-motion";
 
 const Index = () => {
   const [shouldReduceMotion, setShouldReduceMotion] = useState(false);
@@ -61,8 +61,8 @@ const Index = () => {
         <main className="overflow-x-hidden overscroll-none">
           <HeroSection />
           
-          {/* Reduce the number of animated icons */}
-          <FloatingIconsSection />
+          {/* Only load floating icons if not reducing motion */}
+          {!shouldReduceMotion && <FloatingIconsSection />}
           
           {/* Lazy load heavy components with proper suspense fallbacks */}
           <Suspense fallback={
