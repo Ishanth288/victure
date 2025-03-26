@@ -7,7 +7,8 @@ interface CardTiltProps {
   className?: string;
 }
 
-export const CardTilt = memo(function CardTilt({ children, className }: CardTiltProps) {
+// Using memo for better performance
+const CardTilt = memo(function CardTilt({ children, className }: CardTiltProps) {
   const [rotateX, setRotateX] = useState(0);
   const [rotateY, setRotateY] = useState(0);
   
@@ -72,4 +73,5 @@ export const CardTilt = memo(function CardTilt({ children, className }: CardTilt
   );
 });
 
-// Removed duplicate export { CardTilt }; from here
+// Export the component properly
+export { CardTilt };
