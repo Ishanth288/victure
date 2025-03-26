@@ -3,10 +3,20 @@ import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 import { CardTilt } from "@/components/ui/card-tilt";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { Database, Stethoscope, Rocket, BellRing, Clock, Shield } from "lucide-react";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useEffect, useState } from "react";
 
 // Memoize the component to prevent unnecessary re-renders
 export const ScrollAnimationSection = memo(() => {
+  const [shouldReduceMotion, setShouldReduceMotion] = useState(false);
+  
+  useEffect(() => {
+    // Check for reduced motion preference on mount only
+    setShouldReduceMotion(
+      window.innerWidth < 768 || 
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    );
+  }, []);
+
   // Use useMemo to avoid recreating the card data on each render
   const leftColumnCards = useMemo(() => [
     {
@@ -44,10 +54,6 @@ export const ScrollAnimationSection = memo(() => {
     }
   ], []);
 
-  // Check for reduced motion preference on mount only
-  const shouldReduceMotion = typeof window !== 'undefined' && 
-    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
   return (
     <ContainerScroll
       titleComponent={
@@ -66,10 +72,11 @@ export const ScrollAnimationSection = memo(() => {
           {leftColumnCards.map((item, index) => (
             <ScrollReveal 
               key={index}
-              animation={shouldReduceMotion ? 'fade' : 'fade'} 
+              animation="fade"
               delay={index * 0.03} // Further reduced delay for smoother animations
               threshold={0.05} // Lower threshold for earlier animation triggering
               duration={0.2} // Faster animation duration
+              disabled={shouldReduceMotion}
             >
               <CardTilt className="bg-white p-6 rounded-lg shadow-md" disabled={shouldReduceMotion}>
                 <div className="flex items-start gap-4">
@@ -88,10 +95,11 @@ export const ScrollAnimationSection = memo(() => {
           {rightColumnCards.map((item, index) => (
             <ScrollReveal 
               key={index}
-              animation={shouldReduceMotion ? 'fade' : 'fade'} 
+              animation="fade"
               delay={index * 0.03} // Further reduced delay for smoother animations
               threshold={0.05} // Lower threshold for earlier animation triggering
               duration={0.2} // Faster animation duration
+              disabled={shouldReduceMotion}
             >
               <CardTilt className="bg-white p-6 rounded-lg shadow-md" disabled={shouldReduceMotion}>
                 <div className="flex items-start gap-4">
