@@ -32,20 +32,12 @@ const Index = () => {
       linkEl.href = 'https://prod.spline.design';
       document.head.appendChild(linkEl);
       
-      // Add content-visibility to improve rendering performance
-      document.documentElement.style.setProperty('content-visibility', 'auto');
-      
-      // Optimize scrolling
-      document.body.style.setProperty('overscroll-behavior', 'none');
-      
       // Add passive event listeners for better scroll performance
       document.addEventListener('touchstart', () => {}, { passive: true });
       document.addEventListener('touchmove', () => {}, { passive: true });
       
       return () => {
         document.head.removeChild(linkEl);
-        document.documentElement.style.removeProperty('content-visibility');
-        document.body.style.removeProperty('overscroll-behavior');
       };
     };
     
@@ -58,10 +50,10 @@ const Index = () => {
     <LazyMotion features={domAnimation} strict>
       <div className="min-h-screen bg-white">
         <Navigation />
-        <main className="overflow-x-hidden overscroll-none">
+        <main className="overflow-x-hidden">
           <HeroSection />
           
-          {/* Only load floating icons if not reducing motion */}
+          {/* Conditionally render floating icons based on device capability */}
           {!shouldReduceMotion && <FloatingIconsSection />}
           
           {/* Lazy load heavy components with proper suspense fallbacks */}
