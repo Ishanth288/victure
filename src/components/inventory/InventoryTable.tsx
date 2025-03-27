@@ -5,6 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -51,70 +59,66 @@ export default function InventoryTable({
     return "text-neutral-600";
   };
 
-  console.log("Rendering InventoryTable with", items.length, "items");
+  console.log("Rendering InventoryTable with", items?.length || 0, "items");
 
   return (
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-neutral-50 border-b border-neutral-200">
-            <tr>
-              <th className="px-4 py-3 text-left">
+        <Table>
+          <TableHeader className="bg-neutral-50 border-b border-neutral-200">
+            <TableRow>
+              <TableHead className="w-12">
                 <Checkbox />
-              </th>
-              <th className="px-4 py-3 text-left">
+              </TableHead>
+              <TableHead>
                 <div className="flex items-center gap-2">
                   <span>Name</span>
                   <ArrowUpDown className="h-4 w-4" />
                 </div>
-              </th>
-              <th className="px-4 py-3 text-left">NDC</th>
-              <th className="px-4 py-3 text-left">Manufacturer</th>
-              <th className="px-4 py-3 text-left">Quantity</th>
-              <th className="px-4 py-3 text-left">Unit Cost</th>
-              <th className="px-4 py-3 text-left">Expiry Date</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="px-4 py-6 text-center text-gray-500">
+              </TableHead>
+              <TableHead>NDC</TableHead>
+              <TableHead>Manufacturer</TableHead>
+              <TableHead>Quantity</TableHead>
+              <TableHead>Unit Cost</TableHead>
+              <TableHead>Expiry Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {!items || items.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="px-4 py-6 text-center text-gray-500">
                   No inventory items found. Add an item to get started.
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               <AnimatePresence>
                 {items.map((item) => (
-                  <m.tr
+                  <TableRow
                     key={item.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
                     className="border-b border-neutral-200 hover:bg-neutral-50"
                   >
-                    <td className="px-4 py-3">
+                    <TableCell>
                       <Checkbox
                         checked={selectedItems.includes(item.id)}
                         onCheckedChange={() => onToggleItem(item.id)}
                       />
-                    </td>
-                    <td className="px-4 py-3 font-medium">{item.name}</td>
-                    <td className="px-4 py-3 text-neutral-600">{item.ndc}</td>
-                    <td className="px-4 py-3 text-neutral-600">{item.manufacturer}</td>
-                    <td className="px-4 py-3">{item.quantity}</td>
-                    <td className="px-4 py-3">₹{item.unit_cost.toFixed(2)}</td>
-                    <td className={`px-4 py-3 ${getExpiryColor(item.expiry_date)}`}>
+                    </TableCell>
+                    <TableCell className="font-medium">{item.name}</TableCell>
+                    <TableCell className="text-neutral-600">{item.ndc || "N/A"}</TableCell>
+                    <TableCell className="text-neutral-600">{item.manufacturer || "N/A"}</TableCell>
+                    <TableCell>{item.quantity}</TableCell>
+                    <TableCell>₹{item.unit_cost.toFixed(2)}</TableCell>
+                    <TableCell className={`${getExpiryColor(item.expiry_date)}`}>
                       {item.expiry_date ? new Date(item.expiry_date).toLocaleDateString() : 'N/A'}
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
                         {item.status}
                       </span>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell>
                       <div className="flex space-x-2">
                         <TooltipProvider>
                           <Tooltip>
@@ -152,13 +156,13 @@ export default function InventoryTable({
                           </Tooltip>
                         </TooltipProvider>
                       </div>
-                    </td>
-                  </m.tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
               </AnimatePresence>
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </Card>
   );

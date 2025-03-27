@@ -65,12 +65,15 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
         .eq("user_id", user.id)
         .order("name");
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching inventory:", error);
+        throw error;
+      }
 
       console.log("Fetched inventory items:", data?.length || 0);
       
-      if (data) {
-        const inventoryItems: InventoryItem[] = (data as InventoryItemDB[]).map(item => ({
+      if (data && Array.isArray(data)) {
+        const inventoryItems: InventoryItem[] = data.map(item => ({
           ...item,
           generic_name: item.generic_name || null,
           strength: item.strength || null,
@@ -81,7 +84,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
         setInventory(inventoryItems);
         console.log("Updated inventory state with items:", inventoryItems.length);
       } else {
-        console.log("No inventory data returned from query");
+        console.log("No inventory data returned from query or data is not an array");
         setInventory([]);
       }
     } catch (error) {
@@ -91,6 +94,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
         description: "Failed to fetch inventory items",
         variant: "destructive",
       });
+      setInventory([]);
     } finally {
       setIsLoading(false);
     }
