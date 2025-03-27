@@ -189,6 +189,7 @@ function InventoryContent() {
     setCurrentPage(1);
   };
 
+  // Apply filters and search
   const filteredItems = inventory.filter((item) => {
     // First filter by search query
     const matchesSearch = 
@@ -214,14 +215,16 @@ function InventoryContent() {
     return true;
   });
 
+  // Update total pages when filtered items change
   useEffect(() => {
-    setTotalPages(Math.ceil(filteredItems.length / itemsPerPage));
+    setTotalPages(Math.max(1, Math.ceil(filteredItems.length / itemsPerPage)));
     // Reset to page 1 if current page is out of bounds
     if (currentPage > Math.ceil(filteredItems.length / itemsPerPage) && filteredItems.length > 0) {
       setCurrentPage(1);
     }
   }, [filteredItems, currentPage]);
 
+  // Get the items for the current page
   const paginatedItems = filteredItems.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage

@@ -79,6 +79,10 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
         }));
 
         setInventory(inventoryItems);
+        console.log("Updated inventory state with items:", inventoryItems.length);
+      } else {
+        console.log("No inventory data returned from query");
+        setInventory([]);
       }
     } catch (error) {
       console.error("Error fetching inventory:", error);
@@ -138,6 +142,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
 
   // Initial data fetch
   useEffect(() => {
+    console.log("Initial inventory data fetch");
     fetchInventory();
   }, []);
 
