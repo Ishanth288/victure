@@ -29,7 +29,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState<InventoryItemFormData>({
     name: "",
     genericName: "",
@@ -55,6 +55,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
       if (!user) {
         console.error("No authenticated user found during inventory fetch");
         setInventory([]);
+        setIsLoading(false);
         return;
       }
       
@@ -68,15 +69,17 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
 
       console.log("Fetched inventory items:", data?.length || 0);
       
-      const inventoryItems: InventoryItem[] = (data as InventoryItemDB[]).map(item => ({
-        ...item,
-        generic_name: item.generic_name || null,
-        strength: item.strength || null,
-        reorder_point: item.reorder_point || 10,
-        storage_condition: item.storage_condition || null
-      }));
+      if (data) {
+        const inventoryItems: InventoryItem[] = (data as InventoryItemDB[]).map(item => ({
+          ...item,
+          generic_name: item.generic_name || null,
+          strength: item.strength || null,
+          reorder_point: item.reorder_point || 10,
+          storage_condition: item.storage_condition || null
+        }));
 
-      setInventory(inventoryItems);
+        setInventory(inventoryItems);
+      }
     } catch (error) {
       console.error("Error fetching inventory:", error);
       toast({
@@ -92,38 +95,42 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
   // Setup realtime subscription
   useEffect(() => {
     const setupRealtimeSubscription = async () => {
-      // Get the current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.error("No authenticated user found when setting up realtime subscription");
-        return;
-      }
-      
-      console.log("Setting up realtime subscription for inventory table");
-      
-      const channel = supabase
-        .channel('inventory-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'inventory',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            console.log("Received realtime update:", payload);
-            fetchInventory();
-          }
-        )
-        .subscribe((status) => {
-          console.log("Supabase channel status:", status);
-        });
+      try {
+        // Get the current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.error("No authenticated user found when setting up realtime subscription");
+          return;
+        }
+        
+        console.log("Setting up realtime subscription for inventory table");
+        
+        const channel = supabase
+          .channel('inventory-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'inventory',
+              filter: `user_id=eq.${user.id}`
+            },
+            (payload) => {
+              console.log("Received realtime update:", payload);
+              fetchInventory();
+            }
+          )
+          .subscribe((status) => {
+            console.log("Supabase channel status:", status);
+          });
 
-      return () => {
-        console.log("Removing Supabase channel subscription");
-        supabase.removeChannel(channel);
-      };
+        return () => {
+          console.log("Removing Supabase channel subscription");
+          supabase.removeChannel(channel);
+        };
+      } catch (error) {
+        console.error("Error setting up realtime subscription:", error);
+      }
     };
     
     setupRealtimeSubscription();

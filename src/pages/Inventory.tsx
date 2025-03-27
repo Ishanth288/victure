@@ -165,7 +165,7 @@ function InventoryContent() {
       setSelectedItems(prev => prev.filter(id => id !== itemToDelete));
       
       // Refresh inventory after deletion
-      fetchInventory();
+      await fetchInventory();
       
       toast({
         title: "Item deleted",
@@ -335,6 +335,10 @@ function InventoryContent() {
       </div>
     );
   }
+
+  console.log("Rendering inventory page with", inventory.length, "items");
+  console.log("Filtered items:", filteredItems.length);
+  console.log("Paginated items:", paginatedItems.length);
 
   return (
     <div className="container mx-auto px-4 py-8">
