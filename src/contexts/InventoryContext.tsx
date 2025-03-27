@@ -50,13 +50,24 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
   const fetchInventory = async () => {
     setIsLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.error("No authenticated user found during inventory fetch");
+        setInventory([]);
+        return;
+      }
+      
       const { data, error } = await supabase
         .from("inventory")
         .select("*")
+        .eq("user_id", user.id)
         .order("name");
 
       if (error) throw error;
 
+      console.log("Fetched inventory items:", data?.length || 0);
+      
       const inventoryItems: InventoryItem[] = (data as InventoryItemDB[]).map(item => ({
         ...item,
         generic_name: item.generic_name || null,
@@ -78,27 +89,47 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Setup realtime subscription
   useEffect(() => {
-    const channel = supabase
-      .channel('inventory-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'inventory'
-        },
-        () => {
-          fetchInventory();
-        }
-      )
-      .subscribe();
+    const setupRealtimeSubscription = async () => {
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error("No authenticated user found when setting up realtime subscription");
+        return;
+      }
+      
+      console.log("Setting up realtime subscription for inventory table");
+      
+      const channel = supabase
+        .channel('inventory-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'inventory',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log("Received realtime update:", payload);
+            fetchInventory();
+          }
+        )
+        .subscribe((status) => {
+          console.log("Supabase channel status:", status);
+        });
 
-    return () => {
-      supabase.removeChannel(channel);
+      return () => {
+        console.log("Removing Supabase channel subscription");
+        supabase.removeChannel(channel);
+      };
     };
+    
+    setupRealtimeSubscription();
   }, []);
 
+  // Initial data fetch
   useEffect(() => {
     fetchInventory();
   }, []);

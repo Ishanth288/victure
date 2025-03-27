@@ -11,6 +11,7 @@ import { PlanLimitAlert } from "@/components/PlanLimitAlert";
 import { supabase } from "@/integrations/supabase/client";
 import { InventoryItem } from "@/types/inventory";
 import { useToast } from "@/components/ui/use-toast";
+import { InventoryProvider, useInventory } from "@/contexts/InventoryContext";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import {
@@ -24,18 +25,27 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-export default function Inventory() {
+// Inner component that uses the inventory context
+function InventoryContent() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [selectedItems, setSelectedItems] = useState<number[]>([]);
+  const { 
+    inventory, 
+    selectedItems, 
+    setSelectedItems,
+    isAddModalOpen, 
+    setIsAddModalOpen,
+    isEditModalOpen,
+    setIsEditModalOpen,
+    editingItem,
+    setEditingItem,
+    isLoading,
+    fetchInventory
+  } = useInventory();
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [currentEditItem, setCurrentEditItem] = useState<InventoryItem | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [filterType, setFilterType] = useState<string | null>(null);
@@ -47,7 +57,6 @@ export default function Inventory() {
 
   useEffect(() => {
     checkAuth();
-    fetchInventoryData();
     fetchUserPlan();
   }, []);
 
@@ -90,28 +99,6 @@ export default function Inventory() {
       }
     } catch (error) {
       console.error("Error fetching user plan:", error);
-    }
-  };
-
-  const fetchInventoryData = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Filter inventory by user_id to ensure data isolation
-      const { data, error } = await supabase
-        .from("inventory")
-        .select("*")
-        .eq("user_id", user.id)  // Filter by user_id
-        .order("name");
-
-      if (error) throw error;
-
-      setInventory(data || []);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching inventory:", error);
-      setLoading(false);
     }
   };
 
@@ -174,11 +161,11 @@ export default function Inventory() {
         throw error;
       }
 
-      // Remove from local state
-      setInventory(prev => prev.filter(item => item.id !== itemToDelete));
-      
       // Remove from selected items if present
       setSelectedItems(prev => prev.filter(id => id !== itemToDelete));
+      
+      // Refresh inventory after deletion
+      fetchInventory();
       
       toast({
         title: "Item deleted",
@@ -229,8 +216,11 @@ export default function Inventory() {
 
   useEffect(() => {
     setTotalPages(Math.ceil(filteredItems.length / itemsPerPage));
-    setCurrentPage(1);
-  }, [filteredItems]);
+    // Reset to page 1 if current page is out of bounds
+    if (currentPage > Math.ceil(filteredItems.length / itemsPerPage) && filteredItems.length > 0) {
+      setCurrentPage(1);
+    }
+  }, [filteredItems, currentPage]);
 
   const paginatedItems = filteredItems.slice(
     (currentPage - 1) * itemsPerPage,
@@ -246,7 +236,7 @@ export default function Inventory() {
   };
 
   const handleEditItem = (item: InventoryItem) => {
-    setCurrentEditItem(item);
+    setEditingItem(item);
     setIsEditModalOpen(true);
   };
 
@@ -336,93 +326,100 @@ export default function Inventory() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <DashboardLayout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <p>Loading inventory...</p>
-          </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <p>Loading inventory...</p>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="container mx-auto px-4 py-8">
-        {/* Show inventory limit alert based on plan */}
-        <PlanLimitAlert 
-          currentValue={inventory.length} 
-          maxValue={inventoryLimit}
-          resourceName="inventory items"
-          variant={inventory.length > inventoryLimit * 0.9 ? "warning" : "info"}
+    <div className="container mx-auto px-4 py-8">
+      {/* Show inventory limit alert based on plan */}
+      <PlanLimitAlert 
+        currentValue={inventory.length} 
+        maxValue={inventoryLimit}
+        resourceName="inventory items"
+        variant={inventory.length > inventoryLimit * 0.9 ? "warning" : "info"}
+      />
+
+      <InventoryHeader 
+        onAddClick={() => setIsAddModalOpen(true)} 
+        onExportClick={handleExportInventory} 
+      />
+
+      <div className="mt-8">
+        <InventorySearch
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          totalItems={filteredItems.length}
+          onFilterChange={handleApplyFilter}
+          activeFilter={filterType}
         />
 
-        <InventoryHeader 
-          onAddClick={() => setIsAddModalOpen(true)} 
-          onExportClick={handleExportInventory} 
-        />
-
-        <div className="mt-8">
-          <InventorySearch
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            totalItems={filteredItems.length}
-            onFilterChange={handleApplyFilter}
-            activeFilter={filterType}
+        <div className="mt-6" ref={tableRef}>
+          <InventoryTable
+            items={paginatedItems}
+            selectedItems={selectedItems}
+            onToggleItem={handleToggleSelectItem}
+            onEditItem={handleEditItem}
+            onDeleteItem={handleDeleteItem}
           />
-
-          <div className="mt-6" ref={tableRef}>
-            <InventoryTable
-              items={paginatedItems}
-              selectedItems={selectedItems}
-              onToggleItem={handleToggleSelectItem}
-              onEditItem={handleEditItem}
-              onDeleteItem={handleDeleteItem}
-            />
-          </div>
-
-          <div className="mt-4">
-            <InventoryPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              totalItems={filteredItems.length}
-              itemsPerPage={itemsPerPage}
-            />
-          </div>
         </div>
 
-        <InventoryModals
-          isAddOpen={isAddModalOpen}
-          isEditOpen={isEditModalOpen}
-          editItem={currentEditItem}
-          onAddClose={() => setIsAddModalOpen(false)}
-          onEditClose={() => {
-            setIsEditModalOpen(false);
-            setCurrentEditItem(null);
-          }}
-          onSuccessfulSave={fetchInventoryData}
-        />
-
-        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure you want to delete this item?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the inventory item and remove the data from our servers.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <div className="mt-4">
+          <InventoryPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredItems.length}
+            itemsPerPage={itemsPerPage}
+          />
+        </div>
       </div>
+
+      <InventoryModals
+        isAddOpen={isAddModalOpen}
+        isEditOpen={isEditModalOpen}
+        editItem={editingItem}
+        onAddClose={() => setIsAddModalOpen(false)}
+        onEditClose={() => {
+          setIsEditModalOpen(false);
+          setEditingItem(null);
+        }}
+        onSuccessfulSave={fetchInventory}
+      />
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to delete this item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the inventory item and remove the data from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+// Main inventory page component
+export default function Inventory() {
+  return (
+    <DashboardLayout>
+      <InventoryProvider>
+        <InventoryContent />
+      </InventoryProvider>
     </DashboardLayout>
   );
 }
