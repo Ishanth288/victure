@@ -18,6 +18,9 @@ import { motion } from "framer-motion";
 import { INDIAN_STATES } from "@/constants/states";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle, X, Info, Mail, HelpCircle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -27,6 +30,7 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationSuccess, setVerificationSuccess] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [authMessage, setAuthMessage] = useState<{ type: 'error' | 'success' | 'info' | null; message: string | null }>({
     type: null,
     message: null
@@ -46,6 +50,7 @@ export default function Auth() {
 
   const fromPricing = location.state?.fromPricing || false;
   const planType = location.state?.planType || 'Free Trial';
+  const fromLegal = location.state?.fromLegal || false;
 
   const showFreePlanInfo = !isLogin;
 
@@ -179,6 +184,15 @@ export default function Auth() {
           setAuthMessage({
             type: 'error',
             message: "Please ensure your password meets all requirements."
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        if (!termsAccepted) {
+          setAuthMessage({
+            type: 'error',
+            message: "You must accept the Terms of Service and Privacy Policy to register."
           });
           setIsLoading(false);
           return;
@@ -367,182 +381,214 @@ export default function Auth() {
               </Alert>
             )}
             
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {!isLogin && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="pharmacyName">Pharmacy Name*</Label>
-                    <Input
-                      id="pharmacyName"
-                      value={formData.pharmacyName}
-                      onChange={(e) =>
-                        updateFormData("pharmacyName", e.target.value)
-                      }
-                      required={!isLogin}
-                      placeholder="Enter pharmacy name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="ownerName">Owner Name*</Label>
-                    <Input
-                      id="ownerName"
-                      value={formData.ownerName}
-                      onChange={(e) =>
-                        updateFormData("ownerName", e.target.value)
-                      }
-                      required={!isLogin}
-                      placeholder="Enter owner name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number*</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) =>
-                        updateFormData("phone", e.target.value)
-                      }
-                      required={!isLogin}
-                      placeholder="Enter phone number"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Address*</Label>
-                    <Input
-                      id="address"
-                      value={formData.address}
-                      onChange={(e) =>
-                        updateFormData("address", e.target.value)
-                      }
-                      required={!isLogin}
-                      placeholder="Enter complete address"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+            <ScrollArea className={!isLogin ? "h-[400px] pr-4" : ""}>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {!isLogin && (
+                  <>
                     <div className="space-y-2">
-                      <Label htmlFor="city">City*</Label>
+                      <Label htmlFor="pharmacyName">Pharmacy Name*</Label>
                       <Input
-                        id="city"
-                        value={formData.city}
+                        id="pharmacyName"
+                        value={formData.pharmacyName}
                         onChange={(e) =>
-                          updateFormData("city", e.target.value)
+                          updateFormData("pharmacyName", e.target.value)
                         }
                         required={!isLogin}
-                        placeholder="Enter city"
+                        placeholder="Enter pharmacy name"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="state">State*</Label>
-                      <Select 
-                        value={formData.state}
-                        onValueChange={(value) => updateFormData("state", value)}
-                      >
-                        <SelectTrigger className="bg-white">
-                          <SelectValue placeholder="Select state" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white">
-                          {INDIAN_STATES.map((state) => (
-                            <SelectItem key={state} value={state}>
-                              {state}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="pincode">PIN Code*</Label>
+                      <Label htmlFor="ownerName">Owner Name*</Label>
                       <Input
-                        id="pincode"
-                        value={formData.pincode}
+                        id="ownerName"
+                        value={formData.ownerName}
                         onChange={(e) =>
-                          updateFormData("pincode", e.target.value)
+                          updateFormData("ownerName", e.target.value)
                         }
                         required={!isLogin}
-                        placeholder="Enter PIN code"
+                        placeholder="Enter owner name"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="gstin">GSTIN (Optional)</Label>
+                      <Label htmlFor="phone">Phone Number*</Label>
                       <Input
-                        id="gstin"
-                        value={formData.gstin}
+                        id="phone"
+                        type="tel"
+                        value={formData.phone}
                         onChange={(e) =>
-                          updateFormData("gstin", e.target.value)
+                          updateFormData("phone", e.target.value)
                         }
-                        placeholder="Enter GSTIN"
+                        required={!isLogin}
+                        placeholder="Enter phone number"
                       />
                     </div>
-                  </div>
-                </>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email*</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) =>
-                    updateFormData("email", e.target.value)
-                  }
-                  required
-                  placeholder="Enter email address"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password*</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) =>
-                    updateFormData("password", e.target.value)
-                  }
-                  required
-                  placeholder="Enter password"
-                  className={!isLogin && formData.password ? (passwordValidation.isValid ? "border-green-500" : "border-red-500") : ""}
-                />
+                    <div className="space-y-2">
+                      <Label htmlFor="address">Address*</Label>
+                      <Input
+                        id="address"
+                        value={formData.address}
+                        onChange={(e) =>
+                          updateFormData("address", e.target.value)
+                        }
+                        required={!isLogin}
+                        placeholder="Enter complete address"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="city">City*</Label>
+                        <Input
+                          id="city"
+                          value={formData.city}
+                          onChange={(e) =>
+                            updateFormData("city", e.target.value)
+                          }
+                          required={!isLogin}
+                          placeholder="Enter city"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="state">State*</Label>
+                        <Select 
+                          value={formData.state}
+                          onValueChange={(value) => updateFormData("state", value)}
+                        >
+                          <SelectTrigger className="bg-white">
+                            <SelectValue placeholder="Select state" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white">
+                            {INDIAN_STATES.map((state) => (
+                              <SelectItem key={state} value={state}>
+                                {state}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="pincode">PIN Code*</Label>
+                        <Input
+                          id="pincode"
+                          value={formData.pincode}
+                          onChange={(e) =>
+                            updateFormData("pincode", e.target.value)
+                          }
+                          required={!isLogin}
+                          placeholder="Enter PIN code"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="gstin">GSTIN (Optional)</Label>
+                        <Input
+                          id="gstin"
+                          value={formData.gstin}
+                          onChange={(e) =>
+                            updateFormData("gstin", e.target.value)
+                          }
+                          placeholder="Enter GSTIN"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email*</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) =>
+                      updateFormData("email", e.target.value)
+                    }
+                    required
+                    placeholder="Enter email address"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password*</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) =>
+                      updateFormData("password", e.target.value)
+                    }
+                    required
+                    placeholder="Enter password"
+                    className={!isLogin && formData.password ? (passwordValidation.isValid ? "border-green-500" : "border-red-500") : ""}
+                  />
+                  
+                  {!isLogin && formData.password && (
+                    <div className="mt-2 text-sm">
+                      <p className="font-medium mb-1">Password requirements:</p>
+                      <ul className="space-y-1">
+                        <li className="flex items-center">
+                          {passwordValidation.minLength ? (
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          ) : (
+                            <X className="h-4 w-4 text-red-500 mr-2" />
+                          )}
+                          <span className={passwordValidation.minLength ? "text-green-600" : "text-red-600"}>
+                            At least 6 characters
+                          </span>
+                        </li>
+                        <li className="flex items-center">
+                          {passwordValidation.hasNumber ? (
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          ) : (
+                            <X className="h-4 w-4 text-red-500 mr-2" />
+                          )}
+                          <span className={passwordValidation.hasNumber ? "text-green-600" : "text-red-600"}>
+                            Contains at least one number
+                          </span>
+                        </li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
                 
-                {!isLogin && formData.password && (
-                  <div className="mt-2 text-sm">
-                    <p className="font-medium mb-1">Password requirements:</p>
-                    <ul className="space-y-1">
-                      <li className="flex items-center">
-                        {passwordValidation.minLength ? (
-                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                        ) : (
-                          <X className="h-4 w-4 text-red-500 mr-2" />
-                        )}
-                        <span className={passwordValidation.minLength ? "text-green-600" : "text-red-600"}>
-                          At least 6 characters
-                        </span>
-                      </li>
-                      <li className="flex items-center">
-                        {passwordValidation.hasNumber ? (
-                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                        ) : (
-                          <X className="h-4 w-4 text-red-500 mr-2" />
-                        )}
-                        <span className={passwordValidation.hasNumber ? "text-green-600" : "text-red-600"}>
-                          Contains at least one number
-                        </span>
-                      </li>
-                    </ul>
+                {!isLogin && (
+                  <div className="flex items-center space-x-2 mt-4">
+                    <Checkbox 
+                      id="terms" 
+                      checked={termsAccepted}
+                      onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+                      required
+                    />
+                    <Label htmlFor="terms" className="text-sm">
+                      I accept the{" "}
+                      <Link 
+                        to="/legal/terms-of-service" 
+                        state={{ fromRegistration: true }}
+                        className="text-green-600 hover:underline font-medium"
+                      >
+                        Terms of Service
+                      </Link>{" "}
+                      and{" "}
+                      <Link 
+                        to="/legal/privacy-policy" 
+                        state={{ fromRegistration: true }}
+                        className="text-green-600 hover:underline font-medium"
+                      >
+                        Privacy Policy
+                      </Link>
+                    </Label>
                   </div>
                 )}
-              </div>
-              <Button className="w-full" type="submit" disabled={isLoading || (!isLogin && formData.password && !passwordValidation.isValid)}>
-                {isLoading
-                  ? isLogin
-                    ? "Signing in..."
-                    : "Creating account..."
-                  : isLogin
-                  ? "Sign in"
-                  : "Create account"}
-              </Button>
-            </form>
+                
+                <Button className="w-full" type="submit" disabled={isLoading || (!isLogin && formData.password && !passwordValidation.isValid) || (!isLogin && !termsAccepted)}>
+                  {isLoading
+                    ? isLogin
+                      ? "Signing in..."
+                      : "Creating account..."
+                    : isLogin
+                    ? "Sign in"
+                    : "Create account"}
+                </Button>
+              </form>
+            </ScrollArea>
             <div className="mt-4 text-center">
               <button
                 onClick={() => setIsLogin(!isLogin)}

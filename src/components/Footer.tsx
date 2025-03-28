@@ -75,37 +75,37 @@ export default function Footer() {
             <h3 className="font-semibold text-neutral-900 mb-4">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/legal/privacy-policy" className="text-neutral-600 hover:text-primary transition-colors">
+                <Link to="/legal/privacy-policy" className="text-neutral-600 hover:text-green-500 transition-colors">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link to="/legal/terms-of-service" className="text-neutral-600 hover:text-primary transition-colors">
+                <Link to="/legal/terms-of-service" className="text-neutral-600 hover:text-green-500 transition-colors">
                   Terms of Service
                 </Link>
               </li>
               <li>
-                <Link to="/legal/eula" className="text-neutral-600 hover:text-primary transition-colors">
+                <Link to="/legal/eula" className="text-neutral-600 hover:text-green-500 transition-colors">
                   EULA
                 </Link>
               </li>
               <li>
-                <Link to="/legal/sla" className="text-neutral-600 hover:text-primary transition-colors">
+                <Link to="/legal/sla" className="text-neutral-600 hover:text-green-500 transition-colors">
                   SLA
                 </Link>
               </li>
               <li>
-                <Link to="/legal/refund-policy" className="text-neutral-600 hover:text-primary transition-colors">
+                <Link to="/legal/refund-policy" className="text-neutral-600 hover:text-green-500 transition-colors">
                   Refund Policy
                 </Link>
               </li>
               <li>
-                <Link to="/legal/acceptable-use-policy" className="text-neutral-600 hover:text-primary transition-colors">
+                <Link to="/legal/acceptable-use-policy" className="text-neutral-600 hover:text-green-500 transition-colors">
                   Acceptable Use Policy
                 </Link>
               </li>
               <li>
-                <Link to="/legal/disclaimers" className="text-neutral-600 hover:text-primary transition-colors">
+                <Link to="/legal/disclaimers" className="text-neutral-600 hover:text-green-500 transition-colors">
                   Disclaimers
                 </Link>
               </li>
