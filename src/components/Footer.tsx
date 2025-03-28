@@ -1,4 +1,6 @@
+
 import { HashLink } from 'react-router-hash-link';
+import { Link } from 'react-router-dom';
 
 export default function Footer() {
   const handlePricingClick = (e: React.MouseEvent) => {
@@ -8,11 +10,6 @@ export default function Footer() {
     const body = "Hello,\n\nI would like to inquire about your pricing plans.\n\nThank you.";
     
     window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=victurehealthcaresolutions@gmail.com&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
-  };
-
-  const handleLegalClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    window.open('https://www.termsfeed.com/live/661b4717-faf2-4a61-a219-ddc2010a943c', '_blank');
   };
 
   const handleContactClick = (e: React.MouseEvent) => {
@@ -78,14 +75,39 @@ export default function Footer() {
             <h3 className="font-semibold text-neutral-900 mb-4">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" onClick={handleLegalClick} className="text-neutral-600 hover:text-primary transition-colors">
+                <Link to="/legal/privacy-policy" className="text-neutral-600 hover:text-primary transition-colors">
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" onClick={handleLegalClick} className="text-neutral-600 hover:text-primary transition-colors">
+                <Link to="/legal/terms-of-service" className="text-neutral-600 hover:text-primary transition-colors">
                   Terms of Service
-                </a>
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/eula" className="text-neutral-600 hover:text-primary transition-colors">
+                  EULA
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/sla" className="text-neutral-600 hover:text-primary transition-colors">
+                  SLA
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/refund-policy" className="text-neutral-600 hover:text-primary transition-colors">
+                  Refund Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/acceptable-use-policy" className="text-neutral-600 hover:text-primary transition-colors">
+                  Acceptable Use Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/disclaimers" className="text-neutral-600 hover:text-primary transition-colors">
+                  Disclaimers
+                </Link>
               </li>
             </ul>
           </div>
