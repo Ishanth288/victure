@@ -15,6 +15,15 @@ import Settings from "@/pages/Settings";
 import ChatbotButton from "@/components/chatbot/ChatbotButton";
 import Navigation from "@/components/Navigation";
 
+// Import legal pages
+import PrivacyPolicy from "@/pages/legal/PrivacyPolicy";
+import TermsOfService from "@/pages/legal/TermsOfService";
+import EULA from "@/pages/legal/EULA";
+import SLA from "@/pages/legal/SLA";
+import RefundPolicy from "@/pages/legal/RefundPolicy";
+import AcceptableUsePolicy from "@/pages/legal/AcceptableUsePolicy";
+import Disclaimers from "@/pages/legal/Disclaimers";
+
 function App() {
   return (
     <Router>
@@ -31,6 +40,16 @@ function App() {
           <Route path="/insights" element={<Insights />} />
           <Route path="/purchases" element={<Purchases />} />
           <Route path="/settings" element={<Settings />} />
+          
+          {/* Legal routes */}
+          <Route path="/legal/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/legal/terms-of-service" element={<TermsOfService />} />
+          <Route path="/legal/eula" element={<EULA />} />
+          <Route path="/legal/sla" element={<SLA />} />
+          <Route path="/legal/refund-policy" element={<RefundPolicy />} />
+          <Route path="/legal/acceptable-use-policy" element={<AcceptableUsePolicy />} />
+          <Route path="/legal/disclaimers" element={<Disclaimers />} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
         <ChatbotButton />
