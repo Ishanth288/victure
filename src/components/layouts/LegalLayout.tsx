@@ -1,7 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
-import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { useEffect, useRef } from "react";
 
@@ -24,9 +23,8 @@ export default function LegalLayout({ children, title }: LegalLayoutProps) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navigation />
-      <div className="flex-1 container mx-auto px-4 py-16 mt-8">
-        <div className="mb-8">
+      <div className="flex-1 container mx-auto px-4 py-8">
+        <div className="mb-6 mt-4">
           {fromRegistration ? (
             <Link 
               to="/auth" 

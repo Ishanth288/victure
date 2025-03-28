@@ -41,7 +41,7 @@ function App() {
           <Route path="/purchases" element={<Purchases />} />
           <Route path="/settings" element={<Settings />} />
           
-          {/* Legal routes */}
+          {/* Legal routes - removed Navigation component */}
           <Route path="/legal/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/legal/terms-of-service" element={<TermsOfService />} />
           <Route path="/legal/eula" element={<EULA />} />
