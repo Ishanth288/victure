@@ -7,6 +7,8 @@ const Spline = lazy(() => import('@splinetool/react-spline'))
 interface SplineSceneProps {
   scene: string
   className?: string
+  onLoad?: () => void
+  onError?: () => void
 }
 
 // Memoizing the Spline component to prevent unnecessary re-renders
@@ -14,7 +16,9 @@ const SplineComponent = memo(({ scene, onError, onLoad }: any) => (
   <Spline scene={scene} onError={onError} onLoad={onLoad} />
 ));
 
-export function SplineScene({ scene, className }: SplineSceneProps) {
+SplineComponent.displayName = 'SplineComponent';
+
+export function SplineScene({ scene, className, onLoad, onError }: SplineSceneProps) {
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -28,11 +32,13 @@ export function SplineScene({ scene, className }: SplineSceneProps) {
     console.log("Spline scene failed to load, showing fallback");
     setHasError(true);
     setIsLoading(false);
+    if (onError) onError();
   };
 
   const handleLoad = () => {
     console.log("Spline scene loaded successfully");
     setIsLoading(false);
+    if (onLoad) onLoad();
   };
 
   // If we had an error loading the scene, show a simple gradient instead
