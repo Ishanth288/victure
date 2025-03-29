@@ -29,7 +29,8 @@ export async function safeInsert<T>(
         code: "custom-error",
         message: `Failed to insert data into ${table}: ${error}`,
         details: "",
-        hint: ""
+        hint: "",
+        name: "CustomError"  // Adding the missing 'name' property
       }
     };
   }
