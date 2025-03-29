@@ -3,7 +3,7 @@ import { useState, useCallback } from "react";
 import { Tabs } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useRefactoredBusinessData } from "./hooks/useRefactoredBusinessData";
+import { useBusinessData } from "./hooks/useBusinessData";
 import { useLoadingState } from "./hooks/useLoadingState";
 import { useDataRefresh } from "./hooks/useDataRefresh";
 import { useAppMonitoring } from "./hooks/useAppMonitoring";
@@ -39,7 +39,7 @@ export default function BusinessOptimizationPage() {
     connectionError,
     errorType,
     hasError
-  } = useRefactoredBusinessData({
+  } = useBusinessData({
     onError: handleDataError,
   });
   
