@@ -18,7 +18,7 @@ export const MarginAnalysisTab = ({
 }: MarginAnalysisTabProps) => {
   return (
     <div className="space-y-4 pt-4">
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Profit Margin by Product</span>
@@ -26,13 +26,24 @@ export const MarginAnalysisTab = ({
           </CardTitle>
           <CardDescription>Highest margin products in your inventory</CardDescription>
         </CardHeader>
-        <CardContent className="h-80">
+        <CardContent className="h-80 p-4">
           {marginData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={marginData}>
+              <BarChart 
+                data={marginData}
+                margin={{ top: 5, right: 10, left: 10, bottom: 20 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fontSize: 11 }}
+                  height={40}
+                  tickFormatter={(value) => value.length > 10 ? `${value.substring(0, 10)}...` : value} 
+                />
+                <YAxis 
+                  width={50}
+                  tickFormatter={(value) => `${value}%`}
+                />
                 <Tooltip formatter={(value) => [`${value}%`, 'Margin']} />
                 <Bar dataKey="margin" fill="#8884d8" />
               </BarChart>
@@ -50,7 +61,7 @@ export const MarginAnalysisTab = ({
       </Card>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Zap className="w-5 h-5 mr-2 text-yellow-500" />
@@ -58,7 +69,7 @@ export const MarginAnalysisTab = ({
             </CardTitle>
             <CardDescription>Recommended price adjustments based on regional market</CardDescription>
           </CardHeader>
-          <CardContent className="h-60">
+          <CardContent className="h-60 p-4">
             {locationData ? (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">Based on market analysis for {pharmacyLocation?.state || 'your region'}, the following price optimizations are recommended:</p>
@@ -93,7 +104,7 @@ export const MarginAnalysisTab = ({
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle className="flex items-center">
               <TrendingDown className="w-5 h-5 mr-2 text-red-500" />
@@ -101,7 +112,7 @@ export const MarginAnalysisTab = ({
             </CardTitle>
             <CardDescription>Products with margins below regional average</CardDescription>
           </CardHeader>
-          <CardContent className="h-60">
+          <CardContent className="h-60 p-4">
             {marginData.length > 0 ? (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">These products have margins significantly below the average for {pharmacyLocation?.state || 'your region'}:</p>
@@ -111,7 +122,7 @@ export const MarginAnalysisTab = ({
                     .slice(0, 4)
                     .map((item, idx) => (
                       <li key={idx} className="flex justify-between items-center border-b pb-2">
-                        <span className="font-medium">{item.name}</span>
+                        <span className="font-medium truncate max-w-[150px]" title={item.name}>{item.name}</span>
                         <div className="flex items-center">
                           <span className="text-red-500 mr-2">{item.margin}%</span>
                           <Badge variant="outline">Consider raising price</Badge>

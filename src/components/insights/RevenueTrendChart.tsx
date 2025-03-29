@@ -52,7 +52,7 @@ export function RevenueTrendChart({ data, timeframe = 'month' }: RevenueTrendCha
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
             data={stableData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+            margin={{ top: 20, right: 30, left: 30, bottom: 30 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#eee" vertical={false} />
             <XAxis 
@@ -70,10 +70,10 @@ export function RevenueTrendChart({ data, timeframe = 'month' }: RevenueTrendCha
               fontSize={12}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value) => `₹${value/1000}k`}
+              tickFormatter={(value) => `₹${Math.floor(value/1000)}k`}
               tick={{ fill: '#666', fontSize: 12 }}
               tickMargin={10}
-              width={60}
+              width={65}
             />
             <Tooltip
               formatter={(value: any) => [`₹${value.toLocaleString()}`, '']}
@@ -101,6 +101,9 @@ export function RevenueTrendChart({ data, timeframe = 'month' }: RevenueTrendCha
               align="right"
               verticalAlign="top"
               wrapperStyle={{ paddingBottom: '10px' }} 
+              formatter={(value) => {
+                return <span style={{ color: value === "Your Pharmacy" ? "#6366f1" : "#65a30d", fontSize: "12px" }}>{value}</span>;
+              }}
             />
             <Line 
               type="monotone" 

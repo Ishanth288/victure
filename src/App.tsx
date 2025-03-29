@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
 import Admin from "@/pages/Admin";
-import ChatbotButton from "@/components/chatbot/ChatbotButton";
 import Navigation from "@/components/Navigation";
 
 // Lazy load pages to reduce initial bundle size
@@ -139,7 +138,6 @@ function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />
-      <ChatbotButton />
     </>
   );
 }

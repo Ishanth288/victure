@@ -1,5 +1,5 @@
 
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { RevenueTrendChart } from "@/components/insights/RevenueTrendChart";
 
 interface TrendSectionProps {
@@ -16,11 +16,14 @@ export function TrendSection({ trendData }: TrendSectionProps) {
       }));
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader>
         <CardTitle>Revenue Trend</CardTitle>
+        <CardDescription>
+          Your pharmacy revenue compared to industry average
+        </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         <RevenueTrendChart data={validTrendData} />
       </CardContent>
     </Card>

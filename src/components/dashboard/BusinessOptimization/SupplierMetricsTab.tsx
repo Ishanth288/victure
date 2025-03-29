@@ -14,7 +14,7 @@ interface SupplierMetricsTabProps {
 export const SupplierMetricsTab = ({ supplierData }: SupplierMetricsTabProps) => {
   return (
     <div className="space-y-4 pt-4">
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Supplier Performance</span>
@@ -22,10 +22,10 @@ export const SupplierMetricsTab = ({ supplierData }: SupplierMetricsTabProps) =>
           </CardTitle>
           <CardDescription>On-time delivery performance and order volume by supplier</CardDescription>
         </CardHeader>
-        <CardContent className="h-80">
+        <CardContent className="h-80 p-4">
           {supplierData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+              <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                 <Pie
                   data={supplierData}
                   cx="50%"
@@ -33,7 +33,8 @@ export const SupplierMetricsTab = ({ supplierData }: SupplierMetricsTabProps) =>
                   outerRadius={80}
                   dataKey="orders"
                   nameKey="name"
-                  label={(entry) => entry.name}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  labelLine={false}
                 >
                   {supplierData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -55,7 +56,7 @@ export const SupplierMetricsTab = ({ supplierData }: SupplierMetricsTabProps) =>
       </Card>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle className="flex items-center">
               <BarChart2 className="w-5 h-5 mr-2 text-purple-500" />
@@ -63,7 +64,7 @@ export const SupplierMetricsTab = ({ supplierData }: SupplierMetricsTabProps) =>
             </CardTitle>
             <CardDescription>Price comparison by supplier for common items</CardDescription>
           </CardHeader>
-          <CardContent className="h-60">
+          <CardContent className="h-60 p-4">
             {supplierData.length > 2 ? (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">Based on your purchase history, here's how suppliers compare for common items:</p>
@@ -113,7 +114,7 @@ export const SupplierMetricsTab = ({ supplierData }: SupplierMetricsTabProps) =>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Activity className="w-5 h-5 mr-2 text-blue-500" />
@@ -121,14 +122,14 @@ export const SupplierMetricsTab = ({ supplierData }: SupplierMetricsTabProps) =>
             </CardTitle>
             <CardDescription>Order fulfillment time by supplier</CardDescription>
           </CardHeader>
-          <CardContent className="h-60">
+          <CardContent className="h-60 p-4">
             {supplierData.length > 0 ? (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">Average lead times for your top suppliers:</p>
                 <ul className="space-y-2">
                   {supplierData.slice(0, 4).map((supplier, idx) => (
                     <li key={idx} className="flex items-center justify-between border-b pb-2">
-                      <span className="font-medium">{supplier.name}</span>
+                      <span className="font-medium truncate max-w-[150px]" title={supplier.name}>{supplier.name}</span>
                       <div className="flex items-center">
                         <span className="mr-2">{Math.floor(Math.random() * 5) + 2} days</span>
                         <Badge variant="outline" className={idx === 0 ? "bg-green-100" : ""}>

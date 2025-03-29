@@ -15,7 +15,7 @@ interface ExpiryAnalysisTabProps {
 export const ExpiryAnalysisTab = ({ expiryData, inventoryData }: ExpiryAnalysisTabProps) => {
   return (
     <div className="space-y-4 pt-4">
-      <Card>
+      <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Expiry Analysis</span>
@@ -23,10 +23,10 @@ export const ExpiryAnalysisTab = ({ expiryData, inventoryData }: ExpiryAnalysisT
           </CardTitle>
           <CardDescription>Products expiring soon in your inventory</CardDescription>
         </CardHeader>
-        <CardContent className="h-80">
+        <CardContent className="h-80 p-4">
           {expiryData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+              <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
                 <Pie
                   data={expiryData}
                   cx="50%"
@@ -34,7 +34,8 @@ export const ExpiryAnalysisTab = ({ expiryData, inventoryData }: ExpiryAnalysisT
                   outerRadius={80}
                   dataKey="value"
                   nameKey="name"
-                  label={(entry) => `${entry.name}: ${entry.value}`}
+                  label={({ name, value }) => `${name.length > 10 ? name.substring(0, 10) + '...' : name}: ${value}`}
+                  labelLine={false}
                 >
                   {expiryData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -56,7 +57,7 @@ export const ExpiryAnalysisTab = ({ expiryData, inventoryData }: ExpiryAnalysisT
       </Card>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Calendar className="w-5 h-5 mr-2 text-red-500" />
@@ -64,7 +65,7 @@ export const ExpiryAnalysisTab = ({ expiryData, inventoryData }: ExpiryAnalysisT
             </CardTitle>
             <CardDescription>Timeline of upcoming product expirations</CardDescription>
           </CardHeader>
-          <CardContent className="h-60">
+          <CardContent className="h-60 p-4">
             {inventoryData.length > 0 ? (
               <div className="space-y-4">
                 <div className="overflow-auto max-h-48">
@@ -102,7 +103,7 @@ export const ExpiryAnalysisTab = ({ expiryData, inventoryData }: ExpiryAnalysisT
                           
                           return (
                             <tr key={idx} className="border-b">
-                              <td className="py-1">{item.name}</td>
+                              <td className="py-1 truncate max-w-[120px]" title={item.name}>{item.name}</td>
                               <td className="text-right">{new Date(item.expiry_date).toLocaleDateString()}</td>
                               <td className="text-right">{item.quantity}</td>
                               <td className={`text-right ${statusColor}`}>{status}</td>
@@ -125,7 +126,7 @@ export const ExpiryAnalysisTab = ({ expiryData, inventoryData }: ExpiryAnalysisT
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle className="flex items-center">
               <TrendingUp className="w-5 h-5 mr-2 text-emerald-500" />
@@ -133,7 +134,7 @@ export const ExpiryAnalysisTab = ({ expiryData, inventoryData }: ExpiryAnalysisT
             </CardTitle>
             <CardDescription>Strategies to minimize expired product loss</CardDescription>
           </CardHeader>
-          <CardContent className="h-60">
+          <CardContent className="h-60 p-4">
             {expiryData.length > 0 ? (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">Recommendations to minimize loss from expiring products:</p>
