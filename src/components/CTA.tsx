@@ -2,11 +2,13 @@
 import { Button } from "@/components/ui/button";
 import { m } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { memo, useCallback } from "react";
 
-export default function CTA() {
+const CTA = memo(() => {
   const navigate = useNavigate();
 
-  const handleGetStartedFree = () => {
+  // Memoize handlers to prevent recreating functions on each render
+  const handleGetStartedFree = useCallback(() => {
     navigate('/auth', { 
       state: { 
         isLogin: false, 
@@ -14,21 +16,21 @@ export default function CTA() {
         planType: 'Free Trial'
       } 
     });
-  };
+  }, [navigate]);
 
-  const handleRequestDemo = () => {
-    // Open email client
+  const handleRequestDemo = useCallback(() => {
     window.location.href = "mailto:thugs.business@gmail.com?subject=Demo Request for Victure Pharmacy Management";
-  };
+  }, []);
 
   return (
-    <section className="py-20">
+    <section className="py-20 will-change-transform content-visibility-auto">
       <div className="container mx-auto px-4">
         <m.div 
           className="max-w-3xl mx-auto text-center"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.4 }}
         >
           <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-6">
             Ready to Transform Your Pharmacy?
@@ -56,4 +58,8 @@ export default function CTA() {
       </div>
     </section>
   );
-}
+});
+
+CTA.displayName = 'CTA';
+
+export default CTA;

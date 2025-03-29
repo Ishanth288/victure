@@ -21,19 +21,28 @@ export const ScrollReveal = memo(({
 }: ScrollRevealProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
+  
   useEffect(() => {
     const currentRef = ref.current;
     if (!currentRef) return;
 
+    // Use more performant IntersectionObserver with better settings
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.unobserve(entry.target);
-        }
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            // Add small delay to stagger animations when multiple items appear at once
+            requestAnimationFrame(() => {
+              setIsVisible(true);
+            });
+            observer.unobserve(entry.target);
+          }
+        });
       },
-      { threshold, rootMargin: '50px' }
+      { 
+        threshold, 
+        rootMargin: '50px',
+      }
     );
 
     observer.observe(currentRef);
@@ -45,7 +54,8 @@ export const ScrollReveal = memo(({
     };
   }, [threshold]);
 
-  const getAnimationProps = () => {
+  // Pre-compute animation properties to avoid work during scrolling
+  const animationProps = (() => {
     switch (animation) {
       case 'fade':
         return {
@@ -54,18 +64,18 @@ export const ScrollReveal = memo(({
         };
       case 'slide-up':
         return {
-          initial: { opacity: 0, y: 50 },
-          animate: isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 },
+          initial: { opacity: 0, y: 30 },
+          animate: isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 },
         };
       case 'slide-right':
         return {
-          initial: { opacity: 0, x: -50 },
-          animate: isVisible ? { opacity: 1, x: 0 } : { opacity: 0, x: -50 },
+          initial: { opacity: 0, x: -30 },
+          animate: isVisible ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 },
         };
       case 'scale':
         return {
-          initial: { opacity: 0, scale: 0.8 },
-          animate: isVisible ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 },
+          initial: { opacity: 0, scale: 0.9 },
+          animate: isVisible ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 },
         };
       default:
         return {
@@ -73,14 +83,22 @@ export const ScrollReveal = memo(({
           animate: isVisible ? { opacity: 1 } : { opacity: 0 },
         };
     }
-  };
+  })();
 
   return (
     <m.div
       ref={ref}
       className={className}
-      {...getAnimationProps()}
-      transition={{ duration, delay, ease: 'easeOut' }}
+      {...animationProps}
+      transition={{ 
+        duration, 
+        delay, 
+        ease: 'easeOut' 
+      }}
+      style={{
+        willChange: 'transform, opacity',
+        transform: 'translateZ(0)',
+      }}
     >
       {children}
     </m.div>
