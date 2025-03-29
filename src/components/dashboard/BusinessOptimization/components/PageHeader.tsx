@@ -1,5 +1,5 @@
 
-import { RefreshCcw, Home, MapPin, Database, AlertTriangle } from "lucide-react";
+import { RefreshCcw, Home, MapPin, Database, AlertTriangle, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +11,10 @@ interface PageHeaderProps {
   lastRefreshed?: Date;
   dataSources?: string[];
   hasError?: boolean;
+  profitMetrics?: {
+    totalProfit?: number;
+    profitMargin?: number;
+  };
 }
 
 export function PageHeader({ 
@@ -18,7 +22,8 @@ export function PageHeader({
   onRefresh, 
   lastRefreshed, 
   dataSources,
-  hasError 
+  hasError,
+  profitMetrics
 }: PageHeaderProps) {
   const formatRefreshTime = (date?: Date) => {
     if (!date) return "Never";
@@ -59,6 +64,14 @@ export function PageHeader({
             <AlertTriangle className="h-3 w-3" />
             <span className="text-xs">
               Using offline data - online sources currently unavailable
+            </span>
+          </div>
+        )}
+        {profitMetrics && (
+          <div className="flex items-center gap-1 mt-1 text-green-600">
+            <TrendingUp className="h-3 w-3" />
+            <span className="text-xs">
+              Overall Profit Margin: {profitMetrics.profitMargin?.toFixed(2)}%
             </span>
           </div>
         )}

@@ -9,6 +9,7 @@ export interface InventoryItemDB {
   strength: string | null;
   unit_size: string | null;
   unit_cost: number;
+  selling_price: number | null;
   quantity: number;
   reorder_point: number;
   expiry_date: string | null;
@@ -28,6 +29,7 @@ export interface InventoryItemFormData {
   strength: string;
   unitSize: string;
   unitCost: string;
+  sellingPrice: string;
   quantity: string;
   reorderPoint: string;
   expiryDate: string;

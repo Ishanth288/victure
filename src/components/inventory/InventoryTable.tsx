@@ -59,6 +59,16 @@ export default function InventoryTable({
     return "text-neutral-600";
   };
 
+  // Calculate profit margin for an item
+  const calculateProfitMargin = (item: InventoryItem) => {
+    if (!item.selling_price) return "N/A";
+    
+    const profit = item.selling_price - item.unit_cost;
+    const margin = (profit / item.selling_price) * 100;
+    
+    return margin.toFixed(2) + "%";
+  };
+
   console.log("Rendering InventoryTable with", items?.length || 0, "items");
 
   return (
@@ -79,7 +89,9 @@ export default function InventoryTable({
               <TableHead>NDC</TableHead>
               <TableHead>Manufacturer</TableHead>
               <TableHead>Quantity</TableHead>
-              <TableHead>Unit Cost</TableHead>
+              <TableHead>Cost Price (₹)</TableHead>
+              <TableHead>Selling Price (₹)</TableHead>
+              <TableHead>Profit</TableHead>
               <TableHead>Expiry Date</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
@@ -88,7 +100,7 @@ export default function InventoryTable({
           <TableBody>
             {!items || items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="px-4 py-6 text-center text-gray-500">
+                <TableCell colSpan={11} className="px-4 py-6 text-center text-gray-500">
                   No inventory items found. Add an item to get started.
                 </TableCell>
               </TableRow>
@@ -110,6 +122,12 @@ export default function InventoryTable({
                     <TableCell className="text-neutral-600">{item.manufacturer || "N/A"}</TableCell>
                     <TableCell>{item.quantity}</TableCell>
                     <TableCell>₹{item.unit_cost.toFixed(2)}</TableCell>
+                    <TableCell>₹{item.selling_price ? item.selling_price.toFixed(2) : "N/A"}</TableCell>
+                    <TableCell>
+                      <span className="text-green-600 font-medium">
+                        {calculateProfitMargin(item)}
+                      </span>
+                    </TableCell>
                     <TableCell className={`${getExpiryColor(item.expiry_date)}`}>
                       {item.expiry_date ? new Date(item.expiry_date).toLocaleDateString() : 'N/A'}
                     </TableCell>

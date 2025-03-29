@@ -8,6 +8,7 @@ interface InventoryItem {
   name: string;
   quantity: number;
   unit_cost: number;
+  selling_price?: number;
   reorder_point?: number;
 }
 
@@ -78,10 +79,36 @@ export function useInventoryData() {
     item => (item.quantity || 0) < (item.reorder_point || 10)
   ).length;
 
+  // Calculate profit metrics
+  const totalSellingValue = inventoryData.reduce(
+    (sum, item) => sum + ((item.selling_price || 0) * item.quantity || 0),
+    0
+  );
+
+  const totalProfit = totalSellingValue - totalInventoryValue;
+  
+  // Calculate overall profit margin
+  const profitMargin = totalSellingValue > 0 
+    ? (totalProfit / totalSellingValue) * 100 
+    : 0;
+
+  // Calculate profit by item
+  const itemProfits = inventoryData.map(item => ({
+    id: item.id,
+    name: item.name,
+    profit: ((item.selling_price || 0) - item.unit_cost) * item.quantity,
+    profitMargin: item.selling_price ? ((item.selling_price - item.unit_cost) / item.selling_price) * 100 : 0
+  }));
+
   return {
     isLoading,
     inventoryData,
     totalInventoryValue,
-    lowStockItems
+    lowStockItems,
+    profitMetrics: {
+      totalProfit,
+      profitMargin,
+      itemProfits
+    }
   };
 }

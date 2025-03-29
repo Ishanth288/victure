@@ -62,24 +62,30 @@ export function AddInventoryModal({ open, onOpenChange, onSuccess }: AddInventor
       if (!formData.name || !formData.unitCost || !formData.quantity) {
         toast({
           title: "Error",
-          description: "Please fill in all required fields: Name, Unit Cost, and Quantity",
+          description: "Please fill in all required fields: Name, Cost Price, and Quantity",
           variant: "destructive",
         });
         return;
       }
 
       const unitCost = parseFloat(formData.unitCost);
+      const sellingPrice = parseFloat(formData.sellingPrice || "0");
       const quantity = parseInt(formData.quantity);
       const reorderPoint = parseInt(formData.reorderPoint || "10");
 
       if (isNaN(unitCost) || isNaN(quantity)) {
         toast({
           title: "Error",
-          description: "Please enter valid numbers for Unit Cost and Quantity",
+          description: "Please enter valid numbers for Cost Price and Quantity",
           variant: "destructive",
         });
         return;
       }
+
+      // Calculate a default selling price if not provided
+      const finalSellingPrice = isNaN(sellingPrice) || sellingPrice <= 0 
+        ? unitCost * 1.4 // Default 40% markup
+        : sellingPrice;
 
       const insertData = {
         name: formData.name.trim(),
@@ -88,6 +94,7 @@ export function AddInventoryModal({ open, onOpenChange, onSuccess }: AddInventor
         dosage_form: formData.dosageForm || null,
         unit_size: formData.unitSize.trim() || null,
         unit_cost: unitCost,
+        selling_price: finalSellingPrice,
         quantity: quantity,
         expiry_date: formData.expiryDate || null,
         supplier: formData.supplier.trim() || null,

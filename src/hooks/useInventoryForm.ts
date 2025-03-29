@@ -13,6 +13,7 @@ const initialFormData: InventoryItemFormData = {
   strength: "",
   unitSize: "",
   unitCost: "",
+  sellingPrice: "",
   quantity: "",
   reorderPoint: "10",
   expiryDate: "",
@@ -48,7 +49,7 @@ export function useInventoryForm(onSuccess: () => void) {
       if (!formData.name || !formData.unitCost || !formData.quantity) {
         toast({
           title: "Error",
-          description: "Please fill in all required fields: Name, Unit Cost, and Quantity",
+          description: "Please fill in all required fields: Name, Cost Price, and Quantity",
           variant: "destructive",
         });
         return null;
@@ -66,17 +67,23 @@ export function useInventoryForm(onSuccess: () => void) {
       }
 
       const unitCost = parseFloat(formData.unitCost);
+      const sellingPrice = parseFloat(formData.sellingPrice || "0");
       const quantity = parseInt(formData.quantity);
       const reorderPoint = parseInt(formData.reorderPoint || "10");
 
       if (isNaN(unitCost) || isNaN(quantity)) {
         toast({
           title: "Error",
-          description: "Please enter valid numbers for Unit Cost and Quantity",
+          description: "Please enter valid numbers for Cost Price and Quantity",
           variant: "destructive",
         });
         return null;
       }
+
+      // Calculate a default selling price if not provided
+      const finalSellingPrice = isNaN(sellingPrice) || sellingPrice <= 0 
+        ? unitCost * 1.4 // Default 40% markup
+        : sellingPrice;
 
       const insertData = {
         name: formData.name.trim(),
@@ -85,6 +92,7 @@ export function useInventoryForm(onSuccess: () => void) {
         dosage_form: formData.dosageForm || null,
         unit_size: formData.unitSize.trim() || null,
         unit_cost: unitCost,
+        selling_price: finalSellingPrice,
         quantity: quantity,
         expiry_date: formData.expiryDate || null,
         supplier: formData.supplier.trim() || null,
@@ -138,7 +146,7 @@ export function useInventoryForm(onSuccess: () => void) {
       if (!formData.name || !formData.unitCost || !formData.quantity) {
         toast({
           title: "Error",
-          description: "Please fill in all required fields: Name, Unit Cost, and Quantity",
+          description: "Please fill in all required fields: Name, Cost Price, and Quantity",
           variant: "destructive",
         });
         return null;
@@ -155,19 +163,30 @@ export function useInventoryForm(onSuccess: () => void) {
         return null;
       }
 
+      const unitCost = parseFloat(formData.unitCost);
+      const sellingPrice = parseFloat(formData.sellingPrice || "0");
+      const quantity = parseInt(formData.quantity);
+      const reorderPoint = parseInt(formData.reorderPoint || "10");
+
+      // Calculate a default selling price if not provided
+      const finalSellingPrice = isNaN(sellingPrice) || sellingPrice <= 0 
+        ? unitCost * 1.4 // Default 40% markup
+        : sellingPrice;
+
       const updateData = {
         name: formData.name.trim(),
         ndc: formData.ndc.trim() || null,
         manufacturer: formData.manufacturer.trim() || null,
         dosage_form: formData.dosageForm || null,
         unit_size: formData.unitSize.trim() || null,
-        unit_cost: parseFloat(formData.unitCost),
-        quantity: parseInt(formData.quantity),
+        unit_cost: unitCost,
+        selling_price: finalSellingPrice,
+        quantity: quantity,
         expiry_date: formData.expiryDate || null,
         supplier: formData.supplier.trim() || null,
         generic_name: formData.genericName.trim() || null,
         strength: formData.strength.trim() || null,
-        reorder_point: parseInt(formData.reorderPoint || "10"),
+        reorder_point: reorderPoint,
         storage_condition: formData.storage || null,
         user_id: user.id
       };

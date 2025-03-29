@@ -22,6 +22,7 @@ export interface InventoryItemFormData {
   strength: string;
   unitSize: string;
   unitCost: string;
+  sellingPrice: string;
   quantity: string;
   reorderPoint: string;
   expiryDate: string;
@@ -47,6 +48,7 @@ export default function InventoryForm({
   onSubmit
 }: InventoryFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [calculateProfit, setCalculateProfit] = useState(false);
 
   const handleSubmit = async () => {
     try {
@@ -58,6 +60,39 @@ export default function InventoryForm({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Calculate profit margin
+  const calculateProfitMargin = () => {
+    const costPrice = parseFloat(formData.unitCost) || 0;
+    const sellingPrice = parseFloat(formData.sellingPrice) || 0;
+    
+    if (costPrice === 0 || sellingPrice === 0) return "N/A";
+    
+    const profit = sellingPrice - costPrice;
+    const margin = (profit / sellingPrice) * 100;
+    
+    return margin.toFixed(2) + "%";
+  };
+
+  // Auto-calculate selling price based on a markup percentage
+  const handleCalculateSellingPrice = () => {
+    const costPrice = parseFloat(formData.unitCost) || 0;
+    if (costPrice === 0) return;
+    
+    // Default to 40% markup
+    const recommendedPrice = (costPrice * 1.4).toFixed(2);
+    
+    // Create a synthetic event to trigger the input change
+    const syntheticEvent = {
+      target: {
+        name: "sellingPrice",
+        value: recommendedPrice
+      }
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    onInputChange(syntheticEvent);
+    setCalculateProfit(true);
   };
 
   return (
@@ -138,15 +173,48 @@ export default function InventoryForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="unitCost">Unit Cost (₹)</Label>
+          <Label htmlFor="unitCost">Cost Price (CP) (₹)</Label>
           <Input
             id="unitCost"
             name="unitCost"
             type="number"
             value={formData.unitCost}
-            onChange={onInputChange}
-            placeholder="Enter unit cost"
+            onChange={(e) => {
+              onInputChange(e);
+              setCalculateProfit(true);
+            }}
+            placeholder="Enter cost price"
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="sellingPrice">
+            Selling Price (SP) (₹)
+            <Button 
+              variant="link" 
+              className="ml-2 text-xs text-blue-500 p-0 h-auto"
+              type="button"
+              onClick={handleCalculateSellingPrice}
+            >
+              Auto-calculate
+            </Button>
+          </Label>
+          <Input
+            id="sellingPrice"
+            name="sellingPrice"
+            type="number"
+            value={formData.sellingPrice}
+            onChange={(e) => {
+              onInputChange(e);
+              setCalculateProfit(true);
+            }}
+            placeholder="Enter selling price"
+          />
+          {calculateProfit && formData.unitCost && formData.sellingPrice && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Profit Margin: {calculateProfitMargin()}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">

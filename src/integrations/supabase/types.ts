@@ -139,6 +139,7 @@ export type Database = {
           ndc: string | null
           quantity: number
           reorder_point: number | null
+          selling_price: number | null
           status: string
           storage_condition: string | null
           strength: string | null
@@ -157,6 +158,7 @@ export type Database = {
           ndc?: string | null
           quantity?: number
           reorder_point?: number | null
+          selling_price?: number | null
           status?: string
           storage_condition?: string | null
           strength?: string | null
@@ -175,6 +177,7 @@ export type Database = {
           ndc?: string | null
           quantity?: number
           reorder_point?: number | null
+          selling_price?: number | null
           status?: string
           storage_condition?: string | null
           strength?: string | null
@@ -267,6 +270,54 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_history: {
+        Row: {
+          id: number
+          inventory_item_id: number
+          new_cost: number
+          new_selling_price: number | null
+          previous_cost: number
+          previous_selling_price: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: number
+          inventory_item_id: number
+          new_cost: number
+          new_selling_price?: number | null
+          previous_cost: number
+          previous_selling_price?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: number
+          inventory_item_id?: number
+          new_cost?: number
+          new_selling_price?: number | null
+          previous_cost?: number
+          previous_selling_price?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_inventory_item"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_history_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory"
             referencedColumns: ["id"]
           },
         ]
