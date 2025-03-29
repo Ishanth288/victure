@@ -11,24 +11,40 @@ interface UseLoadingStateOptions {
 export function useLoadingState({
   isLoading,
   locationLoading,
-  forceExitTimeout = 5000, // Reduced from 15000ms to 5000ms for faster loading
-  stabilityDelay = 100 // Reduced from 200ms to 100ms
+  forceExitTimeout = 3000, // Reduced from 5000ms to 3000ms for faster loading
+  stabilityDelay = 50 // Reduced from 100ms to 50ms
 }: UseLoadingStateOptions) {
   const [isStableLoading, setIsStableLoading] = useState(true);
   const stabilityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const forceExitTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hasShownLoadingRef = useRef(false);
+  
+  // Track loading state changes
+  const loadingStartTime = useRef<number | null>(null);
+  const loadingMetrics = useRef<{totalTime: number, count: number}>({
+    totalTime: 0,
+    count: 0
+  });
 
   // Add more logging to diagnose loading issues
   useEffect(() => {
-    console.log("useLoadingState effect triggered:", { 
-      isLoading, 
-      locationLoading, 
-      isStableLoading,
-      hasShownLoading: hasShownLoadingRef.current
-    });
-  }, [isLoading, locationLoading, isStableLoading]);
+    if (isLoading || locationLoading) {
+      if (loadingStartTime.current === null) {
+        loadingStartTime.current = Date.now();
+      }
+    } else if (loadingStartTime.current !== null) {
+      const loadTime = Date.now() - loadingStartTime.current;
+      loadingMetrics.current.totalTime += loadTime;
+      loadingMetrics.current.count += 1;
+      
+      console.log(`Loading completed in ${loadTime}ms. Average: ${
+        Math.round(loadingMetrics.current.totalTime / loadingMetrics.current.count)
+      }ms over ${loadingMetrics.current.count} loads`);
+      
+      loadingStartTime.current = null;
+    }
+  }, [isLoading, locationLoading]);
 
   // Add stability to the loading state to prevent flickering
   useEffect(() => {
@@ -92,5 +108,29 @@ export function useLoadingState({
     };
   }, [isLoading, locationLoading, isStableLoading, forceExitTimeout, stabilityDelay]);
 
-  return { isStableLoading };
+  const resetLoading = () => {
+    setIsStableLoading(true);
+    hasShownLoadingRef.current = true;
+    
+    // Clear any existing timers
+    if (stabilityTimerRef.current) {
+      clearTimeout(stabilityTimerRef.current);
+      stabilityTimerRef.current = null;
+    }
+    
+    if (loadingTimerRef.current) {
+      clearTimeout(loadingTimerRef.current);
+      loadingTimerRef.current = null;
+    }
+    
+    if (forceExitTimerRef.current) {
+      clearTimeout(forceExitTimerRef.current);
+    }
+  };
+
+  return { 
+    isStableLoading,
+    resetLoading,
+    loadingMetrics: loadingMetrics.current
+  };
 }
