@@ -24,7 +24,20 @@ serve(async (req) => {
   try {
     // Parse the request body
     const { code } = await req.json();
-    console.log("Received code verification request:", { codeSent: code });
+    console.log("Received code verification request");
+
+    if (!code) {
+      return new Response(
+        JSON.stringify({
+          error: "Security code is required",
+          verified: false
+        }),
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
+      );
+    }
 
     // Verify the code
     const isVerified = code === ADMIN_CODE;
@@ -41,7 +54,7 @@ serve(async (req) => {
     console.error("Error in verify-admin-code function:", error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: error.message || "An unexpected error occurred",
         verified: false 
       }),
       { 

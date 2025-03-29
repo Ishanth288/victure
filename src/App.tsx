@@ -1,170 +1,70 @@
-import { Routes, Route } from "react-router-dom";
-import { lazy, Suspense } from "react";
-import { Toaster } from "@/components/ui/toaster";
+
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import Dashboard from "@/pages/Dashboard";
+import Insights from "@/pages/Insights";
+import Admin from "@/pages/Admin";
+import Auth from "@/pages/Auth";
 import Index from "@/pages/Index";
 import NotFound from "@/pages/NotFound";
-import Admin from "@/pages/Admin";
-import Navigation from "@/components/Navigation";
+import SystemSettings from "@/pages/admin/SystemSettings";
+import Settings from "@/pages/Settings";
+import Inventory from "@/pages/Inventory";
+import Patients from "@/pages/Patients";
+import Purchases from "@/pages/Purchases";
+import BusinessOptimization from "@/pages/BusinessOptimization";
+import Billing from "@/pages/Billing";
+import BillingCart from "@/pages/BillingCart";
+import Prescriptions from "@/pages/Prescriptions";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
+import TermsOfService from "@/pages/legal/TermsOfService";
+import PrivacyPolicy from "@/pages/legal/PrivacyPolicy";
+import EULA from "@/pages/legal/EULA";
+import SLA from "@/pages/legal/SLA";
+import AcceptableUsePolicy from "@/pages/legal/AcceptableUsePolicy";
+import RefundPolicy from "@/pages/legal/RefundPolicy";
+import Disclaimers from "@/pages/legal/Disclaimers";
+import { AdminCheck } from "@/components/admin/AdminCheck";
+import AuthWrapper from "@/components/AuthWrapper";
 
-// PageLoader with minimized animation for faster perceived load
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-[50vh]">
-    <div className="w-10 h-10 rounded-full border-3 border-primary border-t-transparent animate-spin"></div>
-  </div>
-);
-
-// Preload critical routes
-const Auth = lazy(() => import("@/pages/Auth"));
-const Dashboard = lazy(() => import("@/pages/Dashboard"));
-
-// Lazy load with higher delay for less critical routes
-const Inventory = lazy(() => import("@/pages/Inventory"));
-
-// Other lazy loaded routes
-const Billing = lazy(() => import("@/pages/Billing"));
-const BillingCart = lazy(() => import("@/pages/BillingCart"));
-const Patients = lazy(() => import("@/pages/Patients"));
-const Prescriptions = lazy(() => import("@/pages/Prescriptions"));
-const Insights = lazy(() => import("@/pages/Insights"));
-const Purchases = lazy(() => import("@/pages/Purchases"));
-const Settings = lazy(() => import("@/pages/Settings"));
-const BusinessOptimization = lazy(() => import("@/pages/BusinessOptimization"));
-
-// Group legal pages to load together
-const legalPages = {
-  PrivacyPolicy: lazy(() => import("@/pages/legal/PrivacyPolicy")),
-  TermsOfService: lazy(() => import("@/pages/legal/TermsOfService")),
-  EULA: lazy(() => import("@/pages/legal/EULA")),
-  SLA: lazy(() => import("@/pages/legal/SLA")),
-  RefundPolicy: lazy(() => import("@/pages/legal/RefundPolicy")),
-  AcceptableUsePolicy: lazy(() => import("@/pages/legal/AcceptableUsePolicy")),
-  Disclaimers: lazy(() => import("@/pages/legal/Disclaimers"))
-};
-
-function App() {
+export default function App() {
   return (
-    <>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/admin" element={<Admin />} />
-        
-        {/* Auth route with navigation */}
-        <Route path="/auth" element={
-          <Suspense fallback={<PageLoader />}>
-            <><Navigation /><Auth /></>
-          </Suspense>
-        } />
-        
-        {/* Primary routes */}
-        <Route path="/dashboard" element={
-          <Suspense fallback={<PageLoader />}>
-            <Dashboard />
-          </Suspense>
-        } />
-        
-        <Route path="/inventory" element={
-          <Suspense fallback={<PageLoader />}>
-            <Inventory />
-          </Suspense>
-        } />
-        
-        <Route path="/billing" element={
-          <Suspense fallback={<PageLoader />}>
-            <Billing />
-          </Suspense>
-        } />
-        
-        <Route path="/billing/cart/:prescriptionId" element={
-          <Suspense fallback={<PageLoader />}>
-            <BillingCart />
-          </Suspense>
-        } />
-        
-        {/* Secondary routes */}
-        <Route path="/patients" element={
-          <Suspense fallback={<PageLoader />}>
-            <Patients />
-          </Suspense>
-        } />
-        
-        <Route path="/prescriptions" element={
-          <Suspense fallback={<PageLoader />}>
-            <Prescriptions />
-          </Suspense>
-        } />
-        
-        <Route path="/insights" element={
-          <Suspense fallback={<PageLoader />}>
-            <Insights />
-          </Suspense>
-        } />
-        
-        <Route path="/purchases" element={
-          <Suspense fallback={<PageLoader />}>
-            <Purchases />
-          </Suspense>
-        } />
-        
-        <Route path="/settings" element={
-          <Suspense fallback={<PageLoader />}>
-            <Settings />
-          </Suspense>
-        } />
-        
-        <Route path="/business-optimization" element={
-          <Suspense fallback={<PageLoader />}>
-            <BusinessOptimization />
-          </Suspense>
-        } />
-        
-        {/* Legal routes */}
-        <Route path="/legal/privacy-policy" element={
-          <Suspense fallback={<PageLoader />}>
-            <legalPages.PrivacyPolicy />
-          </Suspense>
-        } />
-        
-        <Route path="/legal/terms-of-service" element={
-          <Suspense fallback={<PageLoader />}>
-            <legalPages.TermsOfService />
-          </Suspense>
-        } />
-        
-        <Route path="/legal/eula" element={
-          <Suspense fallback={<PageLoader />}>
-            <legalPages.EULA />
-          </Suspense>
-        } />
-        
-        <Route path="/legal/sla" element={
-          <Suspense fallback={<PageLoader />}>
-            <legalPages.SLA />
-          </Suspense>
-        } />
-        
-        <Route path="/legal/refund-policy" element={
-          <Suspense fallback={<PageLoader />}>
-            <legalPages.RefundPolicy />
-          </Suspense>
-        } />
-        
-        <Route path="/legal/acceptable-use-policy" element={
-          <Suspense fallback={<PageLoader />}>
-            <legalPages.AcceptableUsePolicy />
-          </Suspense>
-        } />
-        
-        <Route path="/legal/disclaimers" element={
-          <Suspense fallback={<PageLoader />}>
-            <legalPages.Disclaimers />
-          </Suspense>
-        } />
-        
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <Toaster />
-    </>
+    <BrowserRouter>
+      <ThemeProvider defaultTheme="light" storageKey="theme">
+        <AuthWrapper>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/insights" element={<Insights />} />
+            <Route path="/inventory" element={<Inventory />} />
+            <Route path="/patients" element={<Patients />} />
+            <Route path="/prescriptions" element={<Prescriptions />} />
+            <Route path="/purchases" element={<Purchases />} />
+            <Route path="/business-optimization" element={<BusinessOptimization />} />
+            <Route path="/billing" element={<Billing />} />
+            <Route path="/billing/cart" element={<BillingCart />} />
+            <Route path="/settings" element={<Settings />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminCheck><Admin /></AdminCheck>} />
+            <Route path="/admin/system-settings" element={<AdminCheck><SystemSettings /></AdminCheck>} />
+            
+            {/* Legal Routes */}
+            <Route path="/legal/terms-of-service" element={<TermsOfService />} />
+            <Route path="/legal/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/legal/eula" element={<EULA />} />
+            <Route path="/legal/sla" element={<SLA />} />
+            <Route path="/legal/acceptable-use-policy" element={<AcceptableUsePolicy />} />
+            <Route path="/legal/refund-policy" element={<RefundPolicy />} />
+            <Route path="/legal/disclaimers" element={<Disclaimers />} />
+            
+            <Route path="/404" element={<NotFound />} />
+            <Route path="*" element={<Navigate to="/404" replace />} />
+          </Routes>
+          <Toaster />
+        </AuthWrapper>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 }
-
-export default App;

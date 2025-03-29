@@ -12,9 +12,10 @@ import { Shield, AlertCircle } from "lucide-react";
 interface SecurityCodeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onVerified?: (verified: boolean) => void;
 }
 
-export function SecurityCodeModal({ isOpen, onClose }: SecurityCodeModalProps) {
+export function SecurityCodeModal({ isOpen, onClose, onVerified }: SecurityCodeModalProps) {
   const [securityCode, setSecurityCode] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,8 +47,13 @@ export function SecurityCodeModal({ isOpen, onClose }: SecurityCodeModalProps) {
           title: "Success",
           description: "Admin access granted",
         });
-        onClose();
-        navigate('/admin');
+        
+        if (onVerified) {
+          onVerified(true);
+        } else {
+          onClose();
+          navigate('/admin');
+        }
       } else {
         setError("Invalid security code. Please try again.");
         toast({
@@ -55,6 +61,10 @@ export function SecurityCodeModal({ isOpen, onClose }: SecurityCodeModalProps) {
           description: "Invalid security code",
           variant: "destructive",
         });
+        
+        if (onVerified) {
+          onVerified(false);
+        }
       }
     } catch (error) {
       console.error("Error verifying code:", error);
@@ -64,6 +74,10 @@ export function SecurityCodeModal({ isOpen, onClose }: SecurityCodeModalProps) {
         description: "Failed to verify security code",
         variant: "destructive",
       });
+      
+      if (onVerified) {
+        onVerified(false);
+      }
     } finally {
       setIsVerifying(false);
     }
@@ -95,7 +109,7 @@ export function SecurityCodeModal({ isOpen, onClose }: SecurityCodeModalProps) {
             value={securityCode}
             onChange={(e) => setSecurityCode(e.target.value)}
             className="text-center text-lg tracking-widest"
-            onKeyPress={(e) => e.key === 'Enter' && handleVerify()}
+            onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
           />
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={onClose} disabled={isVerifying}>
