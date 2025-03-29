@@ -45,12 +45,14 @@ export const HeroSection = memo(() => {
               </TechCard>
             </AnimatedGradientBorder>
             
-            <TechCard className="w-full md:w-auto px-6 py-3">
-              <div className="flex items-center">
-                <CloudCog className="text-primary mr-2" />
-                <span className="text-neutral-800 font-medium">Cloud-Based</span>
-              </div>
-            </TechCard>
+            <AnimatedGradientBorder className="w-full md:w-auto">
+              <TechCard className="w-full md:w-auto px-6 py-3">
+                <div className="flex items-center">
+                  <CloudCog className="text-primary mr-2" />
+                  <span className="text-neutral-800 font-medium">Cloud-Based</span>
+                </div>
+              </TechCard>
+            </AnimatedGradientBorder>
             
             <AnimatedGradientBorder className="w-full md:w-auto">
               <TechCard className="w-full md:w-auto px-6 py-3">
