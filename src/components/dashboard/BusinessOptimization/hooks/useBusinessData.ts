@@ -20,7 +20,7 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     setError(true);
   }, []);
   
-  // Get location data
+  // Get location data - no parameters should be passed here
   const { 
     locationData, 
     pharmacyLocation, 

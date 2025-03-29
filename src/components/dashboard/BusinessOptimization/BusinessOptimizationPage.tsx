@@ -48,14 +48,14 @@ export default function BusinessOptimizationPage() {
   } = useBusinessData({
     onError: handleDataError,
     maxRetries: 5, // Increase retries
-    timeout: 10000 // Increase timeout
+    timeout: 15000 // Increased timeout for better chance of loading
   });
   
   // Stable loading state to prevent flickering
   const { isStableLoading } = useLoadingState({
     isLoading, 
     locationLoading,
-    forceExitTimeout: 5000, // Reduce timeout to ensure it exits loading state
+    forceExitTimeout: 15000, // Increase timeout to ensure data has chance to load
     stabilityDelay: 200 // Lower stability delay for quicker transitions
   });
   
@@ -63,6 +63,21 @@ export default function BusinessOptimizationPage() {
   const { lastRefreshed, handleRefreshAll } = useDataRefresh({
     refreshData,
     refreshLocationData
+  });
+
+  // Add more extensive logging to debug loading issues
+  console.log("BusinessOptimizationPage render state:", {
+    isLoading,
+    locationLoading,
+    isStableLoading,
+    hasData: !!(inventoryData?.length || salesData?.length || suppliersData?.length || 
+               (locationData && Object.keys(locationData).length)),
+    hasError,
+    error,
+    inventoryDataLength: inventoryData?.length || 0,
+    salesDataLength: salesData?.length || 0,
+    suppliersDataLength: suppliersData?.length || 0,
+    locationDataKeys: locationData ? Object.keys(locationData).length : 0
   });
 
   // Render loading state with stability to prevent flickering

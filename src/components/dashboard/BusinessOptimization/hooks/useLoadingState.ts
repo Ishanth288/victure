@@ -11,14 +11,24 @@ interface UseLoadingStateOptions {
 export function useLoadingState({
   isLoading,
   locationLoading,
-  forceExitTimeout = 5000, // Reduced from 6000 to 5000ms
-  stabilityDelay = 200 // Reduced from 300 to 200ms
+  forceExitTimeout = 15000, // Increased from 5000 to 15000ms to give more loading time
+  stabilityDelay = 200 
 }: UseLoadingStateOptions) {
   const [isStableLoading, setIsStableLoading] = useState(true);
   const stabilityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const forceExitTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hasShownLoadingRef = useRef(false);
+
+  // Add more logging to diagnose loading issues
+  useEffect(() => {
+    console.log("useLoadingState effect triggered:", { 
+      isLoading, 
+      locationLoading, 
+      isStableLoading,
+      hasShownLoading: hasShownLoadingRef.current
+    });
+  }, [isLoading, locationLoading, isStableLoading]);
 
   // Add stability to the loading state to prevent flickering
   useEffect(() => {
