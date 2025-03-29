@@ -2,10 +2,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useLocationBasedAnalytics, LocationAnalyticsData } from "@/components/dashboard/hooks/useLocationBasedAnalytics";
+import { useLocationBasedAnalytics } from "@/components/dashboard/hooks/useLocationBasedAnalytics";
 import { checkSupabaseConnection, executeWithRetry, determineErrorType } from "@/utils/supabaseErrorHandling";
-import { User } from "@supabase/supabase-js";
-import { PostgrestError } from "@supabase/supabase-js";
 
 interface PharmacyLocation {
   state?: string;
@@ -28,7 +26,9 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
   const retryCount = useRef(0);
   const maxRetries = useRef(3);
   const mountedRef = useRef(true);
+  const [dataFetched, setDataFetched] = useState(false);
   
+  // Critical fix: Add error property to properly handle location loading errors
   const { 
     locationData, 
     pharmacyLocation, 
@@ -37,7 +37,18 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     error: locationError
   } = useLocationBasedAnalytics();
 
+  console.log("useBusinessData hook initialized", { 
+    isLoading, 
+    locationLoading, 
+    dataFetched,
+    inventoryData: inventoryData?.length || 0,
+    salesData: salesData?.length || 0,
+    suppliersData: suppliersData?.length || 0,
+    locationData: locationData ? 'available' : 'not available'
+  });
+
   const fetchData = useCallback(async () => {
+    console.log("fetchData function triggered, checking mountedRef:", mountedRef.current);
     if (!mountedRef.current) return;
     
     setIsLoading(true);
@@ -45,10 +56,13 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     
     try {
       const isConnected = await checkSupabaseConnection();
+      console.log("Connection check result:", isConnected);
+      
       if (!isConnected) {
         throw new Error("Database connection failed. Please check your network connection.");
       }
 
+      console.log("Getting user...");
       const userResult = await executeWithRetry(
         () => supabase.auth.getUser(),
         { 
@@ -59,6 +73,7 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
       );
       
       if (userResult.error || !userResult.data?.user) {
+        console.error("User authentication error:", userResult.error);
         if (userResult.error) {
           throw userResult.error;
         } else {
@@ -67,13 +82,16 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
       }
       
       const user = userResult.data.user;
+      console.log("User authenticated, fetching inventory data...");
 
-      // Fix the inventory query by wrapping it in a proper async function
+      // Execute inventory query inside an async function
       const inventoryPromise = async () => {
+        console.log("Fetching inventory data...");
         const result = await supabase
           .from('inventory')
           .select('*')
           .eq('user_id', user.id);
+        console.log("Inventory query result:", result);
         return result;
       };
 
@@ -86,14 +104,19 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
         }
       );
 
-      if (inventoryResult.error) throw inventoryResult.error;
+      if (inventoryResult.error) {
+        console.error("Inventory query error:", inventoryResult.error);
+        throw inventoryResult.error;
+      }
 
-      // Fix the bills query by wrapping it in a proper async function
+      console.log("Fetching bills data...");
+      // Execute bills query inside an async function
       const billsPromise = async () => {
         const result = await supabase
           .from('bills')
           .select('*, bill_items(*)')
           .eq('user_id', user.id);
+        console.log("Bills query result:", result);
         return result;
       };
 
@@ -106,14 +129,19 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
         }
       );
 
-      if (billsResult.error) throw billsResult.error;
+      if (billsResult.error) {
+        console.error("Bills query error:", billsResult.error);
+        throw billsResult.error;
+      }
 
-      // Fix the purchase orders query by wrapping it in a proper async function
+      console.log("Fetching purchase orders data...");
+      // Execute purchase orders query inside an async function
       const purchaseOrdersPromise = async () => {
         const result = await supabase
           .from('purchase_orders')
           .select('*, purchase_order_items(*)')
           .eq('user_id', user.id);
+        console.log("Purchase orders query result:", result);
         return result;
       };
 
@@ -126,23 +154,34 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
         }
       );
 
-      if (purchaseOrdersResult.error) throw purchaseOrdersResult.error;
+      if (purchaseOrdersResult.error) {
+        console.error("Purchase orders query error:", purchaseOrdersResult.error);
+        throw purchaseOrdersResult.error;
+      }
 
-      if (!mountedRef.current) return;
+      // Check if component is still mounted before updating state
+      if (!mountedRef.current) {
+        console.log("Component unmounted, stopping state updates");
+        return;
+      }
       
+      console.log("Setting inventory data:", inventoryResult.data?.length || 0, "items");
       if (inventoryResult.data) {
         setInventoryData(inventoryResult.data as any[]);
       }
 
+      console.log("Setting sales data:", billsResult.data?.length || 0, "items");
       if (billsResult.data) {
         setSalesData(billsResult.data as any[]);
       }
 
+      console.log("Setting suppliers data:", purchaseOrdersResult.data?.length || 0, "items");
       if (purchaseOrdersResult.data) {
         setSuppliersData(purchaseOrdersResult.data as any[]);
       }
       
       retryCount.current = 0;
+      setDataFetched(true);
       
       if (connectionError) {
         toast({
@@ -152,6 +191,9 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
         });
         setConnectionError(null);
       }
+      
+      console.log("Data fetching completed, setting isLoading to false");
+      setIsLoading(false);
     } catch (error: any) {
       console.error("Error fetching business data:", error);
       
@@ -173,6 +215,7 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
           }
         }, delay);
       } else {
+        console.log("Max retries reached, setting error state");
         toast({
           title: "Error fetching data",
           description: "There was a problem loading your business data. Please try again.",
@@ -182,18 +225,30 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
         if (options?.onError) {
           options.onError();
         }
-      }
-    } finally {
-      if (mountedRef.current) {
+        
+        // Even after error, we need to exit loading state to prevent infinite spinner
         setIsLoading(false);
+        setDataFetched(true);
       }
     }
   }, [toast, options, connectionError]);
 
+  // Ensure location data is loaded first
   useEffect(() => {
+    console.log("Location data effect triggered", { locationLoading, locationData: !!locationData });
+    
+    // Only proceed when location data is loaded (or failed)
+    if (!locationLoading && !isLoading && !dataFetched) {
+      console.log("Location data loaded, now fetching business data");
+      fetchData();
+    }
+  }, [locationLoading, isLoading, dataFetched, fetchData]);
+
+  useEffect(() => {
+    console.log("Main useEffect triggered in useBusinessData");
     mountedRef.current = true;
     
-    fetchData();
+    // Start with fetching location data, business data will follow in the other effect
     
     const setupSubscriptions = async () => {
       try {
@@ -202,6 +257,7 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
         
         if (!user) return () => {};
         
+        console.log("Setting up realtime subscriptions for user:", user.id);
         const channel = supabase
           .channel('business-data-changes')
           .on('postgres_changes', 
@@ -261,6 +317,7 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     window.addEventListener('online', handleOnline);
     
     return () => {
+      console.log("Cleanup function triggered in useBusinessData");
       mountedRef.current = false;
       if (cleanup) cleanup.then(unsub => unsub && unsub());
       window.removeEventListener('online', handleOnline);

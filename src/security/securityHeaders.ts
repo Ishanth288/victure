@@ -17,13 +17,13 @@ export const securityHeaders = {
     object-src 'none';
     base-uri 'self';
     form-action 'self';
-    frame-ancestors 'self' https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev https://preview--victure.lovable.app https://*.gpteng.co;
+    frame-ancestors 'self' https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev https://preview--victure.lovable.app https://*.gpteng.co https://lovable.dev;
   `.replace(/\s+/g, ' ').trim(),
   
   // Prevent MIME type sniffing
   'X-Content-Type-Options': 'nosniff',
   
-  // Control iframe embedding
+  // Control iframe embedding - use CSP frame-ancestors instead for better control
   'X-Frame-Options': 'SAMEORIGIN',
   
   // Add an additional layer of XSS protection for older browsers

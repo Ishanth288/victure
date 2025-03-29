@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Tabs } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -15,9 +15,12 @@ export default function BusinessOptimizationPage() {
   const [activeTab, setActiveTab] = useState("forecast");
   const [error, setError] = useState<boolean>(false);
   const { toast } = useToast();
+  const renderAttempts = useRef(0);
+  const maxRenderAttempts = 5;
   
   // Add console logs to debug the component lifecycle
-  console.log("Business Optimization Page rendering");
+  console.log("Business Optimization Page rendering - attempt:", renderAttempts.current);
+  renderAttempts.current += 1;
   
   const { 
     isLoading, 
@@ -39,13 +42,44 @@ export default function BusinessOptimizationPage() {
     },
   });
   
-  console.log("Data loading state:", { isLoading, locationLoading, hasError, error });
+  console.log("Data loading state:", { 
+    isLoading, 
+    locationLoading, 
+    hasError, 
+    error, 
+    renderAttempts: renderAttempts.current 
+  });
+  
   console.log("Data availability:", { 
     inventoryData: inventoryData?.length || 0,
     salesData: salesData?.length || 0,
     suppliersData: suppliersData?.length || 0,
     locationData: locationData ? 'yes' : 'no'
   });
+
+  // Force an exit from loading state if we've tried too many times
+  useEffect(() => {
+    if ((isLoading || locationLoading) && renderAttempts.current > maxRenderAttempts) {
+      console.log("Forcing exit from loading state after multiple attempts");
+      // This is a fallback to prevent infinite loading
+      if (inventoryData?.length || salesData?.length || suppliersData?.length || locationData) {
+        // We have some data, so let's show what we have
+        toast({
+          title: "Partial data loaded",
+          description: "Some data might be missing. Please refresh to try again.",
+          duration: 5000
+        });
+      } else {
+        // No data available, show error
+        setError(true);
+        toast({
+          title: "Data loading error",
+          description: "Failed to load business optimization data after multiple attempts.",
+          variant: "destructive"
+        });
+      }
+    }
+  }, [isLoading, locationLoading, renderAttempts, inventoryData, salesData, suppliersData, locationData, toast]);
 
   // Initialize app monitoring on first load
   useEffect(() => {
@@ -66,6 +100,7 @@ export default function BusinessOptimizationPage() {
     setError(false);
     refreshData();
     refreshLocationData();
+    renderAttempts.current = 0;
     toast({
       title: "Refreshing all data",
       description: "Updating analytics with the latest information...",
@@ -74,7 +109,7 @@ export default function BusinessOptimizationPage() {
   };
 
   // Render loading state
-  if (isLoading || locationLoading) {
+  if ((isLoading || locationLoading) && renderAttempts.current <= maxRenderAttempts) {
     console.log("Rendering loading state");
     return (
       <DashboardLayout>
