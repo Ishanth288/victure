@@ -4,25 +4,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 // Define valid table endpoints
-type TableEndpoint = 'inventory' | 'bills' | 'purchase_orders';
+export type TableEndpoint = 'inventory' | 'bills' | 'purchase_orders';
 
 // Type for error categories
 export type ErrorType = 'connection' | 'database' | 'server' | 'unknown' | 'auth' | 'validation';
 
 // Define result types for different data
-type InventoryData = Array<any>;
-type SalesData = Array<any>;
-type SuppliersData = Array<any>;
+export type InventoryData = Array<any>;
+export type SalesData = Array<any>;
+export type SuppliersData = Array<any>;
 
 // Result type for each endpoint
-type EndpointDataMap = {
+export type EndpointDataMap = {
   'inventory': InventoryData;
   'bills': SalesData;
   'purchase_orders': SuppliersData;
 }
 
-export const useBusinessDataFetch = (endpoint: TableEndpoint) => {
-  const [data, setData] = useState<any>(null);
+export const useBusinessDataFetch = <T extends TableEndpoint>(endpoint: T) => {
+  const [data, setData] = useState<EndpointDataMap[T] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [errorType, setErrorType] = useState<ErrorType>('unknown');
@@ -33,6 +33,7 @@ export const useBusinessDataFetch = (endpoint: TableEndpoint) => {
     setErrorType('unknown');
     
     try {
+      // Use type assertion to specify the endpoint is a valid table name
       const { data: responseData, error: apiError } = await supabase
         .from(endpoint)
         .select('*');
@@ -41,7 +42,7 @@ export const useBusinessDataFetch = (endpoint: TableEndpoint) => {
         throw apiError;
       }
       
-      setData(responseData);
+      setData(responseData as EndpointDataMap[T]);
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
       setErrorType(determineErrorType(err));

@@ -1,7 +1,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useLocationBasedAnalytics } from "@/components/dashboard/hooks/useLocationBasedAnalytics";
-import { useBusinessDataFetch, ErrorType } from "./useBusinessDataFetch";
+import { useBusinessDataFetch, ErrorType, InventoryData, SalesData, SuppliersData } from "./useBusinessDataFetch";
 import { useRealtimeUpdates } from "./useRealtimeUpdates";
 
 interface UseBusinessDataOptions {
