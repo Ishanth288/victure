@@ -1,17 +1,17 @@
 
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { FileText, Download, BarChart2, Package, FileBarChart, Users, AlertCircle } from "lucide-react";
+import { FileText, Download, Eye, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DocumentType, SystemDocument } from "./types";
-import { useDocumentUpdates } from "./useDocumentUpdates";
 
 interface DocumentListProps {
   documents: SystemDocument[];
   onDownload: (docType: DocumentType, docName: string) => void;
+  onPreview: (docType: DocumentType, docName: string) => void;
 }
 
-export function DocumentList({ documents, onDownload }: DocumentListProps) {
+export function DocumentList({ documents, onDownload, onPreview }: DocumentListProps) {
   if (documents.length === 0) {
     return (
       <div className="text-center py-4 text-gray-500 flex flex-col items-center justify-center">
@@ -40,6 +40,18 @@ export function DocumentList({ documents, onDownload }: DocumentListProps) {
             </div>
           </div>
           <div className="flex space-x-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => onPreview(doc.type, doc.name)}
+              disabled={doc.isLoading}
+            >
+              {doc.isLoading ? (
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </Button>
             <Button 
               variant="ghost" 
               size="sm" 

@@ -1,9 +1,9 @@
-
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { generateSystemReport, downloadPDF, generatePDFFromElement } from "@/utils/documentUtils";
 import { DocumentList } from "./DocumentList";
+import { DocumentPreviewModal } from "./DocumentPreviewModal";
 import { initialDocuments } from "./documentData";
 import { useDataFetching } from "./useDataFetching";
 import { useDocumentUpdates } from "./useDocumentUpdates";
@@ -18,6 +18,10 @@ import {
 export function DocumentManagement() {
   const reportContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [currentDocType, setCurrentDocType] = useState<DocumentType | null>(null);
+  const [currentDocName, setCurrentDocName] = useState<string>("");
+  const [reportData, setReportData] = useState<any[]>([]);
   
   // Get initial data
   const { documents: initialFetchedDocs, currentUserId } = useDataFetching(initialDocuments);
@@ -28,8 +32,132 @@ export function DocumentManagement() {
     setDocumentLoading 
   } = useDocumentUpdates(currentUserId, initialFetchedDocs);
 
+  const handlePreview = async (docType: DocumentType, docName: string) => {
+    try {
+      // Set loading state
+      setDocumentLoading(docType, true);
+      
+      // Generate report data
+      const data = await generateSystemReport(docType);
+      
+      if (!data || data.length === 0) {
+        toast({
+          title: "No data available",
+          description: `There is no data available for ${docName} yet.`,
+          variant: "destructive"
+        });
+        
+        setDocumentLoading(docType, false);
+        return;
+      }
+      
+      // Store data for preview
+      setReportData(data);
+      setCurrentDocType(docType);
+      setCurrentDocName(docName);
+      
+      // Open preview modal
+      setPreviewOpen(true);
+      
+      // Reset loading state
+      setDocumentLoading(docType, false);
+      
+      // After the modal is open, render the report
+      setTimeout(() => {
+        renderReportPreview(docType, data);
+      }, 100);
+      
+    } catch (error) {
+      console.error(`Error previewing ${docName}:`, error);
+      toast({
+        title: "Error generating preview",
+        description: "An error occurred while generating the preview.",
+        variant: "destructive"
+      });
+      setDocumentLoading(docType, false);
+    }
+  };
+
+  const renderReportPreview = (docType: DocumentType, data: any[]) => {
+    if (!reportContainerRef.current) return;
+    
+    // Clear previous content
+    reportContainerRef.current.innerHTML = '';
+    
+    // Style the report
+    const reportDiv = document.createElement('div');
+    reportDiv.style.padding = '20px';
+    reportDiv.style.fontFamily = 'Arial, sans-serif';
+    
+    const doc = documents.find(d => d.id === docType);
+    
+    // Create report header
+    const header = document.createElement('h1');
+    header.textContent = currentDocName;
+    header.style.fontSize = '24px';
+    header.style.marginBottom = '10px';
+    reportDiv.appendChild(header);
+    
+    const description = document.createElement('p');
+    description.textContent = doc?.description || '';
+    description.style.fontSize = '14px';
+    description.style.marginBottom = '20px';
+    description.style.color = '#666';
+    reportDiv.appendChild(description);
+    
+    // Create report content based on document type
+    switch (docType) {
+      case 'inventory':
+        createInventoryReport(reportDiv, data);
+        break;
+      case 'sales':
+        createSalesReport(reportDiv, data);
+        break;
+      case 'purchase_orders':
+        createPurchaseOrdersReport(reportDiv, data);
+        break;
+      case 'patients':
+        createPatientsReport(reportDiv, data);
+        break;
+    }
+    
+    // Append to the container
+    reportContainerRef.current.appendChild(reportDiv);
+  };
+
   const handleDownload = async (docType: DocumentType, docName: string) => {
     try {
+      // If we're downloading from the preview, use the current data
+      if (previewOpen && currentDocType === docType) {
+        // Generate PDF from the current preview
+        if (!reportContainerRef.current) return;
+        
+        const doc = documents.find(d => d.id === docType);
+        
+        const pdfDataUrl = await generatePDFFromElement(reportContainerRef.current, {
+          title: docName,
+          description: doc?.description,
+          lastUpdated: doc?.lastUpdated || new Date()
+        });
+        
+        if (pdfDataUrl) {
+          // Download the PDF
+          downloadPDF(pdfDataUrl, docName);
+          
+          toast({
+            title: "Report downloaded",
+            description: `${docName} has been generated and downloaded.`
+          });
+          
+          // Close preview
+          setPreviewOpen(false);
+        } else {
+          throw new Error("Failed to generate PDF");
+        }
+        return;
+      }
+      
+      // Otherwise follow the normal download flow
       // Set loading state
       setDocumentLoading(docType, true);
       
@@ -124,6 +252,12 @@ export function DocumentManagement() {
     }
   };
 
+  const handleDownloadFromPreview = () => {
+    if (currentDocType && currentDocName) {
+      handleDownload(currentDocType, currentDocName);
+    }
+  };
+
   return (
     <Card className="h-full">
       <CardHeader>
@@ -134,8 +268,19 @@ export function DocumentManagement() {
           <DocumentList 
             documents={documents}
             onDownload={handleDownload}
+            onPreview={handlePreview}
           />
         </div>
+        
+        <DocumentPreviewModal
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
+          documentName={currentDocName}
+          documentType={currentDocType as DocumentType}
+          reportData={reportData}
+          onDownload={handleDownloadFromPreview}
+          previewRef={reportContainerRef}
+        />
         
         {/* Hidden container for report generation */}
         <div 

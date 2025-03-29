@@ -1,6 +1,5 @@
 
 // Export all utility functions
-export * from './supabaseHelpers';
 export * from './supabaseInsert';
 export * from './supabaseSelect';
 export * from './supabaseUpdate';
