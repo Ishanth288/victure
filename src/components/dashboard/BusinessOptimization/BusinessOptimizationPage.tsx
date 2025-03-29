@@ -57,7 +57,8 @@ export default function BusinessOptimizationPage() {
     inventoryData: inventoryData?.length || 0,
     salesData: salesData?.length || 0,
     suppliersData: suppliersData?.length || 0,
-    locationData: locationData ? 'yes' : 'no'
+    locationData: locationData ? 'yes' : 'no',
+    dataSources: locationData?.dataSources
   });
 
   // Force an exit from loading state if we've tried too many times
@@ -107,7 +108,7 @@ export default function BusinessOptimizationPage() {
     renderAttempts.current = 0;
     toast({
       title: "Refreshing all data",
-      description: "Updating analytics with the latest information...",
+      description: "Updating analytics with Google Trends and news data...",
       duration: 3000
     });
   };
@@ -117,7 +118,7 @@ export default function BusinessOptimizationPage() {
     console.log("Rendering loading state");
     return (
       <DashboardLayout>
-        <LoadingState message="Loading your business analytics data..." />
+        <LoadingState message="Loading your business analytics data from Google Trends and News..." />
       </DashboardLayout>
     );
   }
@@ -163,7 +164,8 @@ export default function BusinessOptimizationPage() {
         <PageHeader 
           pharmacyLocation={pharmacyLocation} 
           onRefresh={handleRefreshAll}
-          lastRefreshed={lastRefreshed} 
+          lastRefreshed={lastRefreshed}
+          dataSources={locationData?.dataSources} 
         />
         
         <Tabs defaultValue="forecast" onValueChange={setActiveTab}>

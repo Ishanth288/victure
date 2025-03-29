@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { safeQueryData } from "@/utils/safeSupabaseQueries";
@@ -9,10 +8,13 @@ export interface LocationAnalyticsData {
   state: string;
   seasonalTrends: {
     season: string;
-    topProducts: Array<{name: string, demand: number}>;
+    topProducts: Array<{name: string, demand: number, trend?: string, source?: string}>;
   }[];
-  marketForecasts: Array<{month: string, prediction: number}>;
-  regionalDemand: Array<{product: string, demand: number}>;
+  marketForecasts: Array<{month: string, prediction: number, industryAverage?: number, difference?: number}>;
+  regionalDemand: Array<{product: string, demand: number, trend?: string, growth?: number, unit?: string}>;
+  dataSources?: string[];
+  lastUpdated?: string;
+  news?: Array<{title: string, source: string, date: string, summary: string}>;
 }
 
 interface PharmacyLocation {
@@ -24,7 +26,8 @@ export function useLocationBasedAnalytics() {
   const [isLoading, setIsLoading] = useState(true);
   const [locationData, setLocationData] = useState<LocationAnalyticsData | null>(null);
   const [pharmacyLocation, setPharmacyLocation] = useState<PharmacyLocation | null>(null);
-  const [error, setError] = useState<any>(null); // Add error state
+  const [error, setError] = useState<any>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Fetch pharmacy location from profile
@@ -54,132 +57,258 @@ export function useLocationBasedAnalytics() {
     }
   }, []);
 
-  // Generate seasonal data based on state
-  const generateSeasonalData = useCallback((state: string) => {
+  // Fetch location-based analytics from edge function
+  const fetchLocationAnalytics = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // First get the pharmacy location
+      const location = await fetchPharmacyLocation();
+      const state = location?.state || pharmacyLocation?.state || 'Maharashtra';
+      
+      console.log("Fetching Google Trends and news data for", state);
+      
+      // Call the Supabase Edge Function to get trends data
+      const { data, error } = await supabase.functions.invoke('fetch-trends-data', {
+        body: { state, type: 'all' }
+      });
+      
+      if (error) {
+        throw new Error(`Error fetching trends data: ${error.message}`);
+      }
+      
+      console.log("Received trends data:", data);
+      
+      // Transform the response into the expected format
+      if (data) {
+        const analyticsData: LocationAnalyticsData = {
+          state,
+          seasonalTrends: [],
+          marketForecasts: [],
+          regionalDemand: [],
+          dataSources: data.dataSources || ["Google Trends", "News API"],
+          lastUpdated: data.timestamp
+        };
+        
+        // Process trends data
+        if (data.trendsData) {
+          const season = data.trendsData.season;
+          analyticsData.seasonalTrends.push({
+            season,
+            topProducts: data.trendsData.data || []
+          });
+          
+          // Add other seasons using the fallback mechanism
+          const seasons = ["Winter", "Spring", "Summer", "Monsoon"];
+          const currentSeason = data.currentSeason;
+          
+          // For seasons other than the current one, use the fallback generator
+          seasons.forEach(s => {
+            if (s !== currentSeason) {
+              analyticsData.seasonalTrends.push({
+                season: s,
+                topProducts: generateSeasonalData(state, s)
+              });
+            }
+          });
+        }
+        
+        // Process market forecast data
+        if (data.forecastData && data.forecastData.marketForecast) {
+          analyticsData.marketForecasts = data.forecastData.marketForecast;
+        }
+        
+        // Process regional demand data
+        if (data.demandData && data.demandData.regionalDemand) {
+          analyticsData.regionalDemand = data.demandData.regionalDemand;
+        }
+        
+        // Add news data if available
+        if (data.newsData && data.newsData.news) {
+          analyticsData.news = data.newsData.news;
+        }
+        
+        setLocationData(analyticsData);
+        setLastUpdated(data.timestamp);
+        console.log("Location-based analytics:", analyticsData);
+        
+        toast({
+          title: "Location data updated",
+          description: `Analytics data for ${state} has been refreshed with Google Trends and News data`,
+          duration: 3000
+        });
+        
+        return analyticsData;
+      } else {
+        // If the edge function fails or returns no data, use the fallback method
+        console.log("Using fallback data generation method");
+        return generateFallbackData(state);
+      }
+    } catch (error) {
+      console.error("Error fetching location-based analytics:", error);
+      setError(error);
+      
+      // Use fallback data generation if API fails
+      const state = pharmacyLocation?.state || 'Maharashtra';
+      const fallbackData = generateFallbackData(state);
+      setLocationData(fallbackData);
+      
+      toast({
+        title: "Error updating location data",
+        description: "Using offline data for analytics. Will retry with online sources later.",
+        variant: "destructive",
+        duration: 5000
+      });
+      
+      return fallbackData;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fetchPharmacyLocation, pharmacyLocation, toast]);
+
+  // Fallback data generator if the API call fails
+  const generateFallbackData = (state: string): LocationAnalyticsData => {
+    return {
+      state,
+      seasonalTrends: [
+        { 
+          season: 'Monsoon', 
+          topProducts: generateSeasonalData(state, 'Monsoon')
+        },
+        { 
+          season: 'Winter', 
+          topProducts: generateSeasonalData(state, 'Winter')
+        },
+        { 
+          season: 'Summer', 
+          topProducts: generateSeasonalData(state, 'Summer')
+        },
+        { 
+          season: 'Spring', 
+          topProducts: generateSeasonalData(state, 'Spring')
+        }
+      ],
+      marketForecasts: generateMarketForecast(state),
+      regionalDemand: generateRegionalDemand(state),
+      dataSources: ["Offline Database"],
+      lastUpdated: new Date().toISOString()
+    };
+  };
+
+  // Generate seasonal data based on state (fallback method)
+  const generateSeasonalData = (state: string, season: string) => {
     // Map of seasonal trends by region
-    const regionalSeasonalData: Record<string, any> = {
-      'Maharashtra': [
-        { 
-          season: 'Monsoon (Jun-Sep)', 
-          topProducts: [
-            { name: 'Anti-malarial drugs', demand: 170 },
-            { name: 'Fever medication', demand: 220 },
-            { name: 'Cold & flu medicine', demand: 185 },
-            { name: 'Electrolyte solutions', demand: 150 }
-          ] 
-        },
-        { 
-          season: 'Winter (Nov-Feb)', 
-          topProducts: [
-            { name: 'Cough syrup', demand: 190 },
-            { name: 'Vitamin C supplements', demand: 160 },
-            { name: 'Inhalers', demand: 140 },
-            { name: 'Antihistamines', demand: 120 }
-          ] 
-        },
-        { 
-          season: 'Summer (Mar-May)', 
-          topProducts: [
-            { name: 'Rehydration salts', demand: 210 },
-            { name: 'Sunscreen', demand: 180 },
-            { name: 'Calamine lotion', demand: 130 },
-            { name: 'Anti-diarrheal medication', demand: 160 }
-          ] 
-        }
-      ],
-      'Tamil Nadu': [
-        { 
-          season: 'Monsoon (Oct-Dec)', 
-          topProducts: [
-            { name: 'Anti-fungal creams', demand: 190 },
-            { name: 'Fever medication', demand: 230 },
-            { name: 'Electrolyte solutions', demand: 170 },
-            { name: 'Anti-malarial drugs', demand: 150 }
-          ] 
-        },
-        { 
-          season: 'Summer (Mar-Jun)', 
-          topProducts: [
-            { name: 'Rehydration salts', demand: 250 },
-            { name: 'Sunscreen', demand: 200 },
-            { name: 'Heat rash cream', demand: 180 },
-            { name: 'Oral rehydration therapy', demand: 190 }
-          ] 
-        },
-        { 
-          season: 'Winter (Jan-Feb)', 
-          topProducts: [
-            { name: 'Cold & flu medicine', demand: 140 },
-            { name: 'Vitamin supplements', demand: 120 },
-            { name: 'Pain relievers', demand: 110 },
-            { name: 'Throat lozenges', demand: 100 }
-          ] 
-        }
-      ],
-      'Delhi': [
-        { 
-          season: 'Winter (Nov-Feb)', 
-          topProducts: [
-            { name: 'Anti-pollution masks', demand: 280 },
-            { name: 'Respiratory medicines', demand: 260 },
-            { name: 'Inhalers', demand: 230 },
-            { name: 'Immunity boosters', demand: 210 }
-          ] 
-        },
-        { 
-          season: 'Summer (Apr-Jun)', 
-          topProducts: [
-            { name: 'Rehydration salts', demand: 240 },
-            { name: 'Heat stroke medication', demand: 200 },
-            { name: 'Sunscreen', demand: 180 },
-            { name: 'Eye drops', demand: 160 }
-          ] 
-        },
-        { 
-          season: 'Monsoon (Jul-Sep)', 
-          topProducts: [
-            { name: 'Anti-malarial drugs', demand: 210 },
-            { name: 'Fever medication', demand: 230 },
-            { name: 'Water purification tablets', demand: 190 },
-            { name: 'Anti-bacterial soaps', demand: 170 }
-          ] 
-        }
-      ]
+    const regionalSeasonalData: Record<string, Record<string, any[]>> = {
+      'Maharashtra': {
+        'Monsoon': [
+          { name: 'Anti-malarial drugs', demand: 170, unit: 'packs/week' },
+          { name: 'Fever medication', demand: 220, unit: 'packs/week' },
+          { name: 'Cold & flu medicine', demand: 185, unit: 'packs/week' },
+          { name: 'Electrolyte solutions', demand: 150, unit: 'packs/week' }
+        ],
+        'Winter': [
+          { name: 'Cough syrup', demand: 190, unit: 'packs/week' },
+          { name: 'Vitamin C supplements', demand: 160, unit: 'packs/week' },
+          { name: 'Inhalers', demand: 140, unit: 'packs/week' },
+          { name: 'Antihistamines', demand: 120, unit: 'packs/week' }
+        ],
+        'Summer': [
+          { name: 'Rehydration salts', demand: 210, unit: 'packs/week' },
+          { name: 'Sunscreen', demand: 180, unit: 'packs/week' },
+          { name: 'Calamine lotion', demand: 130, unit: 'packs/week' },
+          { name: 'Anti-diarrheal medication', demand: 160, unit: 'packs/week' }
+        ],
+        'Spring': [
+          { name: 'Allergy medication', demand: 200, unit: 'packs/week' },
+          { name: 'Nasal spray', demand: 140, unit: 'packs/week' },
+          { name: 'Eye drops', demand: 130, unit: 'packs/week' },
+          { name: 'Anti-allergen products', demand: 110, unit: 'packs/week' }
+        ]
+      },
+      'Tamil Nadu': {
+        'Monsoon': [
+          { name: 'Anti-fungal creams', demand: 190, unit: 'packs/week' },
+          { name: 'Fever medication', demand: 230, unit: 'packs/week' },
+          { name: 'Electrolyte solutions', demand: 170, unit: 'packs/week' },
+          { name: 'Anti-malarial drugs', demand: 150, unit: 'packs/week' }
+        ],
+        'Summer': [
+          { name: 'Rehydration salts', demand: 250, unit: 'packs/week' },
+          { name: 'Sunscreen', demand: 200, unit: 'packs/week' },
+          { name: 'Heat rash cream', demand: 180, unit: 'packs/week' },
+          { name: 'Oral rehydration therapy', demand: 190, unit: 'packs/week' }
+        ],
+        'Winter': [
+          { name: 'Cold & flu medicine', demand: 140, unit: 'packs/week' },
+          { name: 'Vitamin supplements', demand: 120, unit: 'packs/week' },
+          { name: 'Pain relievers', demand: 110, unit: 'packs/week' },
+          { name: 'Throat lozenges', demand: 100, unit: 'packs/week' }
+        ],
+        'Spring': [
+          { name: 'Allergy medication', demand: 160, unit: 'packs/week' },
+          { name: 'Nasal spray', demand: 120, unit: 'packs/week' },
+          { name: 'Eye drops', demand: 110, unit: 'packs/week' },
+          { name: 'Anti-allergen products', demand: 90, unit: 'packs/week' }
+        ]
+      },
+      'Delhi': {
+        'Winter': [
+          { name: 'Anti-pollution masks', demand: 280, unit: 'packs/week' },
+          { name: 'Respiratory medicines', demand: 260, unit: 'packs/week' },
+          { name: 'Inhalers', demand: 230, unit: 'packs/week' },
+          { name: 'Immunity boosters', demand: 210, unit: 'packs/week' }
+        ],
+        'Summer': [
+          { name: 'Rehydration salts', demand: 240, unit: 'packs/week' },
+          { name: 'Heat stroke medication', demand: 200, unit: 'packs/week' },
+          { name: 'Sunscreen', demand: 180, unit: 'packs/week' },
+          { name: 'Eye drops', demand: 160, unit: 'packs/week' }
+        ],
+        'Monsoon': [
+          { name: 'Anti-malarial drugs', demand: 210, unit: 'packs/week' },
+          { name: 'Fever medication', demand: 230, unit: 'packs/week' },
+          { name: 'Water purification tablets', demand: 190, unit: 'packs/week' },
+          { name: 'Anti-bacterial soaps', demand: 170, unit: 'packs/week' }
+        ],
+        'Spring': [
+          { name: 'Allergy medication', demand: 220, unit: 'packs/week' },
+          { name: 'Air purifiers', demand: 180, unit: 'packs/week' },
+          { name: 'Eye drops', demand: 150, unit: 'packs/week' },
+          { name: 'Anti-allergen products', demand: 130, unit: 'packs/week' }
+        ]
+      }
     };
     
     // Default data for states not explicitly mapped
-    const defaultSeasonalData = [
-      { 
-        season: 'Monsoon', 
-        topProducts: [
-          { name: 'Fever medication', demand: 200 },
-          { name: 'Cold & flu medicine', demand: 180 },
-          { name: 'Anti-malarial drugs', demand: 160 },
-          { name: 'Water purification tablets', demand: 140 }
-        ] 
-      },
-      { 
-        season: 'Winter', 
-        topProducts: [
-          { name: 'Cough syrup', demand: 170 },
-          { name: 'Vitamin supplements', demand: 150 },
-          { name: 'Cold & flu medicine', demand: 190 },
-          { name: 'Pain relievers', demand: 130 }
-        ] 
-      },
-      { 
-        season: 'Summer', 
-        topProducts: [
-          { name: 'Rehydration salts', demand: 220 },
-          { name: 'Sunscreen', demand: 190 },
-          { name: 'Heat stroke medication', demand: 170 },
-          { name: 'Anti-diarrheal medication', demand: 150 }
-        ] 
-      }
-    ];
+    const defaultSeasonalData = {
+      'Monsoon': [
+        { name: 'Fever medication', demand: 200, unit: 'packs/week' },
+        { name: 'Cold & flu medicine', demand: 180, unit: 'packs/week' },
+        { name: 'Anti-malarial drugs', demand: 160, unit: 'packs/week' },
+        { name: 'Water purification tablets', demand: 140, unit: 'packs/week' }
+      ],
+      'Winter': [
+        { name: 'Cough syrup', demand: 170, unit: 'packs/week' },
+        { name: 'Vitamin supplements', demand: 150, unit: 'packs/week' },
+        { name: 'Cold & flu medicine', demand: 190, unit: 'packs/week' },
+        { name: 'Pain relievers', demand: 130, unit: 'packs/week' }
+      ],
+      'Summer': [
+        { name: 'Rehydration salts', demand: 220, unit: 'packs/week' },
+        { name: 'Sunscreen', demand: 190, unit: 'packs/week' },
+        { name: 'Heat stroke medication', demand: 170, unit: 'packs/week' },
+        { name: 'Anti-diarrheal medication', demand: 150, unit: 'packs/week' }
+      ],
+      'Spring': [
+        { name: 'Allergy medication', demand: 180, unit: 'packs/week' },
+        { name: 'Nasal spray', demand: 140, unit: 'packs/week' },
+        { name: 'Eye drops', demand: 130, unit: 'packs/week' },
+        { name: 'Anti-allergen products', demand: 120, unit: 'packs/week' }
+      ]
+    };
     
-    return regionalSeasonalData[state] || defaultSeasonalData;
-  }, []);
+    return regionalSeasonalData[state]?.[season] || defaultSeasonalData[season];
+  };
 
   // Generate market forecast data based on state
   const generateMarketForecast = useCallback((state: string) => {
@@ -284,63 +413,17 @@ export function useLocationBasedAnalytics() {
       
       return {
         product: item.product,
-        demand: Math.round(item.baseDemand * multiplier * (0.9 + Math.random() * 0.2)) // Add some randomness
+        demand: Math.round(item.baseDemand * multiplier * (0.9 + Math.random() * 0.2))
       };
-    }).sort((a, b) => b.demand - a.demand); // Sort by demand (highest first)
+    }).sort((a, b) => b.demand - a.demand);
   }, []);
-
-  // Fetch location-based analytics
-  const fetchLocationAnalytics = useCallback(async () => {
-    setIsLoading(true);
-    setError(null); // Reset error state
-    try {
-      // First get the pharmacy location
-      const location = await fetchPharmacyLocation();
-      const state = location?.state || pharmacyLocation?.state || 'Maharashtra';
-      
-      // Generate data based on location
-      const seasonalTrends = generateSeasonalData(state);
-      const marketForecasts = generateMarketForecast(state);
-      const regionalDemand = generateRegionalDemand(state);
-      
-      const analyticsData: LocationAnalyticsData = {
-        state,
-        seasonalTrends,
-        marketForecasts,
-        regionalDemand
-      };
-      
-      setLocationData(analyticsData);
-      console.log("Location-based analytics:", analyticsData);
-      
-      toast({
-        title: "Location data updated",
-        description: `Analytics data for ${state} has been refreshed`,
-        duration: 3000
-      });
-      
-      return analyticsData;
-    } catch (error) {
-      console.error("Error fetching location-based analytics:", error);
-      setError(error); // Set error state
-      toast({
-        title: "Error updating location data",
-        description: "There was a problem retrieving location-specific analytics",
-        variant: "destructive",
-        duration: 5000
-      });
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fetchPharmacyLocation, generateSeasonalData, generateMarketForecast, generateRegionalDemand, pharmacyLocation, toast]);
 
   // Initialize data on load
   useEffect(() => {
     fetchLocationAnalytics();
     
-    // Set up a refresh interval (every 5 minutes)
-    const refreshInterval = setInterval(fetchLocationAnalytics, 5 * 60 * 1000);
+    // Set up a refresh interval (weekly refresh instead of every 5 minutes)
+    const refreshInterval = setInterval(fetchLocationAnalytics, 7 * 24 * 60 * 60 * 1000); // 7 days
     
     return () => clearInterval(refreshInterval);
   }, [fetchLocationAnalytics]);
@@ -350,6 +433,7 @@ export function useLocationBasedAnalytics() {
     pharmacyLocation,
     isLoading,
     refreshData: fetchLocationAnalytics,
-    error // Return the error state
+    error,
+    lastUpdated
   };
 }

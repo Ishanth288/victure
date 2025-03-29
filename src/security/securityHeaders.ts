@@ -8,12 +8,12 @@ export const securityHeaders = {
   // Prevent XSS attacks by controlling which resources can be loaded
   'Content-Security-Policy': `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://prod.spline.design https://*.sentry.io https://js.stripe.com https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev https://cdn.gpteng.co;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://prod.spline.design https://*.sentry.io https://js.stripe.com https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev https://cdn.gpteng.co https://*.google.com https://trends.google.com;
     style-src 'self' 'unsafe-inline';
-    img-src 'self' data: blob: https://*.supabase.co https://*.sentry.io https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev;
+    img-src 'self' data: blob: https://*.supabase.co https://*.sentry.io https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev https://*.google.com;
     font-src 'self' data:;
-    connect-src 'self' https://*.supabase.co https://*.sentry.io https://vitals.vercel-insights.com wss://*.supabase.co https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev;
-    frame-src 'self' https://js.stripe.com https://*.lovableproject.com https://*.gpteng.co https://*.lovable.app https://*.lovable.dev;
+    connect-src 'self' https://*.supabase.co https://*.sentry.io https://vitals.vercel-insights.com wss://*.supabase.co https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev https://*.google.com https://trends.google.com https://newsapi.org;
+    frame-src 'self' https://js.stripe.com https://*.lovableproject.com https://*.gpteng.co https://*.lovable.app https://*.lovable.dev https://*.google.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';

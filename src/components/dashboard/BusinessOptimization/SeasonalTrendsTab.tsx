@@ -1,5 +1,5 @@
 
-import { AlertCircle, Calendar, TrendingUp, Clock } from "lucide-react";
+import { AlertCircle, Calendar, TrendingUp, Clock, ExternalLink } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -59,7 +59,7 @@ export const SeasonalTrendsTab = ({
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Seasonal Health Trends: {currentSeason} {new Date().getFullYear()}</span>
-            <Badge variant="outline" className="ml-2">Regional Data</Badge>
+            <Badge variant="outline" className="ml-2">Google Trends Data</Badge>
           </CardTitle>
           <CardDescription>Popular health products during {currentSeason} for {pharmacyLocation?.state || 'your region'}</CardDescription>
         </CardHeader>
@@ -80,13 +80,30 @@ export const SeasonalTrendsTab = ({
                     <ul className="space-y-2">
                       {season.topProducts.map((product, pidx) => (
                         <li key={pidx} className="flex justify-between items-center text-sm border-b pb-1">
-                          <span>{product.name}</span>
+                          <div>
+                            <span>{product.name}</span>
+                            {product.trend && (
+                              <Badge variant={
+                                product.trend === 'rising' ? 'success' : 
+                                product.trend === 'falling' ? 'destructive' : 
+                                'outline'
+                              } className="ml-2 text-xs">
+                                {product.trend}
+                              </Badge>
+                            )}
+                          </div>
                           <Badge variant={season.season.includes(currentSeason) ? "secondary" : "outline"} className="ml-2">
-                            {product.demand} {product.unit || 'units'}
+                            {product.demand} {product.unit || 'packs/week'}
                           </Badge>
                         </li>
                       ))}
                     </ul>
+                    {season.topProducts[0]?.source && (
+                      <div className="text-xs text-muted-foreground mt-2 flex items-center">
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Source: {season.topProducts[0]?.source}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -104,6 +121,7 @@ export const SeasonalTrendsTab = ({
         <CardFooter className="text-xs text-muted-foreground pt-2 flex items-center">
           <Clock className="h-3 w-3 mr-1" />
           Last updated: {formatLastRefreshed(lastRefreshed)}
+          <span className="ml-2">(Updates weekly)</span>
         </CardFooter>
       </Card>
       
@@ -114,12 +132,12 @@ export const SeasonalTrendsTab = ({
               <Calendar className="w-5 h-5 mr-2 text-orange-500" />
               {currentSeason} Inventory Recommendations
             </CardTitle>
-            <CardDescription>Suggested inventory levels based on seasonal demand</CardDescription>
+            <CardDescription>Suggested inventory levels based on Google Trends data</CardDescription>
           </CardHeader>
           <CardContent className="h-60">
             {seasonalTrendsData.length > 0 ? (
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground mb-2">Based on historical data for {pharmacyLocation?.state || 'your region'} during {currentSeason}:</p>
+                <p className="text-sm text-muted-foreground mb-2">Based on current trends for {pharmacyLocation?.state || 'your region'} during {currentSeason}:</p>
                 <div className="overflow-auto max-h-36">
                   <table className="w-full text-sm">
                     <thead>
@@ -151,8 +169,8 @@ export const SeasonalTrendsTab = ({
                         return (
                           <tr key={idx} className="border-b">
                             <td className="py-1">{product.name}</td>
-                            <td className="text-right">{currentStock} units</td>
-                            <td className="text-right">{recommended} units</td>
+                            <td className="text-right">{currentStock} packs</td>
+                            <td className="text-right">{recommended} packs</td>
                             <td className={`text-right ${actionColor}`}>{action}</td>
                           </tr>
                         );
@@ -179,12 +197,12 @@ export const SeasonalTrendsTab = ({
               <TrendingUp className="w-5 h-5 mr-2 text-indigo-500" />
               {currentSeason} Promotion Ideas
             </CardTitle>
-            <CardDescription>Marketing strategies to boost seasonal sales</CardDescription>
+            <CardDescription>Marketing strategies based on current trends</CardDescription>
           </CardHeader>
           <CardContent className="h-60">
             {locationData?.seasonalTrends ? (
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">Try these promotion strategies for {currentSeason} in {pharmacyLocation?.state || 'your region'}:</p>
+                <p className="text-sm text-muted-foreground">Google Trends-based promotion strategies for {currentSeason} in {pharmacyLocation?.state || 'your region'}:</p>
                 
                 <div className="space-y-3 text-sm">
                   {currentSeason === "Winter" && (
@@ -244,8 +262,8 @@ export const SeasonalTrendsTab = ({
                   )}
                   
                   <div className="p-2 border rounded-md bg-sky-50">
-                    <h4 className="font-medium text-sky-700">Digital Campaign Suggestion</h4>
-                    <p className="text-muted-foreground">Send SMS alerts about {currentSeason} health tips featuring your top 3 seasonal products.</p>
+                    <h4 className="font-medium text-sky-700">Trend-Based Marketing Strategy</h4>
+                    <p className="text-muted-foreground">Send SMS alerts about {currentSeason} health tips featuring trending products from Google Trends data.</p>
                   </div>
                 </div>
                 
@@ -263,10 +281,10 @@ export const SeasonalTrendsTab = ({
           </CardContent>
           <CardFooter className="text-xs text-muted-foreground">
             <Clock className="h-3 w-3 mr-1" />
-            Updates weekly with new promotional insights
+            Updates weekly with new Google Trends and news insights
           </CardFooter>
         </Card>
       </div>
     </div>
   );
-};
+}
