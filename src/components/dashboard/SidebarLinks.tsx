@@ -1,7 +1,7 @@
 
 import { 
   LayoutGrid, Package, Users, FileText, LineChart, Settings,
-  DollarSign, LogOut, ShoppingCart, FileTerminal, TrendingUp, Shield, Calendar
+  DollarSign, LogOut, ShoppingCart, FileTerminal, TrendingUp, Shield
 } from "lucide-react";
 import { SidebarLink } from "@/components/ui/sidebar";
 
@@ -32,11 +32,6 @@ export const sidebarLinksData = [
     icon: <Users className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
   },
   {
-    label: "Appointments",
-    href: "/appointments",
-    icon: <Calendar className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
-  },
-  {
     label: "Purchases",
     href: "/purchases",
     icon: <ShoppingCart className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
@@ -63,7 +58,7 @@ export const sidebarLinksData = [
   },
   {
     label: "Admin Portal",
-    href: "/admin",
+    href: "#admin",
     icon: <Shield className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
   },
   {

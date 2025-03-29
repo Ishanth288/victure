@@ -44,7 +44,11 @@ export function SidebarContainer({ children }: SidebarContainerProps) {
     <Sidebar open={isSidebarOpen} setOpen={setIsSidebarOpen}>
       <SidebarBody className="justify-between gap-4">
         <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-          <DashboardHeader />
+          <DashboardHeader 
+            title="Dashboard"
+            pharmacyName={profileData?.pharmacy_name || 'Medplus'}
+            isSidebarOpen={isSidebarOpen}
+          />
           
           <div className="mt-2 flex flex-col gap-1 px-2">
             <SidebarLinks startIndex={0} endIndex={8} />
