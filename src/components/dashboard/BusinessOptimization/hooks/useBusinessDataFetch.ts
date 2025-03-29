@@ -15,8 +15,8 @@ interface UseBusinessDataFetchOptions {
 export function useBusinessDataFetch({ 
   onError, 
   mountedRef, 
-  maxRetries = 3,
-  timeout = 15000 
+  maxRetries = 2, // Reduced from 3 to 2
+  timeout = 6000  // Reduced from 15000 to 6000ms
 }: UseBusinessDataFetchOptions) {
   const [isLoading, setIsLoading] = useState(true);
   const [inventoryData, setInventoryData] = useState<any[]>([]);
@@ -39,7 +39,6 @@ export function useBusinessDataFetch({
   }, [maxRetries]);
 
   // Simplified retry function that can be called externally 
-  // to handle CSP issues or other problems
   const retryFetch = useCallback(() => {
     if (fetchInProgress.current) {
       console.log("Fetch already in progress, not retrying");
@@ -52,6 +51,8 @@ export function useBusinessDataFetch({
     setErrorType('unknown');
     // Reset retry counter to give it a fresh start
     retryCount.current = 0;
+    // Reset fetch in progress flag
+    fetchInProgress.current = false;
     // Call fetch data
     fetchData();
   }, []);
@@ -118,8 +119,8 @@ export function useBusinessDataFetch({
         () => supabase.auth.getUser(),
         { 
           context: "getUser",
-          retries: 2, // Faster retry but fewer attempts
-          retryDelay: 500 // Faster retry
+          retries: 1, // Faster retry but fewer attempts
+          retryDelay: 300 // Faster retry
         }
       );
       
@@ -142,7 +143,7 @@ export function useBusinessDataFetch({
           .from('inventory')
           .select('*')
           .eq('user_id', user.id)
-          .limit(50); // Reduced limit to improve performance
+          .limit(30); // Reduced limit to improve performance
         console.log("Inventory query result:", result);
         return result;
       };
@@ -151,8 +152,8 @@ export function useBusinessDataFetch({
         inventoryPromise,
         { 
           context: "inventory",
-          retries: 2,
-          retryDelay: 500
+          retries: 1,
+          retryDelay: 300
         }
       );
 
@@ -162,14 +163,14 @@ export function useBusinessDataFetch({
       }
 
       console.log("Fetching bills data...");
-      // Execute bills query inside an async function
+      // Execute bills query inside an async function, fix the date field
       const billsPromise = async () => {
         const result = await supabase
           .from('bills')
           .select('*, bill_items(*)')
           .eq('user_id', user.id)
           .order('date', { ascending: false })
-          .limit(30); // Reduced limit to improve performance
+          .limit(20); // Reduced limit to improve performance
         console.log("Bills query result:", result);
         return result;
       };
@@ -178,14 +179,17 @@ export function useBusinessDataFetch({
         billsPromise,
         { 
           context: "bills",
-          retries: 2,
-          retryDelay: 500
+          retries: 1,
+          retryDelay: 300
         }
       );
 
       if (billsResult.error) {
         console.error("Bills query error:", billsResult.error);
-        throw billsResult.error;
+        // Continue with other queries instead of throwing
+        setSalesData([]);
+      } else if (billsResult.data) {
+        setSalesData(billsResult.data as any[]);
       }
 
       console.log("Fetching purchase orders data...");
@@ -196,7 +200,7 @@ export function useBusinessDataFetch({
           .select('*, purchase_order_items(*)')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
-          .limit(30); // Reduced limit to improve performance
+          .limit(20); // Reduced limit to improve performance
         console.log("Purchase orders query result:", result);
         return result;
       };
@@ -205,14 +209,17 @@ export function useBusinessDataFetch({
         purchaseOrdersPromise,
         { 
           context: "purchase_orders",
-          retries: 2,
-          retryDelay: 500
+          retries: 1,
+          retryDelay: 300
         }
       );
 
       if (purchaseOrdersResult.error) {
         console.error("Purchase orders query error:", purchaseOrdersResult.error);
-        throw purchaseOrdersResult.error;
+        // Continue instead of throwing
+        setSuppliersData([]);
+      } else if (purchaseOrdersResult.data) {
+        setSuppliersData(purchaseOrdersResult.data as any[]);
       }
 
       // Check if component is still mounted before updating state
@@ -231,16 +238,6 @@ export function useBusinessDataFetch({
       console.log("Setting inventory data:", inventoryResult.data?.length || 0, "items");
       if (inventoryResult.data) {
         setInventoryData(inventoryResult.data as any[]);
-      }
-
-      console.log("Setting sales data:", billsResult.data?.length || 0, "items");
-      if (billsResult.data) {
-        setSalesData(billsResult.data as any[]);
-      }
-
-      console.log("Setting suppliers data:", purchaseOrdersResult.data?.length || 0, "items");
-      if (purchaseOrdersResult.data) {
-        setSuppliersData(purchaseOrdersResult.data as any[]);
       }
       
       retryCount.current = 0;
@@ -273,7 +270,7 @@ export function useBusinessDataFetch({
       
       if (retryCount.current < maxRetriesRef.current) {
         retryCount.current++;
-        const delay = 500 * Math.pow(1.5, retryCount.current - 1); // Faster exponential backoff
+        const delay = 300 * Math.pow(1.3, retryCount.current - 1); // Faster exponential backoff
         console.log(`Retrying data fetch (${retryCount.current}/${maxRetriesRef.current}) after ${delay}ms`);
         
         setTimeout(() => {

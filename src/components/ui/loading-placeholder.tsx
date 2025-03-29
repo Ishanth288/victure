@@ -30,8 +30,14 @@ export const LoadingPlaceholder = memo(({
   return (
     <div className={`${height} ${width} ${bgColor} flex items-center justify-center ${className}`}>
       <div className="flex flex-col items-center">
-        <div className={`${pulseHeight} ${pulseWidth} ${pulseColor} rounded mb-4 ${animationClass}`}></div>
-        <div className={`h-4 w-64 ${pulseColor} rounded ${animationClass}`}></div>
+        <div 
+          className={`${pulseHeight} ${pulseWidth} ${pulseColor} rounded mb-4 ${animationClass}`}
+          style={{ contain: 'layout style paint' }}  
+        ></div>
+        <div 
+          className={`h-4 w-64 ${pulseColor} rounded ${animationClass}`}
+          style={{ contain: 'layout style paint' }}
+        ></div>
         {message && (
           <p className="mt-4 text-neutral-600">{message}</p>
         )}

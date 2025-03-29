@@ -9,7 +9,7 @@ export function setupPageOptimizations() {
     try {
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          if (entry.duration > 100) { // Increased threshold to reduce console noise
+          if (entry.duration > 200) { // Increased threshold to reduce console noise
             console.debug(`Long task detected: ${entry.name} took ${entry.duration}ms`);
           }
         }
@@ -35,7 +35,7 @@ export function optimizeScrolling(scrollContainer: HTMLElement | null): () => vo
   if (!scrollContainer) return () => {};
   
   // Apply GPU acceleration but with minimal CSS changes
-  const scrollHandler = (e: Event) => {
+  const scrollHandler = () => {
     // Using requestAnimationFrame to throttle scroll events
     window.requestAnimationFrame(() => {
       // Optimization: Skip DOM updates if not needed
@@ -60,7 +60,7 @@ export function optimizeScrolling(scrollContainer: HTMLElement | null): () => vo
  * Defers non-critical resources loading
  * @param delay Milliseconds to defer loading
  */
-export function deferNonCriticalResources(delay = 1500) {
+export function deferNonCriticalResources(delay = 500) { // Reduced from 1500ms
   // Use requestIdleCallback if available for better timing
   const scheduleDeferred = window.requestIdleCallback || 
     ((cb: () => void) => setTimeout(cb, delay));
@@ -91,8 +91,8 @@ export function createVisibilityObserver(callback: (isVisible: boolean) => void)
         callback(entry.isIntersecting);
       });
     }, {
-      rootMargin: '100px', // Load slightly before visible
-      threshold: 0.1 // Trigger when 10% visible
+      rootMargin: '150px', // Increased from 100px to improve perceived performance
+      threshold: 0.05 // Lowered from 0.1 to make loading earlier
     });
   }
   

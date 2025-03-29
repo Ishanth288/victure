@@ -23,7 +23,6 @@ export default function BusinessOptimizationPage() {
     console.log("Business data error callback triggered");
     setError(true);
     
-    // Use stableToast to display error with 4 second timeout
     stableToast({
       title: "Data loading error",
       description: "We encountered an issue loading your business analytics data. Using fallback data instead.",
@@ -51,34 +50,38 @@ export default function BusinessOptimizationPage() {
     retryFetch
   } = useBusinessData({
     onError: handleDataError,
-    maxRetries: 3, // Reduce retries to prevent long waits
-    timeout: 8000  // Reduce timeout for faster response
+    maxRetries: 2, // Reduce retries to prevent long waits
+    timeout: 6000  // Reduce timeout for faster response
   });
   
   // Stable loading state to prevent flickering
   const { isStableLoading } = useLoadingState({
     isLoading, 
     locationLoading,
-    forceExitTimeout: 10000, // Reduced timeout to ensure we don't wait too long
-    stabilityDelay: 200 // Lower stability delay for quicker transitions
+    forceExitTimeout: 5000, // Reduced timeout to ensure we don't wait too long
+    stabilityDelay: 100 // Lower stability delay for quicker transitions
   });
 
-  // Force exit from loading state after 20 seconds regardless of other conditions
+  // Force exit from loading state after 10 seconds regardless of other conditions
   useEffect(() => {
     const forceExitTimer = setTimeout(() => {
       if (isStableLoading) {
         console.log("Force exiting loading state after absolute timeout");
         setForcedExit(true);
       }
-    }, 20000);
+    }, 10000);
     
     return () => clearTimeout(forceExitTimer);
   }, [isStableLoading]);
   
-  // Data refresh handler
-  const { lastRefreshed, handleRefreshAll } = useDataRefresh({
+  // Data refresh handler with error handling
+  const { lastRefreshed, handleRefreshAll, refreshInProgress } = useDataRefresh({
     refreshData,
-    refreshLocationData
+    refreshLocationData,
+    onError: (refreshError) => {
+      console.error("Refresh error:", refreshError);
+      setError(true);
+    }
   });
 
   // Add more extensive logging to debug loading issues
@@ -91,6 +94,7 @@ export default function BusinessOptimizationPage() {
                (locationData && Object.keys(locationData || {}).length)),
     hasError,
     error,
+    refreshInProgress,
     inventoryDataLength: inventoryData?.length || 0,
     salesDataLength: salesData?.length || 0,
     suppliersDataLength: suppliersData?.length || 0,
@@ -105,7 +109,7 @@ export default function BusinessOptimizationPage() {
         console.log("Attempting retry due to possible CSP issues");
         retryFetch?.();
       }
-    }, 5000);
+    }, 3000); // Reduced from 5000ms to 3000ms
     
     return () => clearTimeout(cspRetryTimer);
   }, [isStableLoading, error, hasError, retryFetch]);
@@ -116,7 +120,7 @@ export default function BusinessOptimizationPage() {
     return (
       <DashboardLayout>
         <div className="transition-opacity duration-300 ease-in-out">
-          <LoadingState message="Loading your business analytics data from Google Trends and News..." />
+          <LoadingState message="Loading your business analytics data..." />
         </div>
       </DashboardLayout>
     );
@@ -171,6 +175,7 @@ export default function BusinessOptimizationPage() {
           lastRefreshed={lastRefreshed}
           dataSources={locationData?.dataSources}
           hasError={error || hasError || forcedExit}
+          isRefreshing={refreshInProgress?.current}
         />
         
         <Tabs defaultValue="forecast" onValueChange={setActiveTab}>

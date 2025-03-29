@@ -20,7 +20,7 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     setError(true);
   }, []);
   
-  // Get location data - no parameters should be passed here
+  // Get location data with optimized loading
   const { 
     locationData, 
     pharmacyLocation, 
@@ -29,12 +29,12 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     error: locationError
   } = useLocationBasedAnalytics();
 
-  // Get business data
+  // Get business data with optimized loading
   const {
     isLoading, 
     inventoryData, 
     salesData, 
-    suppliersData,
+    suppliersData, 
     connectionError,
     errorType,
     dataFetched,
@@ -44,8 +44,8 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
   } = useBusinessDataFetch({
     onError: options?.onError || handleDataError,
     mountedRef,
-    maxRetries: options?.maxRetries,
-    timeout: options?.timeout
+    maxRetries: options?.maxRetries || 2,
+    timeout: options?.timeout || 6000
   });
 
   // Set up realtime updates
@@ -60,10 +60,14 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
   useEffect(() => {
     console.log("Location data effect triggered", { locationLoading, locationData: !!locationData });
     
-    // Only proceed when location data is loaded (or failed)
+    // Only proceed when location data is loaded (or failed) with a small delay
     if (!locationLoading && !isLoading && !dataFetched) {
-      console.log("Location data loaded, now fetching business data");
-      fetchData();
+      const timer = setTimeout(() => {
+        console.log("Location data loaded, now fetching business data");
+        fetchData();
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [locationLoading, isLoading, dataFetched, fetchData, locationData]);
 
@@ -92,6 +96,6 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     errorType,
     hasError: Boolean(connectionError) || Boolean(locationError) || error,
     autoRefreshEnabled,
-    retryFetch // Export the retry function
+    retryFetch
   };
 }
