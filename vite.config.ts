@@ -22,12 +22,13 @@ export default defineConfig(({ mode }) => ({
       // and should be stored in environment variables
       authToken: process.env.SENTRY_AUTH_TOKEN,
       
-      // Enable source map uploading for production builds
-      sourcemaps: {
-        include: ["./dist"],
-        ignore: ["node_modules"],
-        urlPrefix: "~/",
-      },
+      // Set the correct sourcemaps configuration
+      // Note: sourcemaps is not an object with 'include' property
+      // Instead, we use the proper properties directly
+      sourcemaps: true,
+      include: ["./dist"],
+      ignore: ["node_modules"],
+      urlPrefix: "~/",
       
       // Only generate source maps and upload them when in production
       disable: mode !== 'production',
