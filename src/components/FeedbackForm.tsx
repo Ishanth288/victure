@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MessageCircle, Check } from "lucide-react";
-import { safeInsert } from "@/utils/supabaseHelpers";
 import { sanitizeInput } from "@/utils/securityUtils";
 
 export function FeedbackForm() {
@@ -66,7 +65,6 @@ export function FeedbackForm() {
       const sanitizedEmail = sanitizeInput(email);
       const sanitizedFeedback = sanitizeInput(feedback);
       
-      // Direct insert using supabase client to ensure it works
       const { data, error } = await supabase
         .from('feedback')
         .insert({
@@ -76,7 +74,10 @@ export function FeedbackForm() {
           is_read: false
         });
         
-      if (error) throw error;
+      if (error) {
+        console.error("Feedback submission error:", error);
+        throw error;
+      }
       
       // Show success state and toast notification
       setIsSuccess(true);
