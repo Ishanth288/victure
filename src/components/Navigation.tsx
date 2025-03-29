@@ -1,27 +1,45 @@
 
 import { Button } from "@/components/ui/button";
 import { HashLink } from 'react-router-hash-link';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { Home } from "lucide-react";
 
 export default function Navigation() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const [pathname, setPathname] = useState('');
+  const [searchParams, setSearchParams] = useState(new URLSearchParams());
+
+  useEffect(() => {
+    // Get current path and search params without relying entirely on useLocation
+    setPathname(window.location.pathname);
+    setSearchParams(new URLSearchParams(window.location.search));
+    
+    // Update when location changes
+    const handleLocationChange = () => {
+      setPathname(window.location.pathname);
+      setSearchParams(new URLSearchParams(window.location.search));
+    };
+    
+    window.addEventListener('popstate', handleLocationChange);
+    
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+    };
+  }, []);
 
   // Check if we're on the auth page
-  const isAuthPage = location.pathname === '/auth';
+  const isAuthPage = pathname === '/auth';
 
   useEffect(() => {
     // Check if URL contains signup parameter
-    const searchParams = new URLSearchParams(location.search);
     const shouldSignup = searchParams.get('signup') === 'true';
     
-    if (shouldSignup && location.pathname === '/auth') {
+    if (shouldSignup && pathname === '/auth') {
       // If we're on the auth page with signup param, set isLogin to false
       navigate('/auth', { state: { isLogin: false, fromPricing: true }, replace: true });
     }
-  }, [location, navigate]);
+  }, [pathname, searchParams, navigate]);
 
   const handleLogin = () => {
     navigate('/auth', { state: { isLogin: true } });
@@ -29,7 +47,7 @@ export default function Navigation() {
 
   const handleGetStarted = () => {
     // If we're on the home page, scroll to pricing section
-    if (location.pathname === '/') {
+    if (pathname === '/') {
       const pricingSection = document.getElementById('pricing');
       if (pricingSection) {
         pricingSection.scrollIntoView({ behavior: 'smooth' });
@@ -41,7 +59,7 @@ export default function Navigation() {
   };
 
   // Show home button on all pages except the index page
-  const showHomeButton = location.pathname !== '/';
+  const showHomeButton = pathname !== '/';
 
   // Don't render the full navigation bar on auth page
   if (isAuthPage) {
@@ -83,7 +101,7 @@ export default function Navigation() {
           </div>
 
           {/* Only show these navigation links on the home page */}
-          {location.pathname === '/' && (
+          {pathname === '/' && (
             <div className="hidden md:flex items-center space-x-8">
               <HashLink smooth to="#features" className="text-neutral-600 hover:text-primary transition-colors">
                 Features
@@ -98,7 +116,7 @@ export default function Navigation() {
           )}
 
           {/* Only show these buttons on the home page */}
-          {location.pathname === '/' && (
+          {pathname === '/' && (
             <div className="flex items-center space-x-4">
               <Button 
                 variant="ghost" 

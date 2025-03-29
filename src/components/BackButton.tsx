@@ -1,14 +1,31 @@
 
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function BackButton() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const [pathname, setPathname] = useState('');
+  
+  useEffect(() => {
+    // Get current path without relying on useLocation
+    setPathname(window.location.pathname);
+    
+    // Update when location changes
+    const handleLocationChange = () => {
+      setPathname(window.location.pathname);
+    };
+    
+    window.addEventListener('popstate', handleLocationChange);
+    
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+    };
+  }, []);
 
   // Don't show back button on index page
-  if (location.pathname === '/') {
+  if (pathname === '/') {
     return null;
   }
 
@@ -18,7 +35,7 @@ export default function BackButton() {
       navigate(-1);
     } else {
       // If no history, navigate to a default page based on context
-      if (location.pathname.includes('/dashboard')) {
+      if (pathname.includes('/dashboard')) {
         navigate('/dashboard');
       } else {
         navigate('/');

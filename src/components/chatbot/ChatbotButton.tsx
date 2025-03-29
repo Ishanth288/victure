@@ -4,19 +4,21 @@ import { m, AnimatePresence } from "framer-motion";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChatbotDialog from "./ChatbotDialog";
-import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function ChatbotButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [shouldShow, setShouldShow] = useState(false);
-  const location = useLocation();
+  const [currentPath, setCurrentPath] = useState('/');
   
   useEffect(() => {
+    // Get current path without relying on useLocation
+    setCurrentPath(window.location.pathname);
+    
     const checkAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        const path = location.pathname;
+        const path = window.location.pathname;
         
         // Only show on authenticated pages except auth and index
         setShouldShow(!!session && path !== '/' && path !== '/auth');
@@ -27,7 +29,19 @@ export default function ChatbotButton() {
     };
 
     checkAuth();
-  }, [location]);
+    
+    // Update path when location changes
+    const handleLocationChange = () => {
+      setCurrentPath(window.location.pathname);
+      checkAuth();
+    };
+    
+    window.addEventListener('popstate', handleLocationChange);
+    
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+    };
+  }, []);
   
   if (!shouldShow) return null;
   
