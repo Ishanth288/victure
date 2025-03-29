@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Loader2 } from "lucide-react";
 
 interface Feedback {
   id: string;
@@ -40,9 +40,14 @@ export function FeedbackList() {
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching feedback:", error);
+        throw error;
+      }
+      
       setFeedback(data || []);
-    } catch (error) {
+      console.log("Feedback data fetched:", data?.length || 0, "items");
+    } catch (error: any) {
       console.error("Error fetching feedback:", error);
       toast({
         title: "Failed to load feedback",
@@ -66,6 +71,7 @@ export function FeedbackList() {
         { event: "INSERT", schema: "public", table: "feedback" },
         (payload) => {
           // When new feedback comes in, refresh the list
+          console.log("New feedback received via realtime:", payload);
           fetchFeedback();
           toast({
             title: "New feedback received",
@@ -97,7 +103,7 @@ export function FeedbackList() {
       toast({
         title: "Feedback marked as read",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error marking feedback as read:", error);
       toast({
         title: "Failed to update feedback",
@@ -200,6 +206,3 @@ export function FeedbackList() {
     </div>
   );
 }
-
-// Add Loader2 component import at the top
-import { Loader2 } from "lucide-react";

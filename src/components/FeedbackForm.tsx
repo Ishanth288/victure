@@ -66,13 +66,15 @@ export function FeedbackForm() {
       const sanitizedEmail = sanitizeInput(email);
       const sanitizedFeedback = sanitizeInput(feedback);
       
-      // Using the safeInsert helper from supabaseHelpers.ts
-      const { data, error } = await safeInsert('feedback', {
-        email: sanitizedEmail, 
-        message: sanitizedFeedback,
-        created_at: new Date().toISOString(),
-        is_read: false
-      });
+      // Direct insert using supabase client to ensure it works
+      const { data, error } = await supabase
+        .from('feedback')
+        .insert({
+          email: sanitizedEmail, 
+          message: sanitizedFeedback,
+          created_at: new Date().toISOString(),
+          is_read: false
+        });
         
       if (error) throw error;
       
@@ -86,19 +88,19 @@ export function FeedbackForm() {
       // Reset form
       setEmail("");
       setFeedback("");
-      console.log("Feedback successfully submitted:", data);
+      console.log("Feedback successfully submitted");
       
-      // Reset success state after 3 seconds
+      // Reset success state after 5 seconds to allow user to see it
       setTimeout(() => {
         setIsSuccess(false);
-      }, 3000);
-    } catch (error) {
+      }, 5000);
+    } catch (error: any) {
+      console.error("Error submitting feedback:", error);
       toast({
         title: "Error submitting feedback",
-        description: "Please try again later",
+        description: error.message || "Please try again later",
         variant: "destructive"
       });
-      console.error("Error submitting feedback:", error);
     } finally {
       setIsSubmitting(false);
     }
