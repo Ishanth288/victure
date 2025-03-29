@@ -1,9 +1,8 @@
 
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
-import { AnimatedGradientBorder } from "@/components/ui/animated-gradient-border";
 import { CardTilt } from "@/components/ui/card-tilt";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
-import { Database, Brain, Rocket, BellRing, Clock, Shield, TrendingUp, BarChart, DollarSign } from "lucide-react";
+import { Database, Brain, TrendingUp, BellRing, Clock, BarChart, DollarSign } from "lucide-react";
 import { memo } from "react";
 
 // Memoize the component to prevent unnecessary re-renders

@@ -14,7 +14,7 @@ const demoSlides = [
     features: ["Real-time analytics", "Stock alerts", "Sales overview", "Daily tasks"],
     icon: LayoutGrid,
     bgColor: "bg-blue-50",
-    image: "/lovable-uploads/021137c1-766e-475d-bdf8-f35d8cb4de4f.png"
+    image: "/lovable-uploads/f9bc6013-9e6f-407f-8a32-462d0a963f8e.png"
   },
   {
     title: "Smart Inventory",
@@ -22,7 +22,7 @@ const demoSlides = [
     features: ["Expiry tracking", "Auto reordering", "Stock optimization", "Batch tracking"],
     icon: Package,
     bgColor: "bg-green-50",
-    image: "/lovable-uploads/021137c1-766e-475d-bdf8-f35d8cb4de4f.png"
+    image: "/lovable-uploads/93e91152-c4a8-4723-9a9b-dca03c7f8236.png"
   },
   {
     title: "Purchase Management",
@@ -30,7 +30,7 @@ const demoSlides = [
     features: ["Digital PO generation", "Delivery tracking", "Supplier management", "Payment history"],
     icon: ShoppingCart,
     bgColor: "bg-purple-50",
-    image: "/lovable-uploads/021137c1-766e-475d-bdf8-f35d8cb4de4f.png"
+    image: "/lovable-uploads/f9bc6013-9e6f-407f-8a32-462d0a963f8e.png"
   },
   {
     title: "Business Analytics",
@@ -38,7 +38,7 @@ const demoSlides = [
     features: ["Sales analytics", "Inventory reports", "Financial insights", "Growth metrics"],
     icon: LineChart,
     bgColor: "bg-orange-50",
-    image: "/lovable-uploads/021137c1-766e-475d-bdf8-f35d8cb4de4f.png"
+    image: "/lovable-uploads/93e91152-c4a8-4723-9a9b-dca03c7f8236.png"
   }
 ];
 
@@ -138,4 +138,3 @@ export default function Demo() {
     </section>
   );
 }
-

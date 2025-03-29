@@ -1,5 +1,5 @@
 
-import { BarChart4, UserCircle2, Package, Syringe, Link, FileText, Calculator, TrendingUp, Brain, Clock, ChartPie, Database } from "lucide-react";
+import { BarChart4, Brain, Package, Calculator, ChartPie, Clock } from "lucide-react";
 import { m } from "framer-motion";
 import { memo } from "react";
 
@@ -33,36 +33,6 @@ const features = [
     icon: Clock,
     title: "Real-Time Financial Monitoring",
     description: "Monitor your pharmacy's financial health with live updates on sales, revenue, and profit margins as transactions happen throughout the day."
-  },
-  {
-    icon: TrendingUp,
-    title: "Predictive Sales Forecasting",
-    description: "Our AI algorithms analyze historical sales data to predict future trends, helping you prepare inventory and staffing levels for upcoming demand fluctuations."
-  },
-  {
-    icon: Syringe,
-    title: "Prescription Management",
-    description: "Efficiently process prescriptions, manage refills, and ensure accuracy with integrated drug databases and safety checks while tracking profitability of each transaction."
-  },
-  {
-    icon: UserCircle2,
-    title: "Patient Management",
-    description: "Centralized patient records, medication history, and communication tools to enhance patient care and streamline workflows while analyzing purchase patterns."
-  },
-  {
-    icon: Database,
-    title: "Intelligent Data Management",
-    description: "Our system securely stores and processes your business data, using AI to extract valuable insights and optimization opportunities without manual analysis."
-  },
-  {
-    icon: Link,
-    title: "Integration Ecosystem",
-    description: "Seamlessly integrate with other pharmacy systems, insurance providers, and healthcare platforms to create a unified workflow that enhances efficiency and profitability."
-  },
-  {
-    icon: FileText,
-    title: "Smart Purchase Management",
-    description: "Efficiently manage supplier orders with AI-suggested quantities, maintain delivery records, and organize procurement with price history tracking for better negotiations."
   }
 ];
 

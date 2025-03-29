@@ -10,14 +10,8 @@ const benefits = [
   "Instant financial performance visualization",
   "Automated identification of high-profit products",
   "AI-driven demand forecasting and inventory suggestions",
-  "Real-time alerts for low-profit transactions",
   "Reduced costs through AI-driven inventory optimization",
-  "Increased efficiency with automated pricing calculations",
-  "Enhanced financial transparency with live profit dashboards",
-  "Dynamic pricing strategies based on real-time market data",
-  "Improved cash flow management with profit-focused analytics",
-  "Better inventory control with profit margin visibility",
-  "Data-backed negotiation insights for supplier management"
+  "Enhanced financial transparency with live profit dashboards"
 ];
 
 export default function Benefits() {
