@@ -263,8 +263,8 @@ export function DocumentManagement() {
       <CardHeader>
         <CardTitle>Document Management</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="h-[calc(100%-70px)] overflow-auto">
+        <div className="h-full">
           <DocumentList 
             documents={documents}
             onDownload={handleDownload}

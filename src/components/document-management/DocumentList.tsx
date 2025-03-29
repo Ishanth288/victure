@@ -22,7 +22,7 @@ export function DocumentList({ documents, onDownload, onPreview }: DocumentListP
   }
 
   return (
-    <div className="overflow-y-auto max-h-[250px]">
+    <div className="h-full">
       {documents.map(doc => (
         <div 
           key={doc.id}

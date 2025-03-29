@@ -3,7 +3,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useRevenueData } from './hooks/useRevenueData';
 import { useInventoryData } from './hooks/useInventoryData';
 import { usePatientData } from './hooks/usePatientData';
-import { useTrendData } from './hooks/useTrendData';
 
 export function useDashboardData() {
   const { toast } = useToast();
@@ -12,7 +11,6 @@ export function useDashboardData() {
     isLoading: isRevenueLoading, 
     totalRevenue, 
     revenueData, 
-    topProducts, 
     revenueDistribution 
   } = useRevenueData();
   
@@ -27,8 +25,6 @@ export function useDashboardData() {
     totalPatients 
   } = usePatientData();
   
-  const { trendData } = useTrendData();
-  
   // Combine loading states
   const isLoading = isRevenueLoading || isInventoryLoading || isPatientLoading;
 
@@ -39,8 +35,6 @@ export function useDashboardData() {
     totalPatients,
     lowStockItems,
     revenueData,
-    topProducts,
-    revenueDistribution,
-    trendData
+    revenueDistribution
   };
 }

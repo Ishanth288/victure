@@ -6,8 +6,6 @@ import {
   DashboardStats,
   RevenueSection,
   DistributionSection,
-  ProductsSection,
-  TrendSection,
   WelcomeDialog,
   DashboardWidgets,
   useDashboardData
@@ -22,9 +20,7 @@ export default function Dashboard() {
     totalPatients,
     lowStockItems,
     revenueData,
-    topProducts,
     revenueDistribution,
-    trendData
   } = useDashboardData();
 
   useEffect(() => {
@@ -55,11 +51,6 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <RevenueSection isLoading={isLoading} revenueData={revenueData} />
             <DistributionSection isLoading={isLoading} revenueDistribution={revenueDistribution} />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ProductsSection isLoading={isLoading} topProducts={topProducts} />
-            <TrendSection trendData={trendData} />
           </div>
           
           <DashboardWidgets />
