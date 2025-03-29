@@ -7,16 +7,27 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MessageCircle } from "lucide-react";
 import { safeInsert } from "@/utils/supabaseHelpers";
+import { sanitizeInput } from "@/utils/securityUtils";
 
 export function FeedbackForm() {
   const [email, setEmail] = useState("");
   const [feedback, setFeedback] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailError, setEmailError] = useState("");
   const { toast } = useToast();
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Reset errors
+    setEmailError("");
+    
+    // Validate inputs
     if (!feedback.trim()) {
       toast({
         title: "Feedback required",
@@ -26,14 +37,39 @@ export function FeedbackForm() {
       return;
     }
     
+    if (!email.trim()) {
+      setEmailError("Email is required");
+      toast({
+        title: "Email required",
+        description: "Please provide your email address",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!validateEmail(email)) {
+      setEmailError("Please enter a valid email address");
+      toast({
+        title: "Invalid email",
+        description: "Please provide a valid email address",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
+      // Sanitize inputs to prevent XSS
+      const sanitizedEmail = sanitizeInput(email);
+      const sanitizedFeedback = sanitizeInput(feedback);
+      
       // Using the safeInsert helper from supabaseHelpers.ts
-      const { error } = await safeInsert('feedback', {
-        email: email || null, 
-        message: feedback,
-        created_at: new Date().toISOString()
+      const { data, error } = await safeInsert('feedback', {
+        email: sanitizedEmail, 
+        message: sanitizedFeedback,
+        created_at: new Date().toISOString(),
+        is_read: false
       });
         
       if (error) throw error;
@@ -45,6 +81,7 @@ export function FeedbackForm() {
       
       setEmail("");
       setFeedback("");
+      console.log("Feedback successfully submitted:", data);
     } catch (error) {
       toast({
         title: "Error submitting feedback",
@@ -71,12 +108,18 @@ export function FeedbackForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <Input
-            placeholder="Your email (optional)"
+            placeholder="Your email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full"
+            className={`w-full ${emailError ? "border-red-500" : ""}`}
+            required
+            aria-required="true"
+            aria-invalid={!!emailError}
           />
+          {emailError && (
+            <p className="text-red-500 text-sm mt-1">{emailError}</p>
+          )}
         </div>
         
         <div>
