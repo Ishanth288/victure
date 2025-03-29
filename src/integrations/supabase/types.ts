@@ -465,6 +465,51 @@ export type Database = {
         }
         Relationships: []
       }
+      system_settings: {
+        Row: {
+          allowed_ips: string | null
+          created_at: string | null
+          enable_two_factor: boolean | null
+          id: number
+          ip_restriction: boolean | null
+          maintenance_end_date: string | null
+          maintenance_message: string | null
+          maintenance_mode: boolean | null
+          maintenance_start_date: string | null
+          max_login_attempts: number | null
+          session_timeout: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          allowed_ips?: string | null
+          created_at?: string | null
+          enable_two_factor?: boolean | null
+          id?: number
+          ip_restriction?: boolean | null
+          maintenance_end_date?: string | null
+          maintenance_message?: string | null
+          maintenance_mode?: boolean | null
+          maintenance_start_date?: string | null
+          max_login_attempts?: number | null
+          session_timeout?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          allowed_ips?: string | null
+          created_at?: string | null
+          enable_two_factor?: boolean | null
+          id?: number
+          ip_restriction?: boolean | null
+          maintenance_end_date?: string | null
+          maintenance_message?: string | null
+          maintenance_mode?: boolean | null
+          maintenance_start_date?: string | null
+          max_login_attempts?: number | null
+          session_timeout?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

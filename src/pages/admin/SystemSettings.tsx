@@ -1,19 +1,25 @@
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
-import { CalendarIcon, Settings, AlertTriangle, Info, CheckCircle } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
+import { Settings, AlertTriangle } from "lucide-react";
+import { typecastQuery } from "@/utils/safeSupabaseQueries";
+import { MaintenanceTab } from "@/components/admin/settings/MaintenanceTab";
+import { SecurityTab } from "@/components/admin/settings/SecurityTab";
+import { StatusMessage } from "@/components/admin/settings/StatusMessage";
+
+interface SystemSettingsData {
+  maintenance_mode: boolean;
+  maintenance_message: string;
+  maintenance_start_date: string | null;
+  maintenance_end_date: string | null;
+  max_login_attempts: number;
+  session_timeout: number;
+  enable_two_factor: boolean;
+  ip_restriction: boolean;
+  allowed_ips: string | null;
+}
 
 export default function SystemSettings() {
   const { toast } = useToast();
@@ -50,9 +56,9 @@ export default function SystemSettings() {
   const fetchSystemSettings = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('system_settings')
+      const { data, error } = await typecastQuery('system_settings')
         .select('*')
+        .eq('id', 1)
         .single();
 
       if (error) throw error;
@@ -84,8 +90,7 @@ export default function SystemSettings() {
     setStatusMessage({ type: null, message: null });
 
     try {
-      const { error } = await supabase
-        .from('system_settings')
+      const { error } = await typecastQuery('system_settings')
         .upsert({
           id: 1, // Using a single row for system settings
           maintenance_mode: maintenanceMode,
@@ -131,8 +136,7 @@ export default function SystemSettings() {
   const cancelMaintenance = async () => {
     setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from('system_settings')
+      const { error } = await typecastQuery('system_settings')
         .update({
           maintenance_mode: false,
           updated_at: new Date().toISOString()
@@ -171,29 +175,7 @@ export default function SystemSettings() {
         </Button>
       </div>
 
-      {statusMessage.type && (
-        <Alert 
-          variant={statusMessage.type === 'error' ? 'destructive' : 'default'} 
-          className={`mb-4 
-            ${statusMessage.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : ''} 
-            ${statusMessage.type === 'info' ? 'bg-blue-50 text-blue-800 border-blue-200' : ''}
-          `}
-        >
-          {statusMessage.type === 'error' ? (
-            <AlertTriangle className="h-4 w-4" />
-          ) : statusMessage.type === 'info' ? (
-            <Info className="h-4 w-4" />
-          ) : (
-            <CheckCircle className="h-4 w-4" />
-          )}
-          <AlertTitle>
-            {statusMessage.type === 'error' ? 'Error' : statusMessage.type === 'info' ? 'Information' : 'Success'}
-          </AlertTitle>
-          <AlertDescription>
-            {statusMessage.message}
-          </AlertDescription>
-        </Alert>
-      )}
+      <StatusMessage type={statusMessage.type} message={statusMessage.message} />
 
       <Tabs defaultValue="maintenance" className="space-y-4">
         <TabsList>
@@ -208,185 +190,33 @@ export default function SystemSettings() {
         </TabsList>
 
         <TabsContent value="maintenance" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Maintenance Mode</CardTitle>
-              <CardDescription>
-                Enable maintenance mode to prevent users from accessing the system during scheduled maintenance periods.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Switch 
-                  id="maintenance-mode" 
-                  checked={maintenanceMode} 
-                  onCheckedChange={setMaintenanceMode} 
-                />
-                <Label htmlFor="maintenance-mode">
-                  {maintenanceMode ? "Maintenance Mode Enabled" : "Maintenance Mode Disabled"}
-                </Label>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="maintenance-message">Maintenance Message</Label>
-                <Textarea
-                  id="maintenance-message"
-                  value={maintenanceMessage}
-                  onChange={(e) => setMaintenanceMessage(e.target.value)}
-                  placeholder="Enter the message to display during maintenance..."
-                  className="min-h-[100px]"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Start Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {maintenanceStartDate ? format(maintenanceStartDate, "PPP") : "Select date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={maintenanceStartDate}
-                        onSelect={setMaintenanceStartDate}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>End Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {maintenanceEndDate ? format(maintenanceEndDate, "PPP") : "Select date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={maintenanceEndDate}
-                        onSelect={setMaintenanceEndDate}
-                        disabled={(date) => 
-                          date < new Date() || 
-                          (maintenanceStartDate ? date < maintenanceStartDate : false)
-                        }
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-
-              <Alert className="bg-amber-50 border-amber-200 text-amber-800">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Warning</AlertTitle>
-                <AlertDescription>
-                  Enabling maintenance mode will prevent all users from logging in or registering until the maintenance period ends or is manually cancelled.
-                </AlertDescription>
-              </Alert>
-
-              {maintenanceMode && (
-                <Button 
-                  variant="destructive" 
-                  onClick={cancelMaintenance}
-                  disabled={isLoading}
-                >
-                  Cancel Maintenance
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          <MaintenanceTab 
+            maintenanceMode={maintenanceMode}
+            setMaintenanceMode={setMaintenanceMode}
+            maintenanceMessage={maintenanceMessage}
+            setMaintenanceMessage={setMaintenanceMessage}
+            maintenanceStartDate={maintenanceStartDate}
+            setMaintenanceStartDate={setMaintenanceStartDate}
+            maintenanceEndDate={maintenanceEndDate}
+            setMaintenanceEndDate={setMaintenanceEndDate}
+            isLoading={isLoading}
+            onCancelMaintenance={cancelMaintenance}
+          />
         </TabsContent>
 
-        <TabsContent value="security" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Security Settings</CardTitle>
-              <CardDescription>
-                Configure security settings for the application.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="max-login-attempts">Maximum Login Attempts</Label>
-                <Input
-                  id="max-login-attempts"
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={maxLoginAttempts}
-                  onChange={(e) => setMaxLoginAttempts(parseInt(e.target.value))}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Number of login attempts allowed before temporarily locking the account.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="session-timeout">Session Timeout (minutes)</Label>
-                <Input
-                  id="session-timeout"
-                  type="number"
-                  min={5}
-                  max={1440}
-                  value={sessionTimeout}
-                  onChange={(e) => setSessionTimeout(parseInt(e.target.value))}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Time in minutes before an inactive session expires.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="two-factor" 
-                    checked={enableTwoFactor} 
-                    onCheckedChange={setEnableTwoFactor}
-                  />
-                  <Label htmlFor="two-factor">Enable Two-Factor Authentication</Label>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Require two-factor authentication for all admin users.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="ip-restriction" 
-                    checked={ipRestriction} 
-                    onCheckedChange={setIpRestriction}
-                  />
-                  <Label htmlFor="ip-restriction">Enable IP Restriction for Admin Panel</Label>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="allowed-ips">Allowed IP Addresses (comma-separated)</Label>
-                  <Input
-                    id="allowed-ips"
-                    value={allowedIPs}
-                    onChange={(e) => setAllowedIPs(e.target.value)}
-                    placeholder="e.g., 192.168.1.1, 10.0.0.1"
-                    disabled={!ipRestriction}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Only these IP addresses will be allowed to access the admin panel.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="security">
+          <SecurityTab 
+            maxLoginAttempts={maxLoginAttempts}
+            setMaxLoginAttempts={setMaxLoginAttempts}
+            sessionTimeout={sessionTimeout}
+            setSessionTimeout={setSessionTimeout}
+            enableTwoFactor={enableTwoFactor}
+            setEnableTwoFactor={setEnableTwoFactor}
+            ipRestriction={ipRestriction}
+            setIpRestriction={setIpRestriction}
+            allowedIPs={allowedIPs}
+            setAllowedIPs={setAllowedIPs}
+          />
         </TabsContent>
       </Tabs>
     </div>

@@ -1,16 +1,16 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
+import { typecastQuery, safeQueryData } from "@/utils/safeSupabaseQueries";
 
 export interface MaintenanceStatus {
   maintenance_mode: boolean;
   maintenance_message: string;
-  maintenance_start_date: string;
-  maintenance_end_date: string;
+  maintenance_start_date: string | null;
+  maintenance_end_date: string | null;
 }
 
 interface MaintenanceCheckerProps {
@@ -33,17 +33,12 @@ export function MaintenanceChecker({
 
   const checkMaintenanceStatus = async () => {
     try {
-      const { data, error } = await supabase
-        .from('system_settings')
+      const settingsQuery = typecastQuery('system_settings')
         .select('maintenance_mode, maintenance_message, maintenance_start_date, maintenance_end_date')
         .eq('id', 1)
         .single();
 
-      if (error) {
-        console.error("Error checking maintenance status:", error);
-        setIsLoading(false);
-        return;
-      }
+      const data = await safeQueryData<MaintenanceStatus | null>(settingsQuery, null);
 
       // Check if maintenance mode is active
       if (data && data.maintenance_mode) {
@@ -86,7 +81,7 @@ export function MaintenanceChecker({
             
             <h1 className="text-2xl font-bold text-gray-900">System Maintenance</h1>
             
-            <Alert variant="warning" className="bg-amber-50 text-amber-800 border-amber-200">
+            <Alert variant="destructive" className="bg-amber-50 text-amber-800 border-amber-200">
               <AlertTitle>Scheduled Maintenance</AlertTitle>
               <AlertDescription>
                 {maintenanceInfo.maintenance_message}

@@ -1,5 +1,7 @@
 
+import { PostgrestError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import * as Sentry from "@sentry/react";
 
 /**
  * Helper function to type-cast Supabase queries to avoid TypeScript errors
