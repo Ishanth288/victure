@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import * as Sentry from "@sentry/react";
+import { initializeAppMonitoring } from "@/utils/supabaseHelpers";
 
 // Initialize Sentry for error tracking
 Sentry.init({
@@ -23,15 +24,29 @@ Sentry.init({
   replaysOnErrorSampleRate: 1.0, // Sample rate for sessions with errors
 });
 
-// Create a client
+// Create a client with robust error handling
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: 3, // Increase retries for failed queries
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
       refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      onError: (error) => {
+        console.error('Query error:', error);
+        Sentry.captureException(error);
+      }
     },
   },
 });
+
+// Initialize application monitoring
+initializeAppMonitoring();
+
+// Add a health check endpoint that can be used to verify the application is running
+if (window.location.pathname === '/health') {
+  document.body.innerHTML = 'OK';
+}
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
