@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface TypingEffectProps {
   text: string[];
@@ -17,9 +17,27 @@ export function TypingEffect({
   const [currentText, setCurrentText] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
+    // Set up cleanup function
+    mountedRef.current = true;
+    
+    return () => {
+      mountedRef.current = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mountedRef.current) return;
+    
+    timeoutRef.current = setTimeout(() => {
+      if (!mountedRef.current) return;
+      
       if (!isDeleting) {
         // Typing
         const targetText = text[currentIndex];
@@ -27,7 +45,11 @@ export function TypingEffect({
           setCurrentText(targetText.substring(0, currentText.length + 1));
         } else {
           // Done typing, wait before deleting
-          setTimeout(() => setIsDeleting(true), delay);
+          timeoutRef.current = setTimeout(() => {
+            if (mountedRef.current) {
+              setIsDeleting(true);
+            }
+          }, delay);
         }
       } else {
         // Deleting
@@ -41,7 +63,11 @@ export function TypingEffect({
       }
     }, isDeleting ? speed / 2 : speed);
 
-    return () => clearTimeout(timeout);
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
   }, [currentText, currentIndex, isDeleting, text, speed, delay]);
 
   return (

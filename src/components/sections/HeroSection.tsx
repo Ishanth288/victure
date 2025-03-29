@@ -12,6 +12,7 @@ import { memo, Suspense, lazy, useState, useEffect } from "react";
 // Memoize the HeroSection component to prevent unnecessary re-renders
 export const HeroSection = memo(() => {
   const [shouldLoadAnimations, setShouldLoadAnimations] = useState(false);
+  const [particleCount, setParticleCount] = useState(15);
   
   // Only load animations after the main content is visible
   useEffect(() => {
@@ -20,17 +21,22 @@ export const HeroSection = memo(() => {
       setShouldLoadAnimations(true);
     }, 100);
     
+    // Set particle count based on window width
+    if (typeof window !== 'undefined') {
+      setParticleCount(window.innerWidth < 768 ? 15 : 30);
+    }
+    
     return () => clearTimeout(timer);
   }, []);
   
   return (
     <AuroraBackground className="h-auto relative">
       <div className="absolute inset-0 z-0 pointer-events-none opacity-20 md:opacity-30">
-        {/* Replace the problematic Spline with a simple gradient background */}
+        {/* Simple gradient background for better performance */}
         <div className="pharmacy-gradient w-full h-full rounded-xl opacity-30" />
       </div>
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <TechParticles count={window.innerWidth < 768 ? 15 : 30} />
+        <TechParticles count={particleCount} />
       </div>
       <div className="relative z-10">
         <Hero />

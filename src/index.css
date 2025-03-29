@@ -75,34 +75,28 @@
     --ring: 212.7 26.8% 83.9%;
   }
 }
- 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  
-  /* Fix transparent dropdowns */
-  .Select-content,
-  [data-radix-select-content],
-  [data-radix-popper-content] {
-    @apply bg-white dark:bg-neutral-800 !important;
-  }
-  
-  /* Smooth scrolling for the entire page */
-  html {
-    scroll-behavior: smooth;
-  }
-  
-  /* Optimize scrolling */
-  .smooth-scroll {
-    -webkit-overflow-scrolling: touch;
-  }
+
+* {
+  @apply border-border;
+}
+body {
+  @apply bg-background text-foreground;
 }
 
-/* Create a grid pattern background */
+.Select-content,
+[data-radix-select-content],
+[data-radix-popper-content] {
+  @apply bg-white dark:bg-neutral-800 !important;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
 .bg-grid-pattern {
   background-image: 
     linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
@@ -112,7 +106,6 @@
   backface-visibility: hidden;
 }
 
-/* Spline loader */
 .loader {
   width: 48px;
   height: 48px;
@@ -133,7 +126,6 @@
   }
 }
 
-/* Animate the blobs */
 @keyframes blob {
   0% {
     transform: translate(0px, 0px) scale(1);
@@ -152,6 +144,7 @@
 .animate-blob {
   animation: blob 7s infinite;
   transform: translateZ(0);
+  will-change: transform;
 }
 
 .animation-delay-2000 {
@@ -162,7 +155,6 @@
   animation-delay: 4s;
 }
 
-/* Create a horizontal slider animation */
 @keyframes slide-horizontal {
   from {
     transform: translateX(100%);
@@ -175,9 +167,9 @@
 .slide-horizontal {
   animation: slide-horizontal 0.3s ease-out;
   transform: translateZ(0);
+  will-change: transform;
 }
 
-/* Pharmacy gradient background animation */
 .pharmacy-gradient {
   background: linear-gradient(-45deg, #0D9488, #14B8A6, #0F766E, #FB923C, #F97316);
   background-size: 400% 400%;
@@ -186,6 +178,7 @@
   width: 100%;
   border-radius: 0.5rem;
   transform: translateZ(0);
+  will-change: background-position;
 }
 
 @keyframes gradient {
@@ -200,7 +193,6 @@
   }
 }
 
-/* Tech animations */
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
@@ -218,6 +210,7 @@
 .animate-float {
   animation: float 3s ease-in-out infinite;
   transform: translateZ(0);
+  will-change: transform;
 }
 
 @keyframes pulse-glow {
@@ -240,13 +233,14 @@
   background-size: 400% 400%;
   animation: tech-gradient 15s ease infinite;
   transform: translateZ(0);
+  will-change: background-position;
 }
 
-/* Performance optimizations */
 .gpu-accelerated {
   transform: translateZ(0);
   will-change: transform;
   backface-visibility: hidden;
+  perspective: 1000px;
 }
 
 .content-visibility-auto {
@@ -259,29 +253,46 @@
   transform: translateZ(0);
 }
 
-/* Optimize scrolling with contain property for better performance */
 .optimize-scroll {
   contain: content;
   content-visibility: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Lazy loading class */
 .lazy-load {
   opacity: 0;
   transition: opacity 0.3s ease-in-out;
+  will-change: opacity;
 }
 
 .lazy-load.loaded {
   opacity: 1;
 }
 
-/* Apply these classes to sections that may cause scrolling jank */
 .optimize-paint {
   contain: paint;
 }
 
 .optimize-layout {
   contain: layout;
+}
+
+.hardware-accelerated {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000;
+}
+
+.prevent-paint-flashing {
+  transform: translateZ(0);
+}
+
+.contain-size {
+  contain: size;
+}
+
+.contain-style {
+  contain: style;
 }
 
 @media print {
@@ -327,7 +338,6 @@
     page-break-inside: avoid;
   }
 
-  /* Prevent page breaks */
   * {
     page-break-inside: avoid;
     page-break-after: avoid;

@@ -10,6 +10,7 @@ interface MainContentWrapperProps {
   className?: string;
   loadingMessage?: string;
   loadingHeight?: string;
+  onError?: (error: Error) => void;
 }
 
 export const MainContentWrapper = memo(({ 
@@ -18,10 +19,11 @@ export const MainContentWrapper = memo(({
   id,
   className = "",
   loadingMessage,
-  loadingHeight
+  loadingHeight,
+  onError
 }: MainContentWrapperProps) => {
   return (
-    <section id={id} className={className}>
+    <section id={id} className={`${className} gpu-accelerated`}>
       <Suspense fallback={
         useFallback ? (
           <Fallback />
@@ -32,10 +34,30 @@ export const MainContentWrapper = memo(({
           />
         )
       }>
-        {children}
+        <ErrorBoundaryWrapper onError={onError}>
+          {children}
+        </ErrorBoundaryWrapper>
       </Suspense>
     </section>
   );
 });
 
 MainContentWrapper.displayName = 'MainContentWrapper';
+
+// Simple error boundary to prevent entire app from crashing
+const ErrorBoundaryWrapper = ({ 
+  children, 
+  onError 
+}: { 
+  children: ReactNode; 
+  onError?: (error: Error) => void 
+}) => {
+  try {
+    return <>{children}</>;
+  } catch (error) {
+    if (onError && error instanceof Error) {
+      onError(error);
+    }
+    return <Fallback message="Component failed to load" />;
+  }
+};

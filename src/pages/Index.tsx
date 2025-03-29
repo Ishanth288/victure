@@ -6,14 +6,16 @@ import { FloatingIconsSection } from "@/components/sections/FloatingIconsSection
 import { ScrollAnimationSection } from "@/components/sections/ScrollAnimationSection";
 import { ContentSection } from "@/components/sections/ContentSection";
 import { FeedbackForm } from "@/components/FeedbackForm";
-import { useEffect, memo, useRef } from "react";
-import { LazyMotion, domAnimation } from "framer-motion";
+import { useEffect, memo, useRef, useState } from "react";
+import { LazyMotion, domAnimation, m } from "framer-motion";
 import * as Sentry from "@sentry/react";
 import { MainContentWrapper } from "@/components/sections/MainContentWrapper";
 import { setupPageOptimizations } from "@/utils/performanceUtils";
+import { Fallback } from "@/components/ui/fallback";
 
 const Index = memo(() => {
   const feedbackSectionRef = useRef<HTMLElement>(null);
+  const [isError, setIsError] = useState(false);
   
   useEffect(() => {
     const cleanupOptimizations = setupPageOptimizations();
@@ -31,28 +33,51 @@ const Index = memo(() => {
     };
   }, []);
 
+  // Error handler for Suspense/lazy components
+  const handleError = (error: Error) => {
+    console.error('Component failed to load:', error);
+    Sentry.captureException(error);
+    setIsError(true);
+  };
+
+  if (isError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Fallback message="Something went wrong. Please refresh the page." />
+      </div>
+    );
+  }
+
   return (
     <LazyMotion features={domAnimation} strict>
       <div className="min-h-screen bg-white">
         <Navigation />
-        <main className="overflow-hidden content-visibility-auto">
+        <m.main 
+          className="overflow-hidden" 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
           <HeroSection />
           
-          <MainContentWrapper useFallback={true}>
+          <MainContentWrapper 
+            useFallback={true} 
+            onError={handleError}
+          >
             <FloatingIconsSection />
           </MainContentWrapper>
           
-          <MainContentWrapper>
+          <MainContentWrapper onError={handleError}>
             <ScrollAnimationSection />
           </MainContentWrapper>
           
-          <MainContentWrapper>
+          <MainContentWrapper onError={handleError}>
             <ContentSection />
           </MainContentWrapper>
 
           <section 
             id="feedback" 
-            className="py-12 bg-gray-50 optimize-layout" 
+            className="py-12 bg-gray-50 gpu-accelerated optimize-layout" 
             ref={feedbackSectionRef}
           >
             <div className="container mx-auto px-4">
@@ -60,7 +85,7 @@ const Index = memo(() => {
               <FeedbackForm />
             </div>
           </section>
-        </main>
+        </m.main>
         <Footer />
       </div>
     </LazyMotion>

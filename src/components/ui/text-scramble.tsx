@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 interface TextScrambleProps {
   texts: string[];
@@ -18,13 +18,18 @@ export function TextScramble({
   const [currentText, setCurrentText] = useState('');
   const [phase, setPhase] = useState<'scramble' | 'show' | 'pause'>('show');
   const [counter, setCounter] = useState(0);
+  const animationFrameRef = useRef<number | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const chars = '!<>-_\\/[]{}—=+*^?#abcdefghijklmnopqrstuvwxyz';
 
   useEffect(() => {
-    const originalText = texts[currentTextIndex] || '';
-    
-    const interval = setInterval(() => {
+    // Set initial text right away
+    if (currentText === '' && texts.length > 0) {
+      setCurrentText(texts[0] || '');
+    }
+
+    const updateAnimation = () => {
       if (phase === 'pause') {
         setCounter(c => c + 1);
         if (counter > pauseTime / speed) {
@@ -70,9 +75,22 @@ export function TextScramble({
           setCurrentText(updatedText);
         }
       }
+    };
+
+    timeoutRef.current = setTimeout(() => {
+      animationFrameRef.current = requestAnimationFrame(() => {
+        updateAnimation();
+      });
     }, speed);
 
-    return () => clearInterval(interval);
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
   }, [currentText, currentTextIndex, phase, counter, texts, speed, pauseTime]);
 
   return <div className={className}>{currentText}</div>;
