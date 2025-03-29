@@ -55,3 +55,54 @@ export function setupPageOptimizations() {
     }
   };
 }
+
+/**
+ * Optimize scrolling performance
+ * Applies passive event listeners and CSS optimizations
+ */
+function optimizeScrolling(): () => void {
+  const scrollContainer = document.querySelector('main');
+  
+  if (scrollContainer) {
+    // Apply GPU acceleration and contain properties
+    scrollContainer.classList.add('optimize-scroll', 'gpu-accelerated');
+    
+    // Use passive event listeners to improve scrolling performance
+    const handleScroll = () => {
+      // Optional: Add any scroll-related performance tracking
+      requestAnimationFrame(() => {
+        // Minimal scroll optimization logic
+        scrollContainer.style.willChange = 'transform';
+      });
+    };
+    
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      scrollContainer.classList.remove('optimize-scroll', 'gpu-accelerated');
+      scrollContainer.removeEventListener('scroll', handleScroll);
+      scrollContainer.style.willChange = 'auto';
+    };
+  }
+  
+  return () => {};
+}
+
+/**
+ * Optimize animations to reduce performance impact
+ */
+function optimizeAnimations(): () => void {
+  // Reduce animation complexity for smoother performance
+  const animatedElements = document.querySelectorAll('.animate-performance-heavy');
+  
+  animatedElements.forEach(el => {
+    el.classList.add('low-impact-animation');
+  });
+  
+  return () => {
+    animatedElements.forEach(el => {
+      el.classList.remove('low-impact-animation');
+    });
+  };
+}
+
