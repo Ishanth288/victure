@@ -18,17 +18,7 @@ const Auth = lazy(() => import("@/pages/Auth"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 
 // Lazy load with higher delay for less critical routes
-const Inventory = lazy(() => {
-  // Small delay for non-immediate routes
-  return new Promise(resolve => {
-    // Only delay in production
-    if (import.meta.env.PROD) {
-      setTimeout(() => resolve(import("@/pages/Inventory")), 100);
-    } else {
-      resolve(import("@/pages/Inventory"));
-    }
-  });
-});
+const Inventory = lazy(() => import("@/pages/Inventory"));
 
 // Other lazy loaded routes
 const Billing = lazy(() => import("@/pages/Billing"));

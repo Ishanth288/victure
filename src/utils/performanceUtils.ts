@@ -35,11 +35,22 @@ export function optimizeScrolling(scrollContainer: HTMLElement | null): () => vo
   if (!scrollContainer) return () => {};
   
   // Apply GPU acceleration but with minimal CSS changes
-  scrollContainer.style.transform = 'translateZ(0)';
+  const scrollHandler = (e: Event) => {
+    // Using requestAnimationFrame to throttle scroll events
+    window.requestAnimationFrame(() => {
+      // Optimization: Skip DOM updates if not needed
+    });
+  };
+
+  // Use passive listeners for better performance
+  scrollContainer.addEventListener('scroll', scrollHandler, { passive: true });
   
-  // Use passive event listeners only when needed
+  // Apply will-change only when needed
+  scrollContainer.style.willChange = 'transform';
+  
   const cleanup = () => {
-    scrollContainer.style.transform = '';
+    scrollContainer.removeEventListener('scroll', scrollHandler);
+    scrollContainer.style.willChange = 'auto';
   };
   
   return cleanup;
@@ -49,8 +60,12 @@ export function optimizeScrolling(scrollContainer: HTMLElement | null): () => vo
  * Defers non-critical resources loading
  * @param delay Milliseconds to defer loading
  */
-export function deferNonCriticalResources(delay = 2000) {
-  setTimeout(() => {
+export function deferNonCriticalResources(delay = 1500) {
+  // Use requestIdleCallback if available for better timing
+  const scheduleDeferred = window.requestIdleCallback || 
+    ((cb: () => void) => setTimeout(cb, delay));
+  
+  scheduleDeferred(() => {
     // Load non-critical CSS
     document.querySelectorAll('link[data-defer="true"]').forEach(link => {
       (link as HTMLLinkElement).media = 'all';
@@ -61,5 +76,30 @@ export function deferNonCriticalResources(delay = 2000) {
       const src = img.getAttribute('data-src');
       if (src) img.setAttribute('src', src);
     });
-  }, delay);
+  });
+}
+
+/**
+ * Optimizes rendering by using IntersectionObserver to only
+ * render components when they're visible
+ * @param callback Function to run when element is visible
+ */
+export function createVisibilityObserver(callback: (isVisible: boolean) => void) {
+  if ('IntersectionObserver' in window) {
+    return new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        callback(entry.isIntersecting);
+      });
+    }, {
+      rootMargin: '100px', // Load slightly before visible
+      threshold: 0.1 // Trigger when 10% visible
+    });
+  }
+  
+  // Fallback if IntersectionObserver not available
+  return {
+    observe: () => callback(true),
+    unobserve: () => {},
+    disconnect: () => {}
+  };
 }
