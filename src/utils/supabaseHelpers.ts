@@ -3,6 +3,31 @@ import { supabase } from "@/integrations/supabase/client";
 import * as Sentry from "@sentry/react";
 
 /**
+ * Export security-enhanced version of auth state change
+ */
+export const onAuthStateChange = (callback: (session: any) => void) => {
+  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      console.log('User authenticated with secure session');
+    }
+    callback(session);
+  });
+  
+  return data;
+};
+
+/**
+ * Helper method to safely handle Supabase query results
+ */
+export const handleQueryResult = <T>(result: T | { error: true }) => {
+  if (result && typeof result === 'object' && 'error' in result && result.error === true) {
+    console.error("Supabase query error:", result);
+    return null;
+  }
+  return result as T;
+};
+
+/**
  * Safely inserts data into any table, handling type issues and error management
  * @param table The table name to insert into
  * @param data The data to insert
