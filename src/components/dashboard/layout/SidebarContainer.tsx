@@ -7,6 +7,7 @@ import { Sidebar, SidebarBody } from "@/components/ui/sidebar";
 import { SidebarLinks } from "@/components/dashboard/SidebarLinks";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { useProfileData } from "@/components/dashboard/ProfileSection";
+import { SecurityCodeModal } from "@/components/admin/SecurityCodeModal";
 
 interface SidebarContainerProps {
   children?: React.ReactNode;
@@ -17,6 +18,7 @@ export function SidebarContainer({ children }: SidebarContainerProps) {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { profileData } = useProfileData();
+  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -31,7 +33,9 @@ export function SidebarContainer({ children }: SidebarContainerProps) {
     // Handle special links
     if (index === 9) { // Terms & Conditions
       navigate('/legal/terms-of-service', { state: { from: location.pathname } });
-    } else if (index === 10) { // Sign Out
+    } else if (index === 10) { // Admin Portal
+      setIsSecurityModalOpen(true);
+    } else if (index === 11) { // Sign Out
       handleSignOut();
     }
   };
@@ -52,9 +56,14 @@ export function SidebarContainer({ children }: SidebarContainerProps) {
         </div>
         
         <div className="border-t border-neutral-200 pt-2 px-2 flex flex-col gap-1">
-          <SidebarLinks startIndex={8} endIndex={11} onClick={handleLinkClick} />
+          <SidebarLinks startIndex={8} endIndex={12} onClick={handleLinkClick} />
         </div>
       </SidebarBody>
+      
+      <SecurityCodeModal 
+        isOpen={isSecurityModalOpen}
+        onClose={() => setIsSecurityModalOpen(false)}
+      />
     </Sidebar>
   );
 }

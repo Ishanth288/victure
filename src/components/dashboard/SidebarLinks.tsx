@@ -1,7 +1,7 @@
 
 import { 
   LayoutGrid, Package, Users, FileText, LineChart, Settings,
-  DollarSign, LogOut, ShoppingCart, FileTerminal, TrendingUp 
+  DollarSign, LogOut, ShoppingCart, FileTerminal, TrendingUp, Shield
 } from "lucide-react";
 import { SidebarLink } from "@/components/ui/sidebar";
 
@@ -55,6 +55,11 @@ export const sidebarLinksData = [
     label: "Terms & Conditions",
     href: "/legal/terms-of-service",
     icon: <FileTerminal className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+  },
+  {
+    label: "Admin Portal",
+    href: "#admin",
+    icon: <Shield className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
   },
   {
     label: "Sign Out",
