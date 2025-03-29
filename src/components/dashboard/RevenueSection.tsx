@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { RevenueChart } from "@/components/insights/RevenueChart";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 
 interface RevenueSectionProps {
   isLoading: boolean;
@@ -18,7 +19,7 @@ export function RevenueSection({ isLoading, revenueData }: RevenueSectionProps) 
       <CardContent>
         {isLoading ? (
           <div className="h-[300px] flex items-center justify-center">
-            <p>Loading revenue data...</p>
+            <LoadingAnimation text="Loading revenue data" size="sm" />
           </div>
         ) : revenueData.length > 0 ? (
           <RevenueChart data={revenueData} />

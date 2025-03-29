@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { RevenueDistribution } from "@/components/insights/RevenueDistribution";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 
 interface DistributionSectionProps {
   isLoading: boolean;
@@ -21,7 +22,7 @@ export function DistributionSection({
       <CardContent>
         {isLoading ? (
           <div className="h-[300px] flex items-center justify-center">
-            <p>Loading distribution data...</p>
+            <LoadingAnimation text="Loading distribution data" size="sm" />
           </div>
         ) : revenueDistribution.length > 0 ? (
           <RevenueDistribution data={revenueDistribution} />

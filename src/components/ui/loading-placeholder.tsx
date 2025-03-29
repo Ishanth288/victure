@@ -1,5 +1,5 @@
-
 import { memo } from "react";
+import { LoadingAnimation } from "./loading-animation";
 
 interface LoadingPlaceholderProps {
   height?: string;
@@ -11,6 +11,7 @@ interface LoadingPlaceholderProps {
   message?: string;
   className?: string;
   animate?: boolean;
+  showLogo?: boolean;
 }
 
 export const LoadingPlaceholder = memo(({ 
@@ -22,20 +23,28 @@ export const LoadingPlaceholder = memo(({
   pulseHeight = "h-8",
   message,
   className = "",
-  animate = true
+  animate = true,
+  showLogo = true
 }: LoadingPlaceholderProps) => {
-  // Using CSS will-change to optimize the animation performance
-  const animationClass = animate ? "animate-pulse will-change-opacity" : "";
+  // If we want to show our new loading animation
+  if (animate) {
+    return (
+      <div className={`${height} ${width} ${bgColor} flex items-center justify-center ${className}`}>
+        <LoadingAnimation text={message} showLogo={showLogo} />
+      </div>
+    );
+  }
   
+  // Legacy loading placeholder - keeping for compatibility
   return (
     <div className={`${height} ${width} ${bgColor} flex items-center justify-center ${className}`}>
       <div className="flex flex-col items-center">
         <div 
-          className={`${pulseHeight} ${pulseWidth} ${pulseColor} rounded mb-4 ${animationClass}`}
+          className={`${pulseHeight} ${pulseWidth} ${pulseColor} rounded mb-4 animate-pulse will-change-opacity`}
           style={{ contain: 'layout style paint' }}  
         ></div>
         <div 
-          className={`h-4 w-64 ${pulseColor} rounded ${animationClass}`}
+          className={`h-4 w-64 ${pulseColor} rounded animate-pulse will-change-opacity`}
           style={{ contain: 'layout style paint' }}
         ></div>
         {message && (

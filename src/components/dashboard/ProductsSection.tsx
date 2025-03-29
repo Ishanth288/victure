@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ProductsChart } from "@/components/insights/ProductsChart";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 
 interface ProductsSectionProps {
   isLoading: boolean;
@@ -18,7 +19,7 @@ export function ProductsSection({ isLoading, topProducts }: ProductsSectionProps
       <CardContent>
         {isLoading ? (
           <div className="h-[300px] flex items-center justify-center">
-            <p>Loading product data...</p>
+            <LoadingAnimation text="Loading product data" size="sm" />
           </div>
         ) : topProducts.length > 0 ? (
           <ProductsChart data={topProducts} />

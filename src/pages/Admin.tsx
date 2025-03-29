@@ -8,6 +8,7 @@ import { AdminDashboard } from "@/components/admin/dashboard/AdminDashboard";
 import { AdminTabs } from "@/components/admin/AdminTabs";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -17,10 +18,7 @@ export default function Admin() {
   if (isAccessLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4">Verifying admin credentials...</p>
-        </div>
+        <LoadingAnimation text="Verifying admin credentials" size="lg" />
       </div>
     );
   }
