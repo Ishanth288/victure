@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,6 +9,7 @@ import { typecastQuery, safeQueryData } from "@/utils/safeSupabaseQueries";
 import { StatsCard } from "@/components/insights/StatsCard";
 import { Users, ShoppingBag, AlertCircle, Bell, UserCheck, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AdminStats {
   total_users: number;
