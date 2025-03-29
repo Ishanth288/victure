@@ -4,6 +4,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { PostgrestFilterBuilder, PostgrestQueryBuilder } from "@supabase/supabase-js";
 
 type TableNames = keyof Database['public']['Tables'];
 
@@ -63,14 +64,27 @@ export function safeFilter<T>(value: T): any {
  */
 export async function safeInsert<T extends Record<string, any>>(
   table: TableNames, 
-  data: T | T[],
-  options: { returning?: boolean } = { returning: true }
+  data: T | T[]
 ): Promise<{ data: any; error: any }> {
   try {
-    return await supabase
+    const result = await supabase
       .from(table)
-      .insert(data as any)
-      .select(options.returning ? '*' : undefined);
+      .insert(data as any);
+    
+    // If we need to return the inserted data
+    if (result.error) {
+      return { data: null, error: result.error };
+    }
+    
+    // Return the inserted data by performing a select
+    const selectResult = await supabase
+      .from(table)
+      .select('*');
+    
+    return { 
+      data: selectResult.data, 
+      error: selectResult.error 
+    };
   } catch (error) {
     console.error(`Error inserting into ${table}:`, error);
     return { data: null, error };
@@ -83,22 +97,38 @@ export async function safeInsert<T extends Record<string, any>>(
 export async function safeUpdate<T extends Record<string, any>>(
   table: TableNames,
   data: T,
-  match: Record<string, any>,
-  options: { returning?: boolean } = { returning: true }
+  match: Record<string, any>
 ): Promise<{ data: any; error: any }> {
   try {
-    let query = supabase.from(table).update(data as any);
+    // Start with an update query
+    let updateQuery = supabase.from(table).update(data as any);
     
     // Apply all match conditions
     Object.entries(match).forEach(([key, value]) => {
-      query = query.eq(key as any, value as any);
+      updateQuery = updateQuery.eq(key as any, value as any);
     });
     
-    if (options.returning) {
-      return await query.select();
+    // Execute the update
+    const updateResult = await updateQuery;
+    
+    if (updateResult.error) {
+      return { data: null, error: updateResult.error };
     }
     
-    return await query;
+    // Get the updated data
+    let selectQuery = supabase.from(table).select('*');
+    
+    // Apply the same conditions to fetch the updated record(s)
+    Object.entries(match).forEach(([key, value]) => {
+      selectQuery = selectQuery.eq(key as any, value as any);
+    });
+    
+    const selectResult = await selectQuery;
+    
+    return { 
+      data: selectResult.data, 
+      error: selectResult.error 
+    };
   } catch (error) {
     console.error(`Error updating ${table}:`, error);
     return { data: null, error };
@@ -140,12 +170,20 @@ export async function safeSelect<T = any>(
       query = query.limit(options.limit);
     }
     
+    // Execute the query
     if (options.single) {
-      const result = await query.single();
-      return result as any;
+      const result = await query.maybeSingle();
+      return { 
+        data: result.data as T, 
+        error: result.error 
+      };
+    } else {
+      const result = await query;
+      return { 
+        data: result.data as T, 
+        error: result.error 
+      };
     }
-    
-    return await query;
   } catch (error) {
     console.error(`Error selecting from ${table}:`, error);
     return { data: null, error };
