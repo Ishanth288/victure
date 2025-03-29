@@ -1,4 +1,3 @@
-
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { HeroSection } from "@/components/sections/HeroSection";
@@ -7,18 +6,16 @@ import { ScrollAnimationSection } from "@/components/sections/ScrollAnimationSec
 import { ContentSection } from "@/components/sections/ContentSection";
 import { Suspense, lazy, useEffect, memo } from "react";
 import { LazyMotion, domAnimation, m } from "framer-motion";
+import ErrorButton from "@/components/ErrorButton";
 
-// Helper function to detect if the browser supports hover
 const isHoverSupported = () => {
   return window.matchMedia('(hover: hover)').matches;
 };
 
-// Skip animations on mobile to improve performance
 const shouldReduceAnimation = () => {
   return window.innerWidth < 768 || !isHoverSupported();
 };
 
-// Create loading placeholders for better UX
 const LoadingPlaceholder = memo(() => (
   <div className="h-60 bg-neutral-50 flex items-center justify-center">
     <div className="animate-pulse flex flex-col items-center">
@@ -30,21 +27,16 @@ const LoadingPlaceholder = memo(() => (
 
 LoadingPlaceholder.displayName = 'LoadingPlaceholder';
 
-// Memoize the entire index page for performance
 const Index = memo(() => {
-  // Add intersection observer to load sections lazily
   useEffect(() => {
-    // Add a passive scroll event listener to improve scrolling
     document.addEventListener('scroll', () => {}, { passive: true });
 
-    // Preload critical resources
     if (!shouldReduceAnimation()) {
       const linkEl = document.createElement('link');
       linkEl.rel = 'preconnect';
       linkEl.href = 'https://prod.spline.design';
       document.head.appendChild(linkEl);
 
-      // Add preload for critical resources - only if not on mobile
       const preloadLinks = [
         { href: '/og-image.png', as: 'image' }
       ];
@@ -54,11 +46,9 @@ const Index = memo(() => {
         preloadLink.rel = 'preload';
         preloadLink.href = link.href;
         preloadLink.as = link.as;
-        // Removed the crossorigin property that was causing the TypeScript error
         document.head.appendChild(preloadLink);
       });
 
-      // Enable hardware acceleration for smoother scrolling
       document.documentElement.classList.add('gpu-accelerated');
     }
 
@@ -75,7 +65,10 @@ const Index = memo(() => {
         <main className="overflow-hidden content-visibility-auto">
           <HeroSection />
           
-          {/* Progressively load non-critical sections */}
+          <div className="flex justify-center my-4">
+            <ErrorButton />
+          </div>
+          
           <Suspense fallback={null}>
             <FloatingIconsSection />
           </Suspense>
