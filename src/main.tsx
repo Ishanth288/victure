@@ -6,7 +6,6 @@ import * as Sentry from "@sentry/react";
 import { BrowserTracing } from "@sentry/tracing";
 
 // Initialize Sentry
-// Note: Replace the DSN below with your actual Sentry DSN
 Sentry.init({
   dsn: "https://examplePublicKey@o0.ingest.sentry.io/0", // Replace with your actual DSN
   integrations: [new BrowserTracing()],
@@ -14,15 +13,12 @@ Sentry.init({
   // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring
   // We recommend adjusting this value in production
   tracesSampleRate: 1.0,
-
+  
   // Adjust this value in production, or use tracesSampler for greater control
   replaysSessionSampleRate: 0.1,
   
-  // Performance monitoring settings
-  performance: {
-    // Sample rate for performance monitoring
-    tracingOrigins: ["localhost", /^\//],
-  },
+  // Remove the 'performance' key as it's not a valid Sentry option
+  tracingOrigins: ["localhost", /^\//],
   
   // Configure error fingerprinting
   beforeSend(event) {
@@ -39,3 +35,4 @@ createRoot(document.getElementById("root")!).render(
     <App />
   </Sentry.ErrorBoundary>
 );
+
