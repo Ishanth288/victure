@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 interface MarketForecastTabProps {
   forecastData: any[];
@@ -57,24 +58,40 @@ export const MarketForecastTab = ({
   
   const salesMetrics = calculateSalesMetrics(forecastData);
   
-  // Prepare enhanced forecast data (adding industry average)
-  const enhancedForecastData = forecastData.map(item => {
-    // For demonstration, create an industry average that's slightly higher
-    const industryAverage = item.prediction * (1 + (Math.random() * 0.4 - 0.1)); // -10% to +30% difference
-    
-    return {
-      ...item,
-      industryAverage: Math.round(industryAverage)
-    };
-  });
+  // Simplify forecast data - only include every other month to reduce clutter
+  const simplifiedForecastData = forecastData
+    .filter((_, index) => index % 2 === 0) // Take every other month
+    .map(item => ({
+      month: item.month,
+      yourPharmacy: Math.round(item.prediction),
+      industryAverage: Math.round(item.prediction * 0.85) // Simplify by using ~85% of prediction for industry avg
+    }));
   
-  // Color customization
-  const yourPharmacyColor = "#8884d8";
-  const industryAvgColor = "#82ca9d";
+  // Color customization with higher contrast
+  const yourPharmacyColor = "#4338ca"; // Indigo-700
+  const industryAvgColor = "#65a30d"; // Lime-600
+  
+  // Chart config
+  const chartConfig = {
+    yourPharmacy: {
+      label: "Your Pharmacy",
+      theme: {
+        light: yourPharmacyColor,
+        dark: yourPharmacyColor,
+      },
+    },
+    industryAverage: {
+      label: "Industry Average",
+      theme: {
+        light: industryAvgColor,
+        dark: industryAvgColor,
+      },
+    },
+  };
   
   return (
     <div className="space-y-4 pt-4">
-      <Card>
+      <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Sales Forecast for {pharmacyLocation?.state || 'Indian Market'}</span>
@@ -82,7 +99,7 @@ export const MarketForecastTab = ({
           </CardTitle>
           <CardDescription>Projected vs. industry average sales based on historical data</CardDescription>
         </CardHeader>
-        <CardContent className="h-80">
+        <CardContent>
           {forecastData.length > 0 ? (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -123,39 +140,54 @@ export const MarketForecastTab = ({
                 </Card>
               </div>
               
-              <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={enhancedForecastData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <RechartsTooltip 
-                    formatter={(value, name) => [
-                      `₹${value}`, 
-                      name === "prediction" ? "Your Pharmacy" : "Industry Average"
-                    ]} 
-                  />
-                  <Legend payload={[
-                    { value: 'Your Pharmacy', type: 'line', color: yourPharmacyColor },
-                    { value: 'Industry Average', type: 'line', color: industryAvgColor }
-                  ]}/>
-                  <Line 
-                    type="monotone" 
-                    dataKey="prediction" 
-                    stroke={yourPharmacyColor} 
-                    activeDot={{ r: 8 }} 
-                    strokeWidth={2}
-                    name="Your Pharmacy"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="industryAverage" 
-                    stroke={industryAvgColor} 
-                    strokeWidth={2} 
-                    strokeDasharray="5 5"
-                    name="Industry Average"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {/* Use simpler ChartContainer from Shadcn UI */}
+              <div className="h-[250px] w-full">
+                <ChartContainer config={chartConfig}>
+                  <LineChart data={simplifiedForecastData} className="h-full">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="month"
+                      axisLine={false}
+                      tickLine={false}
+                      fontSize={12}
+                      tickMargin={8}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      fontSize={12}
+                      tickFormatter={(value) => `₹${value/1000}k`}
+                      tickMargin={8}
+                    />
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          formatter={(value: number) => [`₹${value.toLocaleString()}`, ""]}
+                        />
+                      }
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="yourPharmacy"
+                      stroke={yourPharmacyColor}
+                      strokeWidth={3}
+                      dot={{ r: 4, strokeWidth: 2 }}
+                      activeDot={{ r: 6, strokeWidth: 2 }}
+                      name="yourPharmacy"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="industryAverage"
+                      stroke={industryAvgColor}
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      dot={{ r: 4, fill: "white", strokeWidth: 2 }}
+                      name="industryAverage"
+                    />
+                    <Legend />
+                  </LineChart>
+                </ChartContainer>
+              </div>
             </div>
           ) : (
             <Alert>
@@ -185,15 +217,19 @@ export const MarketForecastTab = ({
           <CardContent className="h-60">
             {regionalDemandData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={regionalDemandData.slice(0, 5)}>
+                <BarChart 
+                  data={regionalDemandData.slice(0, 5)}
+                  layout="vertical" // Changed to horizontal bars for better readability
+                  margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="product" />
-                  <YAxis />
+                  <XAxis type="number" />
+                  <YAxis type="category" dataKey="product" width={80} fontSize={12} />
                   <RechartsTooltip 
-                    formatter={(value, name) => [`${value} units`, 'Projected Demand']} 
+                    formatter={(value: number) => [`${value} units`, 'Projected Demand']} 
                     labelFormatter={(label) => `Product: ${label}`}
                   />
-                  <Bar dataKey="demand" fill="#0088FE" name="Monthly Demand" />
+                  <Bar dataKey="demand" fill="#0088FE" name="Monthly Demand" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -219,15 +255,19 @@ export const MarketForecastTab = ({
           <CardContent className="h-60">
             {seasonalTrendsData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={seasonalTrendsData.slice(0, 5)}>
+                <BarChart 
+                  data={seasonalTrendsData.slice(0, 5)}
+                  layout="vertical" // Changed to horizontal bars
+                  margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
+                  <XAxis type="number" />
+                  <YAxis type="category" dataKey="name" width={80} fontSize={12} />
                   <RechartsTooltip 
-                    formatter={(value) => [`${value}%`, 'Growth Potential']}
+                    formatter={(value: number) => [`${value}%`, 'Growth Potential']}
                     labelFormatter={(label) => `Product: ${label}`}
                   />
-                  <Bar dataKey="demand" fill="#00C49F" name="Growth %" />
+                  <Bar dataKey="demand" fill="#00C49F" name="Growth %" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (

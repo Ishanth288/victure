@@ -1,3 +1,4 @@
+
 /**
  * Security headers middleware for enhancing website security
  * These headers help prevent various common web vulnerabilities
@@ -8,8 +9,8 @@ export const securityHeaders = {
   'Content-Security-Policy': `
     default-src 'self';
     script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.sentry-cdn.com https://*.ingest.sentry.io;
-    connect-src 'self' https://*.supabase.co https://*.sentry.io https://*.sentry-cdn.com https://*.ingest.sentry.io;
-    img-src 'self' data: https:;
+    connect-src 'self' https://*.supabase.co https://*.sentry.io https://*.sentry-cdn.com https://*.ingest.sentry.io https://trends.google.com https://newsapi.org;
+    img-src 'self' data: https: blob:;
     style-src 'self' 'unsafe-inline';
     font-src 'self' data:;
     frame-src 'self';
@@ -44,4 +45,7 @@ export const securityHeaders = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, PATCH, DELETE',
   'Access-Control-Allow-Headers': 'X-Requested-With,content-type,Authorization,X-Client-Info',
   'Access-Control-Allow-Credentials': 'true',
+  
+  // Cache control for improved performance and reduced flickering
+  'Cache-Control': 'public, max-age=300, stale-while-revalidate=60',
 };

@@ -74,6 +74,30 @@ export function PlanBanner() {
         console.error('Inventory error:', inventoryError);
       }
       
+      // Count monthly bills
+      const { count: actualMonthlyBillsCount, error: monthlyBillsError } = await (supabase as any)
+        .from('bills')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      
+      if (monthlyBillsError) {
+        console.error('Monthly bills error:', monthlyBillsError);
+      }
+      
+      // Count daily bills - bills created today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { count: actualDailyBillsCount, error: dailyBillsError } = await (supabase as any)
+        .from('bills')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', today.toISOString());
+      
+      if (dailyBillsError) {
+        console.error('Daily bills error:', dailyBillsError);
+      }
+      
       // Type-safe conversion of the data
       const profileData = safeCast<ProfileData>(data, {
         plan_type: 'Free Trial',
@@ -95,8 +119,8 @@ export function PlanBanner() {
         planType: profileData.plan_type || 'Free Trial',
         registrationDate: profileData.registration_date || null,
         trialExpirationDate: profileData.trial_expiration_date || null,
-        monthlyBillsCount: profileData.monthly_bills_count || 0,
-        dailyBillsCount: profileData.daily_bills_count || 0,
+        monthlyBillsCount: actualMonthlyBillsCount || 0,
+        dailyBillsCount: actualDailyBillsCount || 0,
         inventoryCount: inventoryCount || 0,
         daysRemaining: daysRemaining
       });
