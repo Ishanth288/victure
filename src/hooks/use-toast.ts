@@ -1,4 +1,6 @@
+
 import * as React from "react"
+import * as Sentry from "@sentry/react"
 
 import type {
   ToastActionElement,
@@ -74,6 +76,14 @@ const addToRemoveQueue = (toastId: string) => {
 export const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "ADD_TOAST":
+      // Track toast notifications in Sentry
+      if (action.toast.title || action.toast.description) {
+        Sentry.addBreadcrumb({
+          category: 'ui.toast',
+          message: `Toast displayed: ${action.toast.title || action.toast.description}`,
+          level: 'info',
+        })
+      }
       return {
         ...state,
         toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
