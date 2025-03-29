@@ -8,10 +8,46 @@
     <meta name="description" content="Transform your pharmacy operations with Victure PharmEase, a comprehensive pharmacy management system." />
     <meta name="author" content="Victure" />
     <meta property="og:image" content="/og-image.png" />
+    
+    <!-- Preload critical assets -->
+    <link rel="preload" href="/src/index.css" as="style" />
+    <link rel="preload" href="/src/main.tsx" as="script" />
+    
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Add minimal critical CSS inline -->
+    <style>
+      body { margin: 0; padding: 0; }
+      .initial-loader { 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        min-height: 100vh;
+        background-color: #f9fafb;
+      }
+      .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(0,0,0,0.1);
+        border-radius: 50%;
+        border-top-color: #3b82f6;
+        animation: spin 1s ease-in-out infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Initial page loader before React loads -->
+      <div class="initial-loader">
+        <div class="spinner"></div>
+      </div>
+    </div>
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>

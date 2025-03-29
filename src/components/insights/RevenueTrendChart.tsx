@@ -1,4 +1,5 @@
 
+import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   LineChart, 
@@ -19,29 +20,23 @@ interface RevenueTrendChartProps {
   timeframe?: 'day' | 'week' | 'month' | 'year';
 }
 
-export function RevenueTrendChart({ data, timeframe = 'month' }: RevenueTrendChartProps) {
+// Using memo to prevent unnecessary re-renders
+export const RevenueTrendChart = memo(({ data, timeframe = 'month' }: RevenueTrendChartProps) => {
   // Format labels based on timeframe
   const formatXAxis = (value: string) => {
-    if (timeframe === 'day') {
-      return `${value}`;
-    } else if (timeframe === 'week') {
-      return value;
-    } else if (timeframe === 'month') {
-      return `${value}`;
-    } else if (timeframe === 'year') {
-      return value;
-    }
     return value;
   };
   
-  // Create a stable and simplified dataset with visual improvements
+  // Using stable object structure to prevent constant recalculation
   const stableData = data.map(item => ({
-    ...item,
-    // Format large numbers for easier reading
-    value: Math.round(item.value), // Round values for cleaner presentation
-    // Add a calculated industry average (approximately 80-90% of actual value)
-    industryAverage: Math.round(item.value * (0.8 + Math.random() * 0.1)) 
+    name: item.name,
+    value: Math.round(item.value),
+    industryAverage: Math.round(item.value * 0.85) // Simplified calculation
   }));
+
+  // Precompute the domain for YAxis to prevent flickering
+  const maxValue = Math.max(...stableData.map(item => item.value)) * 1.1;
+  const minValue = 0;
 
   return (
     <Card className="shadow-sm">
@@ -74,19 +69,15 @@ export function RevenueTrendChart({ data, timeframe = 'month' }: RevenueTrendCha
               tick={{ fill: '#666', fontSize: 12 }}
               tickMargin={10}
               width={65}
+              domain={[minValue, maxValue]} // Fixed domain to prevent recalculation
             />
             <Tooltip
               formatter={(value: any) => [`₹${value.toLocaleString()}`, '']}
               labelFormatter={(label) => {
-                if (timeframe === 'day') {
-                  return `Hour: ${label}`;
-                } else if (timeframe === 'week') {
-                  return `${label}`;
-                } else if (timeframe === 'month') {
-                  return `Day ${label}`;
-                } else if (timeframe === 'year') {
-                  return `${label}`;
-                }
+                if (timeframe === 'day') return `Hour: ${label}`;
+                if (timeframe === 'week') return `${label}`;
+                if (timeframe === 'month') return `Day ${label}`;
+                if (timeframe === 'year') return `${label}`;
                 return label;
               }}
               contentStyle={{
@@ -101,34 +92,41 @@ export function RevenueTrendChart({ data, timeframe = 'month' }: RevenueTrendCha
               align="right"
               verticalAlign="top"
               wrapperStyle={{ paddingBottom: '10px' }} 
-              formatter={(value) => {
-                return <span style={{ color: value === "Your Pharmacy" ? "#6366f1" : "#65a30d", fontSize: "12px" }}>{value}</span>;
-              }}
+              formatter={(value) => (
+                <span style={{ 
+                  color: value === "Your Pharmacy" ? "#6366f1" : "#65a30d", 
+                  fontSize: "12px" 
+                }}>
+                  {value}
+                </span>
+              )}
             />
             <Line 
               type="monotone" 
               dataKey="value" 
               name="Your Pharmacy" 
-              stroke="#6366f1" // Indigo color for your pharmacy
+              stroke="#6366f1"
               strokeWidth={3}
               dot={{ r: 4, strokeWidth: 2, fill: 'white' }}
               activeDot={{ r: 6, stroke: '#4f46e5', strokeWidth: 2 }}
-              animationDuration={0} // Removed animation to prevent flickering
+              isAnimationActive={false} // Disable animation for better performance
             />
             <Line 
               type="monotone" 
               dataKey="industryAverage" 
               name="Industry Average" 
-              stroke="#65a30d" // Green color for industry average
+              stroke="#65a30d"
               strokeWidth={2}
-              strokeDasharray="5 5" // Dashed line for industry average
+              strokeDasharray="5 5"
               dot={{ r: 3, strokeWidth: 2, fill: 'white' }}
               activeDot={{ r: 5, strokeWidth: 2 }}
-              animationDuration={0} // Removed animation to prevent flickering
+              isAnimationActive={false} // Disable animation for better performance
             />
           </LineChart>
         </ResponsiveContainer>
       </CardContent>
     </Card>
   );
-}
+});
+
+RevenueTrendChart.displayName = 'RevenueTrendChart';

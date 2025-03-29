@@ -23,14 +23,14 @@ export const MainContentWrapper = memo(({
   onError
 }: MainContentWrapperProps) => {
   return (
-    <section id={id} className={`${className} gpu-accelerated transition-opacity duration-300 ease-in-out`}>
+    <section id={id} className={`${className} transition-opacity duration-200 ease-in-out`}>
       <Suspense fallback={
         useFallback ? (
-          <div className="transition-opacity duration-300 ease-in-out">
+          <div className="transition-opacity duration-200 ease-in-out">
             <Fallback />
           </div>
         ) : (
-          <div className="transition-opacity duration-300 ease-in-out">
+          <div className="transition-opacity duration-200 ease-in-out">
             <LoadingPlaceholder 
               height={loadingHeight} 
               message={loadingMessage} 
@@ -48,7 +48,7 @@ export const MainContentWrapper = memo(({
 
 MainContentWrapper.displayName = 'MainContentWrapper';
 
-// Proper React error boundary implementation
+// Simplified Error Boundary implementation
 class ErrorBoundaryWrapper extends Component<{ 
   children: ReactNode; 
   onError?: (error: Error) => void 
@@ -69,12 +69,12 @@ class ErrorBoundaryWrapper extends Component<{
     if (this.props.onError) {
       this.props.onError(error);
     }
-    console.error("Component error:", error, errorInfo);
+    console.error("Component error:", error);
   }
 
   render() {
     if (this.state.hasError) {
-      return <div className="transition-opacity duration-300 ease-in-out">
+      return <div className="transition-opacity duration-200 ease-in-out">
         <Fallback message="Component failed to load" />
       </div>;
     }

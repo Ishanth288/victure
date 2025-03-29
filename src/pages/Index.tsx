@@ -10,30 +10,27 @@ import { useEffect, memo, useRef, useState } from "react";
 import { LazyMotion, domAnimation, m } from "framer-motion";
 import * as Sentry from "@sentry/react";
 import { MainContentWrapper } from "@/components/sections/MainContentWrapper";
-import { setupPageOptimizations } from "@/utils/performanceUtils";
+import { setupPageOptimizations, deferNonCriticalResources } from "@/utils/performanceUtils";
 import { Fallback } from "@/components/ui/fallback";
 
+// Simplified memo wrapper to reduce re-renders
 const Index = memo(() => {
   const feedbackSectionRef = useRef<HTMLElement>(null);
   const [isError, setIsError] = useState(false);
   
   useEffect(() => {
+    // Setup minimal performance optimizations
     const cleanupOptimizations = setupPageOptimizations();
     
-    // Add specific optimizations for the feedback section
-    if (feedbackSectionRef.current) {
-      feedbackSectionRef.current.classList.add('gpu-accelerated', 'optimize-scroll');
-    }
+    // Defer loading of non-critical resources
+    deferNonCriticalResources();
     
     return () => {
       cleanupOptimizations();
-      if (feedbackSectionRef.current) {
-        feedbackSectionRef.current.classList.remove('gpu-accelerated', 'optimize-scroll');
-      }
     };
   }, []);
 
-  // Error handler for Suspense/lazy components
+  // Simplified error handler
   const handleError = (error: Error) => {
     console.error('Component failed to load:', error);
     Sentry.captureException(error);
@@ -56,35 +53,35 @@ const Index = memo(() => {
           className="overflow-hidden" 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.2 }} // Faster transition
         >
           <HeroSection />
           
           <MainContentWrapper 
             useFallback={true} 
             onError={handleError}
-            className="-mt-24" // More aggressive reduction of gap
+            className="-mt-24" 
           >
             <FloatingIconsSection />
           </MainContentWrapper>
           
           <MainContentWrapper 
             onError={handleError}
-            className="-mt-32" // More aggressive reduction of gap
+            className="-mt-32" 
           >
             <ScrollAnimationSection />
           </MainContentWrapper>
           
           <MainContentWrapper 
             onError={handleError}
-            className="-mt-24" // More aggressive reduction of gap
+            className="-mt-24" 
           >
             <ContentSection />
           </MainContentWrapper>
 
           <section 
             id="feedback" 
-            className="py-12 bg-gray-50 gpu-accelerated optimize-layout -mt-16" // Reduced gap to the feedback section
+            className="py-12 bg-gray-50 -mt-16" 
             ref={feedbackSectionRef}
           >
             <div className="container mx-auto px-4">
