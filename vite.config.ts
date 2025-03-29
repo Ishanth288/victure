@@ -22,10 +22,8 @@ export default defineConfig(({ mode }) => ({
       // and should be stored in environment variables
       authToken: process.env.SENTRY_AUTH_TOKEN,
       
-      // Set the correct sourcemaps configuration
-      // Note: sourcemaps is not an object with 'include' property
-      // Instead, we use the proper properties directly
-      sourcemaps: true,
+      // Correct configuration for sourcemaps
+      // The properties should be at the top level, not inside a sourcemaps object
       include: ["./dist"],
       ignore: ["node_modules"],
       urlPrefix: "~/",
