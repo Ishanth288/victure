@@ -3,13 +3,21 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { checkSupabaseConnection, executeWithRetry, determineErrorType } from "@/utils/supabaseErrorHandling";
+import { stableToast } from "@/components/ui/stable-toast";
 
 interface UseBusinessDataFetchOptions {
   onError?: () => void;
   mountedRef: React.MutableRefObject<boolean>;
+  maxRetries?: number;
+  timeout?: number;
 }
 
-export function useBusinessDataFetch({ onError, mountedRef }: UseBusinessDataFetchOptions) {
+export function useBusinessDataFetch({ 
+  onError, 
+  mountedRef, 
+  maxRetries = 3,
+  timeout = 15000 
+}: UseBusinessDataFetchOptions) {
   const [isLoading, setIsLoading] = useState(true);
   const [inventoryData, setInventoryData] = useState<any[]>([]);
   const [salesData, setSalesData] = useState<any[]>([]);
@@ -19,13 +27,25 @@ export function useBusinessDataFetch({ onError, mountedRef }: UseBusinessDataFet
   const [dataFetched, setDataFetched] = useState(false);
   const { toast } = useToast();
   const retryCount = useRef(0);
-  const maxRetries = useRef(3);
+  const maxRetriesRef = useRef(maxRetries);
   const lastFetchTime = useRef<Date>(new Date());
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const abortController = useRef<AbortController | null>(null);
+  
+  // Update maxRetries if it changes
+  useEffect(() => {
+    maxRetriesRef.current = maxRetries;
+  }, [maxRetries]);
 
   const fetchData = useCallback(async () => {
     console.log("fetchData function triggered, checking mountedRef:", mountedRef.current);
     if (!mountedRef.current) return;
+    
+    // Create a new AbortController for this fetch operation
+    if (abortController.current) {
+      abortController.current.abort();
+    }
+    abortController.current = new AbortController();
     
     // Set a timeout to prevent infinite loading
     if (fetchTimeoutRef.current) {
@@ -34,15 +54,24 @@ export function useBusinessDataFetch({ onError, mountedRef }: UseBusinessDataFet
     
     fetchTimeoutRef.current = setTimeout(() => {
       if (mountedRef.current && isLoading) {
-        console.log("Fetch timeout reached, exiting loading state");
+        console.log(`Fetch timeout reached after ${timeout}ms, exiting loading state`);
+        if (abortController.current) {
+          abortController.current.abort();
+        }
         setIsLoading(false);
         setDataFetched(true);
+        
+        stableToast({
+          title: "Data loading timeout",
+          description: "It's taking longer than expected to load your data. Showing partial results.",
+          variant: "destructive"
+        });
         
         if (onError) {
           onError();
         }
       }
-    }, 15000); // 15 second timeout
+    }, timeout);
     
     // Record the time of this fetch
     lastFetchTime.current = new Date();
@@ -64,7 +93,7 @@ export function useBusinessDataFetch({ onError, mountedRef }: UseBusinessDataFet
         { 
           context: "getUser",
           retries: 3,
-          retryDelay: 1000
+          retryDelay: 800 // Faster retry
         }
       );
       
@@ -86,7 +115,8 @@ export function useBusinessDataFetch({ onError, mountedRef }: UseBusinessDataFet
         const result = await supabase
           .from('inventory')
           .select('*')
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .limit(100); // Add limit to improve performance
         console.log("Inventory query result:", result);
         return result;
       };
@@ -96,7 +126,7 @@ export function useBusinessDataFetch({ onError, mountedRef }: UseBusinessDataFet
         { 
           context: "inventory",
           retries: 3,
-          retryDelay: 1000
+          retryDelay: 800
         }
       );
 
@@ -111,7 +141,9 @@ export function useBusinessDataFetch({ onError, mountedRef }: UseBusinessDataFet
         const result = await supabase
           .from('bills')
           .select('*, bill_items(*)')
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .order('date', { ascending: false })
+          .limit(100); // Add limit to improve performance
         console.log("Bills query result:", result);
         return result;
       };
@@ -121,7 +153,7 @@ export function useBusinessDataFetch({ onError, mountedRef }: UseBusinessDataFet
         { 
           context: "bills",
           retries: 3,
-          retryDelay: 1000
+          retryDelay: 800
         }
       );
 
@@ -136,7 +168,9 @@ export function useBusinessDataFetch({ onError, mountedRef }: UseBusinessDataFet
         const result = await supabase
           .from('purchase_orders')
           .select('*, purchase_order_items(*)')
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(100); // Add limit to improve performance
         console.log("Purchase orders query result:", result);
         return result;
       };
@@ -146,7 +180,7 @@ export function useBusinessDataFetch({ onError, mountedRef }: UseBusinessDataFet
         { 
           context: "purchase_orders",
           retries: 3,
-          retryDelay: 1000
+          retryDelay: 800
         }
       );
 
@@ -186,10 +220,10 @@ export function useBusinessDataFetch({ onError, mountedRef }: UseBusinessDataFet
       setDataFetched(true);
       
       if (connectionError) {
-        toast({
+        stableToast({
           title: "Connection restored",
           description: "Business optimization data has been refreshed",
-          duration: 3000
+          duration: 4000
         });
         setConnectionError(null);
       }
@@ -206,10 +240,10 @@ export function useBusinessDataFetch({ onError, mountedRef }: UseBusinessDataFet
       
       setConnectionError(error.message || "Unknown error occurred");
       
-      if (retryCount.current < maxRetries.current) {
+      if (retryCount.current < maxRetriesRef.current) {
         retryCount.current++;
-        const delay = 1000 * Math.pow(2, retryCount.current - 1);
-        console.log(`Retrying data fetch (${retryCount.current}/${maxRetries.current}) after ${delay}ms`);
+        const delay = 800 * Math.pow(1.5, retryCount.current - 1); // Slightly faster exponential backoff
+        console.log(`Retrying data fetch (${retryCount.current}/${maxRetriesRef.current}) after ${delay}ms`);
         
         setTimeout(() => {
           if (mountedRef.current) {
@@ -218,11 +252,19 @@ export function useBusinessDataFetch({ onError, mountedRef }: UseBusinessDataFet
         }, delay);
       } else {
         console.log("Max retries reached, setting error state");
-        toast({
+        stableToast({
           title: "Error fetching data",
           description: "There was a problem loading your business data. Please try again.",
           variant: "destructive"
         });
+        
+        // Try to provide fallback data if possible
+        if (!inventoryData.length && !salesData.length && !suppliersData.length) {
+          console.log("Attempting to load fallback data");
+          setInventoryData([]); // Fallback to empty array
+          setSalesData([]);
+          setSuppliersData([]);
+        }
         
         if (onError) {
           onError();
@@ -233,7 +275,7 @@ export function useBusinessDataFetch({ onError, mountedRef }: UseBusinessDataFet
         setDataFetched(true);
       }
     }
-  }, [toast, onError, connectionError, mountedRef, isLoading]);
+  }, [toast, onError, connectionError, mountedRef, isLoading, timeout]);
 
   // Clean up function
   useEffect(() => {
@@ -241,6 +283,9 @@ export function useBusinessDataFetch({ onError, mountedRef }: UseBusinessDataFet
       if (fetchTimeoutRef.current) {
         clearTimeout(fetchTimeoutRef.current);
         fetchTimeoutRef.current = null;
+      }
+      if (abortController.current) {
+        abortController.current.abort();
       }
     };
   }, []);

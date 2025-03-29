@@ -23,7 +23,7 @@ export default function BusinessOptimization() {
     console.error("BusinessOptimization page error:", error);
     setHasError(true);
     
-    // Use stableToast with 4 second timeout (default)
+    // Show error toast with 4 second auto-dismiss
     stableToast({
       title: "Something went wrong",
       description: "We encountered an error loading the business data. Please try refreshing.",

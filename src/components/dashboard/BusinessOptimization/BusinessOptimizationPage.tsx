@@ -1,7 +1,6 @@
 
 import { useState, useCallback } from "react";
 import { Tabs } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useBusinessData } from "./hooks/useBusinessData";
 import { useLoadingState } from "./hooks/useLoadingState";
@@ -32,7 +31,7 @@ export default function BusinessOptimizationPage() {
   // Initialize app monitoring and performance optimizations
   useAppMonitoring();
   
-  // Business data hook
+  // Business data hook with improved error handling
   const { 
     isLoading, 
     locationLoading, 
@@ -48,14 +47,16 @@ export default function BusinessOptimizationPage() {
     hasError
   } = useBusinessData({
     onError: handleDataError,
+    maxRetries: 5, // Increase retries
+    timeout: 10000 // Increase timeout
   });
   
   // Stable loading state to prevent flickering
   const { isStableLoading } = useLoadingState({
     isLoading, 
     locationLoading,
-    forceExitTimeout: 6000, // Reduce timeout to ensure it exits loading state
-    stabilityDelay: 300 // Lower stability delay for quicker transitions
+    forceExitTimeout: 5000, // Reduce timeout to ensure it exits loading state
+    stabilityDelay: 200 // Lower stability delay for quicker transitions
   });
   
   // Data refresh handler

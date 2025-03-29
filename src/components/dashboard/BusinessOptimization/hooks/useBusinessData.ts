@@ -6,6 +6,8 @@ import { useRealtimeUpdates } from "./useRealtimeUpdates";
 
 interface UseBusinessDataOptions {
   onError?: () => void;
+  maxRetries?: number;
+  timeout?: number;
 }
 
 export function useBusinessData(options?: UseBusinessDataOptions) {
@@ -25,7 +27,10 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     refreshData: refreshLocationData, 
     isLoading: locationLoading,
     error: locationError
-  } = useLocationBasedAnalytics();
+  } = useLocationBasedAnalytics({
+    maxRetries: options?.maxRetries,
+    timeout: options?.timeout
+  });
 
   // Get business data
   const {
@@ -40,7 +45,9 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     fetchData
   } = useBusinessDataFetch({
     onError: options?.onError || handleDataError,
-    mountedRef
+    mountedRef,
+    maxRetries: options?.maxRetries,
+    timeout: options?.timeout
   });
 
   // Set up realtime updates

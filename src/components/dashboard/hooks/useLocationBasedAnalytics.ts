@@ -22,6 +22,11 @@ interface PharmacyLocation {
   city: string;
 }
 
+export interface UseLocationBasedAnalyticsOptions {
+  maxRetries?: number;
+  timeout?: number;
+}
+
 export function useLocationBasedAnalytics() {
   const [isLoading, setIsLoading] = useState(true);
   const [locationData, setLocationData] = useState<LocationAnalyticsData | null>(null);

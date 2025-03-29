@@ -11,8 +11,8 @@ interface UseLoadingStateOptions {
 export function useLoadingState({
   isLoading,
   locationLoading,
-  forceExitTimeout = 6000, // Reduced from 8000 to 6000ms
-  stabilityDelay = 300 // Reduced from 500 to 300ms
+  forceExitTimeout = 5000, // Reduced from 6000 to 5000ms
+  stabilityDelay = 200 // Reduced from 300 to 200ms
 }: UseLoadingStateOptions) {
   const [isStableLoading, setIsStableLoading] = useState(true);
   const stabilityTimerRef = useRef<NodeJS.Timeout | null>(null);
