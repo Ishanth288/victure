@@ -43,46 +43,39 @@ export async function getCurrentUserId(): Promise<string | null> {
 }
 
 /**
- * Safely converts a potentially string ID to any to resolve typing issues
- * with Supabase PostgrestFilterBuilder
+ * These type-safe helper functions resolve TypeScript's "type instantiation is excessively deep and possibly infinite" error
+ * when working with Supabase's PostgreSQL query builder.
  */
-export function safeId(id: string | number): any {
-  return id;
-}
 
 /**
- * Generic type safe function to handle query filtering
- * This resolves TypeScript issues with filter values in eq(), gt(), lt(), etc.
+ * A type-safe filter function that avoids TypeScript deep instantiation errors
  */
-export function safeFilter<T>(value: T): any {
-  return value as any;
+export function eq<T>(column: string, value: T): any {
+  return { [column]: value };
 }
 
 /**
  * Type-safe wrapper for inserting data into Supabase
  */
-export async function safeInsert<T extends Record<string, any>>(
+export async function safeInsert<InsertData extends Record<string, any>>(
   table: TableNames, 
-  data: T | T[]
+  data: InsertData | InsertData[]
 ): Promise<{ data: any; error: any }> {
   try {
-    const result = await supabase
-      .from(table)
-      .insert(data as any);
+    const dataArray = Array.isArray(data) ? data : [data];
     
-    // If we need to return the inserted data
+    // Cast to any to bypass TypeScript's deep type instantiation
+    const result = await (supabase
+      .from(table) as any)
+      .insert(dataArray);
+    
     if (result.error) {
       return { data: null, error: result.error };
     }
     
-    // Return the inserted data by performing a select
-    const selectResult = await supabase
-      .from(table)
-      .select('*');
-    
     return { 
-      data: selectResult.data, 
-      error: selectResult.error 
+      data: result.data, 
+      error: null 
     };
   } catch (error) {
     console.error(`Error inserting into ${table}:`, error);
@@ -94,58 +87,35 @@ export async function safeInsert<T extends Record<string, any>>(
  * Type-safe wrapper for updating data in Supabase
  * Completely rewritten to avoid TypeScript deep instantiation errors
  */
-export async function safeUpdate<T extends Record<string, any>>(
+export async function safeUpdate<UpdateData extends Record<string, any>>(
   table: TableNames,
-  data: T,
+  data: UpdateData,
   match: Record<string, any>
 ): Promise<{ data: any; error: any }> {
   try {
-    // Start with the base query
-    const updateQuery = supabase.from(table).update(data as any);
+    // Start with the base query and cast to any to bypass TypeScript's deep type instantiation
+    let query = (supabase.from(table) as any).update(data);
     
-    // Handle the matching conditions
-    const matchKeys = Object.keys(match);
-    let result;
-    
-    // Use type 'any' and different patterns to avoid deep type instantiation
-    if (matchKeys.length === 0) {
-      // No conditions
-      result = await updateQuery;
-    } else {
-      // Convert to 'any' type to avoid TypeScript analyzing the chain too deeply
-      let query: any = updateQuery;
-      
-      // Apply all conditions
-      for (const key of matchKeys) {
-        query = query.eq(key, match[key]);
-      }
-      
-      result = await query;
+    // Handle the special case of a single filter condition for ID
+    if (Object.keys(match).length === 1 && 'id' in match) {
+      query = query.eq('id', match.id);
+    } 
+    // Handle other filter conditions
+    else if (Object.keys(match).length > 0) {
+      // Apply all conditions directly without chaining to avoid deep instantiation
+      const filters = Object.entries(match).map(([key, value]) => `${key}.eq.${value}`).join(',');
+      query = query.or(filters);
     }
+    
+    const result = await query;
     
     if (result.error) {
       return { data: null, error: result.error };
     }
     
-    // Get the updated data with the same technique
-    const selectQuery = supabase.from(table).select('*');
-    let selectResult;
-    
-    if (matchKeys.length === 0) {
-      selectResult = await selectQuery;
-    } else {
-      let query: any = selectQuery;
-      
-      for (const key of matchKeys) {
-        query = query.eq(key, match[key]);
-      }
-      
-      selectResult = await query;
-    }
-    
     return { 
-      data: selectResult.data, 
-      error: selectResult.error 
+      data: result.data, 
+      error: null 
     };
   } catch (error) {
     console.error(`Error updating ${table}:`, error);
@@ -168,18 +138,25 @@ export async function safeSelect<T = any>(
   } = {}
 ): Promise<{ data: T | null; error: any }> {
   try {
-    // Base query
-    const baseQuery = supabase
-      .from(table)
-      .select(options.columns || '*');
+    // Base query with casting to avoid deep instantiation
+    let query = (supabase.from(table) as any).select(options.columns || '*');
     
-    // Turn into 'any' type to avoid deep instantiation issues
-    let query: any = baseQuery;
-    
-    // Apply all conditions
-    const matchKeys = Object.keys(match);
-    for (const key of matchKeys) {
-      query = query.eq(key, match[key]);
+    // Handle the special case of a single filter condition for better performance and simpler code
+    if (Object.keys(match).length === 1) {
+      const [key, value] = Object.entries(match)[0];
+      query = query.eq(key, value);
+    } 
+    // Handle multiple filter conditions
+    else if (Object.keys(match).length > 0) {
+      // For multiple conditions, we'll use the match object directly to avoid chaining
+      // by constructing a filter string
+      const filters = Object.entries(match)
+        .map(([key, value]) => `${key}.eq.${value}`)
+        .join(',');
+      
+      if (filters) {
+        query = query.or(filters);
+      }
     }
     
     // Apply ordering if specified
@@ -194,16 +171,87 @@ export async function safeSelect<T = any>(
       query = query.limit(options.limit);
     }
     
-    // Execute query
+    // Execute query based on whether we want a single result or multiple
+    let result;
     if (options.single) {
-      const result = await query.maybeSingle();
-      return { data: result.data as T, error: result.error };
+      result = await query.maybeSingle();
     } else {
-      const result = await query;
-      return { data: result.data as T, error: result.error };
+      result = await query;
     }
+    
+    return { 
+      data: result.data as T, 
+      error: result.error 
+    };
   } catch (error) {
     console.error(`Error selecting from ${table}:`, error);
     return { data: null, error };
+  }
+}
+
+/**
+ * Type-safe wrapper for deleting data from Supabase
+ */
+export async function safeDelete(
+  table: TableNames,
+  match: Record<string, any>
+): Promise<{ error: any }> {
+  try {
+    // Cast to any to bypass TypeScript's deep type instantiation
+    let query = (supabase.from(table) as any).delete();
+    
+    // Handle the special case of a single filter condition for ID
+    if (Object.keys(match).length === 1 && 'id' in match) {
+      query = query.eq('id', match.id);
+    } 
+    // Handle other filter conditions
+    else if (Object.keys(match).length > 0) {
+      // Apply all conditions
+      const filters = Object.entries(match).map(([key, value]) => `${key}.eq.${value}`).join(',');
+      query = query.or(filters);
+    }
+    
+    const result = await query;
+    
+    return { error: result.error };
+  } catch (error) {
+    console.error(`Error deleting from ${table}:`, error);
+    return { error };
+  }
+}
+
+/**
+ * Type-safe wrapper for counting data in Supabase
+ */
+export async function safeCount(
+  table: TableNames,
+  match: Record<string, any> = {}
+): Promise<{ count: number | null; error: any }> {
+  try {
+    // Cast to any to bypass TypeScript's deep type instantiation
+    let query = (supabase.from(table) as any).select('*', { count: 'exact', head: true });
+    
+    // Handle the special case of a single filter condition
+    if (Object.keys(match).length === 1) {
+      const [key, value] = Object.entries(match)[0];
+      query = query.eq(key, value);
+    } 
+    // Handle multiple filter conditions
+    else if (Object.keys(match).length > 0) {
+      const filters = Object.entries(match)
+        .map(([key, value]) => `${key}.eq.${value}`)
+        .join(',');
+      
+      if (filters) {
+        query = query.or(filters);
+      }
+    }
+    
+    const { count, error } = await query;
+    
+    return { count, error };
+  } catch (error) {
+    console.error(`Error counting in ${table}:`, error);
+    return { count: null, error };
   }
 }

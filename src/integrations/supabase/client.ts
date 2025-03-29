@@ -20,25 +20,27 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     headers: {
       'X-Client-Info': 'victure-pharmacy-web',
     },
-  },
-  // Adding a backup URL to handle CORS issues
-  fetch: (url, options) => {
-    // Log fetch attempts in development to help debug connection issues
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Supabase fetch:', url);
-    }
-    return fetch(url, {
-      ...options,
-      // Add cache control headers to prevent caching issues
-      headers: {
-        ...options?.headers,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
-    });
   }
 });
+
+// Add custom fetch options as a wrapper function to handle CORS issues
+export const fetchWithOptions = async (url: string, options?: RequestInit) => {
+  // Log fetch attempts in development to help debug connection issues
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Supabase fetch:', url);
+  }
+  
+  return fetch(url, {
+    ...options,
+    // Add cache control headers to prevent caching issues
+    headers: {
+      ...options?.headers,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  });
+};
 
 // Export security-enhanced version of auth state change
 export const onAuthStateChange = (callback: (session: any) => void) => {
@@ -64,7 +66,8 @@ export const handleQueryResult = <T>(result: T | { error: true }) => {
 // Add a connection status check for debugging
 export const checkSupabaseConnection = async () => {
   try {
-    const { error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
+    // Use the type-safe approach
+    const { data, error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
     if (error) {
       console.error('Supabase connection test failed:', error);
       return false;

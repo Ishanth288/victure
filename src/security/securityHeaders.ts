@@ -38,9 +38,9 @@ export const securityHeaders = {
   // Specify permitted capabilities for your application
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
   
-  // Allow requests from all origins
+  // Allow requests from all origins for development and preview environments
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, PATCH, DELETE',
-  'Access-Control-Allow-Headers': 'X-Requested-With,content-type,Authorization',
+  'Access-Control-Allow-Headers': 'X-Requested-With,content-type,Authorization,X-Client-Info',
   'Access-Control-Allow-Credentials': 'true',
 };
