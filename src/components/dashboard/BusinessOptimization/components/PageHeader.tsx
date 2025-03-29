@@ -1,5 +1,5 @@
 
-import { RefreshCcw, Home, MapPin, Database } from "lucide-react";
+import { RefreshCcw, Home, MapPin, Database, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,9 +10,16 @@ interface PageHeaderProps {
   onRefresh: () => void;
   lastRefreshed?: Date;
   dataSources?: string[];
+  hasError?: boolean;
 }
 
-export function PageHeader({ pharmacyLocation, onRefresh, lastRefreshed, dataSources }: PageHeaderProps) {
+export function PageHeader({ 
+  pharmacyLocation, 
+  onRefresh, 
+  lastRefreshed, 
+  dataSources,
+  hasError 
+}: PageHeaderProps) {
   const formatRefreshTime = (date?: Date) => {
     if (!date) return "Never";
     
@@ -44,6 +51,14 @@ export function PageHeader({ pharmacyLocation, onRefresh, lastRefreshed, dataSou
             <Database className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">
               Data sources: {dataSources.join(', ')}
+            </span>
+          </div>
+        )}
+        {hasError && (
+          <div className="flex items-center gap-1 mt-1 text-amber-600">
+            <AlertTriangle className="h-3 w-3" />
+            <span className="text-xs">
+              Using offline data - online sources currently unavailable
             </span>
           </div>
         )}

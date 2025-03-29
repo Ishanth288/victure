@@ -17,7 +17,7 @@ export default function BusinessOptimizationPage() {
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const { toast } = useToast();
   const renderAttempts = useRef(0);
-  const maxRenderAttempts = 5;
+  const maxRenderAttempts = 3; // Reduced from 5 to avoid excessive retries
   
   // Add console logs to debug the component lifecycle
   console.log("Business Optimization Page rendering - attempt:", renderAttempts.current);
@@ -69,8 +69,8 @@ export default function BusinessOptimizationPage() {
       if (inventoryData?.length || salesData?.length || suppliersData?.length || locationData) {
         // We have some data, so let's show what we have
         toast({
-          title: "Partial data loaded",
-          description: "Some data might be missing. Please refresh to try again.",
+          title: "Using available data",
+          description: "Some external data sources couldn't be reached. Using local data.",
           duration: 5000
         });
       } else {
@@ -78,7 +78,7 @@ export default function BusinessOptimizationPage() {
         setError(true);
         toast({
           title: "Data loading error",
-          description: "Failed to load business optimization data after multiple attempts.",
+          description: "Failed to load business optimization data. Using offline mode.",
           variant: "destructive"
         });
       }
@@ -123,8 +123,18 @@ export default function BusinessOptimizationPage() {
     );
   }
 
-  // Render error state
-  if (error || hasError) {
+  // Check if we have data - important: always prioritize showing data over error state
+  const hasData = (
+    (inventoryData && inventoryData.length > 0) || 
+    (salesData && salesData.length > 0) || 
+    (suppliersData && suppliersData.length > 0) ||
+    (locationData && Object.keys(locationData || {}).length > 0)
+  );
+  
+  console.log("Has data:", hasData);
+
+  // Only show error state if we have no data at all
+  if ((error || hasError) && !hasData) {
     console.log("Rendering error state", { error, hasError, errorType, connectionError });
     return (
       <DashboardLayout>
@@ -136,16 +146,6 @@ export default function BusinessOptimizationPage() {
       </DashboardLayout>
     );
   }
-
-  // Check if we have data
-  const hasData = (
-    (inventoryData && inventoryData.length > 0) || 
-    (salesData && salesData.length > 0) || 
-    (suppliersData && suppliersData.length > 0) ||
-    (locationData && Object.keys(locationData || {}).length > 0)
-  );
-  
-  console.log("Has data:", hasData);
 
   // Render empty state if no data is available
   if (!hasData) {
@@ -165,7 +165,8 @@ export default function BusinessOptimizationPage() {
           pharmacyLocation={pharmacyLocation} 
           onRefresh={handleRefreshAll}
           lastRefreshed={lastRefreshed}
-          dataSources={locationData?.dataSources} 
+          dataSources={locationData?.dataSources}
+          hasError={error || hasError}
         />
         
         <Tabs defaultValue="forecast" onValueChange={setActiveTab}>
