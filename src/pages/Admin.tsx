@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -43,8 +42,6 @@ export default function Admin() {
         return;
       }
 
-      // In a real app, you'd check if the user has admin privileges
-      // This is just a placeholder for now
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')
@@ -67,23 +64,18 @@ export default function Admin() {
   const fetchAdminStats = async () => {
     setIsLoading(true);
     try {
-      // Get user count
       const { count: userCount, error: userError } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true });
 
-      // Get product count
       const { count: productCount, error: productError } = await supabase
         .from('inventory')
         .select('*', { count: 'exact', head: true });
 
-      // Get feedback count
       const { count: feedbackCount, error: feedbackError } = await supabase
         .from('feedback')
         .select('*', { count: 'exact', head: true });
       
-      // Active users (logged in within last 30 days)
-      // This is a placeholder - in a real system you'd track login activity
       const activeUsers = userCount ? Math.round(userCount * 0.7) : 0;
 
       setStats({
@@ -147,25 +139,25 @@ export default function Admin() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatsCard 
                 title="Total Users" 
-                value={stats.total_users.toString()} 
+                value={stats.total_users} 
                 icon={<Users className="h-5 w-5" />} 
                 loading={isLoading}
               />
               <StatsCard 
                 title="Active Users" 
-                value={stats.active_users.toString()} 
+                value={stats.active_users} 
                 icon={<UserCheck className="h-5 w-5" />} 
                 loading={isLoading}
               />
               <StatsCard 
                 title="Total Products" 
-                value={stats.total_products.toString()} 
+                value={stats.total_products} 
                 icon={<ShoppingBag className="h-5 w-5" />} 
                 loading={isLoading}
               />
               <StatsCard 
                 title="Feedback Items" 
-                value={stats.feedback_count.toString()} 
+                value={stats.feedback_count} 
                 icon={<AlertCircle className="h-5 w-5" />} 
                 loading={isLoading}
               />

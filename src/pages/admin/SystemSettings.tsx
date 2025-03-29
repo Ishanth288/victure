@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Settings, AlertTriangle } from "lucide-react";
-import { typecastQuery } from "@/utils/safeSupabaseQueries";
+import { typecastQuery, safeQueryData } from "@/utils/safeSupabaseQueries";
 import { MaintenanceTab } from "@/components/admin/settings/MaintenanceTab";
 import { SecurityTab } from "@/components/admin/settings/SecurityTab";
 import { StatusMessage } from "@/components/admin/settings/StatusMessage";
@@ -56,12 +56,12 @@ export default function SystemSettings() {
   const fetchSystemSettings = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await typecastQuery('system_settings')
+      const settingsQuery = typecastQuery('system_settings')
         .select('*')
         .eq('id', 1)
         .single();
 
-      if (error) throw error;
+      const data = await safeQueryData<SystemSettingsData | null>(settingsQuery, null);
 
       if (data) {
         setMaintenanceMode(data.maintenance_mode || false);
@@ -90,20 +90,22 @@ export default function SystemSettings() {
     setStatusMessage({ type: null, message: null });
 
     try {
+      const settingsData = {
+        id: 1, // Using a single row for system settings
+        maintenance_mode: maintenanceMode,
+        maintenance_message: maintenanceMessage,
+        maintenance_start_date: maintenanceStartDate?.toISOString(),
+        maintenance_end_date: maintenanceEndDate?.toISOString(),
+        max_login_attempts: maxLoginAttempts,
+        session_timeout: sessionTimeout,
+        enable_two_factor: enableTwoFactor,
+        ip_restriction: ipRestriction,
+        allowed_ips: allowedIPs,
+        updated_at: new Date().toISOString()
+      };
+
       const { error } = await typecastQuery('system_settings')
-        .upsert({
-          id: 1, // Using a single row for system settings
-          maintenance_mode: maintenanceMode,
-          maintenance_message: maintenanceMessage,
-          maintenance_start_date: maintenanceStartDate?.toISOString(),
-          maintenance_end_date: maintenanceEndDate?.toISOString(),
-          max_login_attempts: maxLoginAttempts,
-          session_timeout: sessionTimeout,
-          enable_two_factor: enableTwoFactor,
-          ip_restriction: ipRestriction,
-          allowed_ips: allowedIPs,
-          updated_at: new Date().toISOString()
-        });
+        .upsert(settingsData);
 
       if (error) throw error;
 
