@@ -6,15 +6,16 @@ import { FloatingIconsSection } from "@/components/sections/FloatingIconsSection
 import { ScrollAnimationSection } from "@/components/sections/ScrollAnimationSection";
 import { ContentSection } from "@/components/sections/ContentSection";
 import { Suspense, lazy, useEffect, memo } from "react";
-import { LazyMotion, domAnimation, m } from "framer-motion";
+import { LazyMotion, domAnimation } from "framer-motion";
 import * as Sentry from "@sentry/react";
+import { Fallback } from "@/components/ui/fallback";
 
 const isHoverSupported = () => {
-  return window.matchMedia('(hover: hover)').matches;
+  return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(hover: hover)').matches;
 };
 
 const shouldReduceAnimation = () => {
-  return window.innerWidth < 768 || !isHoverSupported();
+  return typeof window !== 'undefined' && (window.innerWidth < 768 || !isHoverSupported());
 };
 
 const LoadingPlaceholder = memo(() => (
@@ -30,33 +31,35 @@ LoadingPlaceholder.displayName = 'LoadingPlaceholder';
 
 const Index = memo(() => {
   useEffect(() => {
-    document.addEventListener('scroll', () => {}, { passive: true });
+    if (typeof document !== 'undefined') {
+      document.addEventListener('scroll', () => {}, { passive: true });
 
-    if (!shouldReduceAnimation()) {
-      const linkEl = document.createElement('link');
-      linkEl.rel = 'preconnect';
-      linkEl.href = 'https://prod.spline.design';
-      document.head.appendChild(linkEl);
+      if (!shouldReduceAnimation()) {
+        const linkEl = document.createElement('link');
+        linkEl.rel = 'preconnect';
+        linkEl.href = 'https://prod.spline.design';
+        document.head.appendChild(linkEl);
 
-      const preloadLinks = [
-        { href: '/og-image.png', as: 'image' }
-      ];
-      
-      preloadLinks.forEach(link => {
-        const preloadLink = document.createElement('link');
-        preloadLink.rel = 'preload';
-        preloadLink.href = link.href;
-        preloadLink.as = link.as;
-        document.head.appendChild(preloadLink);
-      });
+        const preloadLinks = [
+          { href: '/og-image.png', as: 'image' }
+        ];
+        
+        preloadLinks.forEach(link => {
+          const preloadLink = document.createElement('link');
+          preloadLink.rel = 'preload';
+          preloadLink.href = link.href;
+          preloadLink.as = link.as;
+          document.head.appendChild(preloadLink);
+        });
 
-      document.documentElement.classList.add('gpu-accelerated');
+        document.documentElement.classList.add('gpu-accelerated');
+      }
+
+      return () => {
+        document.removeEventListener('scroll', () => {});
+        document.documentElement.classList.remove('gpu-accelerated');
+      };
     }
-
-    return () => {
-      document.removeEventListener('scroll', () => {});
-      document.documentElement.classList.remove('gpu-accelerated');
-    };
   }, []);
 
   return (
@@ -66,7 +69,7 @@ const Index = memo(() => {
         <main className="overflow-hidden content-visibility-auto">
           <HeroSection />
           
-          <Suspense fallback={null}>
+          <Suspense fallback={<Fallback />}>
             <FloatingIconsSection />
           </Suspense>
           

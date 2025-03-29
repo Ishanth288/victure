@@ -11,10 +11,14 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    headers: securityHeaders
+    headers: securityHeaders,
+    cors: true
   },
   plugins: [
-    react(),
+    react({
+      jsxImportSource: "react",
+      plugins: [["@swc/plugin-emotion", {}]]
+    }),
     mode === 'development' &&
     componentTagger(),
     sentryVitePlugin({
@@ -36,5 +40,22 @@ export default defineConfig(({ mode }) => ({
   // Generate source maps in production
   build: {
     sourcemap: true,
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress certain warnings
+        if (warning.code === 'MODULE_LEVEL_DIRECTIVE' || 
+            warning.message.includes('The "this" keyword is equivalent to "undefined"')) {
+          return;
+        }
+        warn(warning);
+      }
+    }
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      define: {
+        global: 'globalThis'
+      }
+    }
   }
 }));

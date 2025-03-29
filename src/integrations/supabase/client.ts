@@ -21,19 +21,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
       'X-Client-Info': 'victure-pharmacy-web',
     },
   },
-  // Safer defaults for fetch
-  fetch: (url, options) => {
-    const updatedOptions = {
-      ...options,
-      credentials: 'same-origin', // Include cookies for same-origin requests
-      cache: 'no-store', // Prevent caching of sensitive data
-      headers: {
-        ...options?.headers,
-        'X-Requested-With': 'XMLHttpRequest', // helps prevent CSRF
-      }
-    };
-    return fetch(url, updatedOptions);
-  }
 });
 
 // Export security-enhanced version of auth state change
@@ -46,4 +33,13 @@ export const onAuthStateChange = (callback: (session: any) => void) => {
   });
   
   return data;
+};
+
+// Helper method to safely handle Supabase query results
+export const handleQueryResult = <T>(result: T | { error: true }) => {
+  if (result && typeof result === 'object' && 'error' in result && result.error === true) {
+    console.error("Supabase query error:", result);
+    return null;
+  }
+  return result as T;
 };

@@ -12,7 +12,6 @@ Sentry.init({
     new BrowserTracing({
       tracePropagationTargets: ["localhost", /^\//],
     }),
-    new Sentry.BrowserProfilingIntegration(),
     new Sentry.Replay(),
   ],
   
@@ -27,7 +26,6 @@ Sentry.init({
   
   // Configure error fingerprinting
   beforeSend(event) {
-    // Remove debugging console.log
     return event;
   },
   
@@ -54,8 +52,12 @@ const FallbackComponent = () => (
   </div>
 );
 
-createRoot(document.getElementById("root")!).render(
-  <Sentry.ErrorBoundary fallback={<FallbackComponent />}>
-    <App />
-  </Sentry.ErrorBoundary>
-);
+const container = document.getElementById('root');
+if (container) {
+  const root = createRoot(container);
+  root.render(
+    <Sentry.ErrorBoundary fallback={<FallbackComponent />}>
+      <App />
+    </Sentry.ErrorBoundary>
+  );
+}
