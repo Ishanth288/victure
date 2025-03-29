@@ -29,6 +29,7 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
   const mountedRef = useRef(true);
   const [dataFetched, setDataFetched] = useState(false);
   const lastFetchTime = useRef<Date>(new Date());
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Critical fix: Add error property to properly handle location loading errors
   const { 
@@ -55,6 +56,23 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
   const fetchData = useCallback(async () => {
     console.log("fetchData function triggered, checking mountedRef:", mountedRef.current);
     if (!mountedRef.current) return;
+    
+    // Set a timeout to prevent infinite loading
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+    
+    fetchTimeoutRef.current = setTimeout(() => {
+      if (mountedRef.current && isLoading) {
+        console.log("Fetch timeout reached, exiting loading state");
+        setIsLoading(false);
+        setDataFetched(true);
+        
+        if (options?.onError) {
+          options.onError();
+        }
+      }
+    }, 15000); // 15 second timeout
     
     // Record the time of this fetch
     lastFetchTime.current = new Date();
@@ -171,6 +189,12 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
       if (!mountedRef.current) {
         console.log("Component unmounted, stopping state updates");
         return;
+      }
+      
+      // Clear fetch timeout since we've successfully fetched data
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+        fetchTimeoutRef.current = null;
       }
       
       console.log("Setting inventory data:", inventoryResult.data?.length || 0, "items");
@@ -354,6 +378,12 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     return () => {
       console.log("Cleanup function triggered in useBusinessData");
       mountedRef.current = false;
+      
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+        fetchTimeoutRef.current = null;
+      }
+      
       if (cleanup) cleanup.then(unsub => unsub && unsub());
       window.removeEventListener('online', handleOnline);
     };

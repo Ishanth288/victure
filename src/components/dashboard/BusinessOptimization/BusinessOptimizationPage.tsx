@@ -21,6 +21,7 @@ export default function BusinessOptimizationPage() {
   const maxRenderAttempts = 3;
   const stabilityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const forceExitTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const handleDataError = useCallback(() => {
     console.log("Business data error callback triggered");
@@ -59,25 +60,38 @@ export default function BusinessOptimizationPage() {
       
       if (loadingTimerRef.current) {
         clearTimeout(loadingTimerRef.current);
+        loadingTimerRef.current = null;
+      }
+      
+      if (forceExitTimerRef.current) {
+        clearTimeout(forceExitTimerRef.current);
       }
       
       // Set a timeout to force exit loading state after a maximum time
       // This prevents infinite loading
-      loadingTimerRef.current = setTimeout(() => {
+      forceExitTimerRef.current = setTimeout(() => {
+        console.log("Force exiting loading state after timeout");
         setIsStableLoading(false);
-      }, 5000); // Max 5 seconds of loading before forcing exit
+      }, 8000); // Max 8 seconds of loading before forcing exit
     } 
     // When loading ends, wait a bit before showing content to prevent flickering
     else if (isStableLoading) {
       // Clear force exit timer if it exists
+      if (forceExitTimerRef.current) {
+        clearTimeout(forceExitTimerRef.current);
+        forceExitTimerRef.current = null;
+      }
+      
       if (loadingTimerRef.current) {
         clearTimeout(loadingTimerRef.current);
         loadingTimerRef.current = null;
       }
       
+      // Allow a little more time for transitions
       stabilityTimerRef.current = setTimeout(() => {
+        console.log("Loading completed, transitioning to content display");
         setIsStableLoading(false);
-      }, 300); // 300ms delay before transitioning from loading to content
+      }, 500); // 500ms delay before transitioning from loading to content
     }
 
     return () => {
@@ -86,6 +100,9 @@ export default function BusinessOptimizationPage() {
       }
       if (loadingTimerRef.current) {
         clearTimeout(loadingTimerRef.current);
+      }
+      if (forceExitTimerRef.current) {
+        clearTimeout(forceExitTimerRef.current);
       }
     };
   }, [isLoading, locationLoading, isStableLoading]);

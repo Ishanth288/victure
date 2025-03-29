@@ -101,6 +101,8 @@ export const ErrorState = memo(({
   );
 });
 
+ErrorState.displayName = 'ErrorState';
+
 export const EmptyState = memo(() => {
   return (
     <div className="flex flex-col items-center justify-center h-96">
@@ -117,3 +119,5 @@ export const EmptyState = memo(() => {
     </div>
   );
 });
+
+EmptyState.displayName = 'EmptyState';
