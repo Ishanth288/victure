@@ -53,7 +53,7 @@ export const sidebarLinksData = [
   },
   {
     label: "Terms & Conditions",
-    href: "/legal/terms-of-service",
+    href: "/legal/terms",
     icon: <FileTerminal className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
   },
   {
@@ -83,7 +83,7 @@ export function SidebarLinks({ startIndex, endIndex, onClick }: SidebarLinksProp
         <SidebarLink 
           key={idx} 
           link={link} 
-          className={link.href === "#" ? "cursor-pointer" : undefined}
+          className={link.href.startsWith("#") ? "cursor-pointer" : undefined}
           onClick={onClick ? () => onClick(startIndex + idx) : undefined}
         />
       ))}

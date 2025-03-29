@@ -32,7 +32,7 @@ export function SidebarContainer({ children }: SidebarContainerProps) {
   const handleLinkClick = (index: number) => {
     // Handle special links
     if (index === 9) { // Terms & Conditions
-      navigate('/legal/terms-of-service', { state: { from: location.pathname } });
+      navigate('/legal/terms'); // Updated to match the route in App.tsx
     } else if (index === 10) { // Admin Portal
       setIsSecurityModalOpen(true);
     } else if (index === 11) { // Sign Out
