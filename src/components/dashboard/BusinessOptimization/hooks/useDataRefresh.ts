@@ -19,6 +19,29 @@ export function useDataRefresh({
   const renderAttempts = useRef(0);
   const { toast } = useToast();
   
+  // Check if we need a daily refresh on mount
+  useState(() => {
+    const lastRefreshStr = localStorage.getItem('lastOptimizationRefresh');
+    const now = new Date();
+    
+    if (!lastRefreshStr) {
+      // First time, set the refresh date
+      localStorage.setItem('lastOptimizationRefresh', now.toISOString());
+      return;
+    }
+    
+    const lastRefreshDate = new Date(lastRefreshStr);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const lastRefreshDay = new Date(lastRefreshDate.getFullYear(), lastRefreshDate.getMonth(), lastRefreshDate.getDate());
+    
+    // If the last refresh was before today, refresh the data
+    if (lastRefreshDay < today) {
+      console.log("Daily refresh triggered");
+      handleRefreshAll();
+      localStorage.setItem('lastOptimizationRefresh', now.toISOString());
+    }
+  });
+  
   const handleRefreshAll = useCallback(() => {
     // Prevent multiple refresh attempts in quick succession
     if (refreshInProgress.current) {
@@ -44,6 +67,9 @@ export function useDataRefresh({
       refreshLocationData();
       setLastRefreshed(new Date());
       renderAttempts.current = 0;
+      
+      // Store the refresh time for daily refresh checks
+      localStorage.setItem('lastOptimizationRefresh', new Date().toISOString());
       
       toast({
         title: "Refreshing all data",

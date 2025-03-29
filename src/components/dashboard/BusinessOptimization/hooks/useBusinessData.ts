@@ -12,8 +12,9 @@ interface UseBusinessDataOptions {
 
 export function useBusinessData(options?: UseBusinessDataOptions) {
   const [error, setError] = useState<boolean>(false);
-  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true); // Enable auto-refresh by default
   const [dataFetched, setDataFetched] = useState(false);
+  const [lastDailyRefresh, setLastDailyRefresh] = useState<Date | null>(null);
   const mountedRef = useRef(true);
   const connectionError = useRef<string | null>(null);
   
@@ -58,6 +59,29 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     }
   }, [isLoading, inventoryData, salesData, suppliersData]);
 
+  // Daily refresh function - refresh the data at the start of each day
+  useEffect(() => {
+    const checkForDailyRefresh = () => {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      // If we haven't refreshed today or this is the first time
+      if (!lastDailyRefresh || lastDailyRefresh < today) {
+        console.log("Running daily data refresh");
+        fetchData();
+        setLastDailyRefresh(now);
+      }
+    };
+    
+    // Run immediately on component mount
+    checkForDailyRefresh();
+    
+    // Set up interval to check every hour (in case the page is left open overnight)
+    const intervalId = setInterval(checkForDailyRefresh, 60 * 60 * 1000); // 1 hour
+    
+    return () => clearInterval(intervalId);
+  }, [lastDailyRefresh]);
+
   // Combined fetch function
   const fetchData = useCallback(() => {
     console.log("Fetching all business data");
@@ -95,6 +119,30 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
       return () => clearTimeout(timer);
     }
   }, [locationLoading, isLoading, dataFetched, fetchData, locationData]);
+
+  // Setup weekly regional trends refresh
+  useEffect(() => {
+    // Function to check if we need to refresh regional data
+    const checkWeeklyRefresh = () => {
+      const lastRefreshStr = localStorage.getItem('lastRegionalRefresh');
+      const now = new Date();
+      
+      if (!lastRefreshStr || (new Date(lastRefreshStr).getTime() + 7 * 24 * 60 * 60 * 1000) < now.getTime()) {
+        // It's been more than a week since last refresh
+        console.log("Running weekly regional trends refresh");
+        refreshLocationData();
+        localStorage.setItem('lastRegionalRefresh', now.toISOString());
+      }
+    };
+    
+    // Check on mount
+    checkWeeklyRefresh();
+    
+    // Check daily to see if a week has passed
+    const intervalId = setInterval(checkWeeklyRefresh, 24 * 60 * 60 * 1000);
+    
+    return () => clearInterval(intervalId);
+  }, [refreshLocationData]);
 
   // Handle component mount/unmount
   useEffect(() => {

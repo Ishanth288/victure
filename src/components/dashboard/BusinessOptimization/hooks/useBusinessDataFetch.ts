@@ -33,10 +33,21 @@ export const useBusinessDataFetch = <T extends TableEndpoint>(endpoint: T) => {
     setErrorType('unknown');
     
     try {
-      // Use type assertion to specify the endpoint is a valid table name
+      // First, check if user is authenticated
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        throw { message: 'Authentication error: ' + authError.message, type: 'auth' };
+      }
+      
+      if (!authData.user) {
+        throw { message: 'User not authenticated', type: 'auth' };
+      }
+      
+      // Use the user_id to get only data belonging to the current user
       const { data: responseData, error: apiError } = await supabase
         .from(endpoint)
-        .select('*');
+        .select('*')
+        .eq('user_id', authData.user.id);
       
       if (apiError) {
         throw apiError;
@@ -44,12 +55,13 @@ export const useBusinessDataFetch = <T extends TableEndpoint>(endpoint: T) => {
       
       setData(responseData as EndpointDataMap[T]);
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred.');
+      const errorMessage = err.message || 'An unexpected error occurred.';
+      setError(errorMessage);
       setErrorType(determineErrorType(err));
       
       toast({
         title: "Error",
-        description: `Failed to fetch data: ${err.message}`,
+        description: `Failed to fetch data: ${errorMessage}`,
         variant: "destructive",
       });
     } finally {
@@ -59,10 +71,42 @@ export const useBusinessDataFetch = <T extends TableEndpoint>(endpoint: T) => {
 
   useEffect(() => {
     refetch();
+    
+    // Setup real-time subscription to endpoint data for the current user
+    const setupLiveUpdates = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const channel = supabase
+        .channel(`${endpoint}-changes`)
+        .on('postgres_changes', 
+          { event: '*', schema: 'public', table: endpoint, filter: `user_id=eq.${user.id}` }, 
+          () => {
+            console.log(`Changes detected in ${endpoint}, refreshing data`);
+            refetch();
+          })
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    };
+    
+    const cleanup = setupLiveUpdates();
+    return () => {
+      if (cleanup) cleanup.then(unsub => unsub && unsub());
+    };
   }, [endpoint]);
 
   const determineErrorType = (errorObject: any): ErrorType => {
     if (!errorObject) return 'unknown';
+    
+    // Check if the error object has a type property we can use directly
+    if (errorObject.type && typeof errorObject.type === 'string') {
+      if (['connection', 'database', 'server', 'auth', 'validation', 'unknown'].includes(errorObject.type)) {
+        return errorObject.type as ErrorType;
+      }
+    }
     
     const message = errorObject.message || String(errorObject);
     
@@ -72,7 +116,7 @@ export const useBusinessDataFetch = <T extends TableEndpoint>(endpoint: T) => {
       return 'database';
     } else if (message.includes('server')) {
       return 'server';
-    } else if (message.includes('auth') || message.includes('login')) {
+    } else if (message.includes('auth') || message.includes('login') || message.includes('authentication')) {
       return 'auth';
     } else if (message.includes('validation')) {
       return 'validation';

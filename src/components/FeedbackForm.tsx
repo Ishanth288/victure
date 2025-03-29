@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Check } from "lucide-react";
 import { safeInsert } from "@/utils/supabaseHelpers";
 import { sanitizeInput } from "@/utils/securityUtils";
 
@@ -13,6 +13,7 @@ export function FeedbackForm() {
   const [email, setEmail] = useState("");
   const [feedback, setFeedback] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [emailError, setEmailError] = useState("");
   const { toast } = useToast();
 
@@ -24,8 +25,9 @@ export function FeedbackForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Reset errors
+    // Reset errors and success state
     setEmailError("");
+    setIsSuccess(false);
     
     // Validate inputs
     if (!feedback.trim()) {
@@ -74,14 +76,22 @@ export function FeedbackForm() {
         
       if (error) throw error;
       
+      // Show success state and toast notification
+      setIsSuccess(true);
       toast({
         title: "Feedback received",
         description: "Thank you for your valuable feedback!",
       });
       
+      // Reset form
       setEmail("");
       setFeedback("");
       console.log("Feedback successfully submitted:", data);
+      
+      // Reset success state after 3 seconds
+      setTimeout(() => {
+        setIsSuccess(false);
+      }, 3000);
     } catch (error) {
       toast({
         title: "Error submitting feedback",
@@ -105,42 +115,49 @@ export function FeedbackForm() {
         Help us improve our services by sharing your thoughts and suggestions.
       </p>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <Input
-            placeholder="Your email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={`w-full ${emailError ? "border-red-500" : ""}`}
-            required
-            aria-required="true"
-            aria-invalid={!!emailError}
-          />
-          {emailError && (
-            <p className="text-red-500 text-sm mt-1">{emailError}</p>
-          )}
+      {isSuccess ? (
+        <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4 flex items-center gap-2 text-green-700">
+          <Check className="h-5 w-5 text-green-500" />
+          <span>Thank you! Your feedback has been submitted successfully.</span>
         </div>
-        
-        <div>
-          <Textarea
-            placeholder="Share your feedback with us..."
-            value={feedback}
-            onChange={(e) => setFeedback(e.target.value)}
-            rows={4}
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Input
+              placeholder="Your email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={`w-full ${emailError ? "border-red-500" : ""}`}
+              required
+              aria-required="true"
+              aria-invalid={!!emailError}
+            />
+            {emailError && (
+              <p className="text-red-500 text-sm mt-1">{emailError}</p>
+            )}
+          </div>
+          
+          <div>
+            <Textarea
+              placeholder="Share your feedback with us..."
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              rows={4}
+              className="w-full"
+              required
+            />
+          </div>
+          
+          <Button 
+            type="submit" 
             className="w-full"
-            required
-          />
-        </div>
-        
-        <Button 
-          type="submit" 
-          className="w-full"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? "Submitting..." : "Submit Feedback"}
-        </Button>
-      </form>
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Submitting..." : "Submit Feedback"}
+          </Button>
+        </form>
+      )}
     </div>
   );
 }

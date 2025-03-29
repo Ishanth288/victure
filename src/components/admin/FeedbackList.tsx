@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RefreshCw } from "lucide-react";
 
 interface Feedback {
   id: string;
@@ -20,6 +21,7 @@ export function FeedbackList() {
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("unread");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
 
   const fetchFeedback = async () => {
@@ -49,6 +51,7 @@ export function FeedbackList() {
       });
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -104,12 +107,17 @@ export function FeedbackList() {
     }
   };
 
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchFeedback();
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleString();
   };
 
-  if (loading) {
+  if (loading && !isRefreshing) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-10 w-full" />
@@ -122,7 +130,19 @@ export function FeedbackList() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h2 className="text-2xl font-bold mb-6">Feedback Management</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Feedback Management</h2>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
         <TabsList>
@@ -139,7 +159,12 @@ export function FeedbackList() {
         </TabsList>
       </Tabs>
 
-      {feedback.length === 0 ? (
+      {isRefreshing ? (
+        <div className="flex justify-center py-4">
+          <Loader2 className="h-8 w-8 text-primary animate-spin" />
+          <span className="ml-2 text-muted-foreground">Refreshing feedback...</span>
+        </div>
+      ) : feedback.length === 0 ? (
         <div className="text-center py-10 bg-gray-50 rounded-lg">
           <p className="text-gray-500">No feedback found</p>
         </div>
@@ -175,3 +200,6 @@ export function FeedbackList() {
     </div>
   );
 }
+
+// Add Loader2 component import at the top
+import { Loader2 } from "lucide-react";
