@@ -14,11 +14,16 @@ export default function ChatbotButton() {
   
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const path = location.pathname;
-      
-      // Only show on authenticated pages except auth and index
-      setShouldShow(!!session && path !== '/' && path !== '/auth');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const path = location.pathname;
+        
+        // Only show on authenticated pages except auth and index
+        setShouldShow(!!session && path !== '/' && path !== '/auth');
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+        setShouldShow(false);
+      }
     };
 
     checkAuth();

@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import * as Sentry from "@sentry/react";
 import { initializeAppMonitoring } from "@/utils/supabaseHelpers";
+import { BrowserRouter } from "react-router-dom";
 
 // Initialize Sentry for error tracking
 Sentry.init({
@@ -63,8 +64,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
         <QueryClientProvider client={queryClient}>
-          <App />
-          <Toaster position="top-center" />
+          <BrowserRouter>
+            <App />
+            <Toaster position="top-center" />
+          </BrowserRouter>
         </QueryClientProvider>
       </ThemeProvider>
     </ErrorBoundary>
