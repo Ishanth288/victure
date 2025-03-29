@@ -54,7 +54,7 @@ const Index = memo(() => {
         preloadLink.rel = 'preload';
         preloadLink.href = link.href;
         preloadLink.as = link.as;
-        if (link.crossorigin) preloadLink.crossOrigin = link.crossorigin;
+        // Removed the crossorigin property that was causing the TypeScript error
         document.head.appendChild(preloadLink);
       });
 
