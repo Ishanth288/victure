@@ -27,10 +27,7 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     refreshData: refreshLocationData, 
     isLoading: locationLoading,
     error: locationError
-  } = useLocationBasedAnalytics({
-    maxRetries: options?.maxRetries,
-    timeout: options?.timeout
-  });
+  } = useLocationBasedAnalytics();
 
   // Get business data
   const {
