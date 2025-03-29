@@ -1,3 +1,4 @@
+
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { HeroSection } from "@/components/sections/HeroSection";
@@ -7,6 +8,7 @@ import { ContentSection } from "@/components/sections/ContentSection";
 import { Suspense, lazy, useEffect, memo } from "react";
 import { LazyMotion, domAnimation, m } from "framer-motion";
 import ErrorButton from "@/components/ErrorButton";
+import * as Sentry from "@sentry/react";
 
 const isHoverSupported = () => {
   return window.matchMedia('(hover: hover)').matches;
@@ -26,6 +28,19 @@ const LoadingPlaceholder = memo(() => (
 ));
 
 LoadingPlaceholder.displayName = 'LoadingPlaceholder';
+
+// Create a component for the error button section with its own error boundary
+const ErrorButtonSection = () => {
+  return (
+    <Sentry.ErrorBoundary 
+      fallback={<div className="p-4 bg-red-100 text-red-800 rounded my-4 max-w-md mx-auto">Error occurred in this section, but the rest of the page is still functional!</div>}
+    >
+      <div className="flex justify-center my-4">
+        <ErrorButton />
+      </div>
+    </Sentry.ErrorBoundary>
+  );
+};
 
 const Index = memo(() => {
   useEffect(() => {
@@ -65,9 +80,7 @@ const Index = memo(() => {
         <main className="overflow-hidden content-visibility-auto">
           <HeroSection />
           
-          <div className="flex justify-center my-4">
-            <ErrorButton />
-          </div>
+          <ErrorButtonSection />
           
           <Suspense fallback={null}>
             <FloatingIconsSection />
