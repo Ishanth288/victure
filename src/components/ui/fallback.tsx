@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { LoadingAnimation } from './loading-animation';
-import { Loader2 } from 'lucide-react';
 
 interface FallbackProps {
   message?: string;

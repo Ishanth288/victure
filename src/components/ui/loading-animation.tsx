@@ -1,120 +1,71 @@
 
-import { memo, useEffect, useState } from "react";
-import { Loader } from "lucide-react";
+import React from 'react';
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 
 interface LoadingAnimationProps {
   text?: string;
-  showLogo?: boolean;
-  size?: "sm" | "md" | "lg";
+  size?: 'sm' | 'md' | 'lg';
   className?: string;
+  logoText?: string;
 }
 
-export const LoadingAnimation = memo(({ 
-  text = "Loading", 
-  showLogo = true, 
+export function LoadingAnimation({ 
+  text = "Loading...", 
   size = "md", 
-  className = "" 
-}: LoadingAnimationProps) => {
-  const [dots, setDots] = useState("");
+  className = "",
+  logoText = "Victure"
+}: LoadingAnimationProps) {
+  const sizeClasses = {
+    sm: "h-12 gap-2",
+    md: "h-20 gap-3",
+    lg: "h-32 gap-4"
+  };
   
-  // Creates animated ellipsis effect
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDots(prev => prev.length >= 3 ? "" : prev + ".");
-    }, 500);
-    
-    return () => clearInterval(interval);
-  }, []);
+  const iconSize = {
+    sm: "h-5 w-5",
+    md: "h-8 w-8",
+    lg: "h-12 w-12"
+  };
+  
+  const textSize = {
+    sm: "text-sm",
+    md: "text-base",
+    lg: "text-xl"
+  };
 
-  const getSizeClasses = () => {
-    switch(size) {
-      case "sm": 
-        return "text-base space-y-1";
-      case "lg": 
-        return "text-2xl space-y-4";
-      default: 
-        return "text-lg space-y-2";
-    }
+  const logoSize = {
+    sm: "text-base",
+    md: "text-xl",
+    lg: "text-3xl"
   };
 
   return (
     <div className={cn(
-      "flex flex-col items-center justify-center p-4 w-full", 
-      getSizeClasses(),
+      "flex flex-col items-center justify-center p-4", 
+      sizeClasses[size],
       className
     )}>
-      {showLogo ? (
-        <div className="flex flex-col items-center space-y-2">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="relative"
-          >
-            <span className="text-primary font-bold">
-              {size === "lg" ? (
-                <span className="text-3xl">Victure</span>
-              ) : size === "sm" ? (
-                <span className="text-lg">Victure</span>
-              ) : (
-                <span className="text-2xl">Victure</span>
-              )}
-            </span>
-          </motion.div>
-          <motion.div
-            animate={{ 
-              rotate: [0, 360]
-            }}
-            transition={{ 
-              duration: 1.5, 
-              repeat: Infinity, 
-              ease: "linear" 
-            }}
-            className="relative"
-          >
-            <Loader 
-              className={cn(
-                "text-primary",
-                size === "lg" ? "h-10 w-10" : size === "sm" ? "h-5 w-5" : "h-7 w-7"
-              )} 
-            />
-          </motion.div>
-        </div>
-      ) : (
-        <motion.div
-          animate={{ 
-            rotate: [0, 360]
-          }}
-          transition={{ 
-            duration: 1.5, 
-            repeat: Infinity, 
-            ease: "linear" 
-          }}
-        >
-          <Loader 
-            className={cn(
-              "text-primary",
-              size === "lg" ? "h-10 w-10" : size === "sm" ? "h-5 w-5" : "h-7 w-7"
-            )} 
-          />
-        </motion.div>
-      )}
-      
+      <div className="flex items-center justify-center gap-2 mb-2">
+        <h3 className={cn(
+          "font-bold animate-pulse text-primary", 
+          logoSize[size]
+        )}>
+          {logoText}
+        </h3>
+        <Loader2 className={cn(
+          "animate-spin text-primary", 
+          iconSize[size]
+        )} />
+      </div>
       {text && (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="flex items-center text-muted-foreground"
-        >
-          <span>{text}</span>
-          <span className="w-6 inline-block">{dots}</span>
-        </motion.div>
+        <p className={cn(
+          "text-gray-500", 
+          textSize[size]
+        )}>
+          {text}
+        </p>
       )}
     </div>
   );
-});
-
-LoadingAnimation.displayName = "LoadingAnimation";
+}

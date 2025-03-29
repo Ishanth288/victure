@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 
 interface AuthCheckProps {
   children: React.ReactNode;
@@ -29,7 +30,7 @@ export function AuthCheck({ children }: AuthCheckProps) {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-        Loading...
+        <LoadingAnimation text="Authenticating..." />
       </div>
     );
   }
