@@ -10,4 +10,5 @@ export * from './supabaseDataUtils';
 export * from './purchaseOrderUtils';
 export * from './safeSupabaseQueries';
 export * from './documentUtils';
+export * from './performanceUtils';
 // Add other utility exports here as needed

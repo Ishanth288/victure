@@ -3,7 +3,7 @@ import React, { Component, ErrorInfo, ReactNode } from "react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { logError, checkSupabaseConnection } from "@/utils/supabaseHelpers";
+import { logError, checkSupabaseConnection } from "@/utils/supabaseErrorHandling";
 import * as Sentry from "@sentry/react";
 
 interface Props {

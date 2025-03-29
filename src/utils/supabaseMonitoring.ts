@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { checkSupabaseConnection } from "./supabaseErrorHandling";
+import { toast } from "@/hooks/use-toast";
 
 /**
  * Initialize application monitoring and connection checks
@@ -17,6 +18,11 @@ export function initializeAppMonitoring(): void {
         console.log('Supabase connection established successfully');
       } else {
         console.warn('Failed to establish Supabase connection on startup');
+        toast({
+          title: "Connection warning",
+          description: "Connection to database was temporarily lost, trying to reconnect",
+          variant: "default"
+        });
       }
     });
 
@@ -30,6 +36,39 @@ export function initializeAppMonitoring(): void {
         }
       });
   }, 30000);
+  
+  // Listen for online/offline events
+  window.addEventListener('online', handleOnline);
+  window.addEventListener('offline', handleOffline);
+}
+
+/**
+ * Handle browser coming online
+ */
+function handleOnline() {
+  console.log('Browser is online, checking Supabase connection...');
+  checkSupabaseConnection().then(connected => {
+    if (connected) {
+      toast({
+        title: "Connection restored",
+        description: "Your internet connection has been restored",
+        duration: 3000
+      });
+    }
+  });
+}
+
+/**
+ * Handle browser going offline
+ */
+function handleOffline() {
+  console.warn('Browser is offline, Supabase connections will fail');
+  toast({
+    title: "Connection lost",
+    description: "Please check your internet connection",
+    variant: "destructive",
+    duration: 5000
+  });
 }
 
 /**
@@ -38,14 +77,41 @@ export function initializeAppMonitoring(): void {
 async function enableRealtimeForTables() {
   try {
     // You can listen to all changes in the public schema
-    await supabase.channel('schema-db-changes')
+    const channel = supabase.channel('schema-db-changes')
       .on('postgres_changes', { event: '*', schema: 'public' }, payload => {
         console.log('Database change:', payload);
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Realtime subscriptions enabled for database tables');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Failed to enable realtime subscriptions');
+          toast({
+            title: "Realtime error",
+            description: "Failed to subscribe to realtime updates",
+            variant: "destructive"
+          });
+        }
+      });
     
-    console.log('Realtime subscriptions enabled for database tables');
+    return () => {
+      supabase.removeChannel(channel);
+    };
   } catch (error) {
     console.error('Failed to enable realtime for tables:', error);
+  }
+}
+
+/**
+ * Check if the application can connect to Supabase
+ * Returns a promise that resolves to a boolean indicating connection status
+ */
+export async function checkSupabaseAvailability(): Promise<boolean> {
+  try {
+    const { error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
+    return !error;
+  } catch (error) {
+    console.error('Error checking Supabase availability:', error);
+    return false;
   }
 }

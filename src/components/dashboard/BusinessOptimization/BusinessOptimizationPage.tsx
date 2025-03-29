@@ -7,8 +7,9 @@ import { useBusinessData } from "./hooks/useBusinessData";
 import { PageHeader } from "./components/PageHeader";
 import { TabsNavigation } from "./components/TabsNavigation";
 import { TabContent } from "./components/TabContent";
-import { LoadingState, ErrorState } from "./components/LoadingState";
+import { LoadingState, ErrorState, EmptyState } from "./components/LoadingState";
 import { setupPageOptimizations } from "@/utils/performanceUtils";
+import { initializeAppMonitoring } from "@/utils/supabaseMonitoring";
 
 export default function BusinessOptimizationPage() {
   const [activeTab, setActiveTab] = useState("forecast");
@@ -24,24 +25,23 @@ export default function BusinessOptimizationPage() {
     pharmacyLocation, 
     refreshData, 
     refreshLocationData,
-    connectionError 
+    connectionError,
+    errorType,
+    hasError
   } = useBusinessData({
     onError: () => setError(true),
   });
+
+  // Initialize app monitoring on first load
+  useEffect(() => {
+    initializeAppMonitoring();
+  }, []);
 
   // Apply performance optimizations
   useEffect(() => {
     const cleanup = setupPageOptimizations();
     return () => cleanup();
   }, []);
-
-  // Check for connection errors
-  useEffect(() => {
-    if (connectionError) {
-      setError(true);
-      console.error("Connection error detected:", connectionError);
-    }
-  }, [connectionError]);
 
   // Handle refresh of all data
   const handleRefreshAll = () => {
@@ -55,18 +55,41 @@ export default function BusinessOptimizationPage() {
     });
   };
 
-  if (error) {
+  // Render loading state
+  if (isLoading || locationLoading) {
     return (
       <DashboardLayout>
-        <ErrorState onRetry={handleRefreshAll} />
+        <LoadingState message="Loading your business analytics data..." />
       </DashboardLayout>
     );
   }
 
-  if (isLoading || locationLoading) {
+  // Render error state
+  if (error || hasError) {
     return (
       <DashboardLayout>
-        <LoadingState />
+        <ErrorState 
+          onRetry={handleRefreshAll} 
+          errorType={errorType}
+          errorMessage={connectionError || undefined}
+        />
+      </DashboardLayout>
+    );
+  }
+
+  // Check if we have data
+  const hasData = (
+    (inventoryData && inventoryData.length > 0) || 
+    (salesData && salesData.length > 0) || 
+    (suppliersData && suppliersData.length > 0) ||
+    (locationData && Object.keys(locationData).length > 0)
+  );
+
+  // Render empty state if no data is available
+  if (!hasData) {
+    return (
+      <DashboardLayout>
+        <EmptyState />
       </DashboardLayout>
     );
   }

@@ -1,6 +1,11 @@
 
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { BusinessOptimizationPage } from "@/components/dashboard/BusinessOptimization";
 
 export default function BusinessOptimization() {
-  return <BusinessOptimizationPage />;
+  return (
+    <ErrorBoundary>
+      <BusinessOptimizationPage />
+    </ErrorBoundary>
+  );
 }
