@@ -22,11 +22,13 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
   const [suppliersData, setSuppliersData] = useState<any[]>([]);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [errorType, setErrorType] = useState<'connection' | 'database' | 'server' | 'unknown'>('unknown');
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
   const { toast } = useToast();
   const retryCount = useRef(0);
   const maxRetries = useRef(3);
   const mountedRef = useRef(true);
   const [dataFetched, setDataFetched] = useState(false);
+  const lastFetchTime = useRef<Date>(new Date());
   
   // Critical fix: Add error property to properly handle location loading errors
   const { 
@@ -44,12 +46,18 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     inventoryData: inventoryData?.length || 0,
     salesData: salesData?.length || 0,
     suppliersData: suppliersData?.length || 0,
-    locationData: locationData ? 'available' : 'not available'
+    locationData: locationData ? 'available' : 'not available',
+    autoRefreshEnabled,
+    lastFetch: lastFetchTime.current.toLocaleString(),
+    timeSinceLastFetch: new Date().getTime() - lastFetchTime.current.getTime()
   });
 
   const fetchData = useCallback(async () => {
     console.log("fetchData function triggered, checking mountedRef:", mountedRef.current);
     if (!mountedRef.current) return;
+    
+    // Record the time of this fetch
+    lastFetchTime.current = new Date();
     
     setIsLoading(true);
     setConnectionError(null);
@@ -263,29 +271,56 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
           .on('postgres_changes', 
             { event: '*', schema: 'public', table: 'inventory', filter: `user_id=eq.${user.id}` }, 
             () => {
-              console.log('Inventory data changed, refreshing...');
-              fetchData();
+              console.log('Inventory data changed through database update');
+              // We only refresh automatically if the data was actually changed in the database,
+              // not just because the component loaded
+              if (mountedRef.current && dataFetched) {
+                toast({
+                  title: "Inventory Updated",
+                  description: "Your inventory data has been updated",
+                  duration: 3000
+                });
+                fetchData();
+              }
             }
           )
           .on('postgres_changes', 
             { event: '*', schema: 'public', table: 'bills', filter: `user_id=eq.${user.id}` }, 
             () => {
-              console.log('Bills data changed, refreshing...');
-              fetchData();
+              console.log('Bills data changed through database update');
+              // Only refresh if an actual database update happened
+              if (mountedRef.current && dataFetched) {
+                toast({
+                  title: "Sales Data Updated",
+                  description: "Your sales data has been updated",
+                  duration: 3000
+                });
+                fetchData();
+              }
             }
           )
           .on('postgres_changes', 
             { event: '*', schema: 'public', table: 'purchase_orders', filter: `user_id=eq.${user.id}` }, 
             () => {
-              console.log('Purchase orders data changed, refreshing...');
-              fetchData();
+              console.log('Purchase orders data changed through database update');
+              // Only refresh if an actual database update happened
+              if (mountedRef.current && dataFetched) {
+                toast({
+                  title: "Purchase Orders Updated",
+                  description: "Your purchase order data has been updated",
+                  duration: 3000
+                });
+                fetchData();
+              }
             }
           )
           .on('postgres_changes', 
             { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` }, 
             () => {
               console.log('Profile data changed, refreshing location data...');
-              refreshLocationData();
+              if (mountedRef.current && dataFetched) {
+                refreshLocationData();
+              }
             }
           )
           .subscribe((status) => {
@@ -337,5 +372,6 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     connectionError,
     errorType,
     hasError: Boolean(connectionError) || Boolean(locationError),
+    autoRefreshEnabled
   };
 }

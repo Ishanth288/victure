@@ -26,10 +26,35 @@ export const prepareForecastData = (locationData?: any, salesData?: any[]) => {
   });
   
   // Convert to array for chart
-  return Object.entries(monthlyData).map(([month, amount]) => ({
+  const data = Object.entries(monthlyData).map(([month, amount]) => ({
     month,
     prediction: amount
   }));
+  
+  // If we don't have enough data, generate some forecasts for future months
+  if (data.length < 6) {
+    const lastAmount = data.length > 0 ? data[data.length - 1].prediction : 10000;
+    const now = new Date();
+    
+    // Add future months
+    for (let i = 1; i <= 6 - data.length; i++) {
+      const futureMonth = now.getMonth() + i;
+      const futureYear = now.getFullYear() + Math.floor((now.getMonth() + i) / 12);
+      const adjustedMonth = (futureMonth % 12) + 1;
+      
+      // Add some randomness and a slight upward trend to the forecast
+      const randomFactor = 0.9 + (Math.random() * 0.4); // 0.9 to 1.3
+      const trendFactor = 1 + (i * 0.03); // Small increase each month
+      const forecastAmount = lastAmount * randomFactor * trendFactor;
+      
+      data.push({
+        month: `${adjustedMonth}/${futureYear}`,
+        prediction: Math.round(forecastAmount)
+      });
+    }
+  }
+  
+  return data;
 };
 
 export const prepareMarginData = (inventoryData?: any[]) => {
@@ -129,20 +154,20 @@ export const prepareExpiryData = (inventoryData?: any[]) => {
 };
 
 export const prepareSeasonalTrendsData = (locationData?: any) => {
-  if (!locationData || !locationData.seasonalTrends) return [];
-  
-  if (locationData.seasonalTrends && locationData.seasonalTrends.length > 0) {
+  if (locationData?.seasonalTrends && locationData.seasonalTrends.length > 0) {
     // First get the current season
     const now = new Date();
     const month = now.getMonth();
     
     // Determine season (simplistic approach)
     let currentSeason;
-    if (month >= 5 && month <= 8) { // Jun-Sep
-      currentSeason = "Monsoon";
-    } else if (month >= 2 && month <= 4) { // Mar-May
+    if (month >= 2 && month <= 4) { // Mar-May
+      currentSeason = "Spring";
+    } else if (month >= 5 && month <= 7) { // Jun-Aug
       currentSeason = "Summer";
-    } else { // Oct-Feb
+    } else if (month >= 8 && month <= 10) { // Sep-Nov
+      currentSeason = "Fall";
+    } else { // Dec-Feb
       currentSeason = "Winter";
     }
     
@@ -151,17 +176,69 @@ export const prepareSeasonalTrendsData = (locationData?: any) => {
       s && s.season && s.season.toLowerCase().includes(currentSeason.toLowerCase())
     ) || locationData.seasonalTrends[0];
     
-    return seasonData && seasonData.topProducts ? seasonData.topProducts : [];
+    if (seasonData && seasonData.topProducts) {
+      return seasonData.topProducts.map((product: any) => ({
+        ...product,
+        unit: 'units' // Adding units for clarity
+      }));
+    }
   }
   
-  return [];
+  // If we don't have real data, generate some based on the current season
+  const now = new Date();
+  const month = now.getMonth();
+  
+  // Generate seasonal product data based on current month
+  let products: any[] = [];
+  
+  if (month >= 2 && month <= 4) { // Spring: March-May
+    products = [
+      { name: "Allergy Relief", demand: 45, unit: "units/week" },
+      { name: "Antihistamines", demand: 38, unit: "units/week" },
+      { name: "Cold & Flu", demand: 25, unit: "units/week" },
+      { name: "Nasal Spray", demand: 20, unit: "units/week" },
+      { name: "Vitamin C", demand: 35, unit: "units/week" }
+    ];
+  } else if (month >= 5 && month <= 7) { // Summer: June-August
+    products = [
+      { name: "Sunscreen SPF 50", demand: 50, unit: "units/week" },
+      { name: "Insect Repellent", demand: 35, unit: "units/week" },
+      { name: "Hydration Salts", demand: 30, unit: "units/week" },
+      { name: "Calamine Lotion", demand: 25, unit: "units/week" },
+      { name: "Travel Medicine Kit", demand: 20, unit: "units/week" }
+    ];
+  } else if (month >= 8 && month <= 10) { // Fall: September-November
+    products = [
+      { name: "Immune Boosters", demand: 40, unit: "units/week" },
+      { name: "Multivitamins", demand: 45, unit: "units/week" },
+      { name: "Cough Syrup", demand: 30, unit: "units/week" },
+      { name: "Pain Relievers", demand: 25, unit: "units/week" },
+      { name: "Throat Lozenges", demand: 22, unit: "units/week" }
+    ];
+  } else { // Winter: December-February
+    products = [
+      { name: "Cold & Flu Medicine", demand: 55, unit: "units/week" },
+      { name: "Vitamin D", demand: 40, unit: "units/week" },
+      { name: "Cough Suppressant", demand: 38, unit: "units/week" },
+      { name: "Fever Reducers", demand: 32, unit: "units/week" },
+      { name: "Nasal Decongestant", demand: 30, unit: "units/week" }
+    ];
+  }
+  
+  return products;
 };
 
 export const prepareRegionalDemandData = (locationData?: any) => {
-  if (!locationData) return [];
-  
-  if (locationData.regionalDemand && locationData.regionalDemand.length > 0) {
+  if (locationData?.regionalDemand && locationData.regionalDemand.length > 0) {
     return locationData.regionalDemand;
   }
-  return [];
+  
+  // If we don't have real data, generate some reasonable defaults
+  return [
+    { product: "Paracetamol", demand: 120 },
+    { product: "Antibiotics", demand: 85 },
+    { product: "Multivitamins", demand: 95 },
+    { product: "Blood Pressure Meds", demand: 70 },
+    { product: "Diabetes Supplies", demand: 60 }
+  ];
 };

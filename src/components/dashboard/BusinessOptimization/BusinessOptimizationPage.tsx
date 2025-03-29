@@ -14,6 +14,7 @@ import { initializeAppMonitoring } from "@/utils/supabaseMonitoring";
 export default function BusinessOptimizationPage() {
   const [activeTab, setActiveTab] = useState("forecast");
   const [error, setError] = useState<boolean>(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const { toast } = useToast();
   const renderAttempts = useRef(0);
   const maxRenderAttempts = 5;
@@ -34,7 +35,8 @@ export default function BusinessOptimizationPage() {
     refreshLocationData,
     connectionError,
     errorType,
-    hasError
+    hasError,
+    autoRefreshEnabled
   } = useBusinessData({
     onError: () => {
       console.log("Business data error callback triggered");
@@ -47,7 +49,8 @@ export default function BusinessOptimizationPage() {
     locationLoading, 
     hasError, 
     error, 
-    renderAttempts: renderAttempts.current 
+    renderAttempts: renderAttempts.current,
+    lastRefreshed: lastRefreshed.toLocaleString() 
   });
   
   console.log("Data availability:", { 
@@ -100,6 +103,7 @@ export default function BusinessOptimizationPage() {
     setError(false);
     refreshData();
     refreshLocationData();
+    setLastRefreshed(new Date());
     renderAttempts.current = 0;
     toast({
       title: "Refreshing all data",
@@ -158,7 +162,8 @@ export default function BusinessOptimizationPage() {
       <div className="space-y-6">
         <PageHeader 
           pharmacyLocation={pharmacyLocation} 
-          onRefresh={handleRefreshAll} 
+          onRefresh={handleRefreshAll}
+          lastRefreshed={lastRefreshed} 
         />
         
         <Tabs defaultValue="forecast" onValueChange={setActiveTab}>
@@ -172,6 +177,7 @@ export default function BusinessOptimizationPage() {
               suppliersData={suppliersData || []}
               locationData={locationData || {}}
               pharmacyLocation={pharmacyLocation}
+              lastRefreshed={lastRefreshed}
             />
           </div>
         </Tabs>

@@ -1,33 +1,78 @@
 
-import { MapPin, RefreshCw } from "lucide-react";
+import { RefreshCcw, Home, MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PageHeaderProps {
   pharmacyLocation: any;
   onRefresh: () => void;
+  lastRefreshed?: Date;
 }
 
-export function PageHeader({ pharmacyLocation, onRefresh }: PageHeaderProps) {
+export function PageHeader({ pharmacyLocation, onRefresh, lastRefreshed }: PageHeaderProps) {
+  const formatRefreshTime = (date?: Date) => {
+    if (!date) return "Never";
+    
+    // Format the date
+    return new Date(date).toLocaleString('en-US', {
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true
+    });
+  };
+  
   return (
-    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
-        <h1 className="text-3xl font-bold">Business Optimization</h1>
-        {pharmacyLocation && (
-          <div className="flex items-center mt-1 text-muted-foreground">
-            <MapPin className="w-4 h-4 mr-1" />
-            <span>
-              {pharmacyLocation.city}, {pharmacyLocation.state} - Location-based analytics enabled
-            </span>
+        <h1 className="text-2xl font-bold mb-1">Business Optimization</h1>
+        <p className="text-muted-foreground text-sm">
+          Data-driven insights to optimize your pharmacy business
+        </p>
+        {lastRefreshed && (
+          <div className="text-xs text-muted-foreground mt-1">
+            Last refreshed: {formatRefreshTime(lastRefreshed)}
           </div>
         )}
       </div>
-      <div className="flex items-center space-x-2">
-        <button 
-          onClick={onRefresh}
-          className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
-        >
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh All Data
-        </button>
+      
+      <div className="flex items-center gap-3">
+        {pharmacyLocation && (pharmacyLocation.city || pharmacyLocation.state) && (
+          <Card className="bg-muted/50">
+            <CardContent className="py-2 px-3 flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">
+                {[
+                  pharmacyLocation.city,
+                  pharmacyLocation.state
+                ].filter(Boolean).join(", ")}
+              </span>
+            </CardContent>
+          </Card>
+        )}
+        
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRefresh}
+                className="flex items-center gap-1"
+              >
+                <RefreshCcw className="h-4 w-4 mr-1" />
+                <span>Refresh</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Manually refresh all data</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </div>
   );

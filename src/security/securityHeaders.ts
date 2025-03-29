@@ -17,7 +17,7 @@ export const securityHeaders = {
     object-src 'none';
     base-uri 'self';
     form-action 'self';
-    frame-ancestors 'self' https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev https://preview--victure.lovable.app https://*.gpteng.co https://lovable.dev;
+    frame-ancestors 'self' https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev https://preview--victure.lovable.app https://*.gpteng.co https://lovable.dev https://preview.lovable.ai;
   `.replace(/\s+/g, ' ').trim(),
   
   // Prevent MIME type sniffing

@@ -22,6 +22,7 @@ interface TabContentProps {
   suppliersData: any[];
   locationData: any;
   pharmacyLocation: any;
+  lastRefreshed: Date;
 }
 
 export function TabContent({ 
@@ -30,14 +31,16 @@ export function TabContent({
   salesData = [],
   suppliersData = [],
   locationData = {},
-  pharmacyLocation = null
+  pharmacyLocation = null,
+  lastRefreshed = new Date()
 }: TabContentProps) {
   console.log("TabContent rendering", { 
     activeTab,
     hasInventoryData: Array.isArray(inventoryData) && inventoryData.length > 0,
     hasSalesData: Array.isArray(salesData) && salesData.length > 0,
     hasSuppliersData: Array.isArray(suppliersData) && suppliersData.length > 0,
-    hasLocationData: locationData && Object.keys(locationData).length > 0
+    hasLocationData: locationData && Object.keys(locationData).length > 0,
+    lastRefreshed: lastRefreshed.toLocaleString()
   });
   
   // Ensure all inputs are valid before processing
@@ -72,6 +75,7 @@ export function TabContent({
           regionalDemandData={regionalDemandData || []} 
           seasonalTrendsData={seasonalTrendsData || []}
           pharmacyLocation={pharmacyLocation}
+          lastRefreshed={lastRefreshed}
         />
       );
     case "margin":
@@ -98,6 +102,7 @@ export function TabContent({
           pharmacyLocation={pharmacyLocation}
           seasonalTrendsData={seasonalTrendsData || []}
           inventoryData={safeInventoryData}
+          lastRefreshed={lastRefreshed}
         />
       );
     case "regional":
