@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, memo } from 'react';
 import { m } from 'framer-motion';
 
 interface ScrollRevealProps {
@@ -11,18 +11,21 @@ interface ScrollRevealProps {
   duration?: number;
 }
 
-export function ScrollReveal({ 
+export const ScrollReveal = memo(({ 
   children, 
   className = '',
   threshold = 0.2,
   animation = 'fade',
   delay = 0,
   duration = 0.5
-}: ScrollRevealProps) {
+}: ScrollRevealProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const currentRef = ref.current;
+    if (!currentRef) return;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -30,16 +33,14 @@ export function ScrollReveal({
           observer.unobserve(entry.target);
         }
       },
-      { threshold }
+      { threshold, rootMargin: '50px' }
     );
 
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
+    observer.observe(currentRef);
 
     return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
+      if (currentRef) {
+        observer.unobserve(currentRef);
       }
     };
   }, [threshold]);
@@ -84,4 +85,6 @@ export function ScrollReveal({
       {children}
     </m.div>
   );
-}
+});
+
+ScrollReveal.displayName = 'ScrollReveal';

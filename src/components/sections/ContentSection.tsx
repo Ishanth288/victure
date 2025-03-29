@@ -1,11 +1,12 @@
 
-import { Suspense } from "react";
+import { Suspense, lazy, memo } from "react";
 import Features from "@/components/Features";
 import Benefits from "@/components/Benefits";
 import Demo from "@/components/Demo";
 import CTA from "@/components/CTA";
 import { Pricing } from "@/components/blocks/Pricing";
 
+// Memoize pricing plans to prevent unnecessary re-renders
 const pricingPlans = [
   {
     name: "FREE",
@@ -70,20 +71,50 @@ const pricingPlans = [
   },
 ];
 
-export const ContentSection = () => {
+// Create lazy-loaded components with loading boundaries
+const LazyFeatures = memo(Features);
+const LazyBenefits = memo(Benefits);
+const LazyDemo = memo(Demo);
+const LazyPricing = memo(Pricing);
+const LazyCTA = memo(CTA);
+
+// Loading placeholder
+const LoadingPlaceholder = () => (
+  <div className="h-40 w-full flex items-center justify-center">
+    <div className="animate-pulse w-10 h-10 rounded-full bg-gray-200"></div>
+  </div>
+);
+
+export const ContentSection = memo(() => {
   return (
-    <Suspense fallback={null}>
-      <Features />
-      <Benefits />
-      <Demo />
-      <div id="pricing">
-        <Pricing 
-          plans={pricingPlans}
-          title="Choose Your Perfect Plan"
-          description="Select the plan that best fits your pharmacy needs. All plans include our powerful pharmacy management features with specific usage limits for each tier."
-        />
+    <>
+      <Suspense fallback={<LoadingPlaceholder />}>
+        <LazyFeatures />
+      </Suspense>
+      
+      <Suspense fallback={<LoadingPlaceholder />}>
+        <LazyBenefits />
+      </Suspense>
+      
+      <Suspense fallback={<LoadingPlaceholder />}>
+        <LazyDemo />
+      </Suspense>
+      
+      <div id="pricing" className="content-visibility-auto">
+        <Suspense fallback={<LoadingPlaceholder />}>
+          <LazyPricing 
+            plans={pricingPlans}
+            title="Choose Your Perfect Plan"
+            description="Select the plan that best fits your pharmacy needs. All plans include our powerful pharmacy management features with specific usage limits for each tier."
+          />
+        </Suspense>
       </div>
-      <CTA />
-    </Suspense>
+      
+      <Suspense fallback={<LoadingPlaceholder />}>
+        <LazyCTA />
+      </Suspense>
+    </>
   );
-};
+});
+
+ContentSection.displayName = 'ContentSection';

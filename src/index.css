@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -98,6 +99,8 @@
     linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
   background-size: 40px 40px;
+  will-change: scroll-position;
+  backface-visibility: hidden;
 }
 
 /* Spline loader */
@@ -139,6 +142,7 @@
 
 .animate-blob {
   animation: blob 7s infinite;
+  transform: translateZ(0);
 }
 
 .animation-delay-2000 {
@@ -161,6 +165,7 @@
 
 .slide-horizontal {
   animation: slide-horizontal 0.3s ease-out;
+  transform: translateZ(0);
 }
 
 /* Pharmacy gradient background animation */
@@ -171,6 +176,7 @@
   height: 100%;
   width: 100%;
   border-radius: 0.5rem;
+  transform: translateZ(0);
 }
 
 @keyframes gradient {
@@ -202,6 +208,7 @@
 
 .animate-float {
   animation: float 3s ease-in-out infinite;
+  transform: translateZ(0);
 }
 
 @keyframes pulse-glow {
@@ -223,6 +230,24 @@
   background: linear-gradient(-45deg, #3b82f6, #60a5fa, #a5b4fc, #ddd6fe);
   background-size: 400% 400%;
   animation: tech-gradient 15s ease infinite;
+  transform: translateZ(0);
+}
+
+/* Performance optimizations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 500px;
+}
+
+.low-impact-animation {
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0);
 }
 
 @media print {

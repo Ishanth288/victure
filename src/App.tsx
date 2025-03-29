@@ -1,28 +1,38 @@
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import Index from "@/pages/Index";
-import Auth from "@/pages/Auth";
-import Dashboard from "@/pages/Dashboard";
-import Inventory from "@/pages/Inventory";
-import Billing from "@/pages/Billing";
-import BillingCart from "@/pages/BillingCart";
-import Patients from "@/pages/Patients";
-import Prescriptions from "@/pages/Prescriptions";
-import Insights from "@/pages/Insights";
-import Purchases from "@/pages/Purchases";
 import NotFound from "@/pages/NotFound";
-import Settings from "@/pages/Settings";
 import ChatbotButton from "@/components/chatbot/ChatbotButton";
 import Navigation from "@/components/Navigation";
 
-// Import legal pages
-import PrivacyPolicy from "@/pages/legal/PrivacyPolicy";
-import TermsOfService from "@/pages/legal/TermsOfService";
-import EULA from "@/pages/legal/EULA";
-import SLA from "@/pages/legal/SLA";
-import RefundPolicy from "@/pages/legal/RefundPolicy";
-import AcceptableUsePolicy from "@/pages/legal/AcceptableUsePolicy";
-import Disclaimers from "@/pages/legal/Disclaimers";
+// Lazy load pages to reduce initial bundle size
+const Auth = lazy(() => import("@/pages/Auth"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Inventory = lazy(() => import("@/pages/Inventory"));
+const Billing = lazy(() => import("@/pages/Billing"));
+const BillingCart = lazy(() => import("@/pages/BillingCart"));
+const Patients = lazy(() => import("@/pages/Patients"));
+const Prescriptions = lazy(() => import("@/pages/Prescriptions"));
+const Insights = lazy(() => import("@/pages/Insights"));
+const Purchases = lazy(() => import("@/pages/Purchases"));
+const Settings = lazy(() => import("@/pages/Settings"));
+
+// Lazy load legal pages
+const PrivacyPolicy = lazy(() => import("@/pages/legal/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("@/pages/legal/TermsOfService"));
+const EULA = lazy(() => import("@/pages/legal/EULA"));
+const SLA = lazy(() => import("@/pages/legal/SLA"));
+const RefundPolicy = lazy(() => import("@/pages/legal/RefundPolicy"));
+const AcceptableUsePolicy = lazy(() => import("@/pages/legal/AcceptableUsePolicy"));
+const Disclaimers = lazy(() => import("@/pages/legal/Disclaimers"));
+
+// Loading fallback
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+  </div>
+);
 
 function App() {
   return (
@@ -30,25 +40,93 @@ function App() {
       <div className="h-screen w-full">
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<><Navigation /><Auth /></>} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/inventory" element={<Inventory />} />
-          <Route path="/billing" element={<Billing />} />
-          <Route path="/billing/cart/:prescriptionId" element={<BillingCart />} />
-          <Route path="/patients" element={<Patients />} />
-          <Route path="/prescriptions" element={<Prescriptions />} />
-          <Route path="/insights" element={<Insights />} />
-          <Route path="/purchases" element={<Purchases />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/auth" element={
+            <Suspense fallback={<PageLoader />}>
+              <><Navigation /><Auth /></>
+            </Suspense>
+          } />
+          <Route path="/dashboard" element={
+            <Suspense fallback={<PageLoader />}>
+              <Dashboard />
+            </Suspense>
+          } />
+          <Route path="/inventory" element={
+            <Suspense fallback={<PageLoader />}>
+              <Inventory />
+            </Suspense>
+          } />
+          <Route path="/billing" element={
+            <Suspense fallback={<PageLoader />}>
+              <Billing />
+            </Suspense>
+          } />
+          <Route path="/billing/cart/:prescriptionId" element={
+            <Suspense fallback={<PageLoader />}>
+              <BillingCart />
+            </Suspense>
+          } />
+          <Route path="/patients" element={
+            <Suspense fallback={<PageLoader />}>
+              <Patients />
+            </Suspense>
+          } />
+          <Route path="/prescriptions" element={
+            <Suspense fallback={<PageLoader />}>
+              <Prescriptions />
+            </Suspense>
+          } />
+          <Route path="/insights" element={
+            <Suspense fallback={<PageLoader />}>
+              <Insights />
+            </Suspense>
+          } />
+          <Route path="/purchases" element={
+            <Suspense fallback={<PageLoader />}>
+              <Purchases />
+            </Suspense>
+          } />
+          <Route path="/settings" element={
+            <Suspense fallback={<PageLoader />}>
+              <Settings />
+            </Suspense>
+          } />
           
           {/* Legal routes - removed Navigation component */}
-          <Route path="/legal/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/legal/terms-of-service" element={<TermsOfService />} />
-          <Route path="/legal/eula" element={<EULA />} />
-          <Route path="/legal/sla" element={<SLA />} />
-          <Route path="/legal/refund-policy" element={<RefundPolicy />} />
-          <Route path="/legal/acceptable-use-policy" element={<AcceptableUsePolicy />} />
-          <Route path="/legal/disclaimers" element={<Disclaimers />} />
+          <Route path="/legal/privacy-policy" element={
+            <Suspense fallback={<PageLoader />}>
+              <PrivacyPolicy />
+            </Suspense>
+          } />
+          <Route path="/legal/terms-of-service" element={
+            <Suspense fallback={<PageLoader />}>
+              <TermsOfService />
+            </Suspense>
+          } />
+          <Route path="/legal/eula" element={
+            <Suspense fallback={<PageLoader />}>
+              <EULA />
+            </Suspense>
+          } />
+          <Route path="/legal/sla" element={
+            <Suspense fallback={<PageLoader />}>
+              <SLA />
+            </Suspense>
+          } />
+          <Route path="/legal/refund-policy" element={
+            <Suspense fallback={<PageLoader />}>
+              <RefundPolicy />
+            </Suspense>
+          } />
+          <Route path="/legal/acceptable-use-policy" element={
+            <Suspense fallback={<PageLoader />}>
+              <AcceptableUsePolicy />
+            </Suspense>
+          } />
+          <Route path="/legal/disclaimers" element={
+            <Suspense fallback={<PageLoader />}>
+              <Disclaimers />
+            </Suspense>
+          } />
           
           <Route path="*" element={<NotFound />} />
         </Routes>

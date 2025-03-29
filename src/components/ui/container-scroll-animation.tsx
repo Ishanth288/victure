@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect, memo } from "react";
 import { useScroll, useTransform, m, MotionValue } from "framer-motion";
 
@@ -31,7 +32,7 @@ export const ContainerScroll = memo(({
       resizeTimer = setTimeout(checkMobile, 200);
     };
     
-    window.addEventListener("resize", handleResize);
+    window.addEventListener("resize", handleResize, { passive: true });
     return () => {
       window.removeEventListener("resize", handleResize);
       clearTimeout(resizeTimer);
