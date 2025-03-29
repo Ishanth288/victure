@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Tabs } from "@/components/ui/tabs";
@@ -13,6 +12,7 @@ import { TabContent } from "./components/TabContent";
 import { LoadingState, ErrorState, EmptyState } from "./components/LoadingState";
 import { stableToast } from "@/components/ui/stable-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorType } from "./hooks/useBusinessDataFetch";
 
 export default function BusinessOptimizationPage() {
   const [activeTab, setActiveTab] = useState("forecast");
@@ -30,10 +30,8 @@ export default function BusinessOptimizationPage() {
     });
   }, []);
   
-  // Initialize app monitoring and performance optimizations
   useAppMonitoring();
   
-  // Business data hook with improved error handling
   const { 
     isLoading, 
     locationLoading, 
@@ -50,19 +48,17 @@ export default function BusinessOptimizationPage() {
     retryFetch
   } = useBusinessData({
     onError: handleDataError,
-    maxRetries: 2, // Reduce retries to prevent long waits
-    timeout: 6000  // Reduce timeout for faster response
+    maxRetries: 2,
+    timeout: 6000
   });
   
-  // Stable loading state to prevent flickering
   const { isStableLoading } = useLoadingState({
     isLoading, 
     locationLoading,
-    forceExitTimeout: 5000, // Reduced timeout to ensure we don't wait too long
-    stabilityDelay: 100 // Lower stability delay for quicker transitions
+    forceExitTimeout: 5000,
+    stabilityDelay: 100
   });
 
-  // Force exit from loading state after 10 seconds regardless of other conditions
   useEffect(() => {
     const forceExitTimer = setTimeout(() => {
       if (isStableLoading) {
@@ -74,7 +70,6 @@ export default function BusinessOptimizationPage() {
     return () => clearTimeout(forceExitTimer);
   }, [isStableLoading]);
   
-  // Data refresh handler with error handling
   const { lastRefreshed, handleRefreshAll, refreshInProgress } = useDataRefresh({
     refreshData,
     refreshLocationData,
@@ -84,7 +79,6 @@ export default function BusinessOptimizationPage() {
     }
   });
 
-  // Add more extensive logging to debug loading issues
   console.log("BusinessOptimizationPage render state:", {
     isLoading,
     locationLoading,
@@ -101,20 +95,17 @@ export default function BusinessOptimizationPage() {
     locationDataKeys: locationData ? Object.keys(locationData).length : 0
   });
 
-  // Handle CSP issues by retrying the fetch when we detect resources might be blocked
   useEffect(() => {
-    // When we detect CSP issues, try again with a slight delay
     const cspRetryTimer = setTimeout(() => {
       if (isStableLoading && !error && !hasError) {
         console.log("Attempting retry due to possible CSP issues");
         retryFetch?.();
       }
-    }, 3000); // Reduced from 5000ms to 3000ms
+    }, 3000);
     
     return () => clearTimeout(cspRetryTimer);
   }, [isStableLoading, error, hasError, retryFetch]);
 
-  // Render loading state with stability to prevent flickering
   if (isStableLoading && !forcedExit) {
     console.log("Rendering stable loading state");
     return (
@@ -126,7 +117,6 @@ export default function BusinessOptimizationPage() {
     );
   }
 
-  // Check if we have data - important: always prioritize showing data over error state
   const hasData = (
     (inventoryData && inventoryData.length > 0) || 
     (salesData && salesData.length > 0) || 
@@ -136,7 +126,6 @@ export default function BusinessOptimizationPage() {
   
   console.log("Has data:", hasData, "locationData:", locationData);
 
-  // Only show error state if we have no data at all
   if ((error || hasError || forcedExit) && !hasData) {
     console.log("Rendering error state", { error, hasError, errorType, connectionError });
     return (
@@ -152,7 +141,6 @@ export default function BusinessOptimizationPage() {
     );
   }
 
-  // Ensure we fallback to showing empty state if no data available
   if (!hasData && !isLoading && !locationLoading) {
     console.log("Rendering empty state");
     return (
@@ -164,7 +152,6 @@ export default function BusinessOptimizationPage() {
     );
   }
 
-  // If forcedExit is true but we have some data, show what we have
   console.log("Rendering main content");
   return (
     <DashboardLayout>

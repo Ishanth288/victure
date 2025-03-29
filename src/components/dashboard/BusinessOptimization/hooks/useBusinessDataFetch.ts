@@ -1,11 +1,27 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
-// Type modifications to fix the TS error
-type ErrorType = 'connection' | 'database' | 'server' | 'unknown' | 'auth' | 'validation';
+// Define valid table endpoints
+type TableEndpoint = 'inventory' | 'bills' | 'purchase_orders';
 
-export const useBusinessDataFetch = (endpoint: string) => {
+// Type for error categories
+export type ErrorType = 'connection' | 'database' | 'server' | 'unknown' | 'auth' | 'validation';
+
+// Define result types for different data
+type InventoryData = Array<any>;
+type SalesData = Array<any>;
+type SuppliersData = Array<any>;
+
+// Result type for each endpoint
+type EndpointDataMap = {
+  'inventory': InventoryData;
+  'bills': SalesData;
+  'purchase_orders': SuppliersData;
+}
+
+export const useBusinessDataFetch = (endpoint: TableEndpoint) => {
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,5 +80,11 @@ export const useBusinessDataFetch = (endpoint: string) => {
     return 'unknown';
   };
 
-  return { data, isLoading, error, errorType, refetch };
+  return { 
+    data, 
+    isLoading, 
+    error, 
+    errorType, 
+    refetch 
+  };
 };
