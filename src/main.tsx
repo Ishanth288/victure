@@ -37,6 +37,13 @@ const queryClient = new QueryClient({
         Sentry.captureException(error);
       }
     },
+    mutations: {
+      // Add error handling for mutations too
+      onError: (error) => {
+        console.error('Mutation error:', error);
+        Sentry.captureException(error);
+      }
+    }
   },
 });
 

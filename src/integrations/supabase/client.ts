@@ -30,6 +30,38 @@ const retryOptions = {
   }
 };
 
+// Custom fetch function with retry logic
+const customFetch = async (url: string, options?: RequestInit): Promise<Response> => {
+  let retryCount = 0;
+    
+  const fetchWithRetry = async (): Promise<Response> => {
+    try {
+      return await fetch(url, {
+        ...options,
+        headers: {
+          ...options?.headers,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+    } catch (error: any) {
+      if (retryCount < retryOptions.maxRetries && retryOptions.shouldRetry(error)) {
+        retryCount++;
+        const delay = retryOptions.retryDelay + (retryCount * retryOptions.retryIncrement);
+        console.warn(`Retrying fetch (${retryCount}/${retryOptions.maxRetries}) after ${delay}ms due to:`, error.message);
+        
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetchWithRetry();
+      }
+      throw error;
+    }
+  };
+  
+  return fetchWithRetry();
+};
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     autoRefreshToken: true,
@@ -47,37 +79,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     params: {
       eventsPerSecond: 10
     }
-  },
-  // Add better retry logic
-  fetch: (url, options) => {
-    let retryCount = 0;
-    
-    const fetchWithRetry = async (): Promise<Response> => {
-      try {
-        return await fetch(url, {
-          ...options,
-          headers: {
-            ...options?.headers,
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
-        });
-      } catch (error: any) {
-        if (retryCount < retryOptions.maxRetries && retryOptions.shouldRetry(error)) {
-          retryCount++;
-          const delay = retryOptions.retryDelay + (retryCount * retryOptions.retryIncrement);
-          console.warn(`Retrying fetch (${retryCount}/${retryOptions.maxRetries}) after ${delay}ms due to:`, error.message);
-          
-          // Wait before retrying
-          await new Promise(resolve => setTimeout(resolve, delay));
-          return fetchWithRetry();
-        }
-        throw error;
-      }
-    };
-    
-    return fetchWithRetry();
   }
 });
 
@@ -88,16 +89,7 @@ export const fetchWithOptions = async (url: string, options?: RequestInit) => {
     console.log('Supabase fetch:', url);
   }
   
-  return fetch(url, {
-    ...options,
-    // Add cache control headers to prevent caching issues
-    headers: {
-      ...options?.headers,
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    }
-  });
+  return customFetch(url, options);
 };
 
 // Export security-enhanced version of auth state change
@@ -124,8 +116,8 @@ export const handleQueryResult = <T>(result: T | { error: true }) => {
 // Add a connection status check for debugging
 export const checkSupabaseConnection = async () => {
   try {
-    // Use the type-safe approach
-    const { data, error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
+    // Use a more forgiving approach that won't throw TypeScript errors
+    const { data, error } = await (supabase as any).from('profiles').select('count', { count: 'exact', head: true });
     if (error) {
       console.error('Supabase connection test failed:', error);
       return false;

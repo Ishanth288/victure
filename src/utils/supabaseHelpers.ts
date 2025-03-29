@@ -32,10 +32,194 @@ export async function safeInsert<T>(
         message: `Failed to insert data into ${table}: ${error}`,
         details: "",
         hint: "",
-        name: "CustomError"  // Adding the missing 'name' property
+        name: "CustomError"  // Adding the name property
       }
     };
   }
+}
+
+/**
+ * Safely selects data from a table by ID, with proper error handling
+ */
+export async function safeSelectById<T>(
+  table: string,
+  id: string | number,
+  options?: { select?: string; }
+): Promise<{ data: T | null; error: PostgrestError | null }> {
+  try {
+    const query = (supabase as any)
+      .from(table)
+      .select(options?.select || '*')
+      .eq('id', id)
+      .single();
+    
+    const result = await query;
+    
+    // Check for errors in the response
+    if (result.error) {
+      console.error(`Error selecting from ${table}:`, result.error);
+      Sentry.captureException(result.error);
+      return result;
+    }
+    
+    // Handle potential issues by checking if data exists
+    if (!result.data) {
+      return {
+        data: null,
+        error: {
+          code: "not-found",
+          message: `No data found in ${table} with id ${id}`,
+          details: "",
+          hint: "",
+          name: "NotFoundError"
+        }
+      };
+    }
+    
+    return { data: result.data as T, error: null };
+  } catch (error) {
+    console.error(`Error selecting data from ${table}:`, error);
+    Sentry.captureException(error);
+    return {
+      data: null,
+      error: {
+        code: "custom-error",
+        message: `Failed to select data from ${table}: ${error}`,
+        details: "",
+        hint: "",
+        name: "CustomError"
+      }
+    };
+  }
+}
+
+/**
+ * Safely selects data from a table by any field, with proper error handling
+ */
+export async function safeSelectByField<T>(
+  table: string,
+  field: string,
+  value: any,
+  options?: { select?: string; single?: boolean }
+): Promise<{ data: T | null; error: PostgrestError | null }> {
+  try {
+    let query = (supabase as any)
+      .from(table)
+      .select(options?.select || '*')
+      .eq(field, value);
+    
+    if (options?.single) {
+      query = query.single();
+    }
+    
+    const result = await query;
+    
+    // Check for errors in the response
+    if (result.error) {
+      console.error(`Error selecting from ${table}:`, result.error);
+      Sentry.captureException(result.error);
+      return result;
+    }
+    
+    return { data: result.data as T, error: null };
+  } catch (error) {
+    console.error(`Error selecting data from ${table}:`, error);
+    Sentry.captureException(error);
+    return {
+      data: null,
+      error: {
+        code: "custom-error",
+        message: `Failed to select data from ${table}: ${error}`,
+        details: "",
+        hint: "",
+        name: "CustomError"
+      }
+    };
+  }
+}
+
+/**
+ * Safely updates data in a table
+ */
+export async function safeUpdate<T>(
+  table: string,
+  data: any,
+  field: string,
+  value: any
+): Promise<{ data: T | null; error: PostgrestError | null }> {
+  try {
+    const result = await (supabase as any)
+      .from(table)
+      .update(data)
+      .eq(field, value);
+    
+    return result;
+  } catch (error) {
+    console.error(`Error updating data in ${table}:`, error);
+    Sentry.captureException(error);
+    return {
+      data: null,
+      error: {
+        code: "custom-error",
+        message: `Failed to update data in ${table}: ${error}`,
+        details: "",
+        hint: "",
+        name: "CustomError"
+      }
+    };
+  }
+}
+
+/**
+ * Safely updates data in a table by ID
+ */
+export async function safeUpdateById<T>(
+  table: string,
+  id: string | number,
+  data: any
+): Promise<{ data: T | null; error: PostgrestError | null }> {
+  return safeUpdate<T>(table, data, 'id', id);
+}
+
+/**
+ * Safely deletes data from a table
+ */
+export async function safeDelete(
+  table: string,
+  field: string,
+  value: any
+): Promise<{ data: any | null; error: PostgrestError | null }> {
+  try {
+    const result = await (supabase as any)
+      .from(table)
+      .delete()
+      .eq(field, value);
+    
+    return result;
+  } catch (error) {
+    console.error(`Error deleting data from ${table}:`, error);
+    Sentry.captureException(error);
+    return {
+      data: null,
+      error: {
+        code: "custom-error",
+        message: `Failed to delete data from ${table}: ${error}`,
+        details: "",
+        hint: "",
+        name: "CustomError"
+      }
+    };
+  }
+}
+
+/**
+ * Safely deletes data from a table by ID
+ */
+export async function safeDeleteById(
+  table: string,
+  id: string | number
+): Promise<{ data: any | null; error: PostgrestError | null }> {
+  return safeDelete(table, 'id', id);
 }
 
 /**
@@ -52,7 +236,7 @@ export function logError(error: any, info?: string): void {
  */
 export async function checkSupabaseConnection(): Promise<boolean> {
   try {
-    const { error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
+    const { error } = await (supabase as any).from('profiles').select('count', { count: 'exact', head: true });
     
     if (error) {
       console.error('Supabase connection check failed:', error);
@@ -69,6 +253,32 @@ export async function checkSupabaseConnection(): Promise<boolean> {
     Sentry.captureException(error);
     return false;
   }
+}
+
+/**
+ * Safely check for data before accessing properties
+ * This function helps prevent null property access errors
+ */
+export function safeDataAccess<T, K extends keyof T>(obj: T | null | undefined, key: K, defaultValue: T[K]): T[K] {
+  if (!obj) return defaultValue;
+  return obj[key] !== undefined ? obj[key] : defaultValue;
+}
+
+/**
+ * Type guard to check if a response has an error
+ */
+export function hasError(response: any): response is { error: PostgrestError } {
+  return response && response.error !== null && response.error !== undefined;
+}
+
+/**
+ * Handle Supabase queries with proper error checking to prevent TypeScript errors
+ */
+export function handleQueryData<T>(response: any, fallback: T): T {
+  if (hasError(response) || !response.data) {
+    return fallback;
+  }
+  return response.data as T;
 }
 
 /**

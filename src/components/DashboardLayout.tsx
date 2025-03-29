@@ -11,6 +11,7 @@ import { PlanBanner } from "@/components/PlanBanner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { motion } from "framer-motion";
+import { safeSelectByField, handleQueryData } from "@/utils/supabaseHelpers";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -51,15 +52,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const fetchProfile = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user?.id) {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
+      const { data, error } = await safeSelectByField(
+        'profiles',
+        'id',
+        session.user.id,
+        { single: true }
+      );
 
       if (!error && data) {
         setProfileData(data);
-        localStorage.setItem('pharmacyName', data.pharmacy_name);
+        localStorage.setItem('pharmacyName', data.pharmacy_name || 'Pharmacy');
       }
     }
   };

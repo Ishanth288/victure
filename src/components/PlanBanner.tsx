@@ -8,6 +8,7 @@ import { format, differenceInDays } from 'date-fns';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { safeSelectByField, handleQueryData } from '@/utils/supabaseHelpers';
 
 // Add types for plan information
 interface PlanInfo {
@@ -42,11 +43,12 @@ export function PlanBanner() {
       }
       
       // Fetch plan information from profiles
-      const { data, error: profileError } = await supabase
-        .from('profiles')
-        .select('plan_type, registration_date, trial_expiration_date, monthly_bills_count, daily_bills_count')
-        .eq('id', user.id)
-        .single();
+      const { data, error: profileError } = await safeSelectByField(
+        'profiles',
+        'id',
+        user.id,
+        { select: 'plan_type, registration_date, trial_expiration_date, monthly_bills_count, daily_bills_count', single: true }
+      );
       
       if (profileError) {
         console.error('Profile error:', profileError);
@@ -54,7 +56,7 @@ export function PlanBanner() {
       }
       
       // Count inventory items
-      const { count: inventoryCount, error: inventoryError } = await supabase
+      const { count: inventoryCount, error: inventoryError } = await (supabase as any)
         .from('inventory')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id);
@@ -63,25 +65,25 @@ export function PlanBanner() {
         console.error('Inventory error:', inventoryError);
       }
       
-      if (data) {
-        // Calculate days remaining (only for Free Trial)
-        let daysRemaining = 0;
-        if (data.plan_type === 'Free Trial' && data.trial_expiration_date) {
-          const expirationDate = new Date(data.trial_expiration_date);
-          daysRemaining = differenceInDays(expirationDate, new Date());
-          daysRemaining = daysRemaining > 0 ? daysRemaining : 0;
-        }
-        
-        setPlanInfo({
-          planType: data.plan_type,
-          registrationDate: data.registration_date,
-          trialExpirationDate: data.trial_expiration_date,
-          monthlyBillsCount: data.monthly_bills_count || 0,
-          dailyBillsCount: data.daily_bills_count || 0,
-          inventoryCount: inventoryCount || 0,
-          daysRemaining: daysRemaining
-        });
+      const safeData = data || {};
+      
+      // Calculate days remaining (only for Free Trial)
+      let daysRemaining = 0;
+      if (safeData.plan_type === 'Free Trial' && safeData.trial_expiration_date) {
+        const expirationDate = new Date(safeData.trial_expiration_date);
+        daysRemaining = differenceInDays(expirationDate, new Date());
+        daysRemaining = daysRemaining > 0 ? daysRemaining : 0;
       }
+      
+      setPlanInfo({
+        planType: safeData.plan_type || 'Free Trial',
+        registrationDate: safeData.registration_date || null,
+        trialExpirationDate: safeData.trial_expiration_date || null,
+        monthlyBillsCount: safeData.monthly_bills_count || 0,
+        dailyBillsCount: safeData.daily_bills_count || 0,
+        inventoryCount: inventoryCount || 0,
+        daysRemaining: daysRemaining
+      });
     } catch (err: any) {
       console.error('Error fetching plan info:', err);
       setError(err.message);
