@@ -1,8 +1,9 @@
 
 import { memo } from "react";
-import { Loader2, Database, WifiOff, ServerCrash, AlertCircle } from "lucide-react";
+import { Loader2, Database, WifiOff, ServerCrash, AlertCircle, UserX, AlertOctagon } from "lucide-react";
 import { TypingEffect } from "@/components/ui/typing-effect";
 import { Button } from "@/components/ui/button";
+import { ErrorType } from "../hooks/useBusinessDataFetch";
 
 interface LoadingStateProps {
   message?: string;
@@ -37,7 +38,7 @@ LoadingState.displayName = 'LoadingState';
 
 interface ErrorStateProps {
   onRetry: () => void;
-  errorType?: 'connection' | 'database' | 'server' | 'unknown';
+  errorType?: ErrorType;
   errorMessage?: string;
 }
 
@@ -51,6 +52,8 @@ export const ErrorState = memo(({
     'connection': WifiOff,
     'database': Database,
     'server': ServerCrash,
+    'auth': UserX,
+    'validation': AlertOctagon,
     'unknown': AlertCircle
   }[errorType];
 
@@ -59,6 +62,8 @@ export const ErrorState = memo(({
     'connection': "Connection Error",
     'database': "Database Error",
     'server': "Server Error",
+    'auth': "Authentication Error",
+    'validation': "Validation Error",
     'unknown': "Unable to load data"
   }[errorType];
 
@@ -67,6 +72,8 @@ export const ErrorState = memo(({
     'connection': "We're having trouble connecting to the server. Please check your internet connection and try again.",
     'database': "There was a problem loading data from the database. This might be a temporary issue.",
     'server': "Our servers are currently experiencing issues. Our team has been notified.",
+    'auth': "There was an authentication problem. Please try logging in again.",
+    'validation': "The data provided did not meet our validation requirements.",
     'unknown': "There was a problem loading your business optimization data. This might be due to a network issue or server error."
   }[errorType];
 
