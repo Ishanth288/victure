@@ -8,13 +8,15 @@ interface LoadingAnimationProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   logoText?: string;
+  showLogo?: boolean;
 }
 
 export function LoadingAnimation({ 
   text = "Loading...", 
   size = "md", 
   className = "",
-  logoText = "Victure"
+  logoText = "Victure",
+  showLogo = true
 }: LoadingAnimationProps) {
   const sizeClasses = {
     sm: "h-12 gap-2",
@@ -46,18 +48,20 @@ export function LoadingAnimation({
       sizeClasses[size],
       className
     )}>
-      <div className="flex items-center justify-center gap-2 mb-2">
-        <h3 className={cn(
-          "font-bold animate-pulse text-primary", 
-          logoSize[size]
-        )}>
-          {logoText}
-        </h3>
-        <Loader2 className={cn(
-          "animate-spin text-primary", 
-          iconSize[size]
-        )} />
-      </div>
+      {showLogo && (
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <h3 className={cn(
+            "font-bold animate-pulse text-primary", 
+            logoSize[size]
+          )}>
+            {logoText}
+          </h3>
+          <Loader2 className={cn(
+            "animate-spin text-primary", 
+            iconSize[size]
+          )} />
+        </div>
+      )}
       {text && (
         <p className={cn(
           "text-gray-500", 
