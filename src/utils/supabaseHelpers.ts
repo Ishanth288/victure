@@ -99,47 +99,53 @@ export async function safeUpdate<T extends Record<string, any>>(
   match: Record<string, any>
 ): Promise<{ data: any; error: any }> {
   try {
-    // Create a basic update query
-    let updateQuery = supabase.from(table).update(data as any);
+    // Begin with the base update query
+    const baseQuery = supabase.from(table).update(data as any);
     
-    // Instead of chaining .eq() calls, we'll build a filter object and apply it
-    // This avoids the deep type instantiations that cause TS errors
+    // Apply the match conditions using a completely different approach
+    // that avoids TypeScript's deep instantiation problem
     const matchKeys = Object.keys(match);
+    let updateResult;
     
-    // Apply conditions one by one directly from the object
-    if (matchKeys.length > 0) {
-      // Apply first condition
-      updateQuery = updateQuery.eq(matchKeys[0] as any, match[matchKeys[0]]);
+    // Special handling to avoid chaining .eq() calls
+    if (matchKeys.length === 0) {
+      // No conditions
+      updateResult = await baseQuery;
+    } else if (matchKeys.length === 1) {
+      // Single condition - most common case
+      updateResult = await baseQuery.eq(matchKeys[0], match[matchKeys[0]]);
+    } else {
+      // Multiple conditions - use a dynamic approach with any type
+      let query: any = baseQuery;
       
-      // Loop through remaining conditions
-      for (let i = 1; i < matchKeys.length; i++) {
-        const key = matchKeys[i];
-        updateQuery = updateQuery.eq(key as any, match[key]);
+      for (const key of matchKeys) {
+        query = query.eq(key, match[key]);
       }
+      
+      updateResult = await query;
     }
-    
-    // Execute the update
-    const updateResult = await updateQuery;
     
     if (updateResult.error) {
       return { data: null, error: updateResult.error };
     }
     
-    // Get the updated data using the same approach
-    let selectQuery = supabase.from(table).select('*');
+    // Get the updated data using the same approach for selecting
+    const baseSelectQuery = supabase.from(table).select('*');
+    let selectResult;
     
-    if (matchKeys.length > 0) {
-      // Apply first condition
-      selectQuery = selectQuery.eq(matchKeys[0] as any, match[matchKeys[0]]);
+    if (matchKeys.length === 0) {
+      selectResult = await baseSelectQuery;
+    } else if (matchKeys.length === 1) {
+      selectResult = await baseSelectQuery.eq(matchKeys[0], match[matchKeys[0]]);
+    } else {
+      let query: any = baseSelectQuery;
       
-      // Loop through remaining conditions
-      for (let i = 1; i < matchKeys.length; i++) {
-        const key = matchKeys[i];
-        selectQuery = selectQuery.eq(key as any, match[key]);
+      for (const key of matchKeys) {
+        query = query.eq(key, match[key]);
       }
+      
+      selectResult = await query;
     }
-    
-    const selectResult = await selectQuery;
     
     return { 
       data: selectResult.data, 
@@ -165,27 +171,23 @@ export async function safeSelect<T = any>(
   } = {}
 ): Promise<{ data: T | null; error: any }> {
   try {
-    let query = supabase
+    // Base query with column selection
+    const baseQuery = supabase
       .from(table)
       .select(options.columns || '*');
     
-    // Apply match conditions using the same approach as in safeUpdate
+    // Apply match conditions using the same pattern as safeUpdate
     const matchKeys = Object.keys(match);
+    let query: any = baseQuery;
     
-    if (matchKeys.length > 0) {
-      // Apply first condition
-      query = query.eq(matchKeys[0] as any, match[matchKeys[0]]);
-      
-      // Loop through remaining conditions
-      for (let i = 1; i < matchKeys.length; i++) {
-        const key = matchKeys[i];
-        query = query.eq(key as any, match[key]);
-      }
+    // Apply all conditions (if any)
+    for (const key of matchKeys) {
+      query = query.eq(key, match[key]);
     }
     
     // Apply ordering if specified
     if (options.order) {
-      query = query.order(options.order.column as any, { 
+      query = query.order(options.order.column, { 
         ascending: options.order.ascending !== false 
       });
     }
@@ -196,19 +198,17 @@ export async function safeSelect<T = any>(
     }
     
     // Execute the query
+    let result;
     if (options.single) {
-      const result = await query.maybeSingle();
-      return { 
-        data: result.data as T, 
-        error: result.error 
-      };
+      result = await query.maybeSingle();
     } else {
-      const result = await query;
-      return { 
-        data: result.data as T, 
-        error: result.error 
-      };
+      result = await query;
     }
+    
+    return { 
+      data: result.data as T, 
+      error: result.error 
+    };
   } catch (error) {
     console.error(`Error selecting from ${table}:`, error);
     return { data: null, error };
