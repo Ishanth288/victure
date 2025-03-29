@@ -22,12 +22,6 @@ export default defineConfig(({ mode }) => ({
       // and should be stored in environment variables
       authToken: process.env.SENTRY_AUTH_TOKEN,
       
-      // Correct configuration for sourcemaps
-      // The properties should be at the top level, not inside a sourcemaps object
-      include: ["./dist"],
-      ignore: ["node_modules"],
-      urlPrefix: "~/",
-      
       // Only generate source maps and upload them when in production
       disable: mode !== 'production',
     }),
