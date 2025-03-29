@@ -8,7 +8,11 @@ import { BrowserTracing } from "@sentry/tracing";
 // Initialize Sentry
 Sentry.init({
   dsn: "https://examplePublicKey@o0.ingest.sentry.io/0", // Replace with your actual DSN
-  integrations: [new BrowserTracing()],
+  integrations: [
+    new BrowserTracing({
+      tracingOrigins: ["localhost", /^\//],
+    }),
+  ],
   
   // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring
   // We recommend adjusting this value in production
@@ -16,9 +20,6 @@ Sentry.init({
   
   // Adjust this value in production, or use tracesSampler for greater control
   replaysSessionSampleRate: 0.1,
-  
-  // Remove the 'performance' key as it's not a valid Sentry option
-  tracingOrigins: ["localhost", /^\//],
   
   // Configure error fingerprinting
   beforeSend(event) {
@@ -35,4 +36,3 @@ createRoot(document.getElementById("root")!).render(
     <App />
   </Sentry.ErrorBoundary>
 );
-
