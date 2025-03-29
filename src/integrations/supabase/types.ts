@@ -101,6 +101,33 @@ export type Database = {
           },
         ]
       }
+      feedback: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          user_response: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          user_response?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          user_response?: string | null
+        }
+        Relationships: []
+      }
       inventory: {
         Row: {
           dosage_form: string | null

@@ -30,11 +30,11 @@ export function FeedbackForm() {
     try {
       const { error } = await supabase
         .from('feedback')
-        .insert([{ 
+        .insert({
           email: email || null, 
           message: feedback,
           created_at: new Date().toISOString()
-        }]);
+        });
         
       if (error) throw error;
       

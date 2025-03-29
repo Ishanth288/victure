@@ -1,293 +1,423 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, AlertCircle, DollarSign, Package, Truck } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { safelyGetData } from "@/utils/supabaseHelpers";
-import { safeSelect } from "@/utils/supabaseHelpers";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { PieChart, Pie, Cell } from "recharts";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 export default function BusinessOptimization() {
-  const [activeTab, setActiveTab] = useState("forecasting");
-  const [forecastingData, setForecastingData] = useState<any[]>([]);
-  const [marginData, setMarginData] = useState<any[]>([]);
-  const [supplierData, setSupplierData] = useState<any[]>([]);
-  const [interactionsData, setInteractionsData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [inventoryData, setInventoryData] = useState<any[]>([]);
+  const [salesData, setSalesData] = useState<any[]>([]);
+  const [suppliersData, setSuppliersData] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      try {
+        // Fetch inventory data
+        const { data: inventoryItems } = await supabase
+          .from('inventory')
+          .select('*');
 
-      // Fetch data for forecasting
-      const { data: inventoryData } = await safeSelect('inventory', { user_id: session.user.id });
+        // Fetch sales data from bills
+        const { data: bills } = await supabase
+          .from('bills')
+          .select('*, bill_items(*)');
+
+        // Fetch supplier data from purchase orders
+        const { data: purchaseOrders } = await supabase
+          .from('purchase_orders')
+          .select('*, purchase_order_items(*)');
+
+        if (inventoryItems) {
+          setInventoryData(inventoryItems);
+        }
+
+        if (bills) {
+          setSalesData(bills);
+        }
+
+        if (purchaseOrders) {
+          setSuppliersData(purchaseOrders);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
+
+  // Prepare data for forecasting
+  const prepareForecastData = () => {
+    if (!salesData || salesData.length === 0) return [];
+
+    const monthlyData: Record<string, number> = {};
+    
+    salesData.forEach((bill: any) => {
+      const date = new Date(bill.date);
+      const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
       
-      // Sample forecasting data based on inventory
-      const processedForecastingData = safelyGetData(inventoryData)?.slice(0, 10).map((item: any) => ({
-        name: item.name,
-        current: item.quantity,
-        forecast: Math.round(item.quantity * (1 - (Math.random() * 0.4)))
-      })) || [];
+      if (!monthlyData[monthYear]) {
+        monthlyData[monthYear] = 0;
+      }
       
-      setForecastingData(processedForecastingData);
-      
-      // Sample profit margin data
-      const profitMarginData = safelyGetData(inventoryData)?.slice(0, 8).map((item: any) => {
-        const costPrice = item.unit_cost;
-        const sellingPrice = costPrice * (1 + (Math.random() * 0.5 + 0.2)); // 20-70% margin
-        const profitMargin = ((sellingPrice - costPrice) / sellingPrice) * 100;
+      monthlyData[monthYear] += bill.total_amount;
+    });
+    
+    // Convert to array for chart
+    return Object.entries(monthlyData).map(([month, amount]) => ({
+      month,
+      amount
+    }));
+  };
+
+  // Prepare data for margin analysis
+  const prepareMarginData = () => {
+    if (!inventoryData || inventoryData.length === 0) return [];
+    
+    // Calculate profit margin for each product
+    return inventoryData
+      .filter((item: any) => item.unit_cost > 0)
+      .map((item: any) => {
+        // For demo purposes, assuming selling price is 40% markup on cost
+        const sellingPrice = item.unit_cost * 1.4;
+        const margin = ((sellingPrice - item.unit_cost) / sellingPrice) * 100;
         
         return {
           name: item.name,
-          margin: profitMargin.toFixed(2),
-          revenue: (sellingPrice * item.quantity).toFixed(2)
+          margin: Math.round(margin * 10) / 10,
+          cost: item.unit_cost
         };
-      }) || [];
-      
-      setMarginData(profitMarginData);
-      
-      // Sample supplier performance data
-      const { data: purchaseOrders } = await safeSelect('purchase_orders', { user_id: session.user.id });
-      
-      // Group by supplier and calculate metrics
-      const supplierMetrics: Record<string, any> = {};
-      
-      safelyGetData(purchaseOrders)?.forEach((order: any) => {
-        if (!supplierMetrics[order.supplier_name]) {
-          supplierMetrics[order.supplier_name] = {
-            name: order.supplier_name,
-            orders: 0,
-            onTimeDelivery: 0,
-            orderAccuracy: 0
-          };
-        }
-        
-        supplierMetrics[order.supplier_name].orders += 1;
-        
-        // Random metrics for demonstration
-        if (Math.random() > 0.3) {
-          supplierMetrics[order.supplier_name].onTimeDelivery += 1;
-        }
-        
-        if (Math.random() > 0.2) {
-          supplierMetrics[order.supplier_name].orderAccuracy += 1;
-        }
-      });
-      
-      const processedSupplierData = Object.values(supplierMetrics).map((supplier: any) => ({
-        name: supplier.name,
-        onTimeDelivery: supplier.orders > 0 ? ((supplier.onTimeDelivery / supplier.orders) * 100).toFixed(0) : 0,
-        orderAccuracy: supplier.orders > 0 ? ((supplier.orderAccuracy / supplier.orders) * 100).toFixed(0) : 0,
-        orders: supplier.orders
-      }));
-      
-      setSupplierData(processedSupplierData);
-      
-      // Sample drug interactions data
-      const sampleDrugs = [
-        { name: "Paracetamol", interactions: ["Warfarin", "Alcohol"] },
-        { name: "Aspirin", interactions: ["Warfarin", "Ibuprofen", "Prednisolone"] },
-        { name: "Lisinopril", interactions: ["Potassium supplements", "Spironolactone"] },
-        { name: "Metformin", interactions: ["Alcohol", "Contrast dye"] },
-        { name: "Atorvastatin", interactions: ["Grapefruit juice", "Erythromycin"] }
-      ];
-      
-      setInteractionsData(sampleDrugs);
-      
-      setIsLoading(false);
-    }
+      })
+      .sort((a, b) => b.margin - a.margin)
+      .slice(0, 10);
+  };
+
+  // Prepare supplier performance data
+  const prepareSupplierData = () => {
+    if (!suppliersData || suppliersData.length === 0) return [];
     
-    fetchData();
-  }, []);
+    const supplierPerformance: Record<string, {orders: number, onTime: number, total: number}> = {};
+    
+    suppliersData.forEach((order: any) => {
+      const supplierName = order.supplier_name;
+      
+      if (!supplierPerformance[supplierName]) {
+        supplierPerformance[supplierName] = {
+          orders: 0,
+          onTime: 0,
+          total: 0
+        };
+      }
+      
+      supplierPerformance[supplierName].orders += 1;
+      supplierPerformance[supplierName].total += order.total_amount || 0;
+      
+      // Assuming on-time delivery if status is 'completed'
+      if (order.status === 'completed') {
+        supplierPerformance[supplierName].onTime += 1;
+      }
+    });
+    
+    // Convert to array for chart
+    return Object.entries(supplierPerformance).map(([name, data]) => ({
+      name,
+      performance: (data.onTime / data.orders) * 100,
+      orders: data.orders,
+      total: data.total
+    }));
+  };
+
+  const forecastData = prepareForecastData();
+  const marginData = prepareMarginData();
+  const supplierData = prepareSupplierData();
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading business optimization data...</span>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Business Optimization</h1>
-          <Button>Export Reports</Button>
-        </div>
+        <h1 className="text-3xl font-bold">Business Optimization</h1>
         
-        <Tabs defaultValue="forecasting" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-4 mb-4">
-            <TabsTrigger value="forecasting" className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              <span className="hidden md:inline">Inventory Forecasting</span>
-              <span className="md:hidden">Forecast</span>
-            </TabsTrigger>
-            <TabsTrigger value="margins" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              <span className="hidden md:inline">Profit Margins</span>
-              <span className="md:hidden">Margins</span>
-            </TabsTrigger>
-            <TabsTrigger value="suppliers" className="flex items-center gap-2">
-              <Truck className="h-4 w-4" />
-              <span className="hidden md:inline">Supplier Performance</span>
-              <span className="md:hidden">Suppliers</span>
-            </TabsTrigger>
-            <TabsTrigger value="interactions" className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
-              <span className="hidden md:inline">Drug Interactions</span>
-              <span className="md:hidden">Interactions</span>
-            </TabsTrigger>
+        <Tabs defaultValue="forecast">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="forecast">Forecasting Tools</TabsTrigger>
+            <TabsTrigger value="margin">Profit Margin Analysis</TabsTrigger>
+            <TabsTrigger value="supplier">Supplier Metrics</TabsTrigger>
+            <TabsTrigger value="interactions">Drug Interactions</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="forecasting" className="space-y-4">
+          <TabsContent value="forecast" className="space-y-4 pt-4">
             <Card>
               <CardHeader>
-                <CardTitle>Inventory Forecasting</CardTitle>
-                <CardDescription>
-                  Predict inventory needs based on historical data and current stock levels
-                </CardDescription>
+                <CardTitle>Sales Forecast</CardTitle>
+                <CardDescription>Projected sales based on historical data</CardDescription>
               </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="h-80 flex items-center justify-center">
-                    <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-                  </div>
+              <CardContent className="h-80">
+                {forecastData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={forecastData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => [`₹${value}`, 'Amount']} />
+                      <Line type="monotone" dataKey="amount" stroke="#8884d8" activeDot={{ r: 8 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
                 ) : (
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={forecastingData} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" />
-                        <YAxis dataKey="name" type="category" width={120} />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="current" name="Current Stock" fill="#8884d8" />
-                        <Bar dataKey="forecast" name="Forecasted Need" fill="#82ca9d" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>No Data Available</AlertTitle>
+                    <AlertDescription>
+                      There is not enough historical sales data to generate a forecast.
+                    </AlertDescription>
+                  </Alert>
                 )}
               </CardContent>
-              <CardFooter>
-                <p className="text-sm text-muted-foreground">
-                  Forecasting is based on historical consumption patterns and current inventory levels.
-                </p>
-              </CardFooter>
             </Card>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Inventory Forecast</CardTitle>
+                  <CardDescription>Projected inventory needs</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80">
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Advanced Feature</AlertTitle>
+                    <AlertDescription>
+                      Inventory forecasting will be available with more historical data.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Seasonal Trends</CardTitle>
+                  <CardDescription>Product demand by season</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80">
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Advanced Feature</AlertTitle>
+                    <AlertDescription>
+                      Seasonal trend analysis requires at least 12 months of data.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
           
-          <TabsContent value="margins" className="space-y-4">
+          <TabsContent value="margin" className="space-y-4 pt-4">
             <Card>
               <CardHeader>
-                <CardTitle>Profit Margin Analysis</CardTitle>
-                <CardDescription>
-                  Identify high and low-margin products to optimize pricing and inventory decisions
-                </CardDescription>
+                <CardTitle>Profit Margin by Product</CardTitle>
+                <CardDescription>Highest margin products</CardDescription>
               </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="h-80 flex items-center justify-center">
-                    <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-                  </div>
+              <CardContent className="h-80">
+                {marginData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={marginData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => [`${value}%`, 'Margin']} />
+                      <Bar dataKey="margin" fill="#8884d8" />
+                    </BarChart>
+                  </ResponsiveContainer>
                 ) : (
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={marginData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis yAxisId="left" orientation="left" stroke="#8884d8" />
-                        <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" />
-                        <Tooltip />
-                        <Legend />
-                        <Bar yAxisId="left" dataKey="margin" name="Profit Margin (%)" fill="#8884d8" />
-                        <Bar yAxisId="right" dataKey="revenue" name="Revenue (₹)" fill="#82ca9d" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>No Data Available</AlertTitle>
+                    <AlertDescription>
+                      There is not enough product data to analyze margins.
+                    </AlertDescription>
+                  </Alert>
                 )}
               </CardContent>
-              <CardFooter>
-                <p className="text-sm text-muted-foreground">
-                  Higher margins don't always correlate with higher revenue. Consider both when making business decisions.
-                </p>
-              </CardFooter>
             </Card>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Category Analysis</CardTitle>
+                  <CardDescription>Profit by product category</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80">
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Coming Soon</AlertTitle>
+                    <AlertDescription>
+                      Category analysis will be available in a future update.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Price Optimization</CardTitle>
+                  <CardDescription>Recommended price points</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80">
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Premium Feature</AlertTitle>
+                    <AlertDescription>
+                      Price optimization requires subscription to Premium plan.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
           
-          <TabsContent value="suppliers" className="space-y-4">
+          <TabsContent value="supplier" className="space-y-4 pt-4">
             <Card>
               <CardHeader>
-                <CardTitle>Supplier Performance Metrics</CardTitle>
-                <CardDescription>
-                  Track delivery times and order accuracy across your suppliers
-                </CardDescription>
+                <CardTitle>Supplier Performance</CardTitle>
+                <CardDescription>On-time delivery performance</CardDescription>
               </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="h-80 flex items-center justify-center">
-                    <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-                  </div>
+              <CardContent className="h-80">
+                {supplierData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={supplierData}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        dataKey="orders"
+                        nameKey="name"
+                        label={(entry) => entry.name}
+                      >
+                        {supplierData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value, name, props) => [`${value} orders`, props.payload.name]} />
+                    </PieChart>
+                  </ResponsiveContainer>
                 ) : (
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={supplierData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Line type="monotone" dataKey="onTimeDelivery" name="On-Time Delivery (%)" stroke="#8884d8" />
-                        <Line type="monotone" dataKey="orderAccuracy" name="Order Accuracy (%)" stroke="#82ca9d" />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>No Data Available</AlertTitle>
+                    <AlertDescription>
+                      There is not enough supplier data to analyze performance.
+                    </AlertDescription>
+                  </Alert>
                 )}
               </CardContent>
-              <CardFooter>
-                <p className="text-sm text-muted-foreground">
-                  Based on {supplierData.reduce((acc, curr) => acc + parseInt(curr.orders), 0)} orders across {supplierData.length} suppliers.
-                </p>
-              </CardFooter>
             </Card>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Cost Comparison</CardTitle>
+                  <CardDescription>Price comparison by supplier</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80">
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Data Required</AlertTitle>
+                    <AlertDescription>
+                      Add more purchase orders to enable supplier cost comparison.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Lead Time Analysis</CardTitle>
+                  <CardDescription>Order fulfillment time by supplier</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80">
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Coming Soon</AlertTitle>
+                    <AlertDescription>
+                      Lead time analysis will be available in the next update.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
           
-          <TabsContent value="interactions" className="space-y-4">
+          <TabsContent value="interactions" className="space-y-4 pt-4">
             <Card>
               <CardHeader>
                 <CardTitle>Drug Interactions Checker</CardTitle>
-                <CardDescription>
-                  Alert for potential drug interactions to ensure patient safety
-                </CardDescription>
+                <CardDescription>Check for potential drug interactions</CardDescription>
               </CardHeader>
               <CardContent>
-                {isLoading ? (
-                  <div className="h-80 flex items-center justify-center">
-                    <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {interactionsData.map((drug, index) => (
-                      <div key={index} className="border p-4 rounded-md">
-                        <h3 className="font-medium text-lg">{drug.name}</h3>
-                        <div className="mt-2">
-                          <h4 className="text-sm font-medium text-muted-foreground">Potential Interactions:</h4>
-                          <div className="mt-1 flex flex-wrap gap-2">
-                            {drug.interactions.map((interaction, idx) => (
-                              <div key={idx} className="bg-red-50 text-red-700 px-2 py-1 rounded text-sm">
-                                {interaction}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="flex flex-col items-center justify-center py-10">
+                  <AlertCircle className="h-16 w-16 text-amber-500 mb-4" />
+                  <h3 className="text-xl font-medium mb-2">Premium Feature</h3>
+                  <p className="text-center text-gray-500 max-w-md">
+                    The Drug Interactions Checker is a premium feature that requires integration with a medical database. 
+                    Upgrade your plan to access this feature.
+                  </p>
+                </div>
               </CardContent>
-              <CardFooter>
-                <p className="text-sm text-muted-foreground">
-                  Always consult a healthcare professional for comprehensive drug interaction advice.
-                </p>
-              </CardFooter>
             </Card>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Most Common Interactions</CardTitle>
+                  <CardDescription>Frequently identified drug interactions</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80">
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Premium Feature</AlertTitle>
+                    <AlertDescription>
+                      This feature requires the premium subscription plan.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Patient Risk Assessment</CardTitle>
+                  <CardDescription>Identify patients at risk for drug interactions</CardDescription>
+                </CardHeader>
+                <CardContent className="h-80">
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Premium Feature</AlertTitle>
+                    <AlertDescription>
+                      This feature requires the premium subscription plan.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

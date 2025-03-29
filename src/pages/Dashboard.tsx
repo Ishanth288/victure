@@ -1,406 +1,344 @@
 
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
-} from "recharts";
-import { 
-  DollarSign, Package, Users, FileText, AlertCircle, Activity,
-  Calendar, CheckSquare, TrendingUp, Clock, ClipboardList
-} from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { StatCard } from "@/components/insights/StatCard";
-import { TimeframeSelector } from "@/components/insights/TimeframeSelector";
+import { StatsCard } from "@/components/insights/StatsCard";
+import { RevenueTrendChart } from "@/components/insights/RevenueTrendChart";
+import { RevenueDistribution } from "@/components/insights/RevenueDistribution";
 import { RevenueChart } from "@/components/insights/RevenueChart";
-import { format, subDays, parseISO } from "date-fns";
-import { safelyGetData } from "@/utils/supabaseHelpers";
-
-// Task management component
-function TaskManagement() {
-  const [tasks, setTasks] = useState([
-    { id: 1, title: "Order weekly supplies", completed: false },
-    { id: 2, title: "Check expiring medications", completed: true },
-    { id: 3, title: "Update inventory counts", completed: false },
-    { id: 4, title: "Follow up with supplier", completed: false },
-    { id: 5, title: "Staff meeting at 10am", completed: true }
-  ]);
-
-  const toggleTask = (id: number) => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
-  };
-
-  const addTask = (title: string) => {
-    if (!title.trim()) return;
-    const newTask = {
-      id: Math.max(0, ...tasks.map(t => t.id)) + 1,
-      title,
-      completed: false
-    };
-    setTasks([...tasks, newTask]);
-  };
-
-  return (
-    <Card className="h-full">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-medium flex items-center gap-2">
-          <CheckSquare className="h-5 w-5 text-primary" />
-          Pharmacy Tasks
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            <input 
-              type="text" 
-              placeholder="Add a new task..."
-              className="flex-1 px-3 py-2 border rounded-md text-sm"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  addTask(e.currentTarget.value);
-                  e.currentTarget.value = '';
-                }
-              }}
-            />
-            <Button 
-              size="sm"
-              onClick={() => {
-                const input = document.querySelector('input') as HTMLInputElement;
-                addTask(input.value);
-                input.value = '';
-              }}
-            >
-              Add
-            </Button>
-          </div>
-          
-          <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2">
-            {tasks.map(task => (
-              <div 
-                key={task.id} 
-                className={`flex items-center gap-2 p-2 rounded border ${task.completed ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-200'}`}
-              >
-                <input 
-                  type="checkbox" 
-                  checked={task.completed}
-                  onChange={() => toggleTask(task.id)}
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                />
-                <span className={task.completed ? 'line-through text-gray-500' : ''}>
-                  {task.title}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// Calendar component
-function CalendarEvents() {
-  const [events, setEvents] = useState([
-    { id: 1, title: "Supplier Meeting", date: "2023-10-15", time: "10:00 AM" },
-    { id: 2, title: "Inventory Audit", date: "2023-10-16", time: "2:00 PM" },
-    { id: 3, title: "Staff Training", date: "2023-10-18", time: "9:00 AM" },
-    { id: 4, title: "Delivery Expected", date: "2023-10-19", time: "11:30 AM" }
-  ]);
-
-  // Just using the current date for all events to simulate upcoming events
-  const today = new Date().toISOString().split('T')[0];
-  const upcomingEvents = events.map(event => ({...event, date: today}));
-
-  return (
-    <Card className="h-full">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-medium flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-primary" />
-          Upcoming Events
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3 max-h-[320px] overflow-y-auto pr-2">
-          {upcomingEvents.map(event => (
-            <div key={event.id} className="p-3 border rounded-md">
-              <div className="font-medium">{event.title}</div>
-              <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                <Clock className="h-3 w-3" />
-                {event.time}
-              </div>
-            </div>
-          ))}
-          <Button variant="outline" className="w-full">
-            View Full Calendar
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// Document Management component
-function DocumentManagement() {
-  const documents = [
-    { id: 1, title: "Pharmacy License", type: "PDF", date: "2023-01-15" },
-    { id: 2, title: "Employee Handbook", type: "DOCX", date: "2023-03-22" },
-    { id: 3, title: "Supplier Contracts", type: "PDF", date: "2023-06-10" },
-    { id: 4, title: "Inventory Procedures", type: "PDF", date: "2023-08-05" },
-    { id: 5, title: "Emergency Protocols", type: "DOCX", date: "2023-09-18" }
-  ];
-
-  return (
-    <Card className="h-full">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-medium flex items-center gap-2">
-          <ClipboardList className="h-5 w-5 text-primary" />
-          Important Documents
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2">
-          {documents.map(doc => (
-            <div 
-              key={doc.id} 
-              className="flex items-center justify-between p-2 border rounded-md hover:bg-gray-50 cursor-pointer"
-            >
-              <div className="flex items-center gap-2">
-                <div className={`h-8 w-8 rounded flex items-center justify-center ${
-                  doc.type === 'PDF' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
-                }`}>
-                  {doc.type}
-                </div>
-                <span>{doc.title}</span>
-              </div>
-              <span className="text-xs text-gray-500">{doc.date}</span>
-            </div>
-          ))}
-          <Button variant="outline" className="w-full mt-2">
-            Upload Document
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+import { ProductsChart } from "@/components/insights/ProductsChart";
+import { TaskManagement } from "@/components/TaskManagement";
+import { DocumentManagement } from "@/components/DocumentManagement";
+import { CalendarComponent } from "@/components/CalendarComponent";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { format, subDays } from "date-fns";
+import { Pill, Users, ShoppingCart, TrendingUp, AlertCircle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const [timeframe, setTimeframe] = useState<'day' | 'week' | 'month' | 'year'>('week');
-  const [lowStockItems, setLowStockItems] = useState<any[]>([]);
-  const [revenueData, setRevenueData] = useState<any[]>([]);
-  const [totalRevenue, setTotalRevenue] = useState(0);
-  const [totalInventory, setTotalInventory] = useState(0);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  
+  const [salesData, setSalesData] = useState([]);
+  const [inventoryData, setInventoryData] = useState([]);
+  const [patientsData, setPatientsData] = useState([]);
+  const [revenueData, setRevenueData] = useState([]);
+  const [topProducts, setTopProducts] = useState([]);
+  const [revenueDistribution, setRevenueDistribution] = useState([]);
+  const { toast } = useToast();
+
   useEffect(() => {
     async function fetchDashboardData() {
       setIsLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-      
-      // Fetch inventory data
-      const { data: inventoryData } = await supabase
-        .from('inventory')
-        .select('*')
-        .eq('user_id', session.user.id);
-      
-      // Process low stock items
-      const lowStock = safelyGetData(inventoryData)?.filter((item: any) => 
-        item.quantity <= item.reorder_point
-      ).slice(0, 5) || [];
-      
-      setLowStockItems(lowStock);
-      
-      // Calculate total inventory value
-      const inventoryValue = safelyGetData(inventoryData)?.reduce((total: number, item: any) => 
-        total + (item.quantity * item.unit_cost), 0
-      ) || 0;
-      
-      setTotalInventory(inventoryValue);
-      
-      // Fetch revenue data
-      const { data: billsData } = await supabase
-        .from('bills')
-        .select('*')
-        .eq('user_id', session.user.id);
-      
-      // Calculate total revenue
-      const revenue = safelyGetData(billsData)?.reduce((total: number, bill: any) => 
-        total + (bill.total_amount || 0), 0
-      ) || 0;
-      
-      setTotalRevenue(revenue);
-      
-      // Generate revenue chart data
-      const days = timeframe === 'day' ? 1 : 
-                  timeframe === 'week' ? 7 : 
-                  timeframe === 'month' ? 30 : 365;
-      
-      const revenueByDate: Record<string, number> = {};
-      
-      // Initialize dates
-      for (let i = 0; i < days; i++) {
-        const date = format(subDays(new Date(), i), 'yyyy-MM-dd');
-        revenueByDate[date] = 0;
-      }
-      
-      // Aggregate revenue by date
-      safelyGetData(billsData)?.forEach((bill: any) => {
-        const billDate = bill.created_at ? format(parseISO(bill.created_at), 'yyyy-MM-dd') : null;
+      try {
+        // Fetch sales data from bills
+        const { data: bills, error: billsError } = await supabase
+          .from('bills')
+          .select('*');
         
-        if (billDate && revenueByDate[billDate] !== undefined) {
-          revenueByDate[billDate] += (bill.total_amount || 0);
+        if (billsError) throw billsError;
+        
+        // Fetch inventory data
+        const { data: inventory, error: inventoryError } = await supabase
+          .from('inventory')
+          .select('*');
+        
+        if (inventoryError) throw inventoryError;
+        
+        // Fetch patients data
+        const { data: patients, error: patientsError } = await supabase
+          .from('patients')
+          .select('*');
+        
+        if (patientsError) throw patientsError;
+        
+        // Process data
+        setSalesData(bills || []);
+        setInventoryData(inventory || []);
+        setPatientsData(patients || []);
+        
+        // Generate revenue data for chart
+        if (bills && bills.length > 0) {
+          const last30Days = Array.from({ length: 30 }, (_, i) => {
+            const date = subDays(new Date(), i);
+            return {
+              date: format(date, 'yyyy-MM-dd'),
+              value: 0
+            };
+          }).reverse();
+          
+          const billsByDate = new Map();
+          
+          bills.forEach(bill => {
+            const billDate = bill.date ? format(new Date(bill.date), 'yyyy-MM-dd') : null;
+            if (billDate) {
+              const existingAmount = billsByDate.get(billDate) || 0;
+              billsByDate.set(billDate, existingAmount + bill.total_amount);
+            }
+          });
+          
+          const revenueByDate = last30Days.map(day => {
+            return {
+              ...day,
+              value: billsByDate.get(day.date) || 0
+            };
+          });
+          
+          setRevenueData(revenueByDate);
+          
+          // Calculate top products
+          if (bills.length > 0) {
+            const productCountMap = new Map();
+            
+            bills.forEach(bill => {
+              // This is a simplified version as we don't have bill_items details
+              // In a real implementation, you would count actual products
+              if (bill.prescription_id) {
+                const productName = `Prescription #${bill.prescription_id}`;
+                const existingValue = productCountMap.get(productName) || 0;
+                productCountMap.set(productName, existingValue + bill.total_amount);
+              }
+            });
+            
+            const productArray = Array.from(productCountMap.entries()).map(([name, value]) => ({
+              name,
+              value
+            }));
+            
+            // Sort by value in descending order and take top 5
+            const topProductsData = productArray
+              .sort((a, b) => b.value - a.value)
+              .slice(0, 5);
+            
+            setTopProducts(topProductsData);
+          }
+          
+          // Calculate revenue distribution
+          if (bills.length > 0) {
+            const categoryMap = new Map();
+            categoryMap.set('Prescription', 0);
+            categoryMap.set('OTC Medicines', 0);
+            categoryMap.set('Medical Supplies', 0);
+            categoryMap.set('Other', 0);
+            
+            bills.forEach(bill => {
+              if (bill.prescription_id) {
+                const existingValue = categoryMap.get('Prescription') || 0;
+                categoryMap.set('Prescription', existingValue + bill.total_amount);
+              } else {
+                // Random distribution for demo purposes
+                const rand = Math.random();
+                if (rand < 0.3) {
+                  const existingValue = categoryMap.get('OTC Medicines') || 0;
+                  categoryMap.set('OTC Medicines', existingValue + bill.total_amount);
+                } else if (rand < 0.6) {
+                  const existingValue = categoryMap.get('Medical Supplies') || 0;
+                  categoryMap.set('Medical Supplies', existingValue + bill.total_amount);
+                } else {
+                  const existingValue = categoryMap.get('Other') || 0;
+                  categoryMap.set('Other', existingValue + bill.total_amount);
+                }
+              }
+            });
+            
+            const distributionData = Array.from(categoryMap.entries())
+              .filter(([_, value]) => value > 0)
+              .map(([name, value]) => ({
+                name,
+                value
+              }));
+            
+            setRevenueDistribution(distributionData);
+          }
         }
-      });
-      
-      // Convert to array for chart
-      const chartData = Object.entries(revenueByDate)
-        .map(([date, value]) => ({ date, value }))
-        .reverse();
-      
-      setRevenueData(chartData);
-      setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        toast({
+          title: "Error loading dashboard",
+          description: "Could not load dashboard data. Please try again.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
-    
+
     fetchDashboardData();
-  }, [navigate, timeframe]);
+  }, [toast]);
+
+  // Calculate summary statistics
+  const totalRevenue = salesData && salesData.length > 0
+    ? salesData.reduce((sum, bill) => sum + (bill.total_amount || 0), 0)
+    : 0;
+  
+  const totalInventoryValue = inventoryData && inventoryData.length > 0
+    ? inventoryData.reduce((sum, item) => sum + (item.unit_cost * item.quantity || 0), 0)
+    : 0;
+  
+  const lowStockItems = inventoryData && inventoryData.length > 0
+    ? inventoryData.filter(item => 
+        (item.quantity || 0) < (item.reorder_point || 10)
+      ).length
+    : 0;
+  
+  const totalPatients = patientsData?.length || 0;
+
+  // Generate data for trend chart
+  const trendData = [
+    { name: 'Jan', value: 5000 },
+    { name: 'Feb', value: 7000 },
+    { name: 'Mar', value: 6000 },
+    { name: 'Apr', value: 8000 },
+    { name: 'May', value: 9500 },
+    { name: 'Jun', value: 11000 },
+    { name: 'Jul', value: 10000 },
+  ];
+
+  // Show dashboard help dialog on first visit
+  useEffect(() => {
+    const hasSeenHelp = localStorage.getItem('dashboard-help-seen');
+    if (!hasSeenHelp) {
+      setIsHelpOpen(true);
+      localStorage.setItem('dashboard-help-seen', 'true');
+    }
+  }, []);
 
   return (
     <DashboardLayout>
+      <Dialog open={isHelpOpen} onOpenChange={setIsHelpOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Welcome to Your Dashboard</DialogTitle>
+            <DialogDescription>
+              Here you can view all your pharmacy metrics in one place. The dashboard shows key performance indicators, revenue trends, top-selling products, and more. Explore the various sections to get insights into your business performance.
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+      
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+        </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard 
-            title="Total Revenue" 
-            value={`₹${totalRevenue.toLocaleString()}`} 
-            icon={DollarSign} 
-            trend={5.2} 
+        {/* KPI Stats Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <StatCard
+            title="Total Revenue"
+            value={`₹${totalRevenue.toLocaleString('en-IN')}`}
+            icon={TrendingUp}
+            trend={2.5}
           />
-          <StatCard 
-            title="Inventory Value" 
-            value={`₹${totalInventory.toLocaleString()}`} 
-            icon={Package} 
-            trend={-1.5} 
+          <StatCard
+            title="Inventory Value"
+            value={`₹${totalInventoryValue.toLocaleString('en-IN')}`}
+            icon={ShoppingCart}
           />
-          <StatCard 
-            title="Active Prescriptions" 
-            value="42" 
-            icon={FileText} 
-            trend={3.8} 
+          <StatCard
+            title="Total Patients"
+            value={totalPatients}
+            icon={Users}
+            trend={4.2}
           />
-          <StatCard 
-            title="Total Patients" 
-            value="128" 
-            icon={Users} 
-            trend={7.1} 
+          <StatCard
+            title="Low Stock Items"
+            value={lowStockItems}
+            icon={AlertCircle}
+            trend={-1.5}
           />
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-medium">Revenue Overview</CardTitle>
-              <TimeframeSelector timeframe={timeframe} onTimeframeChange={setTimeframe} />
-            </CardHeader>
-            <CardContent>
-              <RevenueChart data={revenueData} />
-            </CardContent>
-          </Card>
-          
+        {/* Charts Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-medium flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-red-500" />
-                Low Stock Items
-              </CardTitle>
+            <CardHeader>
+              <CardTitle>Revenue (Last 30 Days)</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
                 <div className="h-[300px] flex items-center justify-center">
-                  <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                  <p>Loading revenue data...</p>
                 </div>
-              ) : lowStockItems.length > 0 ? (
-                <div className="space-y-4">
-                  {lowStockItems.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 border-b">
-                      <div>
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-gray-500">{item.generic_name}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className={`font-bold ${item.quantity === 0 ? 'text-red-600' : 'text-amber-600'}`}>
-                          {item.quantity} left
-                        </p>
-                        <p className="text-xs text-gray-500">Reorder at: {item.reorder_point}</p>
-                      </div>
-                    </div>
-                  ))}
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => navigate('/inventory')}
-                  >
-                    View All Inventory
-                  </Button>
-                </div>
+              ) : revenueData.length > 0 ? (
+                <RevenueChart data={revenueData} />
               ) : (
-                <div className="h-[300px] flex items-center justify-center text-gray-500">
-                  No low stock items found
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>No Revenue Data</AlertTitle>
+                  <AlertDescription>
+                    There is no revenue data available for the last 30 days.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Revenue Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="h-[300px] flex items-center justify-center">
+                  <p>Loading distribution data...</p>
                 </div>
+              ) : revenueDistribution.length > 0 ? (
+                <RevenueDistribution data={revenueDistribution} />
+              ) : (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>No Distribution Data</AlertTitle>
+                  <AlertDescription>
+                    There is not enough sales data to show revenue distribution.
+                  </AlertDescription>
+                </Alert>
               )}
             </CardContent>
           </Card>
         </div>
         
-        <Tabs defaultValue="tasks">
-          <TabsList className="grid grid-cols-3">
-            <TabsTrigger value="tasks" className="flex items-center gap-2">
-              <CheckSquare className="h-4 w-4" />
-              Task Management
-            </TabsTrigger>
-            <TabsTrigger value="calendar" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Calendar
-            </TabsTrigger>
-            <TabsTrigger value="documents" className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4" />
-              Documents
-            </TabsTrigger>
-          </TabsList>
+        {/* Second Row of Charts and Data */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Products</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="h-[300px] flex items-center justify-center">
+                  <p>Loading product data...</p>
+                </div>
+              ) : topProducts.length > 0 ? (
+                <ProductsChart data={topProducts} />
+              ) : (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>No Product Data</AlertTitle>
+                  <AlertDescription>
+                    There is not enough sales data to show top products.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
           
-          <TabsContent value="tasks" className="mt-4">
-            <TaskManagement />
-          </TabsContent>
-          
-          <TabsContent value="calendar" className="mt-4">
-            <CalendarEvents />
-          </TabsContent>
-          
-          <TabsContent value="documents" className="mt-4">
-            <DocumentManagement />
-          </TabsContent>
-        </Tabs>
+          <Card>
+            <CardHeader>
+              <CardTitle>Revenue Trend</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RevenueTrendChart data={trendData} />
+            </CardContent>
+          </Card>
+        </div>
         
-        <div className="text-center">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate('/business-optimization')}
-            className="flex items-center gap-2"
-          >
-            <TrendingUp className="h-4 w-4" />
-            View Business Optimization
-          </Button>
+        {/* Management Tools Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <TaskManagement />
+          <CalendarComponent />
+          <DocumentManagement />
         </div>
       </div>
     </DashboardLayout>
