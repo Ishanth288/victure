@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { StatCard } from "@/components/insights/StatCard";
@@ -8,7 +7,7 @@ import { RevenueDistribution } from "@/components/insights/RevenueDistribution";
 import { RevenueChart } from "@/components/insights/RevenueChart";
 import { ProductsChart } from "@/components/insights/ProductsChart";
 import { TaskManagement } from "@/components/TaskManagement";
-import { DocumentManagement } from "@/components/DocumentManagement";
+import { DocumentManagement } from "@/components/document-management";
 import { CalendarComponent } from "@/components/CalendarComponent";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
