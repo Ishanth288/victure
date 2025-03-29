@@ -3,7 +3,7 @@ import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 import { AnimatedGradientBorder } from "@/components/ui/animated-gradient-border";
 import { CardTilt } from "@/components/ui/card-tilt";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
-import { Database, Stethoscope, Rocket, BellRing, Clock, Shield, TrendingUp, BarChart, DollarSign } from "lucide-react";
+import { Database, Brain, Rocket, BellRing, Clock, Shield, TrendingUp, BarChart, DollarSign } from "lucide-react";
 import { memo } from "react";
 
 // Memoize the component to prevent unnecessary re-renders
@@ -13,10 +13,10 @@ export const ScrollAnimationSection = memo(() => {
       titleComponent={
         <>
           <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 mt-2 mb-4">
-            Modern Pharmacy Management
+            AI-Powered Pharmacy Management
           </h2>
           <p className="text-xl md:text-[2.5rem] font-bold text-primary leading-tight">
-            AI-Powered Operations at Your Fingertips
+            Real-Time Profit Analytics at Your Fingertips
           </p>
         </>
       }
@@ -25,18 +25,18 @@ export const ScrollAnimationSection = memo(() => {
         <div className="flex flex-col space-y-4">
           {[
             {
-              title: "Inventory Management",
-              description: "Track stock levels, manage cost and selling prices, and automate reordering with our intelligent inventory system.",
-              icon: <Database className="h-6 w-6" />
+              title: "Real-Time Profit Tracking",
+              description: "Monitor profit margins with instant calculations based on cost price and selling price for every product you sell.",
+              icon: <DollarSign className="h-6 w-6" />
             },
             {
-              title: "Patient Care",
-              description: "Store patient records securely and access medication histories instantly for better care.",
-              icon: <Stethoscope className="h-6 w-6" />
+              title: "AI-Powered Inventory Optimization",
+              description: "Our machine learning algorithms analyze your sales data to suggest optimal inventory levels and reordering schedules.",
+              icon: <Brain className="h-6 w-6" />
             },
             {
-              title: "Real-Time Profit Analytics",
-              description: "Monitor profit margins with real-time calculations based on cost price and selling price for every product sold.",
+              title: "Live Profit Analytics Dashboard",
+              description: "View comprehensive analytics on your most profitable products, times, and customer segments as transactions happen.",
               icon: <BarChart className="h-6 w-6" />
             }
           ].map((item, index) => (
@@ -61,19 +61,19 @@ export const ScrollAnimationSection = memo(() => {
         <div className="flex flex-col space-y-4">
           {[
             {
-              title: "AI-Driven Optimization",
-              description: "Our AI algorithms analyze your data to suggest optimized pricing strategies, inventory levels, and business decisions.",
+              title: "Intelligent Pricing Optimization",
+              description: "Our AI algorithms analyze your market position and competition to suggest optimal pricing strategies for maximum profitability.",
               icon: <TrendingUp className="h-6 w-6" />
             },
             {
-              title: "Price Management",
-              description: "Easily track and manage cost prices and selling prices with historical tracking to monitor profitability over time.",
-              icon: <DollarSign className="h-6 w-6" />
+              title: "Real-Time Profit Margin Alerts",
+              description: "Receive instant notifications when transactions fall below your target profit margins so you can take immediate action.",
+              icon: <BellRing className="h-6 w-6" />
             },
             {
-              title: "Secure Access",
-              description: "Role-based access control ensures that staff members can only access the information they need.",
-              icon: <Shield className="h-6 w-6" />
+              title: "Dynamic Financial Reporting",
+              description: "Generate comprehensive profit and loss reports in real-time to make informed business decisions with the latest data.",
+              icon: <Clock className="h-6 w-6" />
             }
           ].map((item, index) => (
             <ScrollReveal 

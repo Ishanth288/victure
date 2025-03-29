@@ -3,17 +3,21 @@ import { m } from "framer-motion";
 import { Check } from "lucide-react";
 
 const benefits = [
-  "Increased efficiency and productivity",
-  "Reduced costs and waste through AI-driven inventory optimization",
   "Real-time profit margin tracking per product and transaction",
-  "Improved patient safety and satisfaction",
-  "Streamlined workflows with automated pricing calculations",
-  "Enhanced compliance and financial transparency",
-  "Better inventory control with cost and selling price management",
   "AI-powered analytics for smarter business decisions",
-  "Reduced medication errors",
-  "Improved customer service",
-  "Dynamic pricing strategies based on market trends"
+  "Intelligent pricing optimization based on market trends",
+  "Live inventory valuation with cost and selling price tracking",
+  "Instant financial performance visualization",
+  "Automated identification of high-profit products",
+  "AI-driven demand forecasting and inventory suggestions",
+  "Real-time alerts for low-profit transactions",
+  "Reduced costs through AI-driven inventory optimization",
+  "Increased efficiency with automated pricing calculations",
+  "Enhanced financial transparency with live profit dashboards",
+  "Dynamic pricing strategies based on real-time market data",
+  "Improved cash flow management with profit-focused analytics",
+  "Better inventory control with profit margin visibility",
+  "Data-backed negotiation insights for supplier management"
 ];
 
 export default function Benefits() {
@@ -23,11 +27,14 @@ export default function Benefits() {
         <div className="text-center mb-16">
           <span className="text-primary font-semibold">Benefits</span>
           <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mt-2">
-            Experience the Victure Advantage
+            Experience the AI-Powered Advantage
           </h2>
+          <p className="mt-4 text-lg text-neutral-600 max-w-3xl mx-auto">
+            Our real-time analytics and profit optimization features give you the competitive edge in today's pharmacy market.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {benefits.map((benefit, index) => (
             <m.div
               key={benefit}
