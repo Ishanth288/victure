@@ -26,13 +26,15 @@ interface TabContentProps {
 
 export function TabContent({ 
   activeTab,
-  inventoryData,
-  salesData,
-  suppliersData,
-  locationData,
-  pharmacyLocation
+  inventoryData = [],
+  salesData = [],
+  suppliersData = [],
+  locationData = {},
+  pharmacyLocation = null
 }: TabContentProps) {
-  // Prepare data
+  console.log("TabContent rendering", { activeTab });
+  
+  // Prepare data with null-safety
   const forecastData = prepareForecastData(locationData, salesData);
   const marginData = prepareMarginData(inventoryData);
   const supplierData = prepareSupplierData(suppliersData);

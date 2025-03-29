@@ -8,7 +8,7 @@ export const securityHeaders = {
   // Prevent XSS attacks by controlling which resources can be loaded
   'Content-Security-Policy': `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://prod.spline.design https://*.sentry.io https://js.stripe.com https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://prod.spline.design https://*.sentry.io https://js.stripe.com https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev https://cdn.gpteng.co;
     style-src 'self' 'unsafe-inline';
     img-src 'self' data: blob: https://*.supabase.co https://*.sentry.io https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev;
     font-src 'self' data:;
@@ -17,7 +17,7 @@ export const securityHeaders = {
     object-src 'none';
     base-uri 'self';
     form-action 'self';
-    frame-ancestors 'self' https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev https://preview--victure.lovable.app;
+    frame-ancestors 'self' https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev https://preview--victure.lovable.app https://*.gpteng.co;
   `.replace(/\s+/g, ' ').trim(),
   
   // Prevent MIME type sniffing

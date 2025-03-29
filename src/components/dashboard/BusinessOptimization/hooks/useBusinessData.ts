@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,6 +68,7 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
       
       const user = userResult.data.user;
 
+      // Fix the inventory query by wrapping it in a proper async function
       const inventoryPromise = async () => {
         const result = await supabase
           .from('inventory')
@@ -86,6 +88,7 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
 
       if (inventoryResult.error) throw inventoryResult.error;
 
+      // Fix the bills query by wrapping it in a proper async function
       const billsPromise = async () => {
         const result = await supabase
           .from('bills')
@@ -105,6 +108,7 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
 
       if (billsResult.error) throw billsResult.error;
 
+      // Fix the purchase orders query by wrapping it in a proper async function
       const purchaseOrdersPromise = async () => {
         const result = await supabase
           .from('purchase_orders')

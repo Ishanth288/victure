@@ -9,14 +9,20 @@ export const prepareForecastData = (locationData?: any, salesData?: any[]) => {
   const monthlyData: Record<string, number> = {};
   
   salesData.forEach((bill: any) => {
-    const date = new Date(bill.date);
-    const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
+    if (!bill || !bill.date) return;
     
-    if (!monthlyData[monthYear]) {
-      monthlyData[monthYear] = 0;
+    try {
+      const date = new Date(bill.date);
+      const monthYear = `${date.getMonth() + 1}/${date.getFullYear()}`;
+      
+      if (!monthlyData[monthYear]) {
+        monthlyData[monthYear] = 0;
+      }
+      
+      monthlyData[monthYear] += bill.total_amount || 0;
+    } catch (error) {
+      console.error("Error processing bill data:", error);
     }
-    
-    monthlyData[monthYear] += bill.total_amount;
   });
   
   // Convert to array for chart
@@ -31,14 +37,14 @@ export const prepareMarginData = (inventoryData?: any[]) => {
   
   // Calculate profit margin for each product
   return inventoryData
-    .filter((item: any) => item.unit_cost > 0)
+    .filter((item: any) => item && item.unit_cost > 0)
     .map((item: any) => {
       // For demo purposes, assuming selling price is 40% markup on cost
       const sellingPrice = item.unit_cost * 1.4;
       const margin = ((sellingPrice - item.unit_cost) / sellingPrice) * 100;
       
       return {
-        name: item.name,
+        name: item.name || 'Unknown Product',
         margin: Math.round(margin * 10) / 10,
         cost: item.unit_cost
       };
@@ -53,7 +59,9 @@ export const prepareSupplierData = (suppliersData?: any[]) => {
   const supplierPerformance: Record<string, {orders: number, onTime: number, total: number}> = {};
   
   suppliersData.forEach((order: any) => {
-    const supplierName = order.supplier_name;
+    if (!order) return;
+    
+    const supplierName = order.supplier_name || 'Unknown Supplier';
     
     if (!supplierPerformance[supplierName]) {
       supplierPerformance[supplierName] = {
@@ -75,7 +83,7 @@ export const prepareSupplierData = (suppliersData?: any[]) => {
   // Convert to array for chart
   return Object.entries(supplierPerformance).map(([name, data]) => ({
     name,
-    performance: (data.onTime / data.orders) * 100,
+    performance: data.orders > 0 ? (data.onTime / data.orders) * 100 : 0,
     orders: data.orders,
     total: data.total
   }));
@@ -95,16 +103,21 @@ export const prepareExpiryData = (inventoryData?: any[]) => {
   let expired = 0;
   
   inventoryData.forEach((item: any) => {
-    if (!item.expiry_date) return;
+    if (!item || !item.expiry_date) return;
     
-    const expiryDate = new Date(item.expiry_date);
-    
-    if (expiryDate < today) {
-      expired += item.quantity;
-    } else if (expiryDate <= thirtyDaysFromNow) {
-      expiringSoon += item.quantity;
-    } else if (expiryDate <= ninetyDaysFromNow) {
-      expiringLater += item.quantity;
+    try {
+      const expiryDate = new Date(item.expiry_date);
+      const quantity = item.quantity || 0;
+      
+      if (expiryDate < today) {
+        expired += quantity;
+      } else if (expiryDate <= thirtyDaysFromNow) {
+        expiringSoon += quantity;
+      } else if (expiryDate <= ninetyDaysFromNow) {
+        expiringLater += quantity;
+      }
+    } catch (error) {
+      console.error("Error processing expiry date:", error);
     }
   });
   
@@ -116,7 +129,9 @@ export const prepareExpiryData = (inventoryData?: any[]) => {
 };
 
 export const prepareSeasonalTrendsData = (locationData?: any) => {
-  if (locationData?.seasonalTrends && locationData.seasonalTrends.length > 0) {
+  if (!locationData || !locationData.seasonalTrends) return [];
+  
+  if (locationData.seasonalTrends && locationData.seasonalTrends.length > 0) {
     // First get the current season
     const now = new Date();
     const month = now.getMonth();
@@ -133,17 +148,19 @@ export const prepareSeasonalTrendsData = (locationData?: any) => {
     
     // Find the closest matching season
     const seasonData = locationData.seasonalTrends.find((s: any) => 
-      s.season.toLowerCase().includes(currentSeason.toLowerCase())
+      s && s.season && s.season.toLowerCase().includes(currentSeason.toLowerCase())
     ) || locationData.seasonalTrends[0];
     
-    return seasonData.topProducts;
+    return seasonData && seasonData.topProducts ? seasonData.topProducts : [];
   }
   
   return [];
 };
 
 export const prepareRegionalDemandData = (locationData?: any) => {
-  if (locationData?.regionalDemand && locationData.regionalDemand.length > 0) {
+  if (!locationData) return [];
+  
+  if (locationData.regionalDemand && locationData.regionalDemand.length > 0) {
     return locationData.regionalDemand;
   }
   return [];
