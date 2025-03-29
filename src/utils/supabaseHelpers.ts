@@ -3,6 +3,9 @@
  * Utility functions for working with Supabase
  */
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
+
+type TableNames = keyof Database['public']['Tables'];
 
 /**
  * Helper function to safely get data from a Supabase query result
@@ -59,12 +62,15 @@ export function safeFilter<T>(value: T): any {
  * Type-safe wrapper for inserting data into Supabase
  */
 export async function safeInsert<T extends Record<string, any>>(
-  table: string,
+  table: TableNames, 
   data: T | T[],
   options: { returning?: boolean } = { returning: true }
 ): Promise<{ data: any; error: any }> {
   try {
-    return await supabase.from(table).insert(data as any).select(options.returning ? '*' : undefined);
+    return await supabase
+      .from(table)
+      .insert(data as any)
+      .select(options.returning ? '*' : undefined);
   } catch (error) {
     console.error(`Error inserting into ${table}:`, error);
     return { data: null, error };
@@ -75,7 +81,7 @@ export async function safeInsert<T extends Record<string, any>>(
  * Type-safe wrapper for updating data in Supabase
  */
 export async function safeUpdate<T extends Record<string, any>>(
-  table: string,
+  table: TableNames,
   data: T,
   match: Record<string, any>,
   options: { returning?: boolean } = { returning: true }
@@ -89,7 +95,7 @@ export async function safeUpdate<T extends Record<string, any>>(
     });
     
     if (options.returning) {
-      query = query.select();
+      return await query.select();
     }
     
     return await query;
@@ -103,7 +109,7 @@ export async function safeUpdate<T extends Record<string, any>>(
  * Type-safe wrapper for selecting data from Supabase
  */
 export async function safeSelect<T = any>(
-  table: string,
+  table: TableNames,
   match: Record<string, any> = {},
   options: { 
     columns?: string; 
@@ -135,7 +141,8 @@ export async function safeSelect<T = any>(
     }
     
     if (options.single) {
-      return await query.single();
+      const result = await query.single();
+      return result as any;
     }
     
     return await query;
