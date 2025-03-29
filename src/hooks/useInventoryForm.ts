@@ -13,7 +13,7 @@ const initialFormData: InventoryItemFormData = {
   strength: "",
   unitSize: "",
   unitCost: "",
-  sellingPrice: "",
+  sellingPrice: "", // Ensuring sellingPrice is included here as well
   quantity: "",
   reorderPoint: "10",
   expiryDate: "",

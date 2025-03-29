@@ -39,8 +39,9 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
     strength: "",
     unitSize: "",
     unitCost: "",
+    sellingPrice: "", // Added the missing sellingPrice property
     quantity: "",
-    reorderPoint: "",
+    reorderPoint: "10",
     expiryDate: "",
     supplier: "",
     storage: "",
