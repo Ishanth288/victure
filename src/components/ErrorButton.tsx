@@ -4,11 +4,11 @@ import * as Sentry from "@sentry/react";
 
 export const ErrorButton: React.FC = () => {
   const handleBreakWorld = () => {
-    // First log the error to Sentry
-    Sentry.captureException(new Error("This is a tracked error!"));
+    // Log the error to Sentry first
+    Sentry.captureException(new Error("Intentional error for testing Sentry error tracking"));
     
-    // Then actually throw an error to trigger the error boundary
-    throw new Error("This is a thrown error that breaks the UI!");
+    // Throw an error to trigger the error boundary
+    throw new Error("This button intentionally breaks the UI to demonstrate error handling");
   };
 
   return (
