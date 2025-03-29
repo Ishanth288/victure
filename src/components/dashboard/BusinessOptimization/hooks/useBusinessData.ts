@@ -7,6 +7,17 @@ import { checkSupabaseConnection, executeWithRetry, determineErrorType } from "@
 import { User } from "@supabase/supabase-js";
 import { PostgrestError } from "@supabase/supabase-js";
 
+// Define types for location analytics data
+interface LocationAnalyticsData {
+  // Define properties as needed
+  [key: string]: any;
+}
+
+interface PharmacyLocation {
+  // Define properties as needed
+  [key: string]: any;
+}
+
 interface UseBusinessDataOptions {
   onError?: () => void;
 }
@@ -29,9 +40,9 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     isLoading: locationLoading,
     error: locationError
   } = useLocationBasedAnalytics() as { 
-    locationData: any; 
-    pharmacyLocation: any; 
-    refreshData: () => Promise<any>; 
+    locationData: LocationAnalyticsData; 
+    pharmacyLocation: PharmacyLocation; 
+    refreshData: () => Promise<LocationAnalyticsData>; 
     isLoading: boolean;
     error: any;
   };
@@ -70,12 +81,18 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
       
       const user = userResult.data.user;
 
-      // Fetch inventory data with retry logic
-      const inventoryResult = await executeWithRetry(
-        () => supabase
+      // Create a promise-based wrapper for inventory query
+      const inventoryPromise = async () => {
+        const result = await supabase
           .from('inventory')
           .select('*')
-          .eq('user_id', user.id),
+          .eq('user_id', user.id);
+        return result;
+      };
+
+      // Fetch inventory data with retry logic
+      const inventoryResult = await executeWithRetry(
+        inventoryPromise,
         { 
           context: "inventory",
           retries: 3,
@@ -85,12 +102,18 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
 
       if (inventoryResult.error) throw inventoryResult.error;
 
-      // Fetch sales data from bills with retry logic
-      const billsResult = await executeWithRetry(
-        () => supabase
+      // Create a promise-based wrapper for bills query
+      const billsPromise = async () => {
+        const result = await supabase
           .from('bills')
           .select('*, bill_items(*)')
-          .eq('user_id', user.id),
+          .eq('user_id', user.id);
+        return result;
+      };
+
+      // Fetch sales data from bills with retry logic
+      const billsResult = await executeWithRetry(
+        billsPromise,
         { 
           context: "bills",
           retries: 3,
@@ -100,12 +123,18 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
 
       if (billsResult.error) throw billsResult.error;
 
-      // Fetch supplier data from purchase orders with retry logic
-      const purchaseOrdersResult = await executeWithRetry(
-        () => supabase
+      // Create a promise-based wrapper for purchase orders query
+      const purchaseOrdersPromise = async () => {
+        const result = await supabase
           .from('purchase_orders')
           .select('*, purchase_order_items(*)')
-          .eq('user_id', user.id),
+          .eq('user_id', user.id);
+        return result;
+      };
+
+      // Fetch supplier data from purchase orders with retry logic
+      const purchaseOrdersResult = await executeWithRetry(
+        purchaseOrdersPromise,
         { 
           context: "purchase_orders",
           retries: 3,
