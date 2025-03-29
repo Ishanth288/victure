@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Home } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Card,
@@ -18,7 +19,6 @@ import { motion } from "framer-motion";
 import { INDIAN_STATES } from "@/constants/states";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle, X, Info, Mail, HelpCircle } from "lucide-react";
-import { Link } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -319,6 +319,17 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen relative flex flex-col items-center justify-center p-4 overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+      <div className="absolute top-4 left-4 z-50">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-primary hover:bg-green-50"
+          onClick={() => navigate('/')}
+        >
+          <Home className="h-5 w-5" />
+        </Button>
+      </div>
+      
       <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none"></div>
       
       <div className="absolute top-0 left-0 w-96 h-96 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
