@@ -47,3 +47,100 @@ export function safeId(id: string | number): any {
   return id;
 }
 
+/**
+ * Generic type safe function to handle query filtering
+ * This resolves TypeScript issues with filter values in eq(), gt(), lt(), etc.
+ */
+export function safeFilter<T>(value: T): any {
+  return value as any;
+}
+
+/**
+ * Type-safe wrapper for inserting data into Supabase
+ */
+export async function safeInsert<T extends Record<string, any>>(
+  table: string,
+  data: T | T[],
+  options: { returning?: boolean } = { returning: true }
+): Promise<{ data: any; error: any }> {
+  try {
+    return await supabase.from(table).insert(data as any).select(options.returning ? '*' : undefined);
+  } catch (error) {
+    console.error(`Error inserting into ${table}:`, error);
+    return { data: null, error };
+  }
+}
+
+/**
+ * Type-safe wrapper for updating data in Supabase
+ */
+export async function safeUpdate<T extends Record<string, any>>(
+  table: string,
+  data: T,
+  match: Record<string, any>,
+  options: { returning?: boolean } = { returning: true }
+): Promise<{ data: any; error: any }> {
+  try {
+    let query = supabase.from(table).update(data as any);
+    
+    // Apply all match conditions
+    Object.entries(match).forEach(([key, value]) => {
+      query = query.eq(key as any, value as any);
+    });
+    
+    if (options.returning) {
+      query = query.select();
+    }
+    
+    return await query;
+  } catch (error) {
+    console.error(`Error updating ${table}:`, error);
+    return { data: null, error };
+  }
+}
+
+/**
+ * Type-safe wrapper for selecting data from Supabase
+ */
+export async function safeSelect<T = any>(
+  table: string,
+  match: Record<string, any> = {},
+  options: { 
+    columns?: string; 
+    single?: boolean;
+    order?: { column: string; ascending?: boolean };
+    limit?: number;
+  } = {}
+): Promise<{ data: T | null; error: any }> {
+  try {
+    let query = supabase
+      .from(table)
+      .select(options.columns || '*');
+    
+    // Apply all match conditions
+    Object.entries(match).forEach(([key, value]) => {
+      query = query.eq(key as any, value as any);
+    });
+    
+    // Apply ordering if specified
+    if (options.order) {
+      query = query.order(options.order.column as any, { 
+        ascending: options.order.ascending !== false 
+      });
+    }
+    
+    // Apply limit if specified
+    if (options.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    if (options.single) {
+      return await query.single();
+    }
+    
+    return await query;
+  } catch (error) {
+    console.error(`Error selecting from ${table}:`, error);
+    return { data: null, error };
+  }
+}
