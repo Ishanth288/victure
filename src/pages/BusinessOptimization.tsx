@@ -32,7 +32,7 @@ export default function BusinessOptimization() {
   return (
     <ErrorBoundary
       fallback={<Fallback message="Failed to load business optimization page" />}
-      onError={handleError}
+      onError={(error) => handleError(error)}
     >
       <BusinessOptimizationPage />
     </ErrorBoundary>

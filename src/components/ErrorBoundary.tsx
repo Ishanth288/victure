@@ -9,6 +9,7 @@ import * as Sentry from "@sentry/react";
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface State {
@@ -31,6 +32,11 @@ export class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     logError(error, `ErrorBoundary: ${errorInfo.componentStack}`);
     this.setState({ errorInfo });
+    
+    // Call the onError callback if provided
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo);
+    }
     
     // Check if the error might be related to connection issues
     this.checkConnections();
