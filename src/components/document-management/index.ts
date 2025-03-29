@@ -1,0 +1,2 @@
+
+export { DocumentManagement } from './DocumentManagement';
