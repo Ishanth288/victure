@@ -4,7 +4,11 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useLocationBasedAnalytics } from "@/components/dashboard/hooks/useLocationBasedAnalytics";
 
-export function useBusinessData() {
+interface UseBusinessDataOptions {
+  onError?: () => void;
+}
+
+export function useBusinessData(options?: UseBusinessDataOptions) {
   const [isLoading, setIsLoading] = useState(true);
   const [inventoryData, setInventoryData] = useState<any[]>([]);
   const [salesData, setSalesData] = useState<any[]>([]);
@@ -75,10 +79,15 @@ export function useBusinessData() {
         description: "There was a problem loading your business data.",
         variant: "destructive"
       });
+      
+      // Call onError callback if provided
+      if (options?.onError) {
+        options.onError();
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, options]);
 
   useEffect(() => {
     fetchData();
@@ -119,7 +128,13 @@ export function useBusinessData() {
             refreshLocationData();
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('Successfully subscribed to realtime updates');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('Error subscribing to realtime updates');
+          }
+        });
         
       return () => {
         supabase.removeChannel(inventoryChannel);

@@ -7,11 +7,12 @@ import { useBusinessData } from "./hooks/useBusinessData";
 import { PageHeader } from "./components/PageHeader";
 import { TabsNavigation } from "./components/TabsNavigation";
 import { TabContent } from "./components/TabContent";
-import { LoadingState } from "./components/LoadingState";
+import { LoadingState, ErrorState } from "./components/LoadingState";
 import { setupPageOptimizations } from "@/utils/performanceUtils";
 
 export default function BusinessOptimizationPage() {
   const [activeTab, setActiveTab] = useState("forecast");
+  const [error, setError] = useState<boolean>(false);
   const { toast } = useToast();
   const { 
     isLoading, 
@@ -23,7 +24,9 @@ export default function BusinessOptimizationPage() {
     pharmacyLocation, 
     refreshData, 
     refreshLocationData 
-  } = useBusinessData();
+  } = useBusinessData({
+    onError: () => setError(true),
+  });
 
   // Apply performance optimizations
   useEffect(() => {
@@ -33,6 +36,7 @@ export default function BusinessOptimizationPage() {
 
   // Handle refresh of all data
   const handleRefreshAll = () => {
+    setError(false);
     refreshData();
     refreshLocationData();
     toast({
@@ -41,6 +45,14 @@ export default function BusinessOptimizationPage() {
       duration: 3000
     });
   };
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <ErrorState onRetry={handleRefreshAll} />
+      </DashboardLayout>
+    );
+  }
 
   if (isLoading || locationLoading) {
     return (
