@@ -4,7 +4,6 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
-import { PostgrestFilterBuilder, PostgrestQueryBuilder } from "@supabase/supabase-js";
 
 type TableNames = keyof Database['public']['Tables'];
 
@@ -101,15 +100,19 @@ export async function safeUpdate<T extends Record<string, any>>(
 ): Promise<{ data: any; error: any }> {
   try {
     // Start with an update query
-    let updateQuery = supabase.from(table).update(data as any);
+    const updateQuery = supabase.from(table).update(data as any);
     
-    // Apply all match conditions
-    Object.entries(match).forEach(([key, value]) => {
-      updateQuery = updateQuery.eq(key as any, value as any);
-    });
+    // Apply all match conditions dynamically to avoid deep type instantiation
+    const conditionKeys = Object.keys(match);
+    let finalQuery = updateQuery;
+    
+    for (const key of conditionKeys) {
+      // Apply each condition separately
+      finalQuery = finalQuery.eq(key as any, match[key] as any);
+    }
     
     // Execute the update
-    const updateResult = await updateQuery;
+    const updateResult = await finalQuery;
     
     if (updateResult.error) {
       return { data: null, error: updateResult.error };
@@ -119,11 +122,12 @@ export async function safeUpdate<T extends Record<string, any>>(
     let selectQuery = supabase.from(table).select('*');
     
     // Apply the same conditions to fetch the updated record(s)
-    Object.entries(match).forEach(([key, value]) => {
-      selectQuery = selectQuery.eq(key as any, value as any);
-    });
+    let finalSelectQuery = selectQuery;
+    for (const key of conditionKeys) {
+      finalSelectQuery = finalSelectQuery.eq(key as any, match[key] as any);
+    }
     
-    const selectResult = await selectQuery;
+    const selectResult = await finalSelectQuery;
     
     return { 
       data: selectResult.data, 
@@ -153,10 +157,11 @@ export async function safeSelect<T = any>(
       .from(table)
       .select(options.columns || '*');
     
-    // Apply all match conditions
-    Object.entries(match).forEach(([key, value]) => {
-      query = query.eq(key as any, value as any);
-    });
+    // Apply match conditions
+    const conditionKeys = Object.keys(match);
+    for (const key of conditionKeys) {
+      query = query.eq(key as any, match[key] as any);
+    }
     
     // Apply ordering if specified
     if (options.order) {
