@@ -28,11 +28,14 @@ export function UserManagement() {
     try {
       setLoading(true);
       
+      // Cast the Supabase query to match the expected return type of executeWithRetry
       const result = await executeWithRetry<User[]>(
-        () => supabase
-          .from('profiles')
-          .select('id, email:id, role, created_at, pharmacy_name')
-          .order('created_at', { ascending: false }),
+        async () => {
+          return await supabase
+            .from('profiles')
+            .select('id, email:id, role, created_at, pharmacy_name')
+            .order('created_at', { ascending: false });
+        },
         { context: 'fetching users' }
       );
 

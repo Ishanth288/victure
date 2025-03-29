@@ -1,20 +1,25 @@
 
 import * as Sentry from "@sentry/react";
 
+type SupabaseResult<T> = {
+  data: T;
+  error: any;
+};
+
 /**
  * Execute a Supabase query with automatic retry on failure
- * @param queryFn Function that returns a Supabase query
+ * @param queryFn Function that returns a Supabase query or Promise
  * @param options Configuration options for retry behavior
  * @returns Promise with the query result
  */
 export async function executeWithRetry<T>(
-  queryFn: () => Promise<{ data: T; error: any; }> | { data: T; error: any; },
+  queryFn: () => Promise<SupabaseResult<T>> | { then(onfulfilled: (value: SupabaseResult<T>) => any): any },
   options?: {
     maxRetries?: number;
     retryDelay?: number;
     context?: string;
   }
-): Promise<{ data: T; error: any; }> {
+): Promise<SupabaseResult<T>> {
   const maxRetries = options?.maxRetries ?? 3;
   const retryDelay = options?.retryDelay ?? 1000;
   const context = options?.context ? ` (${options.context})` : '';
@@ -24,9 +29,9 @@ export async function executeWithRetry<T>(
 
   while (attempts < maxRetries) {
     try {
-      // Convert result to a promise if it isn't already one
-      // This ensures we handle both direct Supabase query objects and Promise-wrapped returns
-      const result = await Promise.resolve(queryFn());
+      // Handle both direct Supabase query objects and Promise-wrapped returns
+      // by awaiting the result (works for both types since Supabase queries are "thenable")
+      const result = await queryFn();
       
       if (result.error) {
         // Log the error but continue with retry logic
@@ -41,7 +46,7 @@ export async function executeWithRetry<T>(
         }
       }
       
-      return result;
+      return result as SupabaseResult<T>;
     } catch (error) {
       console.error(`Error executing Supabase query on attempt ${attempts + 1}${context}:`, error);
       lastError = error;
@@ -59,11 +64,11 @@ export async function executeWithRetry<T>(
         });
         
         // On final attempt, return formatted error response
-        return { data: null as any, error: lastError };
+        return { data: null as unknown as T, error: lastError };
       }
     }
   }
 
   // If we've exhausted all retries, return the last error
-  return { data: null as any, error: lastError };
+  return { data: null as unknown as T, error: lastError };
 }
