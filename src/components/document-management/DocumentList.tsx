@@ -14,7 +14,7 @@ interface DocumentListProps {
 export function DocumentList({ documents, onDownload, onPreview }: DocumentListProps) {
   if (documents.length === 0) {
     return (
-      <div className="text-center py-4 text-gray-500 flex flex-col items-center justify-center">
+      <div className="text-center py-4 text-gray-500 flex flex-col items-center justify-center h-full">
         <AlertCircle className="h-8 w-8 mb-2 text-gray-400" />
         <p>No system documents available.</p>
       </div>

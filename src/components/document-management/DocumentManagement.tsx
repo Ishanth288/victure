@@ -1,3 +1,4 @@
+
 import { useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -127,37 +128,6 @@ export function DocumentManagement() {
 
   const handleDownload = async (docType: DocumentType, docName: string) => {
     try {
-      // If we're downloading from the preview, use the current data
-      if (previewOpen && currentDocType === docType) {
-        // Generate PDF from the current preview
-        if (!reportContainerRef.current) return;
-        
-        const doc = documents.find(d => d.id === docType);
-        
-        const pdfDataUrl = await generatePDFFromElement(reportContainerRef.current, {
-          title: docName,
-          description: doc?.description,
-          lastUpdated: doc?.lastUpdated || new Date()
-        });
-        
-        if (pdfDataUrl) {
-          // Download the PDF
-          downloadPDF(pdfDataUrl, docName);
-          
-          toast({
-            title: "Report downloaded",
-            description: `${docName} has been generated and downloaded.`
-          });
-          
-          // Close preview
-          setPreviewOpen(false);
-        } else {
-          throw new Error("Failed to generate PDF");
-        }
-        return;
-      }
-      
-      // Otherwise follow the normal download flow
       // Set loading state
       setDocumentLoading(docType, true);
       

@@ -58,18 +58,26 @@ export const generatePDFFromElement = async (
     const imgWidth = 210; // A4 width in mm
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
     
-    // Add header with pharmacy branding
-    pdf.setFillColor(235, 245, 250);
-    pdf.rect(0, 0, 210, 25, 'F');
-    pdf.setTextColor(0, 51, 102); 
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(16);
-    pdf.text(pharmacyProfile?.pharmacy_name || 'Pharmacy', 105, 10, { align: 'center' });
-    pdf.setFontSize(12);
-    pdf.text(options.title, 105, 18, { align: 'center' });
+    // Add header with Victure branding and pharmacy info
+    pdf.setFillColor(0, 51, 102); // Dark blue background
+    pdf.rect(0, 0, 210, 30, 'F');
     
-    // Add content
-    pdf.addImage(imgData, 'PNG', 0, 30, imgWidth, imgHeight);
+    // Add Victure branding
+    pdf.setTextColor(255, 255, 255); // White text
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(20);
+    pdf.text('VICTURE HEALTHCARE SOLUTIONS', 105, 12, { align: 'center' });
+    
+    // Add pharmacy name
+    pdf.setFontSize(14);
+    pdf.text(pharmacyProfile?.pharmacy_name || 'Pharmacy', 105, 20, { align: 'center' });
+    
+    // Add report title
+    pdf.setFontSize(12);
+    pdf.text(options.title, 105, 27, { align: 'center' });
+    
+    // Add content (shifted down to accommodate the header)
+    pdf.addImage(imgData, 'PNG', 0, 35, imgWidth, imgHeight);
     
     // Add footer with last updated info
     const currentDate = options.lastUpdated ? format(options.lastUpdated, 'PPpp') : format(new Date(), 'PPpp');

@@ -40,19 +40,15 @@ export function DocumentPreviewModal({
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>{documentName} Preview</span>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={onDownload}>
-                <Download className="w-4 h-4 mr-2" />
-                Download
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => onOpenChange(false)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onDownload}
+              className="ml-auto mr-2"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download
+            </Button>
           </DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 overflow-auto">
