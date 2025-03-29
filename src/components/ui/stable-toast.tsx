@@ -5,6 +5,7 @@ import * as Sentry from "@sentry/react";
 // Create a wrapper for the toast function that adds stability
 // and prevents multiple similar toasts from appearing rapidly
 const toastTimeouts = new Map<string, number>();
+const visibleToasts = new Set<string>();
 
 interface ToastOptions {
   title?: string;
@@ -21,28 +22,36 @@ const generateToastKey = (options: ToastOptions): string => {
 export const stableToast = (options: ToastOptions) => {
   const key = generateToastKey(options);
   
+  // If we already have this toast visible or waiting to be cleared, don't show it again
+  if (visibleToasts.has(key) || toastTimeouts.has(key)) {
+    return;
+  }
+  
   // Log toast event to Sentry for debugging
   Sentry.addBreadcrumb({
     category: 'ui.toast',
     message: `Toast: ${options.title} - ${options.description}`,
     level: 'info',
   });
-
-  // Prevent duplicate toasts within a short time period
-  if (toastTimeouts.has(key)) {
-    return;
-  }
+  
+  // Mark this toast as visible
+  visibleToasts.add(key);
   
   // Show the toast
   originalToast({
     ...options,
     duration: options.duration || 3000,
+    onOpenChange: (open) => {
+      if (!open) {
+        visibleToasts.delete(key);
+      }
+    }
   });
   
-  // Set a timeout to prevent duplicate toasts
+  // Set a timeout to prevent duplicate toasts for a longer period
   const timeoutId = window.setTimeout(() => {
     toastTimeouts.delete(key);
-  }, 1000);
+  }, options.duration || 3000);
   
   toastTimeouts.set(key, timeoutId);
 };
@@ -53,4 +62,5 @@ export const clearToastTimeouts = () => {
     clearTimeout(timeoutId);
   });
   toastTimeouts.clear();
+  visibleToasts.clear();
 };

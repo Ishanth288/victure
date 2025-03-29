@@ -18,18 +18,23 @@ export function TypingEffect({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [isInitiallyVisible, setIsInitiallyVisible] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
   const stabilityTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Add visibility transition to prevent flickering
+  // Handle initial visibility to prevent content flash
   useEffect(() => {
-    // Wait for a small delay before making the component visible
+    // Set initial text immediately to prevent blank screen flash
+    setCurrentText(text[0].substring(0, 1));
+    setIsInitiallyVisible(true);
+    
+    // Wait for a small delay before starting the typing animation
     stabilityTimerRef.current = setTimeout(() => {
       if (mountedRef.current) {
         setIsVisible(true);
       }
-    }, 100);
+    }, 300);
     
     // Set up cleanup function
     mountedRef.current = true;
@@ -43,7 +48,7 @@ export function TypingEffect({
         clearTimeout(stabilityTimerRef.current);
       }
     };
-  }, []);
+  }, [text]);
 
   useEffect(() => {
     if (!mountedRef.current || !isVisible) return;
@@ -83,12 +88,11 @@ export function TypingEffect({
     };
   }, [currentText, currentIndex, isDeleting, text, speed, delay, isVisible]);
 
-  if (!isVisible) {
-    return <div className={className} aria-hidden="true"></div>;
-  }
-
   return (
-    <div className={`${className} transition-opacity duration-300 ease-in-out`}>
+    <div 
+      className={`${className} transition-opacity duration-300 ease-in-out ${isInitiallyVisible ? 'opacity-100' : 'opacity-0'}`}
+      aria-live="polite"
+    >
       <span>{currentText}</span>
       <span className="inline-block w-0.5 h-5 ml-1 bg-neutral-800 animate-blink"></span>
     </div>

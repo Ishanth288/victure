@@ -20,6 +20,7 @@ export default function BusinessOptimizationPage() {
   const renderAttempts = useRef(0);
   const maxRenderAttempts = 3;
   const stabilityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const handleDataError = useCallback(() => {
     console.log("Business data error callback triggered");
@@ -49,14 +50,31 @@ export default function BusinessOptimizationPage() {
     // When loading starts, set isStableLoading to true immediately
     if (isLoading || locationLoading) {
       setIsStableLoading(true);
+      
       // Clear any existing timers
       if (stabilityTimerRef.current) {
         clearTimeout(stabilityTimerRef.current);
         stabilityTimerRef.current = null;
       }
+      
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+      }
+      
+      // Set a timeout to force exit loading state after a maximum time
+      // This prevents infinite loading
+      loadingTimerRef.current = setTimeout(() => {
+        setIsStableLoading(false);
+      }, 5000); // Max 5 seconds of loading before forcing exit
     } 
     // When loading ends, wait a bit before showing content to prevent flickering
     else if (isStableLoading) {
+      // Clear force exit timer if it exists
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+        loadingTimerRef.current = null;
+      }
+      
       stabilityTimerRef.current = setTimeout(() => {
         setIsStableLoading(false);
       }, 300); // 300ms delay before transitioning from loading to content
@@ -66,40 +84,11 @@ export default function BusinessOptimizationPage() {
       if (stabilityTimerRef.current) {
         clearTimeout(stabilityTimerRef.current);
       }
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+      }
     };
   }, [isLoading, locationLoading, isStableLoading]);
-
-  // Force an exit from loading state if we've tried too many times
-  useEffect(() => {
-    if ((isLoading || locationLoading) && renderAttempts.current > maxRenderAttempts) {
-      console.log("Forcing exit from loading state after multiple attempts");
-      // This is a fallback to prevent infinite loading
-      if (inventoryData?.length || salesData?.length || suppliersData?.length || locationData) {
-        // We have some data, so let's show what we have
-        toast({
-          title: "Using available data",
-          description: "Some external data sources couldn't be reached. Using local data.",
-          duration: 5000
-        });
-      } else {
-        // No data available, show error
-        setError(true);
-        toast({
-          title: "Data loading error",
-          description: "Failed to load business optimization data. Using offline mode.",
-          variant: "destructive"
-        });
-      }
-      
-      // Force stable loading to end after a short delay
-      if (stabilityTimerRef.current) {
-        clearTimeout(stabilityTimerRef.current);
-      }
-      stabilityTimerRef.current = setTimeout(() => {
-        setIsStableLoading(false);
-      }, 300);
-    }
-  }, [isLoading, locationLoading, renderAttempts, inventoryData, salesData, suppliersData, locationData, toast]);
 
   // Initialize app monitoring on first load
   useEffect(() => {
@@ -114,9 +103,11 @@ export default function BusinessOptimizationPage() {
     return () => cleanup();
   }, []);
 
-  // Increment render attempts
-  renderAttempts.current += 1;
-  console.log("Business Optimization Page rendering - attempt:", renderAttempts.current);
+  // Increment render attempts only once
+  useEffect(() => {
+    renderAttempts.current += 1;
+    console.log("Business Optimization Page rendering - attempt:", renderAttempts.current);
+  }, []); // Empty dependency array ensures this only runs once
 
   // Handle refresh of all data
   const handleRefreshAll = () => {
@@ -134,11 +125,13 @@ export default function BusinessOptimizationPage() {
   };
 
   // Render loading state with stability to prevent flickering
-  if (isStableLoading && renderAttempts.current <= maxRenderAttempts * 2) {
+  if (isStableLoading) {
     console.log("Rendering stable loading state");
     return (
       <DashboardLayout>
-        <LoadingState message="Loading your business analytics data from Google Trends and News..." />
+        <div className="transition-opacity duration-300 ease-in-out">
+          <LoadingState message="Loading your business analytics data from Google Trends and News..." />
+        </div>
       </DashboardLayout>
     );
   }
@@ -158,11 +151,13 @@ export default function BusinessOptimizationPage() {
     console.log("Rendering error state", { error, hasError, errorType, connectionError });
     return (
       <DashboardLayout>
-        <ErrorState 
-          onRetry={handleRefreshAll} 
-          errorType={errorType}
-          errorMessage={connectionError || undefined}
-        />
+        <div className="transition-opacity duration-300 ease-in-out">
+          <ErrorState 
+            onRetry={handleRefreshAll} 
+            errorType={errorType}
+            errorMessage={connectionError || undefined}
+          />
+        </div>
       </DashboardLayout>
     );
   }
@@ -172,7 +167,9 @@ export default function BusinessOptimizationPage() {
     console.log("Rendering empty state");
     return (
       <DashboardLayout>
-        <EmptyState />
+        <div className="transition-opacity duration-300 ease-in-out">
+          <EmptyState />
+        </div>
       </DashboardLayout>
     );
   }
@@ -180,7 +177,7 @@ export default function BusinessOptimizationPage() {
   console.log("Rendering main content");
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 transition-opacity duration-300 ease-in-out">
         <PageHeader 
           pharmacyLocation={pharmacyLocation} 
           onRefresh={handleRefreshAll}

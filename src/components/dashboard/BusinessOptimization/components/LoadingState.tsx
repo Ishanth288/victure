@@ -1,19 +1,37 @@
-
-import { Loader2, AlertCircle, WifiOff, Database, ServerCrash } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { memo } from "react";
+import { Loader2 } from "lucide-react";
+import { TypingEffect } from "@/components/ui/typing-effect";
 
 interface LoadingStateProps {
   message?: string;
 }
 
-export function LoadingState({ message = "Loading business optimization data..." }: LoadingStateProps) {
+export const LoadingState = memo(({ message = "Loading data..." }: LoadingStateProps) => {
+  const loadingMessages = [
+    "Analyzing regional health trends...",
+    "Processing market insights...",
+    "Gathering information from Google Trends...",
+    "Optimizing your business metrics...",
+    message
+  ];
+
   return (
-    <div className="flex flex-col items-center justify-center h-96">
-      <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-      <span className="text-muted-foreground">{message}</span>
+    <div className="w-full h-[60vh] flex flex-col items-center justify-center space-y-6 transition-opacity duration-300 ease-in-out">
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur-xl opacity-20 animate-pulse"></div>
+        <div className="relative bg-white dark:bg-slate-900 rounded-xl shadow-lg p-8 w-[90vw] max-w-md flex flex-col items-center">
+          <Loader2 className="h-16 w-16 text-primary animate-spin mb-4" />
+          <h3 className="text-xl font-semibold text-center mb-2">Loading Business Analytics</h3>
+          <div className="h-12 text-center text-muted-foreground">
+            <TypingEffect text={loadingMessages} speed={40} delay={1800} />
+          </div>
+        </div>
+      </div>
     </div>
   );
-}
+});
+
+LoadingState.displayName = 'LoadingState';
 
 interface ErrorStateProps {
   onRetry: () => void;
@@ -21,11 +39,11 @@ interface ErrorStateProps {
   errorMessage?: string;
 }
 
-export function ErrorState({ 
+export const ErrorState = memo(({ 
   onRetry, 
   errorType = 'unknown',
-  errorMessage
-}: ErrorStateProps) {
+  errorMessage 
+}: ErrorStateProps) => {
   // Select the appropriate icon based on error type
   const ErrorIcon = {
     'connection': WifiOff,
@@ -79,9 +97,9 @@ export function ErrorState({
       </div>
     </div>
   );
-}
+});
 
-export function EmptyState() {
+export const EmptyState = memo(() => {
   return (
     <div className="flex flex-col items-center justify-center h-96">
       <div className="p-6 rounded-lg border border-muted max-w-lg text-center">
@@ -96,4 +114,4 @@ export function EmptyState() {
       </div>
     </div>
   );
-}
+});
