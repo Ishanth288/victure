@@ -68,13 +68,19 @@ export default function Navigation() {
         <div className="container mx-auto px-4">
           <div className="flex items-center h-16">
             <div className="flex items-center space-x-2">
-              <Link to="/" className="mr-2">
-                <Button variant="ghost" size="icon" className="text-primary">
-                  <Home className="h-5 w-5" />
-                </Button>
-              </Link>
-              <HashLink to="/" className="flex items-center space-x-2">
-                <span className="text-2xl font-bold text-primary">Victure</span>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-primary hover:bg-green-50"
+                onClick={() => navigate('/')}
+              >
+                <Home className="h-5 w-5" />
+              </Button>
+              <HashLink 
+                to="/" 
+                className="flex items-center space-x-2"
+              >
+                <span className="text-2xl font-bold text-green-600">Victure</span>
               </HashLink>
             </div>
           </div>
