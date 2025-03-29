@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { format, differenceInDays } from 'date-fns';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { safeSelectByField, handleQueryData } from '@/utils/supabaseHelpers';
+import { safeSelectByField, handleQueryData, safeCast } from '@/utils/supabaseHelpers';
 
 // Add types for plan information
 interface PlanInfo {
@@ -19,6 +18,16 @@ interface PlanInfo {
   dailyBillsCount: number | null;
   inventoryCount: number | null;
   daysRemaining: number;
+}
+
+// Type for profile data from Supabase
+interface ProfileData {
+  plan_type?: string;
+  registration_date?: string;
+  trial_expiration_date?: string;
+  monthly_bills_count?: number;
+  daily_bills_count?: number;
+  [key: string]: any;
 }
 
 export function PlanBanner() {
@@ -65,22 +74,29 @@ export function PlanBanner() {
         console.error('Inventory error:', inventoryError);
       }
       
-      const safeData = data || {};
+      // Type-safe conversion of the data
+      const profileData = safeCast<ProfileData>(data, {
+        plan_type: 'Free Trial',
+        registration_date: null,
+        trial_expiration_date: null,
+        monthly_bills_count: 0,
+        daily_bills_count: 0
+      });
       
       // Calculate days remaining (only for Free Trial)
       let daysRemaining = 0;
-      if (safeData.plan_type === 'Free Trial' && safeData.trial_expiration_date) {
-        const expirationDate = new Date(safeData.trial_expiration_date);
+      if (profileData.plan_type === 'Free Trial' && profileData.trial_expiration_date) {
+        const expirationDate = new Date(profileData.trial_expiration_date);
         daysRemaining = differenceInDays(expirationDate, new Date());
         daysRemaining = daysRemaining > 0 ? daysRemaining : 0;
       }
       
       setPlanInfo({
-        planType: safeData.plan_type || 'Free Trial',
-        registrationDate: safeData.registration_date || null,
-        trialExpirationDate: safeData.trial_expiration_date || null,
-        monthlyBillsCount: safeData.monthly_bills_count || 0,
-        dailyBillsCount: safeData.daily_bills_count || 0,
+        planType: profileData.plan_type || 'Free Trial',
+        registrationDate: profileData.registration_date || null,
+        trialExpirationDate: profileData.trial_expiration_date || null,
+        monthlyBillsCount: profileData.monthly_bills_count || 0,
+        dailyBillsCount: profileData.daily_bills_count || 0,
         inventoryCount: inventoryCount || 0,
         daysRemaining: daysRemaining
       });

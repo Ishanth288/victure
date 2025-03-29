@@ -12,6 +12,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { motion } from "framer-motion";
 import { safeSelectByField, handleQueryData } from "@/utils/supabaseHelpers";
+import { safeCast } from "@/utils/supabaseHelpers";
+
+interface ProfileData {
+  pharmacy_name?: string;
+  owner_name?: string;
+  [key: string]: any;
+}
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -20,7 +27,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [profileData, setProfileData] = useState<any>(null);
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -60,8 +67,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       );
 
       if (!error && data) {
-        setProfileData(data);
-        localStorage.setItem('pharmacyName', data.pharmacy_name || 'Pharmacy');
+        // Type-safe conversion of the data
+        const typedData = safeCast<ProfileData>(data, {
+          pharmacy_name: 'Pharmacy',
+          owner_name: 'Owner'
+        });
+        
+        setProfileData(typedData);
+        
+        // Safely access pharmacy_name with a default value
+        const pharmacyName = typedData.pharmacy_name || 'Pharmacy';
+        localStorage.setItem('pharmacyName', pharmacyName);
       }
     }
   };

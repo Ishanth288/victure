@@ -32,16 +32,19 @@ const queryClient = new QueryClient({
       retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
-      onError: (error) => {
-        console.error('Query error:', error);
-        Sentry.captureException(error);
+      meta: {
+        errorHandler: (error: any) => {
+          console.error('Query error:', error);
+          Sentry.captureException(error);
+        }
       }
     },
     mutations: {
-      // Add error handling for mutations too
-      onError: (error) => {
-        console.error('Mutation error:', error);
-        Sentry.captureException(error);
+      meta: {
+        errorHandler: (error: any) => {
+          console.error('Mutation error:', error);
+          Sentry.captureException(error);
+        }
       }
     }
   },

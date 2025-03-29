@@ -1,4 +1,3 @@
-
 import { PostgrestError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import * as Sentry from "@sentry/react";
@@ -273,12 +272,28 @@ export function hasError(response: any): response is { error: PostgrestError } {
 
 /**
  * Handle Supabase queries with proper error checking to prevent TypeScript errors
+ * @param response The response from a Supabase query
+ * @param fallback A fallback value to return if the response has an error
+ * @returns The data from the response or the fallback value
  */
 export function handleQueryData<T>(response: any, fallback: T): T {
   if (hasError(response) || !response.data) {
     return fallback;
   }
   return response.data as T;
+}
+
+/**
+ * Safe cast function to handle unknown types from Supabase
+ * @param data Data of unknown type
+ * @param defaultValue Default value to return if data is invalid
+ * @returns The data cast to type T or the default value
+ */
+export function safeCast<T>(data: unknown, defaultValue: T): T {
+  if (data === null || data === undefined) {
+    return defaultValue;
+  }
+  return data as T;
 }
 
 /**
