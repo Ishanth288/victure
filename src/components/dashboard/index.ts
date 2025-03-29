@@ -12,3 +12,5 @@ export * from './hooks/useTrendData';
 export * from './SidebarLinks';
 export * from './ProfileSection';
 export * from './DashboardHeader';
+export * from './TrendSection';
+export * from './ProductsSection';

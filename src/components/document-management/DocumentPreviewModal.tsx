@@ -9,6 +9,7 @@ import {
   DialogDescription
 } from "@/components/ui/dialog";
 import { DocumentType } from "./types";
+import { useToast } from "@/hooks/use-toast";
 
 interface DocumentPreviewModalProps {
   open: boolean;
@@ -29,9 +30,30 @@ export function DocumentPreviewModal({
   onDownload,
   previewRef
 }: DocumentPreviewModalProps) {
+  const { toast } = useToast();
+  
   if (!reportData || reportData.length === 0) {
     return null;
   }
+
+  const handleDownload = () => {
+    try {
+      onDownload();
+      toast({
+        title: "Download started",
+        description: `Your ${documentName} is being downloaded.`,
+        duration: 3000
+      });
+    } catch (error) {
+      console.error("Error downloading document:", error);
+      toast({
+        title: "Download failed",
+        description: "There was a problem downloading your document.",
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -42,7 +64,7 @@ export function DocumentPreviewModal({
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={onDownload}
+              onClick={handleDownload}
               className="ml-auto"
             >
               <Download className="w-4 h-4 mr-2" />
