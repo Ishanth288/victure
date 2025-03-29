@@ -22,7 +22,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-white py-12 border-t">
+    <footer id="footer" className="bg-white py-12 border-t">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
@@ -59,7 +59,7 @@ export default function Footer() {
             <h3 className="font-semibold text-neutral-900 mb-4">Company</h3>
             <ul className="space-y-2">
               <li>
-                <HashLink smooth to="#" className="text-neutral-600 hover:text-primary transition-colors">
+                <HashLink smooth to="#scroll-animation" className="text-neutral-600 hover:text-primary transition-colors">
                   About Us
                 </HashLink>
               </li>

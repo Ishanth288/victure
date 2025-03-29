@@ -108,7 +108,7 @@ export default function Navigation() {
 
           {/* Only show these navigation links on the home page */}
           {pathname === '/' && (
-            <div className="hidden md:flex items-center space-x-8">
+            <div className="hidden md:flex items-center space-x-6">
               <HashLink smooth to="#features" className="text-neutral-600 hover:text-primary transition-colors">
                 Features
               </HashLink>
@@ -118,6 +118,12 @@ export default function Navigation() {
               <HashLink smooth to="#pricing" className="text-neutral-600 hover:text-primary transition-colors">
                 Pricing
               </HashLink>
+              <HashLink smooth to="#scroll-animation" className="text-neutral-600 hover:text-primary transition-colors">
+                About Us
+              </HashLink>
+              <HashLink smooth to="#footer" className="text-neutral-600 hover:text-primary transition-colors">
+                Legal
+              </HashLink>
             </div>
           )}
 
@@ -125,8 +131,8 @@ export default function Navigation() {
           {pathname === '/' && (
             <div className="flex items-center space-x-4">
               <Button 
-                variant="ghost" 
-                className="text-neutral-600 hover:text-primary"
+                variant="outline" 
+                className="border-primary text-primary hover:bg-primary/10"
                 onClick={handleLogin}
               >
                 Login

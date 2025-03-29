@@ -1,77 +1,59 @@
-
-import { ContainerScroll } from "@/components/ui/container-scroll-animation";
-import { CardTilt } from "@/components/ui/card-tilt";
-import { ScrollReveal } from "@/components/ui/scroll-reveal";
-import { Database, Brain, TrendingUp, BarChart, Clock, DollarSign } from "lucide-react";
 import { memo } from "react";
 
-// Memoize the component to prevent unnecessary re-renders
+// Memoize the ScrollAnimationSection component to prevent unnecessary re-renders
 export const ScrollAnimationSection = memo(() => {
-  const featureCards = [
-    {
-      title: "AI-Powered Inventory Tracking",
-      description: "Advanced machine learning algorithms analyze your inventory in real-time, providing actionable insights for optimal stock management.",
-      icon: <Database className="h-6 w-6" />
-    },
-    {
-      title: "Intelligent Pricing Optimization",
-      description: "Our AI calculates the most profitable pricing strategies by analyzing market trends, competitor pricing, and your sales data.",
-      icon: <Brain className="h-6 w-6" />
-    },
-    {
-      title: "Real-Time Profit Analytics",
-      description: "Instant visualization of profit margins, sales trends, and financial performance across your entire pharmacy operation.",
-      icon: <TrendingUp className="h-6 w-6" />
-    },
-    {
-      title: "Dynamic Financial Reporting",
-      description: "Comprehensive, up-to-the-minute financial reports that help you make informed business decisions quickly.",
-      icon: <BarChart className="h-6 w-6" />
-    },
-    {
-      title: "Predictive Inventory Alerts",
-      description: "Receive proactive notifications about potential stock shortages, expiring products, and reordering recommendations.",
-      icon: <Clock className="h-6 w-6" />
-    },
-    {
-      title: "Profit Margin Maximization",
-      description: "AI-driven insights that identify your most profitable products and suggest strategies to enhance overall financial performance.",
-      icon: <DollarSign className="h-6 w-6" />
-    }
-  ];
-
   return (
-    <ContainerScroll
-      titleComponent={
-        <>
-          <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 mt-2 mb-4">
-            AI-Powered Pharmacy Management
+    <section id="scroll-animation" className="py-24 bg-white">
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-16">
+          <span className="text-primary font-semibold">About Us</span>
+          <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mt-2">
+            Our Mission
           </h2>
-          <p className="text-xl md:text-[2.5rem] font-bold text-primary leading-tight">
-            Real-Time Profit Analytics at Your Fingertips
+          <p className="mt-4 text-lg text-neutral-600 max-w-2xl mx-auto">
+            We're dedicated to transforming pharmacy operations through innovative technology
           </p>
-        </>
-      }
-    >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 h-full">
-        {featureCards.map((item, index) => (
-          <ScrollReveal 
-            key={index}
-            animation="fade" 
-            delay={index * 0.1}
-            className="h-full"
-          >
-            <CardTilt className="bg-white p-6 rounded-lg shadow-md h-full flex flex-col">
-              <div className="flex items-start gap-4 mb-4">
-                <div className="text-primary">{item.icon}</div>
-                <h3 className="text-xl font-bold text-primary">{item.title}</h3>
+        </div>
+        
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <h3 className="text-2xl font-bold text-neutral-900">Streamlining Processes</h3>
+              <p className="text-neutral-600">
+                Our platform simplifies complex pharmacy workflows, allowing you to focus on what matters most - patient care. With automated inventory management, streamlined billing, and intuitive reporting, we help you run your pharmacy more efficiently.
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-2xl font-bold text-neutral-900">Enhancing Patient Care</h3>
+              <p className="text-neutral-600">
+                By reducing administrative burdens, our solution gives you more time to interact with patients and provide personalized care. Our platform helps you identify at-risk patients, manage medication adherence, and improve overall health outcomes.
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-2xl font-bold text-neutral-900">Driving Business Growth</h3>
+              <p className="text-neutral-600">
+                With powerful analytics and business intelligence tools, Victure helps you make data-driven decisions to grow your pharmacy business. Identify trends, optimize inventory, and maximize profitability with our comprehensive dashboard.
+              </p>
+            </div>
+          </div>
+          
+          <div className="relative h-96 overflow-hidden rounded-lg shadow-xl">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 z-10"></div>
+            <div className="absolute inset-0 flex items-center justify-center z-20">
+              <div className="text-center">
+                <h3 className="text-3xl font-bold text-primary mb-4">Victure</h3>
+                <p className="text-neutral-700 max-w-xs mx-auto">
+                  Empowering pharmacies with innovative technology since 2020
+                </p>
               </div>
-              <p className="text-neutral-700 flex-grow">{item.description}</p>
-            </CardTilt>
-          </ScrollReveal>
-        ))}
+            </div>
+            <div className="h-full w-full bg-white"></div>
+          </div>
+        </div>
       </div>
-    </ContainerScroll>
+    </section>
   );
 });
 

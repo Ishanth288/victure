@@ -109,7 +109,7 @@ export default function Demo() {
               variant="outline"
               size="icon"
               onClick={prevSlide}
-              className="rounded-full"
+              className="rounded-full border-primary text-primary hover:bg-primary/10"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -128,7 +128,7 @@ export default function Demo() {
               variant="outline"
               size="icon"
               onClick={nextSlide}
-              className="rounded-full"
+              className="rounded-full border-primary text-primary hover:bg-primary/10"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
