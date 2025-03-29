@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -5,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeedbackList } from "@/components/admin/FeedbackList";
 import SystemSettings from "@/pages/admin/SystemSettings";
-import { supabase } from "@/integrations/supabase/client";
+import { typecastQuery, safeQueryData } from "@/utils/safeSupabaseQueries";
 import { StatsCard } from "@/components/insights/StatsCard";
 import { Users, ShoppingBag, AlertCircle, Bell, UserCheck, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -142,24 +143,32 @@ export default function Admin() {
                 value={stats.total_users} 
                 icon={<Users className="h-5 w-5" />} 
                 loading={isLoading}
+                description="All registered users"
+                trend="neutral"
               />
               <StatsCard 
                 title="Active Users" 
                 value={stats.active_users} 
                 icon={<UserCheck className="h-5 w-5" />} 
                 loading={isLoading}
+                description="Currently active users"
+                trend="up"
               />
               <StatsCard 
                 title="Total Products" 
                 value={stats.total_products} 
                 icon={<ShoppingBag className="h-5 w-5" />} 
                 loading={isLoading}
+                description="Products in inventory"
+                trend="neutral"
               />
               <StatsCard 
                 title="Feedback Items" 
                 value={stats.feedback_count} 
                 icon={<AlertCircle className="h-5 w-5" />} 
                 loading={isLoading}
+                description="User submitted feedback"
+                trend="neutral"
               />
             </div>
             

@@ -8,11 +8,20 @@ interface StatsCardProps {
   value: number;
   suffix?: string;
   icon: ReactNode;
-  description: string;
-  trend: "up" | "down" | "neutral";
+  description?: string;
+  trend?: "up" | "down" | "neutral";
+  loading?: boolean;
 }
 
-export function StatsCard({ title, value, suffix = "", icon, description, trend }: StatsCardProps) {
+export function StatsCard({ 
+  title, 
+  value, 
+  suffix = "", 
+  icon, 
+  description = "", 
+  trend = "neutral",
+  loading = false
+}: StatsCardProps) {
   return (
     <Card>
       <CardContent className="p-6">
@@ -24,32 +33,35 @@ export function StatsCard({ title, value, suffix = "", icon, description, trend 
         </div>
         <div className="flex flex-col">
           <div className="text-2xl font-bold mb-1">
-            {value.toLocaleString("en-IN", {
-              style: "currency",
-              currency: "INR",
-              maximumFractionDigits: 0,
-              minimumFractionDigits: 0,
-            })}
-            {suffix}
+            {loading ? (
+              <div className="h-6 w-24 bg-gray-200 animate-pulse rounded"></div>
+            ) : (
+              <>
+                {typeof value === 'number' ? value.toLocaleString() : value}
+                {suffix}
+              </>
+            )}
           </div>
-          <div className="flex items-center text-xs">
-            {trend === "up" ? (
-              <ArrowUp className="mr-1 h-3 w-3 text-green-500" />
-            ) : trend === "down" ? (
-              <ArrowDown className="mr-1 h-3 w-3 text-red-500" />
-            ) : null}
-            <span
-              className={
-                trend === "up"
-                  ? "text-green-500"
-                  : trend === "down"
-                  ? "text-red-500"
-                  : "text-muted-foreground"
-              }
-            >
-              {description}
-            </span>
-          </div>
+          {description && (
+            <div className="flex items-center text-xs">
+              {trend === "up" ? (
+                <ArrowUp className="mr-1 h-3 w-3 text-green-500" />
+              ) : trend === "down" ? (
+                <ArrowDown className="mr-1 h-3 w-3 text-red-500" />
+              ) : null}
+              <span
+                className={
+                  trend === "up"
+                    ? "text-green-500"
+                    : trend === "down"
+                    ? "text-red-500"
+                    : "text-muted-foreground"
+                }
+              >
+                {description}
+              </span>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
