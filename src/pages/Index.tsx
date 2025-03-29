@@ -6,61 +6,16 @@ import { FloatingIconsSection } from "@/components/sections/FloatingIconsSection
 import { ScrollAnimationSection } from "@/components/sections/ScrollAnimationSection";
 import { ContentSection } from "@/components/sections/ContentSection";
 import { FeedbackForm } from "@/components/FeedbackForm";
-import { Suspense, lazy, useEffect, memo } from "react";
+import { useEffect, memo } from "react";
 import { LazyMotion, domAnimation } from "framer-motion";
 import * as Sentry from "@sentry/react";
-import { Fallback } from "@/components/ui/fallback";
-
-const isHoverSupported = () => {
-  return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(hover: hover)').matches;
-};
-
-const shouldReduceAnimation = () => {
-  return typeof window !== 'undefined' && (window.innerWidth < 768 || !isHoverSupported());
-};
-
-const LoadingPlaceholder = memo(() => (
-  <div className="h-60 bg-neutral-50 flex items-center justify-center">
-    <div className="animate-pulse flex flex-col items-center">
-      <div className="h-8 w-24 bg-neutral-200 rounded mb-4"></div>
-      <div className="h-4 w-64 bg-neutral-200 rounded"></div>
-    </div>
-  </div>
-));
-
-LoadingPlaceholder.displayName = 'LoadingPlaceholder';
+import { MainContentWrapper } from "@/components/sections/MainContentWrapper";
+import { setupPageOptimizations } from "@/utils/performanceUtils";
 
 const Index = memo(() => {
   useEffect(() => {
-    if (typeof document !== 'undefined') {
-      document.addEventListener('scroll', () => {}, { passive: true });
-
-      if (!shouldReduceAnimation()) {
-        const linkEl = document.createElement('link');
-        linkEl.rel = 'preconnect';
-        linkEl.href = 'https://prod.spline.design';
-        document.head.appendChild(linkEl);
-
-        const preloadLinks = [
-          { href: '/og-image.png', as: 'image' }
-        ];
-        
-        preloadLinks.forEach(link => {
-          const preloadLink = document.createElement('link');
-          preloadLink.rel = 'preload';
-          preloadLink.href = link.href;
-          preloadLink.as = link.as;
-          document.head.appendChild(preloadLink);
-        });
-
-        document.documentElement.classList.add('gpu-accelerated');
-      }
-
-      return () => {
-        document.removeEventListener('scroll', () => {});
-        document.documentElement.classList.remove('gpu-accelerated');
-      };
-    }
+    const cleanupOptimizations = setupPageOptimizations();
+    return cleanupOptimizations;
   }, []);
 
   return (
@@ -70,17 +25,17 @@ const Index = memo(() => {
         <main className="overflow-hidden content-visibility-auto">
           <HeroSection />
           
-          <Suspense fallback={<Fallback />}>
+          <MainContentWrapper useFallback={true}>
             <FloatingIconsSection />
-          </Suspense>
+          </MainContentWrapper>
           
-          <Suspense fallback={<LoadingPlaceholder />}>
+          <MainContentWrapper>
             <ScrollAnimationSection />
-          </Suspense>
+          </MainContentWrapper>
           
-          <Suspense fallback={<LoadingPlaceholder />}>
+          <MainContentWrapper>
             <ContentSection />
-          </Suspense>
+          </MainContentWrapper>
 
           <section id="feedback" className="py-12 bg-gray-50">
             <div className="container mx-auto px-4">
