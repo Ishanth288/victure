@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -111,12 +110,12 @@ export function DocumentManagement() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Inventory last update
+      // Inventory last update - we need to fix this since there's no created_at column
       const { data: inventoryLatest } = await supabase
         .from('inventory')
-        .select('id, created_at')  // Changed from updated_at to created_at
+        .select('id, name')  // Just select id and name since we don't have created_at
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })  // Changed from updated_at to created_at
+        .order('id', { ascending: false })  // Order by id as a fallback 
         .limit(1)
         .single();
 
@@ -132,7 +131,7 @@ export function DocumentManagement() {
       // Purchase orders last update
       const { data: purchaseLatest } = await supabase
         .from('purchase_orders')
-        .select('id, created_at')  // Only use created_at
+        .select('id, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -149,13 +148,13 @@ export function DocumentManagement() {
 
       setDocuments(prev => prev.map(doc => {
         if (doc.id === 'inventory' && inventoryLatest) {
-          return { ...doc, lastUpdated: new Date(inventoryLatest.created_at) };  // Changed from updated_at to created_at
+          return { ...doc, lastUpdated: new Date() }; // Use current date since we don't have created_at
         }
         if (doc.id === 'sales' && salesLatest) {
           return { ...doc, lastUpdated: new Date(salesLatest.date) };
         }
         if (doc.id === 'purchase_orders' && purchaseLatest) {
-          return { ...doc, lastUpdated: new Date(purchaseLatest.created_at) };  // Use only created_at
+          return { ...doc, lastUpdated: new Date(purchaseLatest.created_at) };
         }
         if (doc.id === 'patients' && patientsLatest) {
           return { ...doc, lastUpdated: new Date(patientsLatest.created_at) };
