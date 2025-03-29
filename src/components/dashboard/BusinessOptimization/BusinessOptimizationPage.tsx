@@ -10,6 +10,7 @@ import { TabContent } from "./components/TabContent";
 import { LoadingState, ErrorState, EmptyState } from "./components/LoadingState";
 import { setupPageOptimizations } from "@/utils/performanceUtils";
 import { initializeAppMonitoring } from "@/utils/supabaseMonitoring";
+import { stableToast } from "@/components/ui/stable-toast";
 
 export default function BusinessOptimizationPage() {
   const [activeTab, setActiveTab] = useState("forecast");
