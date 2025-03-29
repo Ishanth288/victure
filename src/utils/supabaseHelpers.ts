@@ -301,6 +301,9 @@ export function safeCast<T>(data: unknown, defaultValue: T): T {
  * This helps ensure stability during preview and production deployments
  */
 export function initializeAppMonitoring(): void {
+  // Enable realtime functionality for needed tables
+  enableRealtimeForTables();
+  
   // Check connection on app start
   checkSupabaseConnection()
     .then(connected => {
@@ -321,4 +324,22 @@ export function initializeAppMonitoring(): void {
         }
       });
   }, 30000);
+}
+
+/**
+ * Enable realtime functionality for the tables that need it
+ */
+async function enableRealtimeForTables() {
+  try {
+    // You can listen to all changes in the public schema
+    await supabase.channel('schema-db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public' }, payload => {
+        console.log('Database change:', payload);
+      })
+      .subscribe();
+    
+    console.log('Realtime subscriptions enabled for database tables');
+  } catch (error) {
+    console.error('Failed to enable realtime for tables:', error);
+  }
 }

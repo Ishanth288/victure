@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { StatCard } from "@/components/insights/StatCard";
@@ -17,6 +18,7 @@ import { Pill, Users, ShoppingCart, TrendingUp, AlertCircle } from "lucide-react
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { typecastQuery, safeQueryData } from "@/utils/safeSupabaseQueries";
 
 interface Bill {
   id: number;
@@ -58,27 +60,40 @@ export default function Dashboard() {
     async function fetchDashboardData() {
       setIsLoading(true);
       try {
-        const { data: bills, error: billsError } = await supabase
-          .from('bills')
-          .select('*');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setIsLoading(false);
+          return;
+        }
+
+        // Fetch user-specific bills
+        const bills = await safeQueryData(
+          typecastQuery('bills')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('date', { ascending: false }),
+          []
+        );
         
-        if (billsError) throw billsError;
+        // Fetch user-specific inventory
+        const inventory = await safeQueryData(
+          typecastQuery('inventory')
+            .select('*')
+            .eq('user_id', user.id),
+          []
+        );
         
-        const { data: inventory, error: inventoryError } = await supabase
-          .from('inventory')
-          .select('*');
+        // Fetch user-specific patients
+        const patients = await safeQueryData(
+          typecastQuery('patients')
+            .select('*')
+            .eq('user_id', user.id),
+          []
+        );
         
-        if (inventoryError) throw inventoryError;
-        
-        const { data: patients, error: patientsError } = await supabase
-          .from('patients')
-          .select('*');
-        
-        if (patientsError) throw patientsError;
-        
-        setSalesData(bills || []);
-        setInventoryData(inventory || []);
-        setPatientsData(patients || []);
+        setSalesData(bills as Bill[]);
+        setInventoryData(inventory as InventoryItem[]);
+        setPatientsData(patients as Patient[]);
         
         if (bills && bills.length > 0) {
           const last30Days = Array.from({ length: 30 }, (_, i) => {
@@ -91,7 +106,7 @@ export default function Dashboard() {
           
           const billsByDate = new Map<string, number>();
           
-          bills.forEach(bill => {
+          bills.forEach((bill: any) => {
             const billDate = bill.date ? format(new Date(bill.date), 'yyyy-MM-dd') : null;
             if (billDate) {
               const existingAmount = billsByDate.get(billDate) || 0;
@@ -111,7 +126,7 @@ export default function Dashboard() {
           if (bills.length > 0) {
             const productCountMap = new Map<string, number>();
             
-            bills.forEach(bill => {
+            bills.forEach((bill: any) => {
               if (bill.prescription_id) {
                 const productName = `Prescription #${bill.prescription_id}`;
                 const existingValue = productCountMap.get(productName) || 0;
@@ -138,7 +153,7 @@ export default function Dashboard() {
             categoryMap.set('Medical Supplies', 0);
             categoryMap.set('Other', 0);
             
-            bills.forEach(bill => {
+            bills.forEach((bill: any) => {
               if (bill.prescription_id) {
                 const existingValue = categoryMap.get('Prescription') || 0;
                 categoryMap.set('Prescription', existingValue + bill.total_amount);
@@ -180,6 +195,39 @@ export default function Dashboard() {
     }
 
     fetchDashboardData();
+
+    // Set up real-time subscriptions
+    const setupRealTimeSubscriptions = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Create a channel for real-time updates
+      const channel = supabase
+        .channel('dashboard-updates')
+        .on('postgres_changes', 
+          { event: '*', schema: 'public', table: 'bills', filter: `user_id=eq.${user.id}` }, 
+          () => fetchDashboardData()
+        )
+        .on('postgres_changes', 
+          { event: '*', schema: 'public', table: 'inventory', filter: `user_id=eq.${user.id}` }, 
+          () => fetchDashboardData()
+        )
+        .on('postgres_changes', 
+          { event: '*', schema: 'public', table: 'patients', filter: `user_id=eq.${user.id}` }, 
+          () => fetchDashboardData()
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    };
+
+    const cleanup = setupRealTimeSubscriptions();
+    
+    return () => {
+      if (cleanup) cleanup.then(unsub => unsub && unsub());
+    };
   }, [toast]);
 
   const totalRevenue = salesData && salesData.length > 0

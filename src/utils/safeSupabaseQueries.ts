@@ -50,3 +50,33 @@ export function typedId(id: string | number): any {
 export function createFilter(field: string, value: any): any {
   return { [field]: value };
 }
+
+/**
+ * Set up a real-time subscription for a table with user filtering
+ * @param tableName The name of the table to subscribe to
+ * @param userId The user ID to filter by
+ * @param callback Function to call when data changes
+ * @returns A function to unsubscribe from the channel
+ */
+export function subscribeToUserTable(tableName: string, userId: string, callback: () => void) {
+  const channel = supabase
+    .channel(`${tableName}-changes-${userId}`)
+    .on('postgres_changes', 
+      { event: '*', schema: 'public', table: tableName, filter: `user_id=eq.${userId}` }, 
+      callback
+    )
+    .subscribe();
+  
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
+/**
+ * Get current user ID from Supabase auth
+ * @returns Promise that resolves to the current user ID or null
+ */
+export async function getCurrentUserId(): Promise<string | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id || null;
+}

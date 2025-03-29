@@ -12,6 +12,7 @@ import { StatsCard } from "@/components/insights/StatsCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { addDays, format, subDays, subMonths } from "date-fns";
+import { typecastQuery, safeQueryData } from "@/utils/safeSupabaseQueries";
 
 export default function Insights() {
   const navigate = useNavigate();
@@ -32,11 +33,11 @@ export default function Insights() {
   const [retentionChange, setRetentionChange] = useState(0);
   const [topProducts, setTopProducts] = useState<Array<{name: string, value: number}>>([]);
   const [revenueData, setRevenueData] = useState<Array<{date: string, value: number}>>([]);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
-    fetchInsightsData();
-  }, [dateRange]);
+  }, []);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -47,14 +48,23 @@ export default function Insights() {
         variant: "destructive",
       });
       navigate("/auth");
+      return;
     }
+    
+    setUserId(session.user.id);
+    fetchInsightsData(session.user.id);
   };
 
-  const fetchInsightsData = async () => {
+  useEffect(() => {
+    if (userId) {
+      fetchInsightsData(userId);
+    }
+  }, [dateRange, userId]);
+
+  const fetchInsightsData = async (userId: string) => {
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!userId) return;
 
       // Format dates for query
       const fromDate = format(dateRange.from, "yyyy-MM-dd");
@@ -66,24 +76,24 @@ export default function Insights() {
       const prevToDate = format(subDays(dateRange.from, 1), "yyyy-MM-dd");
 
       // Fetch bills for current period
-      const { data: currentBills, error: billsError } = await supabase
-        .from("bills")
-        .select("*")
-        .eq("user_id", user.id)
-        .gte("date", fromDate)
-        .lte("date", toDate);
-
-      if (billsError) throw billsError;
+      const currentBills = await safeQueryData(
+        typecastQuery('bills')
+          .select('*')
+          .eq('user_id', userId)
+          .gte('date', fromDate)
+          .lte('date', toDate),
+        []
+      );
 
       // Fetch bills for previous period
-      const { data: prevBills, error: prevBillsError } = await supabase
-        .from("bills")
-        .select("*")
-        .eq("user_id", user.id)
-        .gte("date", prevFromDate)
-        .lte("date", prevToDate);
-
-      if (prevBillsError) throw prevBillsError;
+      const prevBills = await safeQueryData(
+        typecastQuery('bills')
+          .select('*')
+          .eq('user_id', userId)
+          .gte('date', prevFromDate)
+          .lte('date', prevToDate),
+        []
+      );
 
       // Calculate total sales (number of bills)
       const currentSalesCount = currentBills?.length || 0;
@@ -97,8 +107,8 @@ export default function Insights() {
       setSalesChange(Math.round(salesChangePercent));
 
       // Calculate monthly revenue
-      const currentRevenue = currentBills?.reduce((sum, bill) => sum + (bill.total_amount || 0), 0) || 0;
-      const prevRevenue = prevBills?.reduce((sum, bill) => sum + (bill.total_amount || 0), 0) || 0;
+      const currentRevenue = currentBills?.reduce((sum: number, bill: any) => sum + (bill.total_amount || 0), 0) || 0;
+      const prevRevenue = prevBills?.reduce((sum: number, bill: any) => sum + (bill.total_amount || 0), 0) || 0;
       setMonthlyRevenue(currentRevenue);
       
       // Calculate revenue change percentage
@@ -119,40 +129,42 @@ export default function Insights() {
       setAovChange(Math.round(aovChangePercent));
 
       // Fetch top products
-      const { data: billItems, error: itemsError } = await supabase
-        .from("bill_items")
-        .select(`
-          id,
-          inventory_item_id,
-          quantity,
-          unit_price,
-          total_price,
-          bill_id,
-          bills!inner(date, user_id),
-          inventory!inner(name)
-        `)
-        .eq("bills.user_id", user.id)
-        .gte("bills.date", fromDate)
-        .lte("bills.date", toDate);
-
-      if (itemsError) throw itemsError;
+      const billItems = await safeQueryData(
+        typecastQuery('bill_items')
+          .select(`
+            id,
+            inventory_item_id,
+            quantity,
+            unit_price,
+            total_price,
+            bill_id,
+            bills!inner(date, user_id),
+            inventory!inner(name)
+          `)
+          .eq('bills.user_id', userId)
+          .gte('bills.date', fromDate)
+          .lte('bills.date', toDate),
+        []
+      );
 
       // Process top products by revenue
       const productMap = new Map();
-      billItems?.forEach(item => {
-        const productName = item.inventory?.name || `Product ${item.inventory_item_id}`;
-        const revenue = item.total_price || 0;
-        
-        if (productMap.has(productName)) {
-          const product = productMap.get(productName);
-          product.revenue += revenue;
-          product.quantity += item.quantity || 0;
-        } else {
-          productMap.set(productName, {
-            name: productName,
-            revenue,
-            quantity: item.quantity || 0,
-          });
+      billItems?.forEach((item: any) => {
+        if (item.inventory && item.inventory.name) {
+          const productName = item.inventory.name || `Product ${item.inventory_item_id}`;
+          const revenue = item.total_price || 0;
+          
+          if (productMap.has(productName)) {
+            const product = productMap.get(productName);
+            product.revenue += revenue;
+            product.quantity += item.quantity || 0;
+          } else {
+            productMap.set(productName, {
+              name: productName,
+              revenue,
+              quantity: item.quantity || 0,
+            });
+          }
         }
       });
 
@@ -179,10 +191,12 @@ export default function Insights() {
       }
       
       // Fill in actual revenue data
-      currentBills?.forEach(bill => {
-        const dateStr = bill.date.substring(0, 10); // Get YYYY-MM-DD part
-        if (revenueByDay.has(dateStr)) {
-          revenueByDay.set(dateStr, revenueByDay.get(dateStr) + (bill.total_amount || 0));
+      currentBills?.forEach((bill: any) => {
+        if (bill.date) {
+          const dateStr = bill.date.substring(0, 10); // Get YYYY-MM-DD part
+          if (revenueByDay.has(dateStr)) {
+            revenueByDay.set(dateStr, revenueByDay.get(dateStr) + (bill.total_amount || 0));
+          }
         }
       });
       
@@ -212,6 +226,27 @@ export default function Insights() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!userId) return;
+    
+    // Set up real-time subscription for bills and bill_items
+    const channel = supabase
+      .channel('insights-updates')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'bills', filter: `user_id=eq.${userId}` }, 
+        () => fetchInsightsData(userId)
+      )
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'bill_items' }, 
+        () => fetchInsightsData(userId)
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, dateRange]);
 
   const handlePeriodChange = (newPeriod: string) => {
     setPeriod(newPeriod);
