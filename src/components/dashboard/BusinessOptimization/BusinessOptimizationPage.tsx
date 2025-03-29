@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Tabs } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -15,13 +15,16 @@ export default function BusinessOptimizationPage() {
   const [activeTab, setActiveTab] = useState("forecast");
   const [error, setError] = useState<boolean>(false);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [isStableLoading, setIsStableLoading] = useState(true);
   const { toast } = useToast();
   const renderAttempts = useRef(0);
-  const maxRenderAttempts = 3; // Reduced from 5 to avoid excessive retries
+  const maxRenderAttempts = 3;
+  const stabilityTimerRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Add console logs to debug the component lifecycle
-  console.log("Business Optimization Page rendering - attempt:", renderAttempts.current);
-  renderAttempts.current += 1;
+  const handleDataError = useCallback(() => {
+    console.log("Business data error callback triggered");
+    setError(true);
+  }, []);
   
   const { 
     isLoading, 
@@ -38,28 +41,33 @@ export default function BusinessOptimizationPage() {
     hasError,
     autoRefreshEnabled
   } = useBusinessData({
-    onError: () => {
-      console.log("Business data error callback triggered");
-      setError(true);
-    },
+    onError: handleDataError,
   });
   
-  console.log("Data loading state:", { 
-    isLoading, 
-    locationLoading, 
-    hasError, 
-    error, 
-    renderAttempts: renderAttempts.current,
-    lastRefreshed: lastRefreshed.toLocaleString() 
-  });
-  
-  console.log("Data availability:", { 
-    inventoryData: inventoryData?.length || 0,
-    salesData: salesData?.length || 0,
-    suppliersData: suppliersData?.length || 0,
-    locationData: locationData ? 'yes' : 'no',
-    dataSources: locationData?.dataSources
-  });
+  // Add stability to the loading state to prevent flickering
+  useEffect(() => {
+    // When loading starts, set isStableLoading to true immediately
+    if (isLoading || locationLoading) {
+      setIsStableLoading(true);
+      // Clear any existing timers
+      if (stabilityTimerRef.current) {
+        clearTimeout(stabilityTimerRef.current);
+        stabilityTimerRef.current = null;
+      }
+    } 
+    // When loading ends, wait a bit before showing content to prevent flickering
+    else if (isStableLoading) {
+      stabilityTimerRef.current = setTimeout(() => {
+        setIsStableLoading(false);
+      }, 300); // 300ms delay before transitioning from loading to content
+    }
+
+    return () => {
+      if (stabilityTimerRef.current) {
+        clearTimeout(stabilityTimerRef.current);
+      }
+    };
+  }, [isLoading, locationLoading, isStableLoading]);
 
   // Force an exit from loading state if we've tried too many times
   useEffect(() => {
@@ -82,6 +90,14 @@ export default function BusinessOptimizationPage() {
           variant: "destructive"
         });
       }
+      
+      // Force stable loading to end after a short delay
+      if (stabilityTimerRef.current) {
+        clearTimeout(stabilityTimerRef.current);
+      }
+      stabilityTimerRef.current = setTimeout(() => {
+        setIsStableLoading(false);
+      }, 300);
     }
   }, [isLoading, locationLoading, renderAttempts, inventoryData, salesData, suppliersData, locationData, toast]);
 
@@ -98,6 +114,10 @@ export default function BusinessOptimizationPage() {
     return () => cleanup();
   }, []);
 
+  // Increment render attempts
+  renderAttempts.current += 1;
+  console.log("Business Optimization Page rendering - attempt:", renderAttempts.current);
+
   // Handle refresh of all data
   const handleRefreshAll = () => {
     console.log("Manual refresh triggered");
@@ -113,9 +133,9 @@ export default function BusinessOptimizationPage() {
     });
   };
 
-  // Render loading state
-  if ((isLoading || locationLoading) && renderAttempts.current <= maxRenderAttempts) {
-    console.log("Rendering loading state");
+  // Render loading state with stability to prevent flickering
+  if (isStableLoading && renderAttempts.current <= maxRenderAttempts * 2) {
+    console.log("Rendering stable loading state");
     return (
       <DashboardLayout>
         <LoadingState message="Loading your business analytics data from Google Trends and News..." />

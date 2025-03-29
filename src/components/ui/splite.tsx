@@ -39,7 +39,25 @@ SplineComponent.displayName = 'SplineComponent';
 export function SplineScene({ scene, className, onLoad, onError }: SplineSceneProps) {
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   const mountedRef = useRef(true);
+  const stabilityTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Add a small delay before showing the scene to prevent flickering
+  useEffect(() => {
+    stabilityTimerRef.current = setTimeout(() => {
+      if (mountedRef.current) {
+        setIsVisible(true);
+      }
+    }, 100);
+    
+    return () => {
+      mountedRef.current = false;
+      if (stabilityTimerRef.current) {
+        clearTimeout(stabilityTimerRef.current);
+      }
+    };
+  }, []);
 
   // Reset error state if scene URL changes
   useEffect(() => {
@@ -66,6 +84,11 @@ export function SplineScene({ scene, className, onLoad, onError }: SplineScenePr
     if (onLoad) onLoad();
   };
 
+  // If not yet visible, show nothing to prevent flickering
+  if (!isVisible) {
+    return <div className={`${className} opacity-0`}></div>;
+  }
+
   // If we had an error loading the scene, show a simple gradient instead
   if (hasError) {
     return (
@@ -83,11 +106,13 @@ export function SplineScene({ scene, className, onLoad, onError }: SplineScenePr
         </div>
       }
     >
-      <SplineComponent
-        scene={scene}
-        onError={handleError}
-        onLoad={handleLoad}
-      />
+      <div className="transition-opacity duration-300 ease-in-out">
+        <SplineComponent
+          scene={scene}
+          onError={handleError}
+          onLoad={handleLoad}
+        />
+      </div>
     </Suspense>
   )
 }

@@ -1,5 +1,5 @@
 
-import { Suspense, memo, ReactNode } from "react";
+import { Suspense, memo, ReactNode, Component, ErrorInfo } from "react";
 import { LoadingPlaceholder } from "@/components/ui/loading-placeholder";
 import { Fallback } from "@/components/ui/fallback";
 
@@ -44,20 +44,34 @@ export const MainContentWrapper = memo(({
 
 MainContentWrapper.displayName = 'MainContentWrapper';
 
-// Simple error boundary to prevent entire app from crashing
-const ErrorBoundaryWrapper = ({ 
-  children, 
-  onError 
-}: { 
+// Proper React error boundary implementation
+class ErrorBoundaryWrapper extends Component<{ 
   children: ReactNode; 
   onError?: (error: Error) => void 
-}) => {
-  try {
-    return <>{children}</>;
-  } catch (error) {
-    if (onError && error instanceof Error) {
-      onError(error);
-    }
-    return <Fallback message="Component failed to load" />;
+}, { 
+  hasError: boolean,
+  error: Error | null
+}> {
+  constructor(props: { children: ReactNode; onError?: (error: Error) => void }) {
+    super(props);
+    this.state = { hasError: false, error: null };
   }
-};
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    if (this.props.onError) {
+      this.props.onError(error);
+    }
+    console.error("Component error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <Fallback message="Component failed to load" />;
+    }
+    return this.props.children;
+  }
+}
