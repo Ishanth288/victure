@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { Loader2, AlertCircle, TrendingUp, BarChart2, PieChartIcon, Activity, 
   RefreshCw, MapPin, Calendar } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,14 +21,22 @@ import {
   prepareSeasonalTrendsData, 
   prepareRegionalDemandData 
 } from "./businessOptimizationUtils";
+import { setupPageOptimizations } from "@/utils/performanceUtils";
 
 export default function BusinessOptimizationPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [inventoryData, setInventoryData] = useState<any[]>([]);
   const [salesData, setSalesData] = useState<any[]>([]);
   const [suppliersData, setSuppliersData] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState("forecast");
   const { toast } = useToast();
   const { locationData, pharmacyLocation, refreshData: refreshLocationData, isLoading: locationLoading } = useLocationBasedAnalytics();
+
+  // Apply performance optimizations
+  useEffect(() => {
+    const cleanup = setupPageOptimizations();
+    return () => cleanup();
+  }, []);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -163,6 +171,59 @@ export default function BusinessOptimizationPage() {
       duration: 3000
     });
   };
+  
+  // Only render the active tab content to improve performance
+  const renderTabContent = (tabName: string) => {
+    if (activeTab !== tabName) return null;
+    
+    switch(tabName) {
+      case "forecast":
+        return (
+          <MarketForecastTab 
+            forecastData={forecastData} 
+            regionalDemandData={regionalDemandData} 
+            seasonalTrendsData={seasonalTrendsData}
+            pharmacyLocation={pharmacyLocation}
+          />
+        );
+      case "margin":
+        return (
+          <MarginAnalysisTab 
+            marginData={marginData} 
+            locationData={locationData}
+            pharmacyLocation={pharmacyLocation}
+          />
+        );
+      case "supplier":
+        return <SupplierMetricsTab supplierData={supplierData} />;
+      case "expiry":
+        return (
+          <ExpiryAnalysisTab 
+            expiryData={expiryData} 
+            inventoryData={inventoryData} 
+          />
+        );
+      case "seasonal":
+        return (
+          <SeasonalTrendsTab 
+            locationData={locationData}
+            pharmacyLocation={pharmacyLocation}
+            seasonalTrendsData={seasonalTrendsData}
+            inventoryData={inventoryData}
+          />
+        );
+      case "regional":
+        return (
+          <RegionalDemandTab 
+            regionalDemandData={regionalDemandData}
+            pharmacyLocation={pharmacyLocation}
+            locationData={locationData}
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
   if (isLoading || locationLoading) {
     return (
@@ -201,7 +262,7 @@ export default function BusinessOptimizationPage() {
           </div>
         </div>
         
-        <Tabs defaultValue="forecast">
+        <Tabs defaultValue="forecast" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-1 md:grid-cols-6">
             <TabsTrigger value="forecast" className="flex items-center">
               <TrendingUp className="w-4 h-4 mr-2" />
@@ -229,50 +290,9 @@ export default function BusinessOptimizationPage() {
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="forecast">
-            <MarketForecastTab 
-              forecastData={forecastData} 
-              regionalDemandData={regionalDemandData} 
-              seasonalTrendsData={seasonalTrendsData}
-              pharmacyLocation={pharmacyLocation}
-            />
-          </TabsContent>
-          
-          <TabsContent value="margin">
-            <MarginAnalysisTab 
-              marginData={marginData} 
-              locationData={locationData}
-              pharmacyLocation={pharmacyLocation}
-            />
-          </TabsContent>
-          
-          <TabsContent value="supplier">
-            <SupplierMetricsTab supplierData={supplierData} />
-          </TabsContent>
-          
-          <TabsContent value="expiry">
-            <ExpiryAnalysisTab 
-              expiryData={expiryData} 
-              inventoryData={inventoryData} 
-            />
-          </TabsContent>
-          
-          <TabsContent value="seasonal">
-            <SeasonalTrendsTab 
-              locationData={locationData}
-              pharmacyLocation={pharmacyLocation}
-              seasonalTrendsData={seasonalTrendsData}
-              inventoryData={inventoryData}
-            />
-          </TabsContent>
-          
-          <TabsContent value="regional">
-            <RegionalDemandTab 
-              regionalDemandData={regionalDemandData}
-              pharmacyLocation={pharmacyLocation}
-              locationData={locationData}
-            />
-          </TabsContent>
+          <div className="mt-4">
+            {renderTabContent(activeTab)}
+          </div>
         </Tabs>
       </div>
     </DashboardLayout>
