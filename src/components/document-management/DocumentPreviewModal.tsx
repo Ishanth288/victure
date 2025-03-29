@@ -1,14 +1,13 @@
 
 import { useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, X } from "lucide-react";
+import { Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { DocumentType } from "./types";
 
 interface DocumentPreviewModalProps {
@@ -44,18 +43,16 @@ export function DocumentPreviewModal({
               variant="outline" 
               size="sm" 
               onClick={onDownload}
-              className="ml-auto mr-2"
+              className="ml-auto"
             >
               <Download className="w-4 h-4 mr-2" />
               Download
             </Button>
           </DialogTitle>
         </DialogHeader>
-        <ScrollArea className="flex-1 overflow-auto">
-          <div ref={previewRef} className="p-4">
-            {/* Report content will be populated programmatically */}
-          </div>
-        </ScrollArea>
+        <div className="flex-1 overflow-auto p-4">
+          <div ref={previewRef}></div>
+        </div>
       </DialogContent>
     </Dialog>
   );

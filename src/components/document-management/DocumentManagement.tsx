@@ -233,7 +233,7 @@ export function DocumentManagement() {
       <CardHeader>
         <CardTitle>Document Management</CardTitle>
       </CardHeader>
-      <CardContent className="h-[calc(100%-70px)] overflow-auto">
+      <CardContent className="h-[calc(100%-70px)]">
         <div className="h-full">
           <DocumentList 
             documents={documents}

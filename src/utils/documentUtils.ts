@@ -41,11 +41,22 @@ export const generatePDFFromElement = async (
 ): Promise<string | null> => {
   try {
     const pharmacyProfile = await getPharmacyProfile();
-    const canvas = await html2canvas(element, {
+    
+    // Create a white background div to wrap content 
+    const whiteBackground = document.createElement('div');
+    whiteBackground.style.backgroundColor = 'white';
+    whiteBackground.style.padding = '20px';
+    whiteBackground.appendChild(element.cloneNode(true));
+    document.body.appendChild(whiteBackground);
+    
+    const canvas = await html2canvas(whiteBackground, {
       scale: 2,
       logging: false,
-      useCORS: true
+      useCORS: true,
+      backgroundColor: '#ffffff'
     });
+    
+    document.body.removeChild(whiteBackground);
     
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF({
@@ -96,10 +107,8 @@ export const generatePDFFromElement = async (
       pdf.text(addressText, 105, 290, { align: 'center' });
     }
     
-    // Add custom footer text if provided
-    if (options.footerText) {
-      pdf.text(options.footerText, 105, 295, { align: 'center' });
-    }
+    // Add Victure footer text
+    pdf.text("Powered by Victure Healthcare Solutions", 105, 295, { align: 'center' });
     
     // Generate data URL
     return pdf.output('dataurlstring');
