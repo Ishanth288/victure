@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { safeQueryData, getCurrentUserId } from '@/utils/safeSupabaseQueries';
 
 // Define valid table endpoints
 export type TableEndpoint = 'inventory' | 'bills' | 'purchase_orders';
@@ -44,8 +45,11 @@ export const useBusinessDataFetch = <T extends TableEndpoint>(endpoint: T) => {
       }
       
       // Use the user_id to get only data belonging to the current user
-      const { data: responseData, error: apiError } = await supabase
-        .from(endpoint)
+      // Fix: Use the type-safe approach with proper casting for Supabase queries
+      const query = supabase.from(endpoint);
+      
+      // We need to cast the query to avoid TypeScript errors with the filter
+      const { data: responseData, error: apiError } = await (query as any)
         .select('*')
         .eq('user_id', authData.user.id);
       
