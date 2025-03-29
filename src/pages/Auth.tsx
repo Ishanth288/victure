@@ -21,6 +21,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle, X, Info, Mail, HelpCircle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { HoverInfoCard } from "@/components/ui/hover-info-card";
+import { Package, ShoppingCart, LineChart, Shield } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -336,297 +338,340 @@ export default function Auth() {
       <div className="absolute top-0 right-0 w-96 h-96 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
       <div className="absolute -bottom-8 left-20 w-96 h-96 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
       
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md relative z-10"
-      >
-        <Card className="shadow-xl backdrop-blur-sm bg-white/90 border-opacity-50">
-          <CardHeader>
-            <CardTitle className="text-2xl text-center">
-              {isLogin ? "Welcome Back" : "Create Account"}
-            </CardTitle>
-            <CardDescription className="text-center">
-              {isLogin
-                ? "Sign in to your pharmacy account"
-                : "Register your pharmacy"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {authMessage.type && (
-              <Alert 
-                variant={authMessage.type === 'error' ? 'destructive' : 'default'} 
-                className={`mb-4 ${authMessage.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : authMessage.type === 'info' ? 'bg-blue-50 text-blue-800 border-blue-200' : ''}`}
-              >
-                {authMessage.type === 'error' ? (
-                  <AlertCircle className="h-4 w-4" />
-                ) : authMessage.type === 'info' ? (
-                  <Info className="h-4 w-4" />
-                ) : (
-                  <CheckCircle className="h-4 w-4" />
-                )}
-                <AlertTitle>
-                  {authMessage.type === 'error' ? 'Error' : authMessage.type === 'info' ? 'Information' : 'Success'}
-                </AlertTitle>
-                <AlertDescription>
-                  {authMessage.message}
-                </AlertDescription>
-              </Alert>
-            )}
+      <div className="w-full max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 mb-6 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="text-center md:text-left"
+        >
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            <span className="text-primary">Victure</span> - Smart Pharmacy Management
+          </h1>
+          <p className="text-lg text-neutral-700 max-w-xl">
+            Join thousands of pharmacies that streamlined their operations with our comprehensive solution.
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+            <HoverInfoCard 
+              title="Smart Inventory" 
+              description="Track expiry dates, get low stock alerts, and automate reordering with our intelligent inventory management."
+              icon={<Package className="h-6 w-6" />}
+              className="w-full"
+            />
+            <HoverInfoCard 
+              title="Seamless Billing" 
+              description="Generate invoices instantly, manage returns, and track sales with our intuitive billing system."
+              icon={<ShoppingCart className="h-6 w-6" />}
+              className="w-full"
+            />
+            <HoverInfoCard 
+              title="Business Analytics" 
+              description="Make data-driven decisions with comprehensive sales reports and inventory analytics."
+              icon={<LineChart className="h-6 w-6" />}
+              className="w-full"
+            />
+            <HoverInfoCard 
+              title="Secure & Compliant" 
+              description="Your data is protected with enterprise-grade security. Our system is compliant with industry standards."
+              icon={<Shield className="h-6 w-6" />}
+              className="w-full"
+            />
+          </div>
+        </motion.div>
+      
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md relative z-10"
+        >
+          <Card className="shadow-xl backdrop-blur-sm bg-white/90 border-opacity-50">
+            <CardHeader>
+              <CardTitle className="text-2xl text-center">
+                {isLogin ? "Welcome Back" : "Create Account"}
+              </CardTitle>
+              <CardDescription className="text-center">
+                {isLogin
+                  ? "Sign in to your pharmacy account"
+                  : "Register your pharmacy"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {authMessage.type && (
+                <Alert 
+                  variant={authMessage.type === 'error' ? 'destructive' : 'default'} 
+                  className={`mb-4 ${authMessage.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : authMessage.type === 'info' ? 'bg-blue-50 text-blue-800 border-blue-200' : ''}`}
+                >
+                  {authMessage.type === 'error' ? (
+                    <AlertCircle className="h-4 w-4" />
+                  ) : authMessage.type === 'info' ? (
+                    <Info className="h-4 w-4" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4" />
+                  )}
+                  <AlertTitle>
+                    {authMessage.type === 'error' ? 'Error' : authMessage.type === 'info' ? 'Information' : 'Success'}
+                  </AlertTitle>
+                  <AlertDescription>
+                    {authMessage.message}
+                  </AlertDescription>
+                </Alert>
+              )}
 
-            {showFreePlanInfo && (
-              <Alert className="mb-4 bg-blue-50 text-blue-800 border-blue-200">
-                <Info className="h-4 w-4" />
-                <AlertTitle>Free Trial Plan</AlertTitle>
-                <AlertDescription>
-                  You are signing up for the Free Plan. This includes:
-                  <ul className="list-disc pl-5 mt-2 space-y-1 text-sm">
-                    <li>30-day trial access</li>
-                    <li>Limited to 501 products in inventory</li>
-                    <li>30 bills per day</li>
-                    <li>600 bills per month</li>
-                    <li>Basic pharmacy management features</li>
-                  </ul>
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            <ScrollArea className={!isLogin ? "h-[400px] pr-4" : ""}>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {!isLogin && (
-                  <>
-                    <div className="space-y-2">
-                      <Label htmlFor="pharmacyName">Pharmacy Name*</Label>
-                      <Input
-                        id="pharmacyName"
-                        value={formData.pharmacyName}
-                        onChange={(e) =>
-                          updateFormData("pharmacyName", e.target.value)
-                        }
-                        required={!isLogin}
-                        placeholder="Enter pharmacy name"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="ownerName">Owner Name*</Label>
-                      <Input
-                        id="ownerName"
-                        value={formData.ownerName}
-                        onChange={(e) =>
-                          updateFormData("ownerName", e.target.value)
-                        }
-                        required={!isLogin}
-                        placeholder="Enter owner name"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number*</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) =>
-                          updateFormData("phone", e.target.value)
-                        }
-                        required={!isLogin}
-                        placeholder="Enter phone number"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Address*</Label>
-                      <Input
-                        id="address"
-                        value={formData.address}
-                        onChange={(e) =>
-                          updateFormData("address", e.target.value)
-                        }
-                        required={!isLogin}
-                        placeholder="Enter complete address"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
+              {showFreePlanInfo && (
+                <Alert className="mb-4 bg-blue-50 text-blue-800 border-blue-200">
+                  <Info className="h-4 w-4" />
+                  <AlertTitle>Free Trial Plan</AlertTitle>
+                  <AlertDescription>
+                    You are signing up for the Free Plan. This includes:
+                    <ul className="list-disc pl-5 mt-2 space-y-1 text-sm">
+                      <li>30-day trial access</li>
+                      <li>Limited to 501 products in inventory</li>
+                      <li>30 bills per day</li>
+                      <li>600 bills per month</li>
+                      <li>Basic pharmacy management features</li>
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <ScrollArea className={!isLogin ? "h-[400px] pr-4" : ""}>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {!isLogin && (
+                    <>
                       <div className="space-y-2">
-                        <Label htmlFor="city">City*</Label>
+                        <Label htmlFor="pharmacyName">Pharmacy Name*</Label>
                         <Input
-                          id="city"
-                          value={formData.city}
+                          id="pharmacyName"
+                          value={formData.pharmacyName}
                           onChange={(e) =>
-                            updateFormData("city", e.target.value)
+                            updateFormData("pharmacyName", e.target.value)
                           }
                           required={!isLogin}
-                          placeholder="Enter city"
+                          placeholder="Enter pharmacy name"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="state">State*</Label>
-                        <Select 
-                          value={formData.state}
-                          onValueChange={(value) => updateFormData("state", value)}
-                        >
-                          <SelectTrigger className="bg-white">
-                            <SelectValue placeholder="Select state" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-white">
-                            {INDIAN_STATES.map((state) => (
-                              <SelectItem key={state} value={state}>
-                                {state}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="pincode">PIN Code*</Label>
+                        <Label htmlFor="ownerName">Owner Name*</Label>
                         <Input
-                          id="pincode"
-                          value={formData.pincode}
+                          id="ownerName"
+                          value={formData.ownerName}
                           onChange={(e) =>
-                            updateFormData("pincode", e.target.value)
+                            updateFormData("ownerName", e.target.value)
                           }
                           required={!isLogin}
-                          placeholder="Enter PIN code"
+                          placeholder="Enter owner name"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="gstin">GSTIN (Optional)</Label>
+                        <Label htmlFor="phone">Phone Number*</Label>
                         <Input
-                          id="gstin"
-                          value={formData.gstin}
+                          id="phone"
+                          type="tel"
+                          value={formData.phone}
                           onChange={(e) =>
-                            updateFormData("gstin", e.target.value)
+                            updateFormData("phone", e.target.value)
                           }
-                          placeholder="Enter GSTIN"
+                          required={!isLogin}
+                          placeholder="Enter phone number"
                         />
                       </div>
-                    </div>
-                  </>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email*</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      updateFormData("email", e.target.value)
-                    }
-                    required
-                    placeholder="Enter email address"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password*</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) =>
-                      updateFormData("password", e.target.value)
-                    }
-                    required
-                    placeholder="Enter password"
-                    className={!isLogin && formData.password ? (passwordValidation.isValid ? "border-green-500" : "border-red-500") : ""}
-                  />
+                      <div className="space-y-2">
+                        <Label htmlFor="address">Address*</Label>
+                        <Input
+                          id="address"
+                          value={formData.address}
+                          onChange={(e) =>
+                            updateFormData("address", e.target.value)
+                          }
+                          required={!isLogin}
+                          placeholder="Enter complete address"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="city">City*</Label>
+                          <Input
+                            id="city"
+                            value={formData.city}
+                            onChange={(e) =>
+                              updateFormData("city", e.target.value)
+                            }
+                            required={!isLogin}
+                            placeholder="Enter city"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="state">State*</Label>
+                          <Select 
+                            value={formData.state}
+                            onValueChange={(value) => updateFormData("state", value)}
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Select state" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white">
+                              {INDIAN_STATES.map((state) => (
+                                <SelectItem key={state} value={state}>
+                                  {state}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="pincode">PIN Code*</Label>
+                          <Input
+                            id="pincode"
+                            value={formData.pincode}
+                            onChange={(e) =>
+                              updateFormData("pincode", e.target.value)
+                            }
+                            required={!isLogin}
+                            placeholder="Enter PIN code"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="gstin">GSTIN (Optional)</Label>
+                          <Input
+                            id="gstin"
+                            value={formData.gstin}
+                            onChange={(e) =>
+                              updateFormData("gstin", e.target.value)
+                            }
+                            placeholder="Enter GSTIN"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email*</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) =>
+                        updateFormData("email", e.target.value)
+                      }
+                      required
+                      placeholder="Enter email address"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password*</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) =>
+                        updateFormData("password", e.target.value)
+                      }
+                      required
+                      placeholder="Enter password"
+                      className={!isLogin && formData.password ? (passwordValidation.isValid ? "border-green-500" : "border-red-500") : ""}
+                    />
+                    
+                    {!isLogin && formData.password && (
+                      <div className="mt-2 text-sm">
+                        <p className="font-medium mb-1">Password requirements:</p>
+                        <ul className="space-y-1">
+                          <li className="flex items-center">
+                            {passwordValidation.minLength ? (
+                              <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                            ) : (
+                              <X className="h-4 w-4 text-red-500 mr-2" />
+                            )}
+                            <span className={passwordValidation.minLength ? "text-green-600" : "text-red-600"}>
+                              At least 6 characters
+                            </span>
+                          </li>
+                          <li className="flex items-center">
+                            {passwordValidation.hasNumber ? (
+                              <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                            ) : (
+                              <X className="h-4 w-4 text-red-500 mr-2" />
+                            )}
+                            <span className={passwordValidation.hasNumber ? "text-green-600" : "text-red-600"}>
+                              Contains at least one number
+                            </span>
+                          </li>
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                   
-                  {!isLogin && formData.password && (
-                    <div className="mt-2 text-sm">
-                      <p className="font-medium mb-1">Password requirements:</p>
-                      <ul className="space-y-1">
-                        <li className="flex items-center">
-                          {passwordValidation.minLength ? (
-                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                          ) : (
-                            <X className="h-4 w-4 text-red-500 mr-2" />
-                          )}
-                          <span className={passwordValidation.minLength ? "text-green-600" : "text-red-600"}>
-                            At least 6 characters
-                          </span>
-                        </li>
-                        <li className="flex items-center">
-                          {passwordValidation.hasNumber ? (
-                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                          ) : (
-                            <X className="h-4 w-4 text-red-500 mr-2" />
-                          )}
-                          <span className={passwordValidation.hasNumber ? "text-green-600" : "text-red-600"}>
-                            Contains at least one number
-                          </span>
-                        </li>
-                      </ul>
+                  {!isLogin && (
+                    <div className="flex items-center space-x-2 mt-4">
+                      <Checkbox 
+                        id="terms" 
+                        checked={termsAccepted}
+                        onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+                        required
+                      />
+                      <Label htmlFor="terms" className="text-sm">
+                        I accept the{" "}
+                        <Link 
+                          to="/legal/terms-of-service" 
+                          state={{ fromRegistration: true }}
+                          className="text-green-600 hover:underline font-medium"
+                        >
+                          Terms of Service
+                        </Link>{" "}
+                        and{" "}
+                        <Link 
+                          to="/legal/privacy-policy" 
+                          state={{ fromRegistration: true }}
+                          className="text-green-600 hover:underline font-medium"
+                        >
+                          Privacy Policy
+                        </Link>
+                      </Label>
                     </div>
                   )}
-                </div>
-                
-                {!isLogin && (
-                  <div className="flex items-center space-x-2 mt-4">
-                    <Checkbox 
-                      id="terms" 
-                      checked={termsAccepted}
-                      onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
-                      required
-                    />
-                    <Label htmlFor="terms" className="text-sm">
-                      I accept the{" "}
-                      <Link 
-                        to="/legal/terms-of-service" 
-                        state={{ fromRegistration: true }}
-                        className="text-green-600 hover:underline font-medium"
-                      >
-                        Terms of Service
-                      </Link>{" "}
-                      and{" "}
-                      <Link 
-                        to="/legal/privacy-policy" 
-                        state={{ fromRegistration: true }}
-                        className="text-green-600 hover:underline font-medium"
-                      >
-                        Privacy Policy
-                      </Link>
-                    </Label>
-                  </div>
-                )}
-                
-                <Button className="w-full" type="submit" disabled={isLoading || (!isLogin && formData.password && !passwordValidation.isValid) || (!isLogin && !termsAccepted)}>
-                  {isLoading
-                    ? isLogin
-                      ? "Signing in..."
-                      : "Creating account..."
-                    : isLogin
-                    ? "Sign in"
-                    : "Create account"}
+                  
+                  <Button className="w-full" type="submit" disabled={isLoading || (!isLogin && formData.password && !passwordValidation.isValid) || (!isLogin && !termsAccepted)}>
+                    {isLoading
+                      ? isLogin
+                        ? "Signing in..."
+                        : "Creating account..."
+                      : isLogin
+                      ? "Sign in"
+                      : "Create account"}
+                  </Button>
+                </form>
+              </ScrollArea>
+              <div className="mt-4 text-center">
+                <button
+                  onClick={() => setIsLogin(!isLogin)}
+                  className="text-sm text-primary hover:underline"
+                >
+                  {isLogin
+                    ? "Don't have an account? Sign up"
+                    : "Already have an account? Sign in"}
+                </button>
+              </div>
+            </CardContent>
+            
+            {isLogin && (
+              <CardFooter className="flex justify-center pb-4">
+                <Button 
+                  variant="link" 
+                  className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
+                  onClick={handleContactAdmin}
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  <span>Contact Administrator</span>
+                  <HelpCircle className="h-3.5 w-3.5 ml-1" />
                 </Button>
-              </form>
-            </ScrollArea>
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-sm text-primary hover:underline"
-              >
-                {isLogin
-                  ? "Don't have an account? Sign up"
-                  : "Already have an account? Sign in"}
-              </button>
-            </div>
-          </CardContent>
-          
-          {isLogin && (
-            <CardFooter className="flex justify-center pb-4">
-              <Button 
-                variant="link" 
-                className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1"
-                onClick={handleContactAdmin}
-              >
-                <Mail className="h-3.5 w-3.5" />
-                <span>Contact Administrator</span>
-                <HelpCircle className="h-3.5 w-3.5 ml-1" />
-              </Button>
-            </CardFooter>
-          )}
-        </Card>
-      </motion.div>
+              </CardFooter>
+            )}
+          </Card>
+        </motion.div>
+      </div>
     </div>
   );
 }
