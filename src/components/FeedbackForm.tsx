@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MessageCircle, Check } from "lucide-react";
 import { sanitizeInput } from "@/utils/securityUtils";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 export function FeedbackForm() {
   const [email, setEmail] = useState("");
@@ -82,8 +83,8 @@ export function FeedbackForm() {
       // Show success state and toast notification
       setIsSuccess(true);
       toast({
-        title: "Feedback received",
-        description: "Thank you for your valuable feedback!",
+        title: "Thank you for your feedback!",
+        description: "Your message has been successfully submitted.",
       });
       
       // Reset form
@@ -119,10 +120,13 @@ export function FeedbackForm() {
       </p>
       
       {isSuccess ? (
-        <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4 flex items-center gap-2 text-green-700">
+        <Alert className="bg-green-50 border border-green-200 mb-4">
           <Check className="h-5 w-5 text-green-500" />
-          <span>Thank you! Your feedback has been submitted successfully.</span>
-        </div>
+          <AlertTitle className="text-green-700">Feedback Submitted</AlertTitle>
+          <AlertDescription className="text-green-600">
+            Thank you for your valuable feedback! Your message has been received and will be reviewed by our team.
+          </AlertDescription>
+        </Alert>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

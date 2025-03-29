@@ -1,3 +1,4 @@
+
 import { memo } from "react";
 
 // Memoize the ScrollAnimationSection component to prevent unnecessary re-renders
@@ -45,7 +46,7 @@ export const ScrollAnimationSection = memo(() => {
               <div className="text-center">
                 <h3 className="text-3xl font-bold text-primary mb-4">Victure</h3>
                 <p className="text-neutral-700 max-w-xs mx-auto">
-                  Empowering pharmacies with innovative technology since 2020
+                  Empowering pharmacies with innovative technology
                 </p>
               </div>
             </div>
