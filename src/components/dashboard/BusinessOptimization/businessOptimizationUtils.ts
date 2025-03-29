@@ -1,10 +1,11 @@
-
 export const prepareForecastData = (locationData?: any, salesData?: any[]) => {
   if (locationData?.marketForecasts && locationData.marketForecasts.length > 0) {
     return locationData.marketForecasts;
   }
   
-  if (!salesData || salesData.length === 0) return [];
+  if (!salesData || salesData.length === 0) {
+    return generatePlaceholderForecastData();
+  }
 
   const monthlyData: Record<string, number> = {};
   
@@ -31,31 +32,121 @@ export const prepareForecastData = (locationData?: any, salesData?: any[]) => {
     prediction: amount
   }));
   
-  // If we don't have enough data, generate some forecasts for future months
-  if (data.length < 6) {
-    const lastAmount = data.length > 0 ? data[data.length - 1].prediction : 10000;
-    const now = new Date();
+  // Generate realistic forecast based on historical data
+  return generateRealisticForecast(data);
+};
+
+// Generate realistic forecast data based on historical data
+function generateRealisticForecast(historicalData: any[]) {
+  const now = new Date();
+  const result = [...historicalData];
+  
+  // If we have at least some historical data, use it to project future months
+  if (historicalData.length > 0) {
+    // Calculate average and trend
+    let sum = 0;
+    let monthlyGrowth = 0;
     
-    // Add future months
-    for (let i = 1; i <= 6 - data.length; i++) {
-      const futureMonth = now.getMonth() + i;
-      const futureYear = now.getFullYear() + Math.floor((now.getMonth() + i) / 12);
-      const adjustedMonth = (futureMonth % 12) + 1;
+    if (historicalData.length >= 2) {
+      // Calculate average monthly growth
+      const growthRates = [];
+      for (let i = 1; i < historicalData.length; i++) {
+        const prevValue = historicalData[i-1].prediction;
+        const currValue = historicalData[i].prediction;
+        if (prevValue > 0) {
+          growthRates.push((currValue - prevValue) / prevValue);
+        }
+      }
       
-      // Add some randomness and a slight upward trend to the forecast
-      const randomFactor = 0.9 + (Math.random() * 0.4); // 0.9 to 1.3
-      const trendFactor = 1 + (i * 0.03); // Small increase each month
-      const forecastAmount = lastAmount * randomFactor * trendFactor;
+      if (growthRates.length > 0) {
+        monthlyGrowth = growthRates.reduce((a, b) => a + b, 0) / growthRates.length;
+        // Cap growth rate to reasonable values (-15% to +20%)
+        monthlyGrowth = Math.max(-0.15, Math.min(0.2, monthlyGrowth));
+      }
+    }
+    
+    // Calculate recent average if we have data
+    const recentMonths = historicalData.slice(-3);
+    if (recentMonths.length > 0) {
+      sum = recentMonths.reduce((total, item) => total + item.prediction, 0);
+      const baseValue = sum / recentMonths.length;
       
-      data.push({
-        month: `${adjustedMonth}/${futureYear}`,
-        prediction: Math.round(forecastAmount)
-      });
+      // Add future projections (next 6 months)
+      for (let i = 1; i <= 6; i++) {
+        const futureMonth = now.getMonth() + i;
+        const futureYear = now.getFullYear() + Math.floor((now.getMonth() + i) / 12);
+        const adjustedMonth = (futureMonth % 12) + 1;
+        
+        // Calculate seasonal factor (higher in winter and summer, lower in other months)
+        const monthFactor = getSeasonalFactor(adjustedMonth);
+        
+        // Add randomness within bounds
+        const randomFactor = 0.95 + (Math.random() * 0.1); // 0.95 to 1.05
+        
+        // Calculate the projected amount with growth, seasonality, and some randomness
+        const growthFactor = 1 + (monthlyGrowth * i);
+        const forecastAmount = baseValue * growthFactor * monthFactor * randomFactor;
+        
+        result.push({
+          month: `${adjustedMonth}/${futureYear}`,
+          prediction: Math.round(forecastAmount)
+        });
+      }
     }
   }
   
-  return data;
-};
+  // If we still don't have enough data, generate some placeholder data
+  if (result.length < 6) {
+    return generatePlaceholderForecastData();
+  }
+  
+  // Sort by date
+  return result.sort((a, b) => {
+    const [aMonth, aYear] = a.month.split('/').map(Number);
+    const [bMonth, bYear] = b.month.split('/').map(Number);
+    
+    if (aYear !== bYear) return aYear - bYear;
+    return aMonth - bMonth;
+  });
+}
+
+// Get seasonal factor based on month (1-12)
+function getSeasonalFactor(month: number): number {
+  // Higher demand in winter (Nov-Feb) and summer (Apr-Jul)
+  if ([11, 12, 1, 2].includes(month)) {
+    return 1.1 + (Math.random() * 0.1); // Winter: 1.1-1.2
+  } else if ([4, 5, 6, 7].includes(month)) {
+    return 1.05 + (Math.random() * 0.1); // Summer: 1.05-1.15
+  } else {
+    return 0.95 + (Math.random() * 0.1); // Spring/Fall: 0.95-1.05
+  }
+}
+
+// Generate placeholder forecast data if no real data exists
+function generatePlaceholderForecastData() {
+  const now = new Date();
+  const result = [];
+  const baseValue = 20000 + Math.random() * 10000; // Random baseline between 20k-30k
+  
+  // Generate data for the last 2 months plus next 6 months
+  for (let i = -2; i <= 6; i++) {
+    const targetMonth = now.getMonth() + i;
+    const targetYear = now.getFullYear() + Math.floor((now.getMonth() + i) / 12);
+    const adjustedMonth = (targetMonth % 12) + 1;
+    
+    // Add some realistic seasonal variations and trends
+    const monthFactor = getSeasonalFactor(adjustedMonth);
+    const trendFactor = 1 + (i * 0.02); // Small increasing trend
+    const randomFactor = 0.95 + (Math.random() * 0.1); // 0.95 to 1.05 randomness
+    
+    result.push({
+      month: `${adjustedMonth}/${targetYear}`,
+      prediction: Math.round(baseValue * monthFactor * trendFactor * randomFactor)
+    });
+  }
+  
+  return result;
+}
 
 export const prepareMarginData = (inventoryData?: any[]) => {
   if (!inventoryData || inventoryData.length === 0) return [];

@@ -140,7 +140,7 @@ export const MarketForecastTab = ({
                 </Card>
               </div>
               
-              {/* Use simpler ChartContainer from Shadcn UI */}
+              {/* Chart with improved alignment and labels */}
               <div className="h-[250px] w-full">
                 <ChartContainer config={chartConfig}>
                   <LineChart data={simplifiedForecastData} className="h-full">
@@ -151,6 +151,7 @@ export const MarketForecastTab = ({
                       tickLine={false}
                       fontSize={12}
                       tickMargin={8}
+                      padding={{ left: 10, right: 10 }}
                     />
                     <YAxis
                       axisLine={false}
@@ -158,11 +159,15 @@ export const MarketForecastTab = ({
                       fontSize={12}
                       tickFormatter={(value) => `₹${value/1000}k`}
                       tickMargin={8}
+                      width={60} // Fix alignment issue by providing fixed width
                     />
                     <ChartTooltip
                       content={
                         <ChartTooltipContent
-                          formatter={(value: number) => [`₹${value.toLocaleString()}`, ""]}
+                          formatter={(value: number, name: string) => {
+                            const formattedName = name === "yourPharmacy" ? "Your Pharmacy" : "Industry Average";
+                            return [`₹${value.toLocaleString()}`, formattedName];
+                          }}
                         />
                       }
                     />
@@ -174,6 +179,7 @@ export const MarketForecastTab = ({
                       dot={{ r: 4, strokeWidth: 2 }}
                       activeDot={{ r: 6, strokeWidth: 2 }}
                       name="yourPharmacy"
+                      animationDuration={0} // Prevent flickering
                     />
                     <Line
                       type="monotone"
@@ -183,10 +189,28 @@ export const MarketForecastTab = ({
                       strokeDasharray="5 5"
                       dot={{ r: 4, fill: "white", strokeWidth: 2 }}
                       name="industryAverage"
+                      animationDuration={0} // Prevent flickering
                     />
-                    <Legend />
+                    <Legend 
+                      align="center"
+                      verticalAlign="top"
+                      height={36}
+                      wrapperStyle={{ paddingBottom: "10px" }}
+                      formatter={(value) => value === "yourPharmacy" ? "Your Pharmacy" : "Industry Average"}
+                    />
                   </LineChart>
                 </ChartContainer>
+              </div>
+              
+              <div className="text-xs text-center text-muted-foreground mt-1">
+                <span className="inline-flex items-center mr-3">
+                  <span className="inline-block w-3 h-0.5 bg-[#4338ca] mr-1"></span>
+                  Your Pharmacy (Solid Line)
+                </span>
+                <span className="inline-flex items-center">
+                  <span className="inline-block w-3 h-0.5 bg-[#65a30d] mr-1 border-t border-dashed"></span>
+                  Industry Average (Dashed Line)
+                </span>
               </div>
             </div>
           ) : (
@@ -219,17 +243,31 @@ export const MarketForecastTab = ({
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart 
                   data={regionalDemandData.slice(0, 5)}
-                  layout="vertical" // Changed to horizontal bars for better readability
-                  margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
+                  layout="vertical"
+                  margin={{ top: 5, right: 20, left: 80, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
-                  <YAxis type="category" dataKey="product" width={80} fontSize={12} />
+                  <XAxis 
+                    type="number" 
+                    tickFormatter={(value) => `${value}`}
+                  />
+                  <YAxis 
+                    type="category" 
+                    dataKey="product" 
+                    width={80} 
+                    fontSize={12}
+                  />
                   <RechartsTooltip 
                     formatter={(value: number) => [`${value} units`, 'Projected Demand']} 
                     labelFormatter={(label) => `Product: ${label}`}
                   />
-                  <Bar dataKey="demand" fill="#0088FE" name="Monthly Demand" radius={[0, 4, 4, 0]} />
+                  <Bar 
+                    dataKey="demand" 
+                    fill="#0088FE" 
+                    name="Monthly Demand" 
+                    radius={[0, 4, 4, 0]}
+                    animationDuration={0} // Prevent flickering
+                  />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -257,17 +295,31 @@ export const MarketForecastTab = ({
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart 
                   data={seasonalTrendsData.slice(0, 5)}
-                  layout="vertical" // Changed to horizontal bars
-                  margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
+                  layout="vertical"
+                  margin={{ top: 5, right: 20, left: 80, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" />
-                  <YAxis type="category" dataKey="name" width={80} fontSize={12} />
+                  <XAxis 
+                    type="number"
+                    tickFormatter={(value) => `${value}%`}
+                  />
+                  <YAxis 
+                    type="category" 
+                    dataKey="name" 
+                    width={80} 
+                    fontSize={12}
+                  />
                   <RechartsTooltip 
                     formatter={(value: number) => [`${value}%`, 'Growth Potential']}
                     labelFormatter={(label) => `Product: ${label}`}
                   />
-                  <Bar dataKey="demand" fill="#00C49F" name="Growth %" radius={[0, 4, 4, 0]} />
+                  <Bar 
+                    dataKey="demand" 
+                    fill="#00C49F" 
+                    name="Growth %" 
+                    radius={[0, 4, 4, 0]}
+                    animationDuration={0} // Prevent flickering
+                  />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
