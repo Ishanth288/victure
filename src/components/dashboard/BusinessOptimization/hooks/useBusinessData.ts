@@ -1,20 +1,14 @@
-
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useLocationBasedAnalytics } from "@/components/dashboard/hooks/useLocationBasedAnalytics";
+import { useLocationBasedAnalytics, LocationAnalyticsData } from "@/components/dashboard/hooks/useLocationBasedAnalytics";
 import { checkSupabaseConnection, executeWithRetry, determineErrorType } from "@/utils/supabaseErrorHandling";
 import { User } from "@supabase/supabase-js";
 import { PostgrestError } from "@supabase/supabase-js";
 
-// Define types for location analytics data
-interface LocationAnalyticsData {
-  // Define properties as needed
-  [key: string]: any;
-}
-
 interface PharmacyLocation {
-  // Define properties as needed
+  state?: string;
+  city?: string;
   [key: string]: any;
 }
 
@@ -33,35 +27,27 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
   const retryCount = useRef(0);
   const maxRetries = useRef(3);
   const mountedRef = useRef(true);
+  
   const { 
     locationData, 
     pharmacyLocation, 
     refreshData: refreshLocationData, 
     isLoading: locationLoading,
     error: locationError
-  } = useLocationBasedAnalytics() as { 
-    locationData: LocationAnalyticsData; 
-    pharmacyLocation: PharmacyLocation; 
-    refreshData: () => Promise<LocationAnalyticsData>; 
-    isLoading: boolean;
-    error: any;
-  };
+  } = useLocationBasedAnalytics();
 
   const fetchData = useCallback(async () => {
-    // Don't update state if the component has unmounted
     if (!mountedRef.current) return;
     
     setIsLoading(true);
     setConnectionError(null);
     
     try {
-      // Check connection first
       const isConnected = await checkSupabaseConnection();
       if (!isConnected) {
         throw new Error("Database connection failed. Please check your network connection.");
       }
 
-      // Get the current user
       const userResult = await executeWithRetry(
         () => supabase.auth.getUser(),
         { 
@@ -81,7 +67,6 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
       
       const user = userResult.data.user;
 
-      // Create a promise-based wrapper for inventory query
       const inventoryPromise = async () => {
         const result = await supabase
           .from('inventory')
@@ -90,7 +75,6 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
         return result;
       };
 
-      // Fetch inventory data with retry logic
       const inventoryResult = await executeWithRetry(
         inventoryPromise,
         { 
@@ -102,7 +86,6 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
 
       if (inventoryResult.error) throw inventoryResult.error;
 
-      // Create a promise-based wrapper for bills query
       const billsPromise = async () => {
         const result = await supabase
           .from('bills')
@@ -111,7 +94,6 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
         return result;
       };
 
-      // Fetch sales data from bills with retry logic
       const billsResult = await executeWithRetry(
         billsPromise,
         { 
@@ -123,7 +105,6 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
 
       if (billsResult.error) throw billsResult.error;
 
-      // Create a promise-based wrapper for purchase orders query
       const purchaseOrdersPromise = async () => {
         const result = await supabase
           .from('purchase_orders')
@@ -132,7 +113,6 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
         return result;
       };
 
-      // Fetch supplier data from purchase orders with retry logic
       const purchaseOrdersResult = await executeWithRetry(
         purchaseOrdersPromise,
         { 
@@ -144,7 +124,6 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
 
       if (purchaseOrdersResult.error) throw purchaseOrdersResult.error;
 
-      // Don't update state if the component has unmounted
       if (!mountedRef.current) return;
       
       if (inventoryResult.data) {
@@ -159,10 +138,8 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
         setSuppliersData(purchaseOrdersResult.data as any[]);
       }
       
-      // Reset retry counter on success
       retryCount.current = 0;
       
-      // Show success message if recovering from previous error
       if (connectionError) {
         toast({
           title: "Connection restored",
@@ -174,17 +151,13 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     } catch (error: any) {
       console.error("Error fetching business data:", error);
       
-      // Don't update state if the component has unmounted
       if (!mountedRef.current) return;
       
-      // Determine error type for UI display
       const detectedErrorType = determineErrorType(error);
       setErrorType(detectedErrorType);
       
-      // Set error message
       setConnectionError(error.message || "Unknown error occurred");
       
-      // Implement exponential backoff retry
       if (retryCount.current < maxRetries.current) {
         retryCount.current++;
         const delay = 1000 * Math.pow(2, retryCount.current - 1);
@@ -202,13 +175,11 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
           variant: "destructive"
         });
         
-        // Call onError callback if provided
         if (options?.onError) {
           options.onError();
         }
       }
     } finally {
-      // Don't update state if the component has unmounted
       if (mountedRef.current) {
         setIsLoading(false);
       }
@@ -216,13 +187,10 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
   }, [toast, options, connectionError]);
 
   useEffect(() => {
-    // Set mounted ref to true
     mountedRef.current = true;
     
-    // Fetch data on mount
     fetchData();
     
-    // Set up real-time subscriptions
     const setupSubscriptions = async () => {
       try {
         const { data } = await supabase.auth.getUser();
@@ -230,7 +198,6 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
         
         if (!user) return () => {};
         
-        // Create a channel for data updates
         const channel = supabase
           .channel('business-data-changes')
           .on('postgres_changes', 
@@ -282,7 +249,6 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     
     const cleanup = setupSubscriptions();
     
-    // Handle online/offline events
     const handleOnline = () => {
       console.log("App is back online, refreshing business data...");
       fetchData();

@@ -24,6 +24,7 @@ export function useLocationBasedAnalytics() {
   const [isLoading, setIsLoading] = useState(true);
   const [locationData, setLocationData] = useState<LocationAnalyticsData | null>(null);
   const [pharmacyLocation, setPharmacyLocation] = useState<PharmacyLocation | null>(null);
+  const [error, setError] = useState<any>(null); // Add error state
   const { toast } = useToast();
 
   // Fetch pharmacy location from profile
@@ -291,6 +292,7 @@ export function useLocationBasedAnalytics() {
   // Fetch location-based analytics
   const fetchLocationAnalytics = useCallback(async () => {
     setIsLoading(true);
+    setError(null); // Reset error state
     try {
       // First get the pharmacy location
       const location = await fetchPharmacyLocation();
@@ -320,6 +322,7 @@ export function useLocationBasedAnalytics() {
       return analyticsData;
     } catch (error) {
       console.error("Error fetching location-based analytics:", error);
+      setError(error); // Set error state
       toast({
         title: "Error updating location data",
         description: "There was a problem retrieving location-specific analytics",
@@ -346,6 +349,7 @@ export function useLocationBasedAnalytics() {
     locationData,
     pharmacyLocation,
     isLoading,
-    refreshData: fetchLocationAnalytics
+    refreshData: fetchLocationAnalytics,
+    error // Return the error state
   };
 }
