@@ -1,4 +1,3 @@
-
 /**
  * Security headers middleware for enhancing website security
  * These headers help prevent various common web vulnerabilities
@@ -8,16 +7,18 @@ export const securityHeaders = {
   // Prevent XSS attacks by controlling which resources can be loaded
   'Content-Security-Policy': `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://prod.spline.design https://*.sentry.io https://js.stripe.com https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev https://cdn.gpteng.co https://*.google.com https://trends.google.com;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.sentry-cdn.com https://*.ingest.sentry.io;
+    connect-src 'self' https://*.supabase.co https://*.sentry.io https://*.sentry-cdn.com https://*.ingest.sentry.io;
+    img-src 'self' data: https:;
     style-src 'self' 'unsafe-inline';
-    img-src 'self' data: blob: https://*.supabase.co https://*.sentry.io https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev https://*.google.com;
     font-src 'self' data:;
-    connect-src 'self' https://*.supabase.co https://*.sentry.io https://vitals.vercel-insights.com wss://*.supabase.co https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev https://*.google.com https://trends.google.com https://newsapi.org;
-    frame-src 'self' https://js.stripe.com https://*.lovableproject.com https://*.gpteng.co https://*.lovable.app https://*.lovable.dev https://*.google.com;
+    frame-src 'self';
     object-src 'none';
     base-uri 'self';
     form-action 'self';
-    frame-ancestors 'self' https://*.lovableproject.com https://*.lovable.app https://*.lovable.dev https://preview--victure.lovable.app https://*.gpteng.co https://lovable.dev https://preview.lovable.ai;
+    frame-ancestors 'none';
+    block-all-mixed-content;
+    upgrade-insecure-requests;
   `.replace(/\s+/g, ' ').trim(),
   
   // Prevent MIME type sniffing

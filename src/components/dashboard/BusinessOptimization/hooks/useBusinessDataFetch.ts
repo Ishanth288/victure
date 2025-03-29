@@ -31,15 +31,40 @@ export function useBusinessDataFetch({
   const lastFetchTime = useRef<Date>(new Date());
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const abortController = useRef<AbortController | null>(null);
+  const fetchInProgress = useRef(false);
   
   // Update maxRetries if it changes
   useEffect(() => {
     maxRetriesRef.current = maxRetries;
   }, [maxRetries]);
 
+  // Simplified retry function that can be called externally 
+  // to handle CSP issues or other problems
+  const retryFetch = useCallback(() => {
+    if (fetchInProgress.current) {
+      console.log("Fetch already in progress, not retrying");
+      return;
+    }
+    
+    console.log("Manual retry fetch triggered");
+    // Reset error state
+    setConnectionError(null);
+    setErrorType('unknown');
+    // Reset retry counter to give it a fresh start
+    retryCount.current = 0;
+    // Call fetch data
+    fetchData();
+  }, []);
+
   const fetchData = useCallback(async () => {
     console.log("fetchData function triggered, checking mountedRef:", mountedRef.current);
     if (!mountedRef.current) return;
+    if (fetchInProgress.current) {
+      console.log("Fetch already in progress, skipping");
+      return;
+    }
+    
+    fetchInProgress.current = true;
     
     // Create a new AbortController for this fetch operation
     if (abortController.current) {
@@ -60,6 +85,7 @@ export function useBusinessDataFetch({
         }
         setIsLoading(false);
         setDataFetched(true);
+        fetchInProgress.current = false;
         
         stableToast({
           title: "Data loading timeout",
@@ -92,8 +118,8 @@ export function useBusinessDataFetch({
         () => supabase.auth.getUser(),
         { 
           context: "getUser",
-          retries: 3,
-          retryDelay: 800 // Faster retry
+          retries: 2, // Faster retry but fewer attempts
+          retryDelay: 500 // Faster retry
         }
       );
       
@@ -116,7 +142,7 @@ export function useBusinessDataFetch({
           .from('inventory')
           .select('*')
           .eq('user_id', user.id)
-          .limit(100); // Add limit to improve performance
+          .limit(50); // Reduced limit to improve performance
         console.log("Inventory query result:", result);
         return result;
       };
@@ -125,8 +151,8 @@ export function useBusinessDataFetch({
         inventoryPromise,
         { 
           context: "inventory",
-          retries: 3,
-          retryDelay: 800
+          retries: 2,
+          retryDelay: 500
         }
       );
 
@@ -143,7 +169,7 @@ export function useBusinessDataFetch({
           .select('*, bill_items(*)')
           .eq('user_id', user.id)
           .order('date', { ascending: false })
-          .limit(100); // Add limit to improve performance
+          .limit(30); // Reduced limit to improve performance
         console.log("Bills query result:", result);
         return result;
       };
@@ -152,8 +178,8 @@ export function useBusinessDataFetch({
         billsPromise,
         { 
           context: "bills",
-          retries: 3,
-          retryDelay: 800
+          retries: 2,
+          retryDelay: 500
         }
       );
 
@@ -170,7 +196,7 @@ export function useBusinessDataFetch({
           .select('*, purchase_order_items(*)')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
-          .limit(100); // Add limit to improve performance
+          .limit(30); // Reduced limit to improve performance
         console.log("Purchase orders query result:", result);
         return result;
       };
@@ -179,8 +205,8 @@ export function useBusinessDataFetch({
         purchaseOrdersPromise,
         { 
           context: "purchase_orders",
-          retries: 3,
-          retryDelay: 800
+          retries: 2,
+          retryDelay: 500
         }
       );
 
@@ -192,6 +218,7 @@ export function useBusinessDataFetch({
       // Check if component is still mounted before updating state
       if (!mountedRef.current) {
         console.log("Component unmounted, stopping state updates");
+        fetchInProgress.current = false;
         return;
       }
       
@@ -230,10 +257,14 @@ export function useBusinessDataFetch({
       
       console.log("Data fetching completed, setting isLoading to false");
       setIsLoading(false);
+      fetchInProgress.current = false;
     } catch (error: any) {
       console.error("Error fetching business data:", error);
       
-      if (!mountedRef.current) return;
+      if (!mountedRef.current) {
+        fetchInProgress.current = false;
+        return;
+      }
       
       const detectedErrorType = determineErrorType(error);
       setErrorType(detectedErrorType);
@@ -242,11 +273,12 @@ export function useBusinessDataFetch({
       
       if (retryCount.current < maxRetriesRef.current) {
         retryCount.current++;
-        const delay = 800 * Math.pow(1.5, retryCount.current - 1); // Slightly faster exponential backoff
+        const delay = 500 * Math.pow(1.5, retryCount.current - 1); // Faster exponential backoff
         console.log(`Retrying data fetch (${retryCount.current}/${maxRetriesRef.current}) after ${delay}ms`);
         
         setTimeout(() => {
           if (mountedRef.current) {
+            fetchInProgress.current = false;
             fetchData();
           }
         }, delay);
@@ -273,6 +305,7 @@ export function useBusinessDataFetch({
         // Even after error, we need to exit loading state to prevent infinite spinner
         setIsLoading(false);
         setDataFetched(true);
+        fetchInProgress.current = false;
       }
     }
   }, [toast, onError, connectionError, mountedRef, isLoading, timeout]);
@@ -287,6 +320,7 @@ export function useBusinessDataFetch({
       if (abortController.current) {
         abortController.current.abort();
       }
+      fetchInProgress.current = false;
     };
   }, []);
 
@@ -299,6 +333,7 @@ export function useBusinessDataFetch({
     errorType,
     dataFetched,
     setDataFetched,
-    fetchData
+    fetchData,
+    retryFetch
   };
 }

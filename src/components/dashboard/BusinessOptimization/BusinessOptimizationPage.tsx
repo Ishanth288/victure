@@ -1,5 +1,6 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Tabs } from "@/components/ui/tabs";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useBusinessData } from "./hooks/useBusinessData";
@@ -11,10 +12,12 @@ import { TabsNavigation } from "./components/TabsNavigation";
 import { TabContent } from "./components/TabContent";
 import { LoadingState, ErrorState, EmptyState } from "./components/LoadingState";
 import { stableToast } from "@/components/ui/stable-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function BusinessOptimizationPage() {
   const [activeTab, setActiveTab] = useState("forecast");
   const [error, setError] = useState<boolean>(false);
+  const [forcedExit, setForcedExit] = useState(false);
   
   const handleDataError = useCallback(() => {
     console.log("Business data error callback triggered");
@@ -44,20 +47,33 @@ export default function BusinessOptimizationPage() {
     refreshLocationData,
     connectionError,
     errorType,
-    hasError
+    hasError,
+    retryFetch
   } = useBusinessData({
     onError: handleDataError,
-    maxRetries: 5, // Increase retries
-    timeout: 15000 // Increased timeout for better chance of loading
+    maxRetries: 3, // Reduce retries to prevent long waits
+    timeout: 8000  // Reduce timeout for faster response
   });
   
   // Stable loading state to prevent flickering
   const { isStableLoading } = useLoadingState({
     isLoading, 
     locationLoading,
-    forceExitTimeout: 15000, // Increase timeout to ensure data has chance to load
+    forceExitTimeout: 10000, // Reduced timeout to ensure we don't wait too long
     stabilityDelay: 200 // Lower stability delay for quicker transitions
   });
+
+  // Force exit from loading state after 20 seconds regardless of other conditions
+  useEffect(() => {
+    const forceExitTimer = setTimeout(() => {
+      if (isStableLoading) {
+        console.log("Force exiting loading state after absolute timeout");
+        setForcedExit(true);
+      }
+    }, 20000);
+    
+    return () => clearTimeout(forceExitTimer);
+  }, [isStableLoading]);
   
   // Data refresh handler
   const { lastRefreshed, handleRefreshAll } = useDataRefresh({
@@ -70,8 +86,9 @@ export default function BusinessOptimizationPage() {
     isLoading,
     locationLoading,
     isStableLoading,
+    forcedExit,
     hasData: !!(inventoryData?.length || salesData?.length || suppliersData?.length || 
-               (locationData && Object.keys(locationData).length)),
+               (locationData && Object.keys(locationData || {}).length)),
     hasError,
     error,
     inventoryDataLength: inventoryData?.length || 0,
@@ -80,8 +97,21 @@ export default function BusinessOptimizationPage() {
     locationDataKeys: locationData ? Object.keys(locationData).length : 0
   });
 
+  // Handle CSP issues by retrying the fetch when we detect resources might be blocked
+  useEffect(() => {
+    // When we detect CSP issues, try again with a slight delay
+    const cspRetryTimer = setTimeout(() => {
+      if (isStableLoading && !error && !hasError) {
+        console.log("Attempting retry due to possible CSP issues");
+        retryFetch?.();
+      }
+    }, 5000);
+    
+    return () => clearTimeout(cspRetryTimer);
+  }, [isStableLoading, error, hasError, retryFetch]);
+
   // Render loading state with stability to prevent flickering
-  if (isStableLoading) {
+  if (isStableLoading && !forcedExit) {
     console.log("Rendering stable loading state");
     return (
       <DashboardLayout>
@@ -103,7 +133,7 @@ export default function BusinessOptimizationPage() {
   console.log("Has data:", hasData, "locationData:", locationData);
 
   // Only show error state if we have no data at all
-  if ((error || hasError) && !hasData) {
+  if ((error || hasError || forcedExit) && !hasData) {
     console.log("Rendering error state", { error, hasError, errorType, connectionError });
     return (
       <DashboardLayout>
@@ -111,7 +141,7 @@ export default function BusinessOptimizationPage() {
           <ErrorState 
             onRetry={handleRefreshAll} 
             errorType={errorType}
-            errorMessage={connectionError || undefined}
+            errorMessage={connectionError || "Loading timed out. Please try again."}
           />
         </div>
       </DashboardLayout>
@@ -130,6 +160,7 @@ export default function BusinessOptimizationPage() {
     );
   }
 
+  // If forcedExit is true but we have some data, show what we have
   console.log("Rendering main content");
   return (
     <DashboardLayout>
@@ -139,22 +170,39 @@ export default function BusinessOptimizationPage() {
           onRefresh={handleRefreshAll}
           lastRefreshed={lastRefreshed}
           dataSources={locationData?.dataSources}
-          hasError={error || hasError}
+          hasError={error || hasError || forcedExit}
         />
         
         <Tabs defaultValue="forecast" onValueChange={setActiveTab}>
           <TabsNavigation />
           
           <div className="mt-4">
-            <TabContent 
-              activeTab={activeTab}
-              inventoryData={inventoryData || []}
-              salesData={salesData || []}
-              suppliersData={suppliersData || []}
-              locationData={locationData || {}}
-              pharmacyLocation={pharmacyLocation}
-              lastRefreshed={lastRefreshed}
-            />
+            {forcedExit && !hasData ? (
+              <div className="p-6 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800">
+                <h3 className="text-lg font-medium text-amber-800 dark:text-amber-300">
+                  Partial Data Loaded
+                </h3>
+                <p className="text-amber-700 dark:text-amber-400 mt-2">
+                  Some data couldn't be loaded completely. You're seeing limited information.
+                  <button 
+                    onClick={handleRefreshAll}
+                    className="ml-2 underline text-blue-600 dark:text-blue-400"
+                  >
+                    Try again
+                  </button>
+                </p>
+              </div>
+            ) : (
+              <TabContent 
+                activeTab={activeTab}
+                inventoryData={inventoryData || []}
+                salesData={salesData || []}
+                suppliersData={suppliersData || []}
+                locationData={locationData || {}}
+                pharmacyLocation={pharmacyLocation}
+                lastRefreshed={lastRefreshed}
+              />
+            )}
           </div>
         </Tabs>
       </div>

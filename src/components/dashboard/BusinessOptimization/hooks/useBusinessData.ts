@@ -39,7 +39,8 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     errorType,
     dataFetched,
     setDataFetched,
-    fetchData
+    fetchData,
+    retryFetch
   } = useBusinessDataFetch({
     onError: options?.onError || handleDataError,
     mountedRef,
@@ -90,6 +91,7 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     connectionError,
     errorType,
     hasError: Boolean(connectionError) || Boolean(locationError) || error,
-    autoRefreshEnabled
+    autoRefreshEnabled,
+    retryFetch // Export the retry function
   };
 }
