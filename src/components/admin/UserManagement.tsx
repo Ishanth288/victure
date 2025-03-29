@@ -28,7 +28,7 @@ export function UserManagement() {
     try {
       setLoading(true);
       
-      const result = await executeWithRetry(
+      const result = await executeWithRetry<User[]>(
         () => supabase
           .from('profiles')
           .select('id, email:id, role, created_at, pharmacy_name')
@@ -46,7 +46,7 @@ export function UserManagement() {
       }
       
       if (result.data) {
-        setUsers(result.data as User[]);
+        setUsers(result.data);
       }
       
     } catch (error) {

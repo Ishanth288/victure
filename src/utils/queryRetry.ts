@@ -8,7 +8,7 @@ import * as Sentry from "@sentry/react";
  * @returns Promise with the query result
  */
 export async function executeWithRetry<T>(
-  queryFn: () => Promise<{ data: T; error: any; }>,
+  queryFn: () => Promise<{ data: T; error: any; }> | { data: T; error: any; },
   options?: {
     maxRetries?: number;
     retryDelay?: number;
@@ -24,7 +24,9 @@ export async function executeWithRetry<T>(
 
   while (attempts < maxRetries) {
     try {
-      const result = await queryFn();
+      // Convert result to a promise if it isn't already one
+      // This ensures we handle both direct Supabase query objects and Promise-wrapped returns
+      const result = await Promise.resolve(queryFn());
       
       if (result.error) {
         // Log the error but continue with retry logic
