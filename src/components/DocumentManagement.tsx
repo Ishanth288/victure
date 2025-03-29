@@ -114,9 +114,9 @@ export function DocumentManagement() {
       // Inventory last update
       const { data: inventoryLatest } = await supabase
         .from('inventory')
-        .select('id, updated_at')
+        .select('id, created_at')  // Changed from updated_at to created_at
         .eq('user_id', user.id)
-        .order('updated_at', { ascending: false })
+        .order('created_at', { ascending: false })  // Changed from updated_at to created_at
         .limit(1)
         .single();
 
@@ -132,7 +132,7 @@ export function DocumentManagement() {
       // Purchase orders last update
       const { data: purchaseLatest } = await supabase
         .from('purchase_orders')
-        .select('id, updated_at, created_at')
+        .select('id, created_at')  // Only use created_at
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -149,13 +149,13 @@ export function DocumentManagement() {
 
       setDocuments(prev => prev.map(doc => {
         if (doc.id === 'inventory' && inventoryLatest) {
-          return { ...doc, lastUpdated: new Date(inventoryLatest.updated_at) };
+          return { ...doc, lastUpdated: new Date(inventoryLatest.created_at) };  // Changed from updated_at to created_at
         }
         if (doc.id === 'sales' && salesLatest) {
           return { ...doc, lastUpdated: new Date(salesLatest.date) };
         }
         if (doc.id === 'purchase_orders' && purchaseLatest) {
-          return { ...doc, lastUpdated: new Date(purchaseLatest.updated_at || purchaseLatest.created_at) };
+          return { ...doc, lastUpdated: new Date(purchaseLatest.created_at) };  // Use only created_at
         }
         if (doc.id === 'patients' && patientsLatest) {
           return { ...doc, lastUpdated: new Date(patientsLatest.created_at) };

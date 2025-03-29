@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { PostgrestBuilder } from "@supabase/supabase-js";
 
 /**
  * Helper function to type-cast Supabase queries to avoid TypeScript errors
@@ -12,13 +13,15 @@ export function typecastQuery(table: string) {
 
 /**
  * Helper function to safely handle and unwrap Supabase responses
- * @param queryPromise A Supabase query promise
+ * @param queryPromise A Supabase query promise or PostgrestBuilder
  * @param defaultValue Default value to return if query fails
  * @returns The data from the query or the default value
  */
-export async function safeQueryData<T>(queryPromise: Promise<any>, defaultValue: T): Promise<T> {
+export async function safeQueryData<T>(queryPromise: PostgrestBuilder<any, any> | Promise<any>, defaultValue: T): Promise<T> {
   try {
-    const { data, error } = await queryPromise;
+    // If it's a PostgrestBuilder, we need to await it to get the data
+    const response = await queryPromise;
+    const { data, error } = response;
     
     if (error) {
       console.error('Supabase query error:', error);
