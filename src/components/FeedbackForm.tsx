@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MessageCircle } from "lucide-react";
+import { safeInsert } from "@/utils/supabaseHelpers";
 
 export function FeedbackForm() {
   const [email, setEmail] = useState("");
@@ -28,13 +29,12 @@ export function FeedbackForm() {
     setIsSubmitting(true);
     
     try {
-      const { error } = await supabase
-        .from('feedback')
-        .insert({
-          email: email || null, 
-          message: feedback,
-          created_at: new Date().toISOString()
-        });
+      // Using the safeInsert helper from supabaseHelpers.ts
+      const { error } = await safeInsert('feedback', {
+        email: email || null, 
+        message: feedback,
+        created_at: new Date().toISOString()
+      });
         
       if (error) throw error;
       

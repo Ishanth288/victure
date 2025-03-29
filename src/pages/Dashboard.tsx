@@ -18,15 +18,40 @@ import { Pill, Users, ShoppingCart, TrendingUp, AlertCircle } from "lucide-react
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
+interface Bill {
+  id: number;
+  bill_number: string;
+  date: string;
+  total_amount: number;
+  prescription_id?: number;
+  status: string;
+  // Add other bill properties as needed
+}
+
+interface InventoryItem {
+  id: number;
+  name: string;
+  quantity: number;
+  unit_cost: number;
+  reorder_point?: number;
+  // Add other inventory properties as needed
+}
+
+interface Patient {
+  id: number;
+  name: string;
+  // Add other patient properties as needed
+}
+
 export default function Dashboard() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [salesData, setSalesData] = useState([]);
-  const [inventoryData, setInventoryData] = useState([]);
-  const [patientsData, setPatientsData] = useState([]);
-  const [revenueData, setRevenueData] = useState([]);
-  const [topProducts, setTopProducts] = useState([]);
-  const [revenueDistribution, setRevenueDistribution] = useState([]);
+  const [salesData, setSalesData] = useState<Bill[]>([]);
+  const [inventoryData, setInventoryData] = useState<InventoryItem[]>([]);
+  const [patientsData, setPatientsData] = useState<Patient[]>([]);
+  const [revenueData, setRevenueData] = useState<{date: string, value: number}[]>([]);
+  const [topProducts, setTopProducts] = useState<{name: string, value: number}[]>([]);
+  const [revenueDistribution, setRevenueDistribution] = useState<{name: string, value: number}[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -54,7 +79,7 @@ export default function Dashboard() {
         
         if (patientsError) throw patientsError;
         
-        // Process data
+        // Process data with proper type safety
         setSalesData(bills || []);
         setInventoryData(inventory || []);
         setPatientsData(patients || []);
@@ -69,7 +94,7 @@ export default function Dashboard() {
             };
           }).reverse();
           
-          const billsByDate = new Map();
+          const billsByDate = new Map<string, number>();
           
           bills.forEach(bill => {
             const billDate = bill.date ? format(new Date(bill.date), 'yyyy-MM-dd') : null;
@@ -90,7 +115,7 @@ export default function Dashboard() {
           
           // Calculate top products
           if (bills.length > 0) {
-            const productCountMap = new Map();
+            const productCountMap = new Map<string, number>();
             
             bills.forEach(bill => {
               // This is a simplified version as we don't have bill_items details
@@ -117,7 +142,7 @@ export default function Dashboard() {
           
           // Calculate revenue distribution
           if (bills.length > 0) {
-            const categoryMap = new Map();
+            const categoryMap = new Map<string, number>();
             categoryMap.set('Prescription', 0);
             categoryMap.set('OTC Medicines', 0);
             categoryMap.set('Medical Supplies', 0);
