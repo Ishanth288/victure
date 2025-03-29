@@ -99,47 +99,47 @@ export async function safeUpdate<T extends Record<string, any>>(
   match: Record<string, any>
 ): Promise<{ data: any; error: any }> {
   try {
-    // Start with an update query
-    const updateQuery = supabase.from(table).update(data as any);
+    // Create a basic update query
+    let updateQuery = supabase.from(table).update(data as any);
     
-    // Apply match conditions one at a time using a simple approach
-    // that avoids the deep type instantiation error
-    let query = updateQuery;
-    const keys = Object.keys(match);
+    // Instead of chaining .eq() calls, we'll build a filter object and apply it
+    // This avoids the deep type instantiations that cause TS errors
+    const matchKeys = Object.keys(match);
     
-    // Handle each condition individually to avoid deep type chains
-    if (keys.length > 0) {
-      query = query.eq(keys[0] as any, match[keys[0]] as any);
+    // Apply conditions one by one directly from the object
+    if (matchKeys.length > 0) {
+      // Apply first condition
+      updateQuery = updateQuery.eq(matchKeys[0] as any, match[matchKeys[0]]);
       
-      // Apply remaining conditions
-      for (let i = 1; i < keys.length; i++) {
-        query = query.eq(keys[i] as any, match[keys[i]] as any);
+      // Loop through remaining conditions
+      for (let i = 1; i < matchKeys.length; i++) {
+        const key = matchKeys[i];
+        updateQuery = updateQuery.eq(key as any, match[key]);
       }
     }
     
     // Execute the update
-    const updateResult = await query;
+    const updateResult = await updateQuery;
     
     if (updateResult.error) {
       return { data: null, error: updateResult.error };
     }
     
-    // Get the updated data
+    // Get the updated data using the same approach
     let selectQuery = supabase.from(table).select('*');
     
-    // Apply the same conditions to fetch the updated record(s)
-    let selectFinalQuery = selectQuery;
-    
-    if (keys.length > 0) {
-      selectFinalQuery = selectFinalQuery.eq(keys[0] as any, match[keys[0]] as any);
+    if (matchKeys.length > 0) {
+      // Apply first condition
+      selectQuery = selectQuery.eq(matchKeys[0] as any, match[matchKeys[0]]);
       
-      // Apply remaining conditions
-      for (let i = 1; i < keys.length; i++) {
-        selectFinalQuery = selectFinalQuery.eq(keys[i] as any, match[keys[i]] as any);
+      // Loop through remaining conditions
+      for (let i = 1; i < matchKeys.length; i++) {
+        const key = matchKeys[i];
+        selectQuery = selectQuery.eq(key as any, match[key]);
       }
     }
     
-    const selectResult = await selectFinalQuery;
+    const selectResult = await selectQuery;
     
     return { 
       data: selectResult.data, 
@@ -169,15 +169,17 @@ export async function safeSelect<T = any>(
       .from(table)
       .select(options.columns || '*');
     
-    // Apply match conditions using a simple approach that avoids deep type instantiation
-    const keys = Object.keys(match);
+    // Apply match conditions using the same approach as in safeUpdate
+    const matchKeys = Object.keys(match);
     
-    if (keys.length > 0) {
-      query = query.eq(keys[0] as any, match[keys[0]] as any);
+    if (matchKeys.length > 0) {
+      // Apply first condition
+      query = query.eq(matchKeys[0] as any, match[matchKeys[0]]);
       
-      // Apply remaining conditions
-      for (let i = 1; i < keys.length; i++) {
-        query = query.eq(keys[i] as any, match[keys[i]] as any);
+      // Loop through remaining conditions
+      for (let i = 1; i < matchKeys.length; i++) {
+        const key = matchKeys[i];
+        query = query.eq(key as any, match[key]);
       }
     }
     
