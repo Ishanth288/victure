@@ -1,34 +1,31 @@
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Tabs } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useBusinessData } from "./hooks/useBusinessData";
+import { useRefactoredBusinessData } from "./hooks/useRefactoredBusinessData";
+import { useLoadingState } from "./hooks/useLoadingState";
+import { useDataRefresh } from "./hooks/useDataRefresh";
+import { useAppMonitoring } from "./hooks/useAppMonitoring";
 import { PageHeader } from "./components/PageHeader";
 import { TabsNavigation } from "./components/TabsNavigation";
 import { TabContent } from "./components/TabContent";
 import { LoadingState, ErrorState, EmptyState } from "./components/LoadingState";
-import { setupPageOptimizations } from "@/utils/performanceUtils";
-import { initializeAppMonitoring } from "@/utils/supabaseMonitoring";
-import { stableToast } from "@/components/ui/stable-toast";
 
 export default function BusinessOptimizationPage() {
   const [activeTab, setActiveTab] = useState("forecast");
   const [error, setError] = useState<boolean>(false);
-  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
-  const [isStableLoading, setIsStableLoading] = useState(true);
   const { toast } = useToast();
-  const renderAttempts = useRef(0);
-  const maxRenderAttempts = 3;
-  const stabilityTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const forceExitTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const handleDataError = useCallback(() => {
     console.log("Business data error callback triggered");
     setError(true);
   }, []);
   
+  // Initialize app monitoring and performance optimizations
+  useAppMonitoring();
+  
+  // Business data hook
   const { 
     isLoading, 
     locationLoading, 
@@ -41,106 +38,22 @@ export default function BusinessOptimizationPage() {
     refreshLocationData,
     connectionError,
     errorType,
-    hasError,
-    autoRefreshEnabled
-  } = useBusinessData({
+    hasError
+  } = useRefactoredBusinessData({
     onError: handleDataError,
   });
   
-  // Add stability to the loading state to prevent flickering
-  useEffect(() => {
-    // When loading starts, set isStableLoading to true immediately
-    if (isLoading || locationLoading) {
-      setIsStableLoading(true);
-      
-      // Clear any existing timers
-      if (stabilityTimerRef.current) {
-        clearTimeout(stabilityTimerRef.current);
-        stabilityTimerRef.current = null;
-      }
-      
-      if (loadingTimerRef.current) {
-        clearTimeout(loadingTimerRef.current);
-        loadingTimerRef.current = null;
-      }
-      
-      if (forceExitTimerRef.current) {
-        clearTimeout(forceExitTimerRef.current);
-      }
-      
-      // Set a timeout to force exit loading state after a maximum time
-      // This prevents infinite loading
-      forceExitTimerRef.current = setTimeout(() => {
-        console.log("Force exiting loading state after timeout");
-        setIsStableLoading(false);
-      }, 8000); // Max 8 seconds of loading before forcing exit
-    } 
-    // When loading ends, wait a bit before showing content to prevent flickering
-    else if (isStableLoading) {
-      // Clear force exit timer if it exists
-      if (forceExitTimerRef.current) {
-        clearTimeout(forceExitTimerRef.current);
-        forceExitTimerRef.current = null;
-      }
-      
-      if (loadingTimerRef.current) {
-        clearTimeout(loadingTimerRef.current);
-        loadingTimerRef.current = null;
-      }
-      
-      // Allow a little more time for transitions
-      stabilityTimerRef.current = setTimeout(() => {
-        console.log("Loading completed, transitioning to content display");
-        setIsStableLoading(false);
-      }, 500); // 500ms delay before transitioning from loading to content
-    }
-
-    return () => {
-      if (stabilityTimerRef.current) {
-        clearTimeout(stabilityTimerRef.current);
-      }
-      if (loadingTimerRef.current) {
-        clearTimeout(loadingTimerRef.current);
-      }
-      if (forceExitTimerRef.current) {
-        clearTimeout(forceExitTimerRef.current);
-      }
-    };
-  }, [isLoading, locationLoading, isStableLoading]);
-
-  // Initialize app monitoring on first load
-  useEffect(() => {
-    console.log("Initializing app monitoring");
-    initializeAppMonitoring();
-  }, []);
-
-  // Apply performance optimizations
-  useEffect(() => {
-    console.log("Setting up page optimizations");
-    const cleanup = setupPageOptimizations();
-    return () => cleanup();
-  }, []);
-
-  // Increment render attempts only once
-  useEffect(() => {
-    renderAttempts.current += 1;
-    console.log("Business Optimization Page rendering - attempt:", renderAttempts.current);
-  }, []); // Empty dependency array ensures this only runs once
-
-  // Handle refresh of all data
-  const handleRefreshAll = () => {
-    console.log("Manual refresh triggered");
-    setError(false);
-    refreshData();
-    refreshLocationData();
-    setLastRefreshed(new Date());
-    renderAttempts.current = 0;
-    toast({
-      title: "Refreshing all data",
-      description: "Updating analytics with Google Trends and news data...",
-      duration: 3000
-    });
-  };
+  // Stable loading state to prevent flickering
+  const { isStableLoading } = useLoadingState({
+    isLoading, 
+    locationLoading
+  });
+  
+  // Data refresh handler
+  const { lastRefreshed, handleRefreshAll } = useDataRefresh({
+    refreshData,
+    refreshLocationData
+  });
 
   // Render loading state with stability to prevent flickering
   if (isStableLoading) {

@@ -9,7 +9,6 @@ import { stableToast } from "@/components/ui/stable-toast";
 export default function BusinessOptimization() {
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const { toast } = useToast();
   
   // Add fade-in effect to prevent flickering
   useEffect(() => {
