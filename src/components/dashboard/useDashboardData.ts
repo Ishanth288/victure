@@ -1,5 +1,4 @@
 
-import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { useRevenueData } from './hooks/useRevenueData';
 import { useInventoryData } from './hooks/useInventoryData';
@@ -8,6 +7,7 @@ import { useTrendData } from './hooks/useTrendData';
 
 export function useDashboardData() {
   const { toast } = useToast();
+  
   const { 
     isLoading: isRevenueLoading, 
     totalRevenue, 
