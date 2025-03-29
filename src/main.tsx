@@ -16,26 +16,22 @@ Sentry.init({
     new Sentry.Replay(),
   ],
   
-  // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring
-  // We recommend adjusting this value in production
-  tracesSampleRate: 1.0,
+  // Adjust sample rates for production environment
+  tracesSampleRate: import.meta.env.DEV ? 1.0 : 0.2,
   
-  // Adjust this value in production, or use tracesSampler for greater control
-  replaysSessionSampleRate: 0.1,
+  // Set appropriate replay sample rates for production
+  replaysSessionSampleRate: import.meta.env.DEV ? 0.1 : 0.05,
   
   // Set release information for source map association
   release: import.meta.env.VITE_SENTRY_RELEASE || 'local-development',
   
   // Configure error fingerprinting
   beforeSend(event) {
-    // Check if it's a known issue
-    if (event.exception) {
-      console.log("Sending error to Sentry:", event.exception.values?.[0]?.type);
-    }
+    // Remove debugging console.log
     return event;
   },
   
-  // Enable debug in development to see what's being sent to Sentry
+  // Only enable debug in development
   debug: import.meta.env.DEV,
 });
 
