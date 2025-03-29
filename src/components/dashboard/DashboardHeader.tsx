@@ -2,6 +2,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface DashboardHeaderProps {
   title: string;
