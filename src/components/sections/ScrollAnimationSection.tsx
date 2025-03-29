@@ -20,26 +20,23 @@ export const ScrollAnimationSection = memo(() => {
         </>
       }
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4 h-full items-center">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4 h-full">
         <div className="flex flex-col space-y-4">
           {[
             {
               title: "Real-Time Profit Tracking",
               description: "Monitor profit margins with instant calculations based on cost price and selling price for every product you sell.",
-              icon: <DollarSign className="h-6 w-6" />,
-              image: "/lovable-uploads/bf1efd0f-65b1-4ecb-9949-3c7eeb666718.png"
+              icon: <DollarSign className="h-6 w-6" />
             },
             {
               title: "AI-Powered Inventory Optimization",
               description: "Our machine learning algorithms analyze your sales data to suggest optimal inventory levels and reordering schedules.",
-              icon: <Brain className="h-6 w-6" />,
-              image: "/lovable-uploads/3f4b5dd8-c427-4dbd-8acb-f4a64b8819e0.png"
+              icon: <Brain className="h-6 w-6" />
             },
             {
               title: "Live Profit Analytics Dashboard",
               description: "View comprehensive analytics on your most profitable products, times, and customer segments as transactions happen.",
-              icon: <BarChart className="h-6 w-6" />,
-              image: "/lovable-uploads/bf1efd0f-65b1-4ecb-9949-3c7eeb666718.png"
+              icon: <BarChart className="h-6 w-6" />
             }
           ].map((item, index) => (
             <ScrollReveal 
@@ -47,15 +44,12 @@ export const ScrollAnimationSection = memo(() => {
               animation="slide-right" 
               delay={index * 0.1}
             >
-              <CardTilt className="bg-white p-6 rounded-lg shadow-md">
-                <div className="flex items-center gap-4">
+              <CardTilt className="bg-white p-6 rounded-lg shadow-md h-full">
+                <div className="flex items-start gap-4">
                   <div className="text-primary">{item.icon}</div>
-                  <div className="flex-1">
+                  <div>
                     <h3 className="text-xl font-bold text-primary mb-2">{item.title}</h3>
                     <p className="text-neutral-700">{item.description}</p>
-                  </div>
-                  <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
-                    <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
                   </div>
                 </div>
               </CardTilt>
@@ -68,20 +62,17 @@ export const ScrollAnimationSection = memo(() => {
             {
               title: "Intelligent Pricing Optimization",
               description: "Our AI algorithms analyze your market position and competition to suggest optimal pricing strategies for maximum profitability.",
-              icon: <TrendingUp className="h-6 w-6" />,
-              image: "/lovable-uploads/3f4b5dd8-c427-4dbd-8acb-f4a64b8819e0.png"
+              icon: <TrendingUp className="h-6 w-6" />
             },
             {
               title: "Real-Time Profit Margin Alerts",
               description: "Receive instant notifications when transactions fall below your target profit margins so you can take immediate action.",
-              icon: <BellRing className="h-6 w-6" />,
-              image: "/lovable-uploads/bf1efd0f-65b1-4ecb-9949-3c7eeb666718.png"
+              icon: <BellRing className="h-6 w-6" />
             },
             {
               title: "Dynamic Financial Reporting",
               description: "Generate comprehensive profit and loss reports in real-time to make informed business decisions with the latest data.",
-              icon: <Clock className="h-6 w-6" />,
-              image: "/lovable-uploads/3f4b5dd8-c427-4dbd-8acb-f4a64b8819e0.png"
+              icon: <Clock className="h-6 w-6" />
             }
           ].map((item, index) => (
             <ScrollReveal 
@@ -89,15 +80,12 @@ export const ScrollAnimationSection = memo(() => {
               animation="fade" 
               delay={index * 0.1}
             >
-              <CardTilt className="bg-white p-6 rounded-lg shadow-md">
-                <div className="flex items-center gap-4">
+              <CardTilt className="bg-white p-6 rounded-lg shadow-md h-full">
+                <div className="flex items-start gap-4">
                   <div className="text-primary">{item.icon}</div>
-                  <div className="flex-1">
+                  <div>
                     <h3 className="text-xl font-bold text-primary mb-2">{item.title}</h3>
                     <p className="text-neutral-700">{item.description}</p>
-                  </div>
-                  <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0">
-                    <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
                   </div>
                 </div>
               </CardTilt>
