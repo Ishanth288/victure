@@ -1,63 +1,47 @@
 
-import { createRoot } from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App.tsx";
+import "./index.css";
+import { Toaster } from "@/components/ui/sonner";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "@/components/theme-provider";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import * as Sentry from "@sentry/react";
-import { BrowserTracing } from "@sentry/tracing";
 
-// Initialize Sentry
+// Initialize Sentry for error tracking
 Sentry.init({
-  dsn: "https://aa91fdc816d181a9bbc526a3ba0be025@o4509056293470208.ingest.us.sentry.io/4509059112435712",
+  dsn: "https://examplePublicKey@o0.ingest.sentry.io/0",
   integrations: [
-    new BrowserTracing({
-      tracePropagationTargets: ["localhost", /^\//],
-    }),
+    new Sentry.BrowserTracing(),
     new Sentry.Replay(),
   ],
-  
-  // Adjust sample rates for production environment
-  tracesSampleRate: import.meta.env.DEV ? 1.0 : 0.2,
-  
-  // Set appropriate replay sample rates for production
-  replaysSessionSampleRate: import.meta.env.DEV ? 0.1 : 0.05,
-  
-  // Set release information for source map association
-  release: import.meta.env.VITE_SENTRY_RELEASE || 'local-development',
-  
-  // Configure error fingerprinting
-  beforeSend(event) {
-    return event;
-  },
-  
-  // Only enable debug in development
-  debug: import.meta.env.DEV,
+  // Performance Monitoring
+  tracesSampleRate: 1.0, // Capture 100% of the transactions
+  // Session Replay
+  replaysSessionSampleRate: 0.1, // Sample rate for all sessions
+  replaysOnErrorSampleRate: 1.0, // Sample rate for sessions with errors
 });
 
-// Create a custom fallback component for the error boundary
-const FallbackComponent = () => (
-  <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
-    <div className="bg-white shadow-lg rounded-lg p-6 max-w-md w-full">
-      <h2 className="text-2xl font-bold text-red-600 mb-4">Oops! Something went wrong</h2>
-      <p className="text-gray-700 mb-4">
-        An unexpected error has occurred and our team has been notified. 
-        Please try refreshing the page or come back later.
-      </p>
-      <button 
-        onClick={() => window.location.reload()} 
-        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md"
-      >
-        Refresh Page
-      </button>
-    </div>
-  </div>
-);
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-const container = document.getElementById('root');
-if (container) {
-  const root = createRoot(container);
-  root.render(
-    <Sentry.ErrorBoundary fallback={<FallbackComponent />}>
-      <App />
-    </Sentry.ErrorBoundary>
-  );
-}
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+        <QueryClientProvider client={queryClient}>
+          <App />
+          <Toaster position="top-center" />
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
+  </React.StrictMode>
+);

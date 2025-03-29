@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { StatCard } from "@/components/insights/StatCard";
@@ -17,6 +16,7 @@ import { format, subDays } from "date-fns";
 import { Pill, Users, ShoppingCart, TrendingUp, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 interface Bill {
   id: number;
@@ -58,33 +58,28 @@ export default function Dashboard() {
     async function fetchDashboardData() {
       setIsLoading(true);
       try {
-        // Fetch sales data from bills
         const { data: bills, error: billsError } = await supabase
           .from('bills')
           .select('*');
         
         if (billsError) throw billsError;
         
-        // Fetch inventory data
         const { data: inventory, error: inventoryError } = await supabase
           .from('inventory')
           .select('*');
         
         if (inventoryError) throw inventoryError;
         
-        // Fetch patients data
         const { data: patients, error: patientsError } = await supabase
           .from('patients')
           .select('*');
         
         if (patientsError) throw patientsError;
         
-        // Process data with proper type safety
         setSalesData(bills || []);
         setInventoryData(inventory || []);
         setPatientsData(patients || []);
         
-        // Generate revenue data for chart
         if (bills && bills.length > 0) {
           const last30Days = Array.from({ length: 30 }, (_, i) => {
             const date = subDays(new Date(), i);
@@ -113,13 +108,10 @@ export default function Dashboard() {
           
           setRevenueData(revenueByDate);
           
-          // Calculate top products
           if (bills.length > 0) {
             const productCountMap = new Map<string, number>();
             
             bills.forEach(bill => {
-              // This is a simplified version as we don't have bill_items details
-              // In a real implementation, you would count actual products
               if (bill.prescription_id) {
                 const productName = `Prescription #${bill.prescription_id}`;
                 const existingValue = productCountMap.get(productName) || 0;
@@ -132,7 +124,6 @@ export default function Dashboard() {
               value
             }));
             
-            // Sort by value in descending order and take top 5
             const topProductsData = productArray
               .sort((a, b) => b.value - a.value)
               .slice(0, 5);
@@ -140,7 +131,6 @@ export default function Dashboard() {
             setTopProducts(topProductsData);
           }
           
-          // Calculate revenue distribution
           if (bills.length > 0) {
             const categoryMap = new Map<string, number>();
             categoryMap.set('Prescription', 0);
@@ -153,7 +143,6 @@ export default function Dashboard() {
                 const existingValue = categoryMap.get('Prescription') || 0;
                 categoryMap.set('Prescription', existingValue + bill.total_amount);
               } else {
-                // Random distribution for demo purposes
                 const rand = Math.random();
                 if (rand < 0.3) {
                   const existingValue = categoryMap.get('OTC Medicines') || 0;
@@ -193,7 +182,6 @@ export default function Dashboard() {
     fetchDashboardData();
   }, [toast]);
 
-  // Calculate summary statistics
   const totalRevenue = salesData && salesData.length > 0
     ? salesData.reduce((sum, bill) => sum + (bill.total_amount || 0), 0)
     : 0;
@@ -210,7 +198,6 @@ export default function Dashboard() {
   
   const totalPatients = patientsData?.length || 0;
 
-  // Generate data for trend chart
   const trendData = [
     { name: 'Jan', value: 5000 },
     { name: 'Feb', value: 7000 },
@@ -221,7 +208,6 @@ export default function Dashboard() {
     { name: 'Jul', value: 10000 },
   ];
 
-  // Show dashboard help dialog on first visit
   useEffect(() => {
     const hasSeenHelp = localStorage.getItem('dashboard-help-seen');
     if (!hasSeenHelp) {
@@ -232,140 +218,138 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <Dialog open={isHelpOpen} onOpenChange={setIsHelpOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Welcome to Your Dashboard</DialogTitle>
-            <DialogDescription>
-              Here you can view all your pharmacy metrics in one place. The dashboard shows key performance indicators, revenue trends, top-selling products, and more. Explore the various sections to get insights into your business performance.
-            </DialogDescription>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
-      
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-        </div>
+      <ErrorBoundary>
+        <Dialog open={isHelpOpen} onOpenChange={setIsHelpOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Welcome to Your Dashboard</DialogTitle>
+              <DialogDescription>
+                Here you can view all your pharmacy metrics in one place. The dashboard shows key performance indicators, revenue trends, top-selling products, and more. Explore the various sections to get insights into your business performance.
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
         
-        {/* KPI Stats Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard
-            title="Total Revenue"
-            value={`₹${totalRevenue.toLocaleString('en-IN')}`}
-            icon={TrendingUp}
-            trend={2.5}
-          />
-          <StatCard
-            title="Inventory Value"
-            value={`₹${totalInventoryValue.toLocaleString('en-IN')}`}
-            icon={ShoppingCart}
-          />
-          <StatCard
-            title="Total Patients"
-            value={totalPatients}
-            icon={Users}
-            trend={4.2}
-          />
-          <StatCard
-            title="Low Stock Items"
-            value={lowStockItems}
-            icon={AlertCircle}
-            trend={-1.5}
-          />
-        </div>
-        
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Revenue (Last 30 Days)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="h-[300px] flex items-center justify-center">
-                  <p>Loading revenue data...</p>
-                </div>
-              ) : revenueData.length > 0 ? (
-                <RevenueChart data={revenueData} />
-              ) : (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>No Revenue Data</AlertTitle>
-                  <AlertDescription>
-                    There is no revenue data available for the last 30 days.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+          </div>
           
-          <Card>
-            <CardHeader>
-              <CardTitle>Revenue Distribution</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="h-[300px] flex items-center justify-center">
-                  <p>Loading distribution data...</p>
-                </div>
-              ) : revenueDistribution.length > 0 ? (
-                <RevenueDistribution data={revenueDistribution} />
-              ) : (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>No Distribution Data</AlertTitle>
-                  <AlertDescription>
-                    There is not enough sales data to show revenue distribution.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Second Row of Charts and Data */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Top Products</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="h-[300px] flex items-center justify-center">
-                  <p>Loading product data...</p>
-                </div>
-              ) : topProducts.length > 0 ? (
-                <ProductsChart data={topProducts} />
-              ) : (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>No Product Data</AlertTitle>
-                  <AlertDescription>
-                    There is not enough sales data to show top products.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <StatCard
+              title="Total Revenue"
+              value={`₹${totalRevenue.toLocaleString('en-IN')}`}
+              icon={TrendingUp}
+              trend={2.5}
+            />
+            <StatCard
+              title="Inventory Value"
+              value={`₹${totalInventoryValue.toLocaleString('en-IN')}`}
+              icon={ShoppingCart}
+            />
+            <StatCard
+              title="Total Patients"
+              value={totalPatients}
+              icon={Users}
+              trend={4.2}
+            />
+            <StatCard
+              title="Low Stock Items"
+              value={lowStockItems}
+              icon={AlertCircle}
+              trend={-1.5}
+            />
+          </div>
           
-          <Card>
-            <CardHeader>
-              <CardTitle>Revenue Trend</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <RevenueTrendChart data={trendData} />
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Revenue (Last 30 Days)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="h-[300px] flex items-center justify-center">
+                    <p>Loading revenue data...</p>
+                  </div>
+                ) : revenueData.length > 0 ? (
+                  <RevenueChart data={revenueData} />
+                ) : (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>No Revenue Data</AlertTitle>
+                    <AlertDescription>
+                      There is no revenue data available for the last 30 days.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Revenue Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="h-[300px] flex items-center justify-center">
+                    <p>Loading distribution data...</p>
+                  </div>
+                ) : revenueDistribution.length > 0 ? (
+                  <RevenueDistribution data={revenueDistribution} />
+                ) : (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>No Distribution Data</AlertTitle>
+                    <AlertDescription>
+                      There is not enough sales data to show revenue distribution.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Top Products</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="h-[300px] flex items-center justify-center">
+                    <p>Loading product data...</p>
+                  </div>
+                ) : topProducts.length > 0 ? (
+                  <ProductsChart data={topProducts} />
+                ) : (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>No Product Data</AlertTitle>
+                    <AlertDescription>
+                      There is not enough sales data to show top products.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Revenue Trend</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RevenueTrendChart data={trendData} />
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <TaskManagement />
+            <CalendarComponent />
+            <DocumentManagement />
+          </div>
         </div>
-        
-        {/* Management Tools Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <TaskManagement />
-          <CalendarComponent />
-          <DocumentManagement />
-        </div>
-      </div>
+      </ErrorBoundary>
     </DashboardLayout>
   );
 }
