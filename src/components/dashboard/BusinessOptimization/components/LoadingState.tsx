@@ -1,6 +1,8 @@
+
 import { memo } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Database, WifiOff, ServerCrash, AlertCircle } from "lucide-react";
 import { TypingEffect } from "@/components/ui/typing-effect";
+import { Button } from "@/components/ui/button";
 
 interface LoadingStateProps {
   message?: string;
