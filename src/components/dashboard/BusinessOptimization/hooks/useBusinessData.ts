@@ -4,6 +4,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useLocationBasedAnalytics } from "@/components/dashboard/hooks/useLocationBasedAnalytics";
 import { checkSupabaseConnection, executeWithRetry, determineErrorType } from "@/utils/supabaseErrorHandling";
+import { User } from "@supabase/supabase-js";
+import { PostgrestError } from "@supabase/supabase-js";
 
 interface UseBusinessDataOptions {
   onError?: () => void;
@@ -26,7 +28,13 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     refreshData: refreshLocationData, 
     isLoading: locationLoading,
     error: locationError
-  } = useLocationBasedAnalytics();
+  } = useLocationBasedAnalytics() as { 
+    locationData: any; 
+    pharmacyLocation: any; 
+    refreshData: () => Promise<any>; 
+    isLoading: boolean;
+    error: any;
+  };
 
   const fetchData = useCallback(async () => {
     // Don't update state if the component has unmounted
@@ -52,7 +60,7 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
         }
       );
       
-      if (userResult.error || !userResult.data?.data?.user) {
+      if (userResult.error || !userResult.data?.user) {
         if (userResult.error) {
           throw userResult.error;
         } else {
@@ -60,10 +68,10 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
         }
       }
       
-      const user = userResult.data.data.user;
+      const user = userResult.data.user;
 
       // Fetch inventory data with retry logic
-      const { data: inventoryItems, error: inventoryError } = await executeWithRetry(
+      const inventoryResult = await executeWithRetry(
         () => supabase
           .from('inventory')
           .select('*')
@@ -75,10 +83,10 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
         }
       );
 
-      if (inventoryError) throw inventoryError;
+      if (inventoryResult.error) throw inventoryResult.error;
 
       // Fetch sales data from bills with retry logic
-      const { data: bills, error: billsError } = await executeWithRetry(
+      const billsResult = await executeWithRetry(
         () => supabase
           .from('bills')
           .select('*, bill_items(*)')
@@ -90,10 +98,10 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
         }
       );
 
-      if (billsError) throw billsError;
+      if (billsResult.error) throw billsResult.error;
 
       // Fetch supplier data from purchase orders with retry logic
-      const { data: purchaseOrders, error: poError } = await executeWithRetry(
+      const purchaseOrdersResult = await executeWithRetry(
         () => supabase
           .from('purchase_orders')
           .select('*, purchase_order_items(*)')
@@ -105,21 +113,21 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
         }
       );
 
-      if (poError) throw poError;
+      if (purchaseOrdersResult.error) throw purchaseOrdersResult.error;
 
       // Don't update state if the component has unmounted
       if (!mountedRef.current) return;
       
-      if (inventoryItems) {
-        setInventoryData(inventoryItems);
+      if (inventoryResult.data) {
+        setInventoryData(inventoryResult.data as any[]);
       }
 
-      if (bills) {
-        setSalesData(bills);
+      if (billsResult.data) {
+        setSalesData(billsResult.data as any[]);
       }
 
-      if (purchaseOrders) {
-        setSuppliersData(purchaseOrders);
+      if (purchaseOrdersResult.data) {
+        setSuppliersData(purchaseOrdersResult.data as any[]);
       }
       
       // Reset retry counter on success
