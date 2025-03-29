@@ -1,0 +1,212 @@
+
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+
+interface TourStep {
+  title: string;
+  description: string;
+  image?: string;
+  targetElement?: string;
+}
+
+const tourSteps: TourStep[] = [
+  {
+    title: "Welcome to Victure",
+    description: "Let's take a quick tour to help you get started with your pharmacy management system.",
+    targetElement: "body",
+  },
+  {
+    title: "Dashboard",
+    description: "Your dashboard gives you an overview of your pharmacy's performance and key metrics.",
+    targetElement: "[data-tour-id='dashboard']",
+  },
+  {
+    title: "Inventory Management",
+    description: "Manage your pharmacy inventory, track stock levels, and get alerts when items are running low.",
+    targetElement: "[data-tour-id='inventory']",
+  },
+  {
+    title: "Patient Management",
+    description: "Keep track of all your patients and their prescription history in one place.",
+    targetElement: "[data-tour-id='patients']",
+  },
+  {
+    title: "Billing System",
+    description: "Create and manage invoices, process payments, and keep track of your finances.",
+    targetElement: "[data-tour-id='billing']",
+  },
+  {
+    title: "Appointments",
+    description: "Schedule and manage patient appointments with our built-in calendar system.",
+    targetElement: "[data-tour-id='appointments']",
+  },
+  {
+    title: "Reports",
+    description: "Generate comprehensive reports to analyze your pharmacy's performance and make data-driven decisions.",
+    targetElement: "[data-tour-id='reports']",
+  },
+  {
+    title: "Settings",
+    description: "Customize your pharmacy profile, notification preferences, and system settings.",
+    targetElement: "[data-tour-id='settings']",
+  },
+  {
+    title: "You're all set!",
+    description: "You've completed the tour. Feel free to explore the system and contact support if you need any help.",
+    targetElement: "body",
+  }
+];
+
+export function OnboardingTour() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [showTour, setShowTour] = useState(false);
+
+  useEffect(() => {
+    // Check if user has completed onboarding
+    const checkOnboardingStatus = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user?.id) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (!error && data && data.onboarding_completed === false) {
+          setShowTour(true);
+          setIsOpen(true);
+        }
+      }
+    };
+    
+    checkOnboardingStatus();
+  }, []);
+
+  const handleNext = () => {
+    if (currentStep < tourSteps.length - 1) {
+      setCurrentStep(currentStep + 1);
+      scrollToElement(tourSteps[currentStep + 1].targetElement);
+    } else {
+      handleComplete();
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+      scrollToElement(tourSteps[currentStep - 1].targetElement);
+    }
+  };
+
+  const handleComplete = async () => {
+    setIsOpen(false);
+    
+    // Mark onboarding as completed in the database
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session?.user?.id) {
+      await supabase
+        .from('profiles')
+        .update({ onboarding_completed: true })
+        .eq('id', session.user.id);
+    }
+  };
+
+  const scrollToElement = (selector?: string) => {
+    if (!selector) return;
+    
+    setTimeout(() => {
+      const element = document.querySelector(selector);
+      if (element) {
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }
+    }, 100);
+  };
+
+  if (!showTour) {
+    return null;
+  }
+
+  return (
+    <>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="sm:max-w-[500px] pb-4">
+          <DialogHeader>
+            <DialogTitle>{tourSteps[currentStep].title}</DialogTitle>
+            <DialogDescription className="text-base">
+              {tourSteps[currentStep].description}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {tourSteps[currentStep].image && (
+            <div className="flex justify-center my-4">
+              <img 
+                src={tourSteps[currentStep].image} 
+                alt={tourSteps[currentStep].title}
+                className="max-w-full rounded-md shadow-md"
+                style={{ maxHeight: '200px' }}
+              />
+            </div>
+          )}
+          
+          <div className="flex items-center justify-between mt-4">
+            <div className="flex gap-1">
+              {tourSteps.map((_, index) => (
+                <div 
+                  key={index}
+                  className={`w-2 h-2 rounded-full ${
+                    index === currentStep ? "bg-primary" : "bg-gray-300"
+                  }`}
+                />
+              ))}
+            </div>
+            <p className="text-sm text-gray-500">
+              Step {currentStep + 1} of {tourSteps.length}
+            </p>
+          </div>
+          
+          <DialogFooter className="gap-2 sm:gap-0">
+            {currentStep > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePrevious}
+              >
+                Previous
+              </Button>
+            )}
+            {currentStep < tourSteps.length - 1 ? (
+              <Button 
+                type="button" 
+                onClick={handleNext}
+              >
+                Next
+              </Button>
+            ) : (
+              <Button 
+                type="button" 
+                onClick={handleComplete}
+              >
+                Finish
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

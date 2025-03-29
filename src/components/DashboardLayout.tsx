@@ -1,5 +1,6 @@
 
 import { AuthCheck, MainContent, SidebarContainer } from "@/components/dashboard/layout";
+import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -13,6 +14,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <MainContent>
           {children}
         </MainContent>
+        <OnboardingTour />
       </div>
     </AuthCheck>
   );

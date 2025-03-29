@@ -14,6 +14,7 @@ import Purchases from "@/pages/Purchases";
 import BusinessOptimization from "@/pages/BusinessOptimization";
 import Insights from "@/pages/Insights";
 import Admin from "@/pages/Admin";
+import Appointments from "@/pages/Appointments";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import AuthWrapper from "@/components/AuthWrapper";
 import AcceptableUsePolicy from "@/pages/legal/AcceptableUsePolicy";
@@ -37,10 +38,12 @@ function App() {
         <Route path="/prescriptions" element={<AuthWrapper><Prescriptions /></AuthWrapper>} />
         <Route path="/billing" element={<AuthWrapper><Billing /></AuthWrapper>} />
         <Route path="/billing/cart" element={<AuthWrapper><BillingCart /></AuthWrapper>} />
+        <Route path="/billing/cart/:prescriptionId" element={<AuthWrapper><BillingCart /></AuthWrapper>} />
         <Route path="/purchases" element={<AuthWrapper><Purchases /></AuthWrapper>} />
         <Route path="/business-optimization" element={<AuthWrapper><BusinessOptimization /></AuthWrapper>} />
         <Route path="/insights" element={<AuthWrapper><Insights /></AuthWrapper>} />
         <Route path="/admin" element={<AuthWrapper><Admin /></AuthWrapper>} />
+        <Route path="/appointments" element={<AuthWrapper><Appointments /></AuthWrapper>} />
         
         {/* Legal pages */}
         <Route path="/legal/acceptable-use" element={<AcceptableUsePolicy />} />
@@ -49,7 +52,7 @@ function App() {
         <Route path="/legal/privacy" element={<PrivacyPolicy />} />
         <Route path="/legal/refund" element={<RefundPolicy />} />
         <Route path="/legal/sla" element={<SLA />} />
-        <Route path="/legal/terms" element={<TermsOfService />} />
+        <Route path="/legal/terms-of-service" element={<TermsOfService />} />
         
         {/* 404 route */}
         <Route path="*" element={<NotFound />} />
