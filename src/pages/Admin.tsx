@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeedbackList } from "@/components/admin/FeedbackList";
+import { UserManagement } from "@/components/admin/UserManagement";
 import SystemSettings from "@/pages/admin/SystemSettings";
 import { typecastQuery, safeQueryData } from "@/utils/safeSupabaseQueries";
 import { StatsCard } from "@/components/insights/StatsCard";
@@ -211,19 +212,7 @@ export default function Admin() {
           </TabsContent>
 
           <TabsContent value="users">
-            <Card>
-              <CardHeader>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>
-                  Manage user accounts, roles and permissions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center py-6 text-muted-foreground">
-                  User management functionality will be implemented in a future update.
-                </p>
-              </CardContent>
-            </Card>
+            <UserManagement />
           </TabsContent>
         </Tabs>
       </div>
