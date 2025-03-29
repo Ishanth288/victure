@@ -4,7 +4,7 @@ import { checkSupabaseConnection } from "./supabaseErrorHandling";
 
 /**
  * Initialize application monitoring and connection checks
- * This helps ensure stability during preview and production deployments
+ * This helps ensure stability during preview and deployment
  */
 export function initializeAppMonitoring(): void {
   // Enable realtime functionality for needed tables

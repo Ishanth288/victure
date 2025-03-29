@@ -1,8 +1,9 @@
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useLocationBasedAnalytics } from "@/components/dashboard/hooks/useLocationBasedAnalytics";
+import { checkSupabaseConnection } from "@/utils/supabaseErrorHandling";
 
 interface UseBusinessDataOptions {
   onError?: () => void;
@@ -13,7 +14,10 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
   const [inventoryData, setInventoryData] = useState<any[]>([]);
   const [salesData, setSalesData] = useState<any[]>([]);
   const [suppliersData, setSuppliersData] = useState<any[]>([]);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const { toast } = useToast();
+  const maxRetries = useRef(3);
+  const retryCount = useRef(0);
   const { 
     locationData, 
     pharmacyLocation, 
@@ -23,9 +27,18 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
+    setConnectionError(null);
     try {
+      // Check connection first
+      const isConnected = await checkSupabaseConnection();
+      if (!isConnected) {
+        throw new Error("Database connection failed. Please check your network connection.");
+      }
+
       // Get the current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      
       if (!user) {
         setIsLoading(false);
         return;
@@ -67,22 +80,38 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
         setSuppliersData(purchaseOrders);
       }
       
+      // Reset retry counter on success
+      retryCount.current = 0;
+      
       toast({
         title: "Data refreshed",
         description: "Business optimization data has been updated.",
         duration: 3000
       });
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      toast({
-        title: "Error fetching data",
-        description: "There was a problem loading your business data.",
-        variant: "destructive"
-      });
+    } catch (error: any) {
+      console.error("Error fetching business data:", error);
+      setConnectionError(error.message || "Unknown error");
       
-      // Call onError callback if provided
-      if (options?.onError) {
-        options.onError();
+      // Implement exponential backoff retry
+      if (retryCount.current < maxRetries.current) {
+        retryCount.current++;
+        const delay = 1000 * Math.pow(2, retryCount.current - 1);
+        console.log(`Retrying data fetch (${retryCount.current}/${maxRetries.current}) after ${delay}ms`);
+        
+        setTimeout(() => {
+          fetchData();
+        }, delay);
+      } else {
+        toast({
+          title: "Error fetching data",
+          description: "There was a problem loading your business data.",
+          variant: "destructive"
+        });
+        
+        // Call onError callback if provided
+        if (options?.onError) {
+          options.onError();
+        }
       }
     } finally {
       setIsLoading(false);
@@ -94,51 +123,58 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     
     // Set up real-time subscriptions
     const setupSubscriptions = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      
-      // Create a channel for inventory updates
-      const inventoryChannel = supabase
-        .channel('business-data-changes')
-        .on('postgres_changes', 
-          { event: '*', schema: 'public', table: 'inventory', filter: `user_id=eq.${user.id}` }, 
-          () => {
-            console.log('Inventory data changed, refreshing...');
-            fetchData();
-          }
-        )
-        .on('postgres_changes', 
-          { event: '*', schema: 'public', table: 'bills', filter: `user_id=eq.${user.id}` }, 
-          () => {
-            console.log('Bills data changed, refreshing...');
-            fetchData();
-          }
-        )
-        .on('postgres_changes', 
-          { event: '*', schema: 'public', table: 'purchase_orders', filter: `user_id=eq.${user.id}` }, 
-          () => {
-            console.log('Purchase orders data changed, refreshing...');
-            fetchData();
-          }
-        )
-        .on('postgres_changes', 
-          { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` }, 
-          () => {
-            console.log('Profile data changed, refreshing location data...');
-            refreshLocationData();
-          }
-        )
-        .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            console.log('Successfully subscribed to realtime updates');
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error('Error subscribing to realtime updates');
-          }
-        });
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
         
-      return () => {
-        supabase.removeChannel(inventoryChannel);
-      };
+        // Create a channel for inventory updates with improved error handling
+        const inventoryChannel = supabase
+          .channel('business-data-changes')
+          .on('postgres_changes', 
+            { event: '*', schema: 'public', table: 'inventory', filter: `user_id=eq.${user.id}` }, 
+            () => {
+              console.log('Inventory data changed, refreshing...');
+              fetchData();
+            }
+          )
+          .on('postgres_changes', 
+            { event: '*', schema: 'public', table: 'bills', filter: `user_id=eq.${user.id}` }, 
+            () => {
+              console.log('Bills data changed, refreshing...');
+              fetchData();
+            }
+          )
+          .on('postgres_changes', 
+            { event: '*', schema: 'public', table: 'purchase_orders', filter: `user_id=eq.${user.id}` }, 
+            () => {
+              console.log('Purchase orders data changed, refreshing...');
+              fetchData();
+            }
+          )
+          .on('postgres_changes', 
+            { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` }, 
+            () => {
+              console.log('Profile data changed, refreshing location data...');
+              refreshLocationData();
+            }
+          )
+          .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              console.log('Successfully subscribed to realtime updates');
+            } else if (status === 'CHANNEL_ERROR') {
+              console.error('Error subscribing to realtime updates');
+              // Don't trigger full error state for subscription errors
+              // just log them and the page will still work with manual refresh
+            }
+          });
+          
+        return () => {
+          supabase.removeChannel(inventoryChannel);
+        };
+      } catch (error) {
+        console.error("Error setting up realtime subscriptions:", error);
+        return () => {};
+      }
     };
     
     const cleanup = setupSubscriptions();
@@ -156,6 +192,7 @@ export function useBusinessData(options?: UseBusinessDataOptions) {
     locationData,
     pharmacyLocation,
     refreshData: fetchData,
-    refreshLocationData
+    refreshLocationData,
+    connectionError
   };
 }

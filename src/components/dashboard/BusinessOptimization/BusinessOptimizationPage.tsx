@@ -23,7 +23,8 @@ export default function BusinessOptimizationPage() {
     locationData, 
     pharmacyLocation, 
     refreshData, 
-    refreshLocationData 
+    refreshLocationData,
+    connectionError 
   } = useBusinessData({
     onError: () => setError(true),
   });
@@ -33,6 +34,14 @@ export default function BusinessOptimizationPage() {
     const cleanup = setupPageOptimizations();
     return () => cleanup();
   }, []);
+
+  // Check for connection errors
+  useEffect(() => {
+    if (connectionError) {
+      setError(true);
+      console.error("Connection error detected:", connectionError);
+    }
+  }, [connectionError]);
 
   // Handle refresh of all data
   const handleRefreshAll = () => {

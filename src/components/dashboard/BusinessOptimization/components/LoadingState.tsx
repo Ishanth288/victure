@@ -1,5 +1,5 @@
 
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 
 interface LoadingStateProps {
   message?: string;
@@ -18,9 +18,12 @@ export function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center h-96">
       <div className="p-4 rounded-lg border border-red-200 bg-red-50 max-w-lg text-center">
+        <div className="flex justify-center mb-2">
+          <AlertCircle className="h-8 w-8 text-red-500" />
+        </div>
         <span className="text-red-500 text-xl font-bold block mb-2">Unable to load data</span>
         <p className="text-red-800 mb-4">
-          There was a problem connecting to the database. This might be due to a network issue.
+          There was a problem connecting to the database. This might be due to a network issue or server error.
         </p>
         <button 
           onClick={onRetry}
