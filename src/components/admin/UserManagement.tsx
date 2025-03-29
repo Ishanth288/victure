@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { executeWithRetry } from "@/utils/queryRetry";
 
 interface User {
   id: string;
@@ -26,20 +27,19 @@ export function UserManagement() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, email:id, role, created_at, pharmacy_name')
-        .order('created_at', { ascending: false });
+      
+      const result = await executeWithRetry(
+        () => supabase
+          .from('profiles')
+          .select('id, email:id, role, created_at, pharmacy_name')
+          .order('created_at', { ascending: false }),
+        { context: 'fetching users' }
+      );
 
-      if (error) throw error;
-      setUsers(data || []);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      toast({
-        title: "Failed to load users",
-        description: "Please try again later",
-        variant: "destructive",
-      });
+      if (result.data) {
+        setUsers(result.data);
+      }
+      
     } finally {
       setLoading(false);
     }
@@ -60,7 +60,7 @@ export function UserManagement() {
     <div>
       <div className="mb-6 flex justify-between items-center">
         <h2 className="text-2xl font-bold">User Accounts</h2>
-        <Button size="sm">
+        <Button size="sm" onClick={fetchUsers}>
           Refresh
         </Button>
       </div>
