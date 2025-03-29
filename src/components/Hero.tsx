@@ -54,7 +54,7 @@ export default function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            Streamline operations, enhance patient care, and grow your business with our comprehensive pharmacy management system
+            Streamline operations, maximize profits with real-time AI analytics, and enhance patient care with our comprehensive pharmacy management system
           </m.p>
           <m.div 
             className="flex flex-col sm:flex-row items-center justify-center gap-4"

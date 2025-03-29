@@ -7,7 +7,7 @@ import { TechCard } from "@/components/ui/tech-card";
 import { AnimatedGradientBorder } from "@/components/ui/animated-gradient-border";
 import { TextScramble } from "@/components/ui/text-scramble";
 import { TypingEffect } from "@/components/ui/typing-effect";
-import { Cpu, CloudCog, Database } from "lucide-react";
+import { Cpu, CloudCog, Database, BarChart } from "lucide-react";
 import { memo, Suspense, lazy, useState, useEffect } from "react";
 
 // Memoize the HeroSection component to prevent unnecessary re-renders
@@ -77,6 +77,15 @@ export const HeroSection = memo(() => {
                 </div>
               </TechCard>
             </AnimatedGradientBorder>
+
+            <AnimatedGradientBorder className="w-full md:w-auto">
+              <TechCard className="w-full md:w-auto px-6 py-3">
+                <div className="flex items-center">
+                  <BarChart className="text-primary mr-2" />
+                  <span className="text-neutral-800 font-medium">Real-Time Analytics</span>
+                </div>
+              </TechCard>
+            </AnimatedGradientBorder>
           </div>
           
           <div className="mt-12 text-center">
@@ -85,9 +94,10 @@ export const HeroSection = memo(() => {
               <TextScramble 
                 texts={[
                   "Powered by cutting-edge AI technology",
-                  "Secure. Reliable. Efficient.",
-                  "The future of pharmacy management is here",
-                  "Experience next-generation pharmacy tools"
+                  "Real-time profit tracking and analysis",
+                  "Intelligent pricing optimization",
+                  "Data-driven business decisions",
+                  "The future of pharmacy management is here"
                 ]}
                 className="text-xl font-medium text-neutral-800 mb-4"
               />
@@ -96,9 +106,9 @@ export const HeroSection = memo(() => {
               <TypingEffect 
                 text={[
                   "Streamline your pharmacy operations",
-                  "Enhance patient care with AI",
-                  "Improve inventory management",
-                  "Analyze your business with precision"
+                  "Maximize profits with AI-driven insights",
+                  "Optimize inventory and pricing in real-time",
+                  "Enhance patient care with smart analytics"
                 ]}
                 className="text-xl font-medium text-neutral-800"
               />

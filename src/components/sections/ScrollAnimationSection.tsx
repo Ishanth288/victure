@@ -3,7 +3,7 @@ import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 import { AnimatedGradientBorder } from "@/components/ui/animated-gradient-border";
 import { CardTilt } from "@/components/ui/card-tilt";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
-import { Database, Stethoscope, Rocket, BellRing, Clock, Shield } from "lucide-react";
+import { Database, Stethoscope, Rocket, BellRing, Clock, Shield, TrendingUp, BarChart, DollarSign } from "lucide-react";
 import { memo } from "react";
 
 // Memoize the component to prevent unnecessary re-renders
@@ -16,7 +16,7 @@ export const ScrollAnimationSection = memo(() => {
             Modern Pharmacy Management
           </h2>
           <p className="text-xl md:text-[2.5rem] font-bold text-primary leading-tight">
-            Streamlined Operations at Your Fingertips
+            AI-Powered Operations at Your Fingertips
           </p>
         </>
       }
@@ -26,7 +26,7 @@ export const ScrollAnimationSection = memo(() => {
           {[
             {
               title: "Inventory Management",
-              description: "Track stock levels, manage expiry dates, and automate reordering with our intelligent inventory system.",
+              description: "Track stock levels, manage cost and selling prices, and automate reordering with our intelligent inventory system.",
               icon: <Database className="h-6 w-6" />
             },
             {
@@ -35,9 +35,9 @@ export const ScrollAnimationSection = memo(() => {
               icon: <Stethoscope className="h-6 w-6" />
             },
             {
-              title: "Billing & Reporting",
-              description: "Generate invoices in seconds and gain valuable insights with comprehensive analytics.",
-              icon: <Rocket className="h-6 w-6" />
+              title: "Real-Time Profit Analytics",
+              description: "Monitor profit margins with real-time calculations based on cost price and selling price for every product sold.",
+              icon: <BarChart className="h-6 w-6" />
             }
           ].map((item, index) => (
             <ScrollReveal 
@@ -61,14 +61,14 @@ export const ScrollAnimationSection = memo(() => {
         <div className="flex flex-col space-y-4">
           {[
             {
-              title: "Notifications",
-              description: "Stay informed with real-time alerts for low stock, upcoming expiry dates, and prescription refills.",
-              icon: <BellRing className="h-6 w-6" />
+              title: "AI-Driven Optimization",
+              description: "Our AI algorithms analyze your data to suggest optimized pricing strategies, inventory levels, and business decisions.",
+              icon: <TrendingUp className="h-6 w-6" />
             },
             {
-              title: "Appointment Scheduling",
-              description: "Manage patient appointments and follow-ups with an intuitive calendar interface.",
-              icon: <Clock className="h-6 w-6" />
+              title: "Price Management",
+              description: "Easily track and manage cost prices and selling prices with historical tracking to monitor profitability over time.",
+              icon: <DollarSign className="h-6 w-6" />
             },
             {
               title: "Secure Access",

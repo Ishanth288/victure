@@ -4,13 +4,16 @@ import { Check } from "lucide-react";
 
 const benefits = [
   "Increased efficiency and productivity",
-  "Reduced costs and waste",
+  "Reduced costs and waste through AI-driven inventory optimization",
+  "Real-time profit margin tracking per product and transaction",
   "Improved patient safety and satisfaction",
-  "Streamlined workflows",
-  "Enhanced compliance",
-  "Better inventory control",
+  "Streamlined workflows with automated pricing calculations",
+  "Enhanced compliance and financial transparency",
+  "Better inventory control with cost and selling price management",
+  "AI-powered analytics for smarter business decisions",
   "Reduced medication errors",
-  "Improved customer service"
+  "Improved customer service",
+  "Dynamic pricing strategies based on market trends"
 ];
 
 export default function Benefits() {

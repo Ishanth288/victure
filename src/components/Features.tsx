@@ -1,5 +1,5 @@
 
-import { BarChart4, UserCircle2, Package, Syringe, Link, FileText } from "lucide-react";
+import { BarChart4, UserCircle2, Package, Syringe, Link, FileText, Calculator, TrendingUp } from "lucide-react";
 import { m } from "framer-motion";
 import { memo } from "react";
 
@@ -7,7 +7,7 @@ const features = [
   {
     icon: Package,
     title: "Inventory Management",
-    description: "Real-time inventory tracking, automated reordering, and expiry management to minimize waste and optimize stock levels."
+    description: "Real-time inventory tracking with automated reordering, cost price and selling price management, and expiry management to minimize waste and optimize stock levels."
   },
   {
     icon: Syringe,
@@ -21,8 +21,18 @@ const features = [
   },
   {
     icon: BarChart4,
-    title: "Reporting & Analytics",
-    description: "Gain valuable insights into your pharmacy's performance with comprehensive reports and analytics dashboards."
+    title: "Real-Time Analytics",
+    description: "Advanced AI-powered analytics that process your sales and inventory data in real-time, providing instant insights into business performance and profit margins."
+  },
+  {
+    icon: TrendingUp,
+    title: "AI-Driven Business Optimization",
+    description: "Smart algorithms analyze your pricing, sales patterns, and profit margins to suggest optimal pricing strategies and inventory adjustments for maximum profitability."
+  },
+  {
+    icon: Calculator,
+    title: "Dynamic Profit Tracking",
+    description: "Automatically calculate and track profits based on cost price and selling price, with real-time updates as sales and purchases occur."
   },
   {
     icon: Link,
@@ -32,7 +42,7 @@ const features = [
   {
     icon: FileText,
     title: "Purchase Book",
-    description: "Efficiently manage and track supplier purchase orders, maintain delivery records, and organize procurement in one place."
+    description: "Efficiently manage and track supplier purchase orders, maintain delivery records, and organize procurement in one place with price history tracking."
   }
 ];
 
