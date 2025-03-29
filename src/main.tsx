@@ -7,7 +7,7 @@ import { BrowserTracing } from "@sentry/tracing";
 
 // Initialize Sentry
 Sentry.init({
-  dsn: "https://examplePublicKey@o0.ingest.sentry.io/0", // Replace with your actual DSN
+  dsn: "https://aa91fdc816d181a9bbc526a3ba0be025@o4509056293470208.ingest.us.sentry.io/4509059112435712",
   integrations: [
     new BrowserTracing({
       tracePropagationTargets: ["localhost", /^\//],
