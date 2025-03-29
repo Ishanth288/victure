@@ -92,6 +92,7 @@ export async function safeInsert<T extends Record<string, any>>(
 
 /**
  * Type-safe wrapper for updating data in Supabase
+ * Completely rewritten to avoid TypeScript deep instantiation errors
  */
 export async function safeUpdate<T extends Record<string, any>>(
   table: TableNames,
@@ -99,46 +100,41 @@ export async function safeUpdate<T extends Record<string, any>>(
   match: Record<string, any>
 ): Promise<{ data: any; error: any }> {
   try {
-    // Begin with the base update query
-    const baseQuery = supabase.from(table).update(data as any);
+    // Start with the base query
+    const updateQuery = supabase.from(table).update(data as any);
     
-    // Apply the match conditions using a completely different approach
-    // that avoids TypeScript's deep instantiation problem
+    // Handle the matching conditions
     const matchKeys = Object.keys(match);
-    let updateResult;
+    let result;
     
-    // Special handling to avoid chaining .eq() calls
+    // Use type 'any' and different patterns to avoid deep type instantiation
     if (matchKeys.length === 0) {
       // No conditions
-      updateResult = await baseQuery;
-    } else if (matchKeys.length === 1) {
-      // Single condition - most common case
-      updateResult = await baseQuery.eq(matchKeys[0], match[matchKeys[0]]);
+      result = await updateQuery;
     } else {
-      // Multiple conditions - use a dynamic approach with any type
-      let query: any = baseQuery;
+      // Convert to 'any' type to avoid TypeScript analyzing the chain too deeply
+      let query: any = updateQuery;
       
+      // Apply all conditions
       for (const key of matchKeys) {
         query = query.eq(key, match[key]);
       }
       
-      updateResult = await query;
+      result = await query;
     }
     
-    if (updateResult.error) {
-      return { data: null, error: updateResult.error };
+    if (result.error) {
+      return { data: null, error: result.error };
     }
     
-    // Get the updated data using the same approach for selecting
-    const baseSelectQuery = supabase.from(table).select('*');
+    // Get the updated data with the same technique
+    const selectQuery = supabase.from(table).select('*');
     let selectResult;
     
     if (matchKeys.length === 0) {
-      selectResult = await baseSelectQuery;
-    } else if (matchKeys.length === 1) {
-      selectResult = await baseSelectQuery.eq(matchKeys[0], match[matchKeys[0]]);
+      selectResult = await selectQuery;
     } else {
-      let query: any = baseSelectQuery;
+      let query: any = selectQuery;
       
       for (const key of matchKeys) {
         query = query.eq(key, match[key]);
@@ -159,6 +155,7 @@ export async function safeUpdate<T extends Record<string, any>>(
 
 /**
  * Type-safe wrapper for selecting data from Supabase
+ * Rewritten to avoid TypeScript deep instantiation errors
  */
 export async function safeSelect<T = any>(
   table: TableNames,
@@ -171,16 +168,16 @@ export async function safeSelect<T = any>(
   } = {}
 ): Promise<{ data: T | null; error: any }> {
   try {
-    // Base query with column selection
+    // Base query
     const baseQuery = supabase
       .from(table)
       .select(options.columns || '*');
     
-    // Apply match conditions using the same pattern as safeUpdate
-    const matchKeys = Object.keys(match);
+    // Turn into 'any' type to avoid deep instantiation issues
     let query: any = baseQuery;
     
-    // Apply all conditions (if any)
+    // Apply all conditions
+    const matchKeys = Object.keys(match);
     for (const key of matchKeys) {
       query = query.eq(key, match[key]);
     }
@@ -197,18 +194,14 @@ export async function safeSelect<T = any>(
       query = query.limit(options.limit);
     }
     
-    // Execute the query
-    let result;
+    // Execute query
     if (options.single) {
-      result = await query.maybeSingle();
+      const result = await query.maybeSingle();
+      return { data: result.data as T, error: result.error };
     } else {
-      result = await query;
+      const result = await query;
+      return { data: result.data as T, error: result.error };
     }
-    
-    return { 
-      data: result.data as T, 
-      error: result.error 
-    };
   } catch (error) {
     console.error(`Error selecting from ${table}:`, error);
     return { data: null, error };
