@@ -8,17 +8,30 @@ interface MainContentWrapperProps {
   useFallback?: boolean;
   id?: string;
   className?: string;
+  loadingMessage?: string;
+  loadingHeight?: string;
 }
 
 export const MainContentWrapper = memo(({ 
   children, 
   useFallback = false,
   id,
-  className = ""
+  className = "",
+  loadingMessage,
+  loadingHeight
 }: MainContentWrapperProps) => {
   return (
     <section id={id} className={className}>
-      <Suspense fallback={useFallback ? <Fallback /> : <LoadingPlaceholder />}>
+      <Suspense fallback={
+        useFallback ? (
+          <Fallback />
+        ) : (
+          <LoadingPlaceholder 
+            height={loadingHeight} 
+            message={loadingMessage} 
+          />
+        )
+      }>
         {children}
       </Suspense>
     </section>
