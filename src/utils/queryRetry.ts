@@ -1,97 +1,67 @@
 
-import { checkSupabaseConnection } from "./supabaseConnection";
-import { logError, displayErrorMessage } from "./errorHandling";
+import * as Sentry from "@sentry/react";
 
 /**
- * Determine if an error should trigger a retry attempt
- */
-function shouldRetryError(error: any): boolean {
-  if (!error) return false;
-  
-  // Retry on network errors and certain HTTP status codes
-  const retryableStatusCodes = [408, 429, 500, 502, 503, 504];
-  
-  const errorMessage = error.message || String(error);
-  const statusCode = error.status || error.statusCode || error.code;
-  
-  return (
-    retryableStatusCodes.includes(statusCode) ||
-    errorMessage.includes('network') ||
-    errorMessage.includes('connection') ||
-    errorMessage.includes('timeout') ||
-    errorMessage.includes('fetch') ||
-    errorMessage.includes('Failed to fetch')
-  );
-}
-
-/**
- * A wrapper for Supabase queries with built-in error handling and retries
- * @param queryFn A function that returns a Supabase query promise
- * @param options Configuration options for retries and error handling
+ * Execute a Supabase query with automatic retry on failure
+ * @param queryFn Function that returns a Supabase query
+ * @param options Configuration options for retry behavior
+ * @returns Promise with the query result
  */
 export async function executeWithRetry<T>(
-  queryFn: () => Promise<{ data: T | null; error: any }>,
-  options: {
-    retries?: number;
+  queryFn: () => Promise<{ data: T; error: any; }>,
+  options?: {
+    maxRetries?: number;
     retryDelay?: number;
-    onError?: (error: any) => void;
     context?: string;
-  } = {}
-): Promise<{ data: T | null; error: any; recovered?: boolean }> {
-  const { retries = 3, retryDelay = 1000, onError, context } = options;
-  let attemptCount = 0;
+  }
+): Promise<{ data: T; error: any; }> {
+  const maxRetries = options?.maxRetries ?? 3;
+  const retryDelay = options?.retryDelay ?? 1000;
+  const context = options?.context ? ` (${options.context})` : '';
+  
+  let attempts = 0;
   let lastError: any = null;
-  let recovered = false;
 
-  while (attemptCount < retries) {
+  while (attempts < maxRetries) {
     try {
-      // Check connection first if we've already had an error
-      if (attemptCount > 0) {
-        const isConnected = await checkSupabaseConnection();
-        if (isConnected) {
-          recovered = true;
-          console.log(`Connection recovered on attempt ${attemptCount + 1}`);
-        }
-      }
-
       const result = await queryFn();
       
       if (result.error) {
+        // Log the error but continue with retry logic
+        console.error(`Supabase query error on attempt ${attempts + 1}${context}:`, result.error);
         lastError = result.error;
-        console.error(`Query error on attempt ${attemptCount + 1}:`, result.error);
         
-        // Only retry on certain error types
-        if (!shouldRetryError(result.error)) {
-          break;
+        // If this is not the last attempt, retry after delay
+        if (attempts < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, retryDelay * (attempts + 1)));
+          attempts++;
+          continue;
         }
-      } else {
-        // Success! Return the data
-        return { ...result, recovered };
       }
+      
+      return result;
     } catch (error) {
+      console.error(`Error executing Supabase query on attempt ${attempts + 1}${context}:`, error);
       lastError = error;
-      console.error(`Exception on attempt ${attemptCount + 1}:`, error);
-    }
-
-    // Increment attempt count and wait before retrying
-    attemptCount++;
-    
-    if (attemptCount < retries) {
-      const delay = retryDelay * Math.pow(2, attemptCount - 1); // Exponential backoff
-      console.log(`Retrying in ${delay}ms (attempt ${attemptCount + 1}/${retries})`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      // If this is not the last attempt, retry after delay
+      if (attempts < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay * (attempts + 1)));
+        attempts++;
+      } else {
+        // Capture more serious errors in Sentry
+        Sentry.captureException(error, {
+          tags: {
+            context: options?.context || 'supabase-query'
+          }
+        });
+        
+        // On final attempt, return formatted error response
+        return { data: null as any, error: lastError };
+      }
     }
   }
 
-  // All retries failed
-  if (onError) {
-    onError(lastError);
-  } else {
-    displayErrorMessage(lastError, context);
-  }
-
-  // Log the final error
-  logError(lastError, context);
-  
-  return { data: null, error: lastError, recovered };
+  // If we've exhausted all retries, return the last error
+  return { data: null as any, error: lastError };
 }

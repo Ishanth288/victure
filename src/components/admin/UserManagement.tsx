@@ -36,10 +36,26 @@ export function UserManagement() {
         { context: 'fetching users' }
       );
 
-      if (result.data) {
-        setUsers(result.data);
+      if (result.error) {
+        toast({
+          title: "Error",
+          description: "Failed to load users. Please try again.",
+          variant: "destructive",
+        });
+        return;
       }
       
+      if (result.data) {
+        setUsers(result.data as User[]);
+      }
+      
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while loading users.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
