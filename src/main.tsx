@@ -10,8 +10,10 @@ Sentry.init({
   dsn: "https://examplePublicKey@o0.ingest.sentry.io/0", // Replace with your actual DSN
   integrations: [
     new BrowserTracing({
-      tracingOrigins: ["localhost", /^\//],
+      tracePropagationTargets: ["localhost", /^\//],
     }),
+    new Sentry.BrowserProfilingIntegration(),
+    new Sentry.Replay(),
   ],
   
   // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring
