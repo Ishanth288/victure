@@ -5,6 +5,7 @@ import { HeroSection } from "@/components/sections/HeroSection";
 import { FloatingIconsSection } from "@/components/sections/FloatingIconsSection";
 import { ScrollAnimationSection } from "@/components/sections/ScrollAnimationSection";
 import { ContentSection } from "@/components/sections/ContentSection";
+import { FeedbackForm } from "@/components/FeedbackForm";
 import { Suspense, lazy, useEffect, memo } from "react";
 import { LazyMotion, domAnimation } from "framer-motion";
 import * as Sentry from "@sentry/react";
@@ -80,6 +81,13 @@ const Index = memo(() => {
           <Suspense fallback={<LoadingPlaceholder />}>
             <ContentSection />
           </Suspense>
+
+          <section id="feedback" className="py-12 bg-gray-50">
+            <div className="container mx-auto px-4">
+              <h2 className="text-3xl font-bold text-center mb-8">Your Feedback Matters</h2>
+              <FeedbackForm />
+            </div>
+          </section>
         </main>
         <Footer />
       </div>

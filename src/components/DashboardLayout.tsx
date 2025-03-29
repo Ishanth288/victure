@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   LayoutGrid, Package, Users, FileText, LineChart, Settings, Menu,
-  X, DollarSign, LogOut, ShoppingCart, FileTerminal, ChevronLeft
+  X, DollarSign, LogOut, ShoppingCart, FileTerminal, ChevronLeft, TrendingUp
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PlanBanner } from "@/components/PlanBanner";
@@ -124,6 +124,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       icon: <LineChart className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
     },
     {
+      label: "Business Optimization",
+      href: "/business-optimization",
+      icon: <TrendingUp className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+    },
+    {
       label: "Settings",
       href: "/settings",
       icon: <Settings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
@@ -169,7 +174,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
             
             <div className="mt-2 flex flex-col gap-1 px-2">
-              {sidebarLinks.slice(0, 7).map((link, idx) => (
+              {sidebarLinks.slice(0, 8).map((link, idx) => (
                 <SidebarLink 
                   key={idx} 
                   link={link} 
@@ -180,15 +185,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           
           <div className="border-t border-neutral-200 pt-2 px-2 flex flex-col gap-1">
             <SidebarLink
-              link={sidebarLinks[7]} // Settings
+              link={sidebarLinks[8]} // Settings
             />
             <SidebarLink
-              link={sidebarLinks[8]} // Terms
+              link={sidebarLinks[9]} // Terms
               className="cursor-pointer"
               onClick={handleTermsClick}
             />
             <SidebarLink
-              link={sidebarLinks[9]} // Sign Out
+              link={sidebarLinks[10]} // Sign Out
               className="cursor-pointer"
               onClick={handleSignOut}
             />

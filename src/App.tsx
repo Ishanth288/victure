@@ -17,6 +17,7 @@ const Prescriptions = lazy(() => import("@/pages/Prescriptions"));
 const Insights = lazy(() => import("@/pages/Insights"));
 const Purchases = lazy(() => import("@/pages/Purchases"));
 const Settings = lazy(() => import("@/pages/Settings"));
+const BusinessOptimization = lazy(() => import("@/pages/BusinessOptimization"));
 
 // Lazy load legal pages
 const PrivacyPolicy = lazy(() => import("@/pages/legal/PrivacyPolicy"));
@@ -88,6 +89,11 @@ function App() {
           <Route path="/settings" element={
             <Suspense fallback={<PageLoader />}>
               <Settings />
+            </Suspense>
+          } />
+          <Route path="/business-optimization" element={
+            <Suspense fallback={<PageLoader />}>
+              <BusinessOptimization />
             </Suspense>
           } />
           
