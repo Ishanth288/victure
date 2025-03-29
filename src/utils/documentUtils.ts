@@ -40,20 +40,23 @@ export const generatePDFFromElement = async (
   options: DocumentGenerationOptions
 ): Promise<string | null> => {
   try {
+    console.log("Generating PDF with element:", element);
     const pharmacyProfile = await getPharmacyProfile();
     
     // Create a white background div to wrap content 
     const whiteBackground = document.createElement('div');
     whiteBackground.style.backgroundColor = 'white';
     whiteBackground.style.padding = '20px';
+    whiteBackground.style.width = '800px';  // Set a fixed width for consistent PDF generation
     whiteBackground.appendChild(element.cloneNode(true));
     document.body.appendChild(whiteBackground);
     
     const canvas = await html2canvas(whiteBackground, {
       scale: 2,
-      logging: false,
+      logging: true,
       useCORS: true,
-      backgroundColor: '#ffffff'
+      backgroundColor: '#ffffff',
+      windowWidth: 1000
     });
     
     document.body.removeChild(whiteBackground);
@@ -122,6 +125,7 @@ export const generatePDFFromElement = async (
  * Download data as PDF
  */
 export const downloadPDF = (dataUrl: string, filename: string) => {
+  console.log("Downloading PDF with dataUrl:", dataUrl ? "Data URL exists" : "No data URL");
   const link = document.createElement('a');
   link.href = dataUrl;
   link.download = `${filename.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.pdf`;

@@ -1,5 +1,4 @@
 
-import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import {
@@ -7,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { DocumentType } from "./types";
 
@@ -49,6 +49,7 @@ export function DocumentPreviewModal({
               Download
             </Button>
           </DialogTitle>
+          <DialogDescription className="sr-only">Preview and download your {documentName}</DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-auto p-4">
           <div ref={previewRef}></div>

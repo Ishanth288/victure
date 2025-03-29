@@ -130,6 +130,10 @@ export function DocumentManagement() {
     try {
       // Set loading state
       setDocumentLoading(docType, true);
+      toast({
+        title: "Generating report",
+        description: `Preparing ${docName} for download...`,
+      });
       
       // Generate report data
       const reportData = await generateSystemReport(docType);
@@ -145,16 +149,10 @@ export function DocumentManagement() {
         return;
       }
       
-      // Create temporary report container
-      if (!reportContainerRef.current) return;
-      
-      // Clear previous content
-      reportContainerRef.current.innerHTML = '';
-
-      // Style the report
-      const reportDiv = document.createElement('div');
-      reportDiv.style.padding = '20px';
-      reportDiv.style.fontFamily = 'Arial, sans-serif';
+      // Create temporary container for the report
+      const tempContainer = document.createElement('div');
+      tempContainer.style.padding = '20px';
+      tempContainer.style.fontFamily = 'Arial, sans-serif';
       
       const doc = documents.find(d => d.id === docType);
       
@@ -163,36 +161,33 @@ export function DocumentManagement() {
       header.textContent = docName;
       header.style.fontSize = '24px';
       header.style.marginBottom = '10px';
-      reportDiv.appendChild(header);
+      tempContainer.appendChild(header);
       
       const description = document.createElement('p');
       description.textContent = doc?.description || '';
       description.style.fontSize = '14px';
       description.style.marginBottom = '20px';
       description.style.color = '#666';
-      reportDiv.appendChild(description);
+      tempContainer.appendChild(description);
       
       // Create report content based on document type
       switch (docType) {
         case 'inventory':
-          createInventoryReport(reportDiv, reportData);
+          createInventoryReport(tempContainer, reportData);
           break;
         case 'sales':
-          createSalesReport(reportDiv, reportData);
+          createSalesReport(tempContainer, reportData);
           break;
         case 'purchase_orders':
-          createPurchaseOrdersReport(reportDiv, reportData);
+          createPurchaseOrdersReport(tempContainer, reportData);
           break;
         case 'patients':
-          createPatientsReport(reportDiv, reportData);
+          createPatientsReport(tempContainer, reportData);
           break;
       }
       
-      // Append to the container
-      reportContainerRef.current.appendChild(reportDiv);
-      
       // Generate PDF
-      const pdfDataUrl = await generatePDFFromElement(reportContainerRef.current, {
+      const pdfDataUrl = await generatePDFFromElement(tempContainer, {
         title: docName,
         description: doc?.description,
         lastUpdated: doc?.lastUpdated || new Date()
@@ -233,8 +228,8 @@ export function DocumentManagement() {
       <CardHeader>
         <CardTitle>Document Management</CardTitle>
       </CardHeader>
-      <CardContent className="h-[calc(100%-70px)]">
-        <div className="h-full">
+      <CardContent className="h-[calc(100%-70px)] overflow-hidden">
+        <div className="h-full overflow-auto">
           <DocumentList 
             documents={documents}
             onDownload={handleDownload}
