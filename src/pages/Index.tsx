@@ -63,28 +63,28 @@ const Index = memo(() => {
           <MainContentWrapper 
             useFallback={true} 
             onError={handleError}
-            className="-mt-8" // Reduced gap between Hero and FloatingIcons
+            className="-mt-24" // More aggressive reduction of gap
           >
             <FloatingIconsSection />
           </MainContentWrapper>
           
           <MainContentWrapper 
             onError={handleError}
-            className="-mt-10" // Reduced gap between FloatingIcons and ScrollAnimation
+            className="-mt-32" // More aggressive reduction of gap
           >
             <ScrollAnimationSection />
           </MainContentWrapper>
           
           <MainContentWrapper 
             onError={handleError}
-            className="-mt-8" // Reduced gap between ScrollAnimation and ContentSection
+            className="-mt-24" // More aggressive reduction of gap
           >
             <ContentSection />
           </MainContentWrapper>
 
           <section 
             id="feedback" 
-            className="py-12 bg-gray-50 gpu-accelerated optimize-layout -mt-8" // Reduced gap to the feedback section
+            className="py-12 bg-gray-50 gpu-accelerated optimize-layout -mt-16" // Reduced gap to the feedback section
             ref={feedbackSectionRef}
           >
             <div className="container mx-auto px-4">
