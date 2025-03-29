@@ -23,6 +23,9 @@ Sentry.init({
   // Adjust this value in production, or use tracesSampler for greater control
   replaysSessionSampleRate: 0.1,
   
+  // Set release information for source map association
+  release: import.meta.env.VITE_SENTRY_RELEASE || 'local-development',
+  
   // Configure error fingerprinting
   beforeSend(event) {
     // Check if it's a known issue
