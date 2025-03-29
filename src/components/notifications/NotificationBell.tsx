@@ -11,6 +11,7 @@ import {
 import { NotificationList } from "./NotificationList";
 import { fetchNotifications, Notification } from "@/utils/notificationUtils";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);

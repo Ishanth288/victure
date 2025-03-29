@@ -43,7 +43,9 @@ export function AppointmentForm({
   const [time, setTime] = useState(initialData?.time || "09:00");
   const [duration, setDuration] = useState(initialData?.duration?.toString() || "30");
   const [notes, setNotes] = useState(initialData?.notes || "");
-  const [status, setStatus] = useState(initialData?.status || "scheduled");
+  const [status, setStatus] = useState<"scheduled" | "completed" | "canceled">(
+    (initialData?.status as "scheduled" | "completed" | "canceled") || "scheduled"
+  );
   const [patientId, setPatientId] = useState<number | undefined>(initialData?.patientId);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -87,7 +89,7 @@ export function AppointmentForm({
       date,
       time,
       duration: parseInt(duration, 10),
-      status: status as "scheduled" | "completed" | "canceled",
+      status: status,
       notes,
       patientId,
       patientName: selectedPatient.name
@@ -186,7 +188,10 @@ export function AppointmentForm({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="status">Status</Label>
-            <Select value={status} onValueChange={setStatus}>
+            <Select 
+              value={status} 
+              onValueChange={(value: "scheduled" | "completed" | "canceled") => setStatus(value)}
+            >
               <SelectTrigger id="status">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>

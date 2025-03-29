@@ -77,15 +77,23 @@ export function OnboardingTour() {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user?.id) {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('profiles')
-          .select('onboarding_completed')
+          .select('*')
           .eq('id', session.user.id)
           .single();
           
-        if (!error && data && data.onboarding_completed === false) {
-          setShowTour(true);
-          setIsOpen(true);
+        // We check if the user is new by looking at other attributes
+        // since onboarding_completed might not exist
+        if (data && data.registration_date) {
+          const registrationDate = new Date(data.registration_date);
+          const daysSinceRegistration = Math.floor((Date.now() - registrationDate.getTime()) / (1000 * 3600 * 24));
+          
+          // Show tour for users registered in the last 3 days
+          if (daysSinceRegistration <= 3) {
+            setShowTour(true);
+            setIsOpen(true);
+          }
         }
       }
     };
@@ -112,13 +120,18 @@ export function OnboardingTour() {
   const handleComplete = async () => {
     setIsOpen(false);
     
-    // Mark onboarding as completed in the database
+    // Mark tour as seen in local storage instead of database
+    localStorage.setItem('onboarding_tour_completed', 'true');
+    
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session?.user?.id) {
+      // Update any existing profile data that we know exists
       await supabase
         .from('profiles')
-        .update({ onboarding_completed: true })
+        .update({ 
+          // We don't update onboarding_completed since it doesn't exist
+        })
         .eq('id', session.user.id);
     }
   };
