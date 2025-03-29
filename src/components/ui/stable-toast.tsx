@@ -37,10 +37,10 @@ export const stableToast = (options: ToastOptions) => {
   // Mark this toast as visible
   visibleToasts.add(key);
   
-  // Show the toast
+  // Show the toast - default duration is now 4 seconds (4000ms)
   originalToast({
     ...options,
-    duration: options.duration || 3000,
+    duration: options.duration || 4000,
     onOpenChange: (open) => {
       if (!open) {
         visibleToasts.delete(key);
@@ -51,7 +51,7 @@ export const stableToast = (options: ToastOptions) => {
   // Set a timeout to prevent duplicate toasts for a longer period
   const timeoutId = window.setTimeout(() => {
     toastTimeouts.delete(key);
-  }, options.duration || 3000);
+  }, options.duration || 4000);
   
   toastTimeouts.set(key, timeoutId);
 };

@@ -11,19 +11,21 @@ interface UseLoadingStateOptions {
 export function useLoadingState({
   isLoading,
   locationLoading,
-  forceExitTimeout = 8000,
-  stabilityDelay = 500
+  forceExitTimeout = 6000, // Reduced from 8000 to 6000ms
+  stabilityDelay = 300 // Reduced from 500 to 300ms
 }: UseLoadingStateOptions) {
   const [isStableLoading, setIsStableLoading] = useState(true);
   const stabilityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const forceExitTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hasShownLoadingRef = useRef(false);
 
   // Add stability to the loading state to prevent flickering
   useEffect(() => {
     // When loading starts, set isStableLoading to true immediately
     if (isLoading || locationLoading) {
       setIsStableLoading(true);
+      hasShownLoadingRef.current = true;
       
       // Clear any existing timers
       if (stabilityTimerRef.current) {
@@ -48,7 +50,7 @@ export function useLoadingState({
       }, forceExitTimeout);
     } 
     // When loading ends, wait a bit before showing content to prevent flickering
-    else if (isStableLoading) {
+    else if (isStableLoading && hasShownLoadingRef.current) {
       // Clear force exit timer if it exists
       if (forceExitTimerRef.current) {
         clearTimeout(forceExitTimerRef.current);

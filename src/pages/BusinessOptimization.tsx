@@ -3,7 +3,6 @@ import { useState, useCallback, useEffect } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { BusinessOptimizationPage } from "@/components/dashboard/BusinessOptimization";
 import { Fallback } from "@/components/ui/fallback";
-import { useToast } from "@/hooks/use-toast";
 import { stableToast } from "@/components/ui/stable-toast";
 
 export default function BusinessOptimization() {
@@ -24,12 +23,11 @@ export default function BusinessOptimization() {
     console.error("BusinessOptimization page error:", error);
     setHasError(true);
     
-    // Use stableToast to prevent duplicate error messages
+    // Use stableToast with 4 second timeout (default)
     stableToast({
       title: "Something went wrong",
       description: "We encountered an error loading the business data. Please try refreshing.",
-      variant: "destructive",
-      duration: 5000
+      variant: "destructive"
     });
   }, []);
 

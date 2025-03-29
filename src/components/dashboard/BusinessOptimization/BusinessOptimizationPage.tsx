@@ -11,15 +11,22 @@ import { PageHeader } from "./components/PageHeader";
 import { TabsNavigation } from "./components/TabsNavigation";
 import { TabContent } from "./components/TabContent";
 import { LoadingState, ErrorState, EmptyState } from "./components/LoadingState";
+import { stableToast } from "@/components/ui/stable-toast";
 
 export default function BusinessOptimizationPage() {
   const [activeTab, setActiveTab] = useState("forecast");
   const [error, setError] = useState<boolean>(false);
-  const { toast } = useToast();
   
   const handleDataError = useCallback(() => {
     console.log("Business data error callback triggered");
     setError(true);
+    
+    // Use stableToast to display error with 4 second timeout
+    stableToast({
+      title: "Data loading error",
+      description: "We encountered an issue loading your business analytics data. Using fallback data instead.",
+      variant: "destructive"
+    });
   }, []);
   
   // Initialize app monitoring and performance optimizations
@@ -46,7 +53,9 @@ export default function BusinessOptimizationPage() {
   // Stable loading state to prevent flickering
   const { isStableLoading } = useLoadingState({
     isLoading, 
-    locationLoading
+    locationLoading,
+    forceExitTimeout: 6000, // Reduce timeout to ensure it exits loading state
+    stabilityDelay: 300 // Lower stability delay for quicker transitions
   });
   
   // Data refresh handler
@@ -75,7 +84,7 @@ export default function BusinessOptimizationPage() {
     (locationData && Object.keys(locationData || {}).length > 0)
   );
   
-  console.log("Has data:", hasData);
+  console.log("Has data:", hasData, "locationData:", locationData);
 
   // Only show error state if we have no data at all
   if ((error || hasError) && !hasData) {
@@ -93,8 +102,8 @@ export default function BusinessOptimizationPage() {
     );
   }
 
-  // Render empty state if no data is available
-  if (!hasData) {
+  // Ensure we fallback to showing empty state if no data available
+  if (!hasData && !isLoading && !locationLoading) {
     console.log("Rendering empty state");
     return (
       <DashboardLayout>
