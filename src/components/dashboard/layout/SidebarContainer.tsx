@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sidebar, SidebarBody } from "@/components/ui/sidebar";
@@ -14,12 +14,9 @@ interface SidebarContainerProps {
 
 export function SidebarContainer({ children }: SidebarContainerProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { profileData } = useProfileData();
-
-  const handleTermsClick = () => {
-    window.open('https://www.termsfeed.com/live/661b4717-faf2-4a61-a219-ddc2010a943c', '_blank');
-  };
 
   const handleSignOut = async () => {
     try {
@@ -33,7 +30,7 @@ export function SidebarContainer({ children }: SidebarContainerProps) {
   const handleLinkClick = (index: number) => {
     // Handle special links
     if (index === 9) { // Terms & Conditions
-      handleTermsClick();
+      navigate('/legal/terms-of-service', { state: { from: location.pathname } });
     } else if (index === 10) { // Sign Out
       handleSignOut();
     }
