@@ -108,6 +108,11 @@ export function useDataRefresh({
     }
   }, [refreshData, refreshLocationData, toast, onError]);
 
+  // Create a handler specifically for button click events
+  const handleManualRefresh = useCallback(() => {
+    handleRefreshAll(false);
+  }, [handleRefreshAll]);
+
   // Run the check on mount
   useEffect(() => {
     checkDailyRefresh();
@@ -116,6 +121,7 @@ export function useDataRefresh({
   return {
     lastRefreshed,
     handleRefreshAll,
+    handleManualRefresh, // Return the button-safe handler
     refreshInProgress,
     renderAttempts
   };

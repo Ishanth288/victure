@@ -71,7 +71,7 @@ export default function BusinessOptimizationPage() {
     return () => clearTimeout(forceExitTimer);
   }, [isStableLoading]);
   
-  const { lastRefreshed, handleRefreshAll, refreshInProgress } = useDataRefresh({
+  const { lastRefreshed, handleManualRefresh, refreshInProgress } = useDataRefresh({
     refreshData,
     refreshLocationData,
     autoRefreshInterval: 10 * 60 * 1000, // 10 minutes auto-refresh
@@ -134,7 +134,7 @@ export default function BusinessOptimizationPage() {
       <DashboardLayout>
         <div className="transition-opacity duration-300 ease-in-out">
           <ErrorState 
-            onRetry={handleRefreshAll} 
+            onRetry={handleManualRefresh} 
             errorType={errorType}
             errorMessage={connectionError || "Loading timed out. Please try again."}
           />
@@ -160,7 +160,7 @@ export default function BusinessOptimizationPage() {
       <div className="space-y-6 transition-opacity duration-300 ease-in-out">
         <PageHeader 
           pharmacyLocation={pharmacyLocation} 
-          onRefresh={handleRefreshAll}
+          onRefresh={handleManualRefresh}
           lastRefreshed={lastRefreshed}
           dataSources={locationData?.dataSources}
           hasError={error || hasError || forcedExit}
@@ -179,7 +179,7 @@ export default function BusinessOptimizationPage() {
                 <p className="text-amber-700 dark:text-amber-400 mt-2">
                   Some data couldn't be loaded completely. You're seeing limited information.
                   <button 
-                    onClick={handleRefreshAll}
+                    onClick={handleManualRefresh}
                     className="ml-2 underline text-blue-600 dark:text-blue-400"
                   >
                     Try again

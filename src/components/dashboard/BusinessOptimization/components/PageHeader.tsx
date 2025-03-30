@@ -3,10 +3,11 @@ import { ArrowUpRight, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
+import { MouseEventHandler } from "react";
 
 interface PageHeaderProps {
   pharmacyLocation: { state: string; city: string } | null;
-  onRefresh: () => void;
+  onRefresh: MouseEventHandler<HTMLButtonElement>;
   lastRefreshed: Date;
   dataSources?: string[];
   hasError?: boolean;
