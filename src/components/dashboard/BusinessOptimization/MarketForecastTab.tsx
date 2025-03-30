@@ -1,3 +1,4 @@
+
 import { AlertCircle, Package, TrendingUp, Clock, Share2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -57,46 +58,7 @@ export const MarketForecastTab = ({
   
   const salesMetrics = calculateSalesMetrics(forecastData);
   
-  // Prepare forecast data to show all 12 months or alternating months
-  const prepareChartData = () => {
-    // Make sure we have enough data
-    if (!forecastData || forecastData.length < 6) {
-      return [];
-    }
-    
-    // Show alternating months (every even month) if we have 12 months of data
-    if (forecastData.length >= 12) {
-      const evenMonths = forecastData.filter((_, index) => index % 2 === 0);
-      const oddMonths = forecastData.filter((_, index) => index % 2 !== 0);
-      
-      return {
-        yourPharmacy: evenMonths.map(item => ({
-          month: item.month,
-          value: Math.round(item.prediction)
-        })),
-        industryAverage: oddMonths.map(item => ({
-          month: item.month,
-          value: Math.round(item.prediction * 0.85)
-        }))
-      };
-    }
-    
-    // Otherwise show all months
-    return {
-      yourPharmacy: forecastData.map(item => ({
-        month: item.month,
-        value: Math.round(item.prediction)
-      })),
-      industryAverage: forecastData.map(item => ({
-        month: item.month,
-        value: Math.round(item.prediction * 0.85)
-      }))
-    };
-  };
-  
-  const chartData = prepareChartData();
-  
-  // Combine the data for displaying in the chart
+  // Prepare forecast data - ensure each chart has its own complete dataset
   const combinedChartData = forecastData.map(item => ({
     month: item.month,
     yourPharmacy: Math.round(item.prediction),
@@ -123,6 +85,17 @@ export const MarketForecastTab = ({
         dark: industryAvgColor,
       },
     },
+  };
+
+  // Format currency values for better readability
+  const formatCurrency = (value: number) => {
+    if (value >= 1000000) {
+      return `₹${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `₹${(value / 1000).toFixed(0)}k`;
+    } else {
+      return `₹${value}`;
+    }
   };
   
   return (
@@ -176,17 +149,22 @@ export const MarketForecastTab = ({
                 </Card>
               </div>
               
-              {/* Chart with improved alignment and labels */}
-              <div className="h-[250px] w-full">
+              {/* Chart with improved alignment, labels, and spacing */}
+              <div className="h-[280px] w-full">
                 <ChartContainer config={chartConfig}>
-                  <LineChart data={combinedChartData} className="h-full" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                  <LineChart 
+                    data={combinedChartData} 
+                    className="h-full" 
+                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="month"
                       axisLine={false}
                       tickLine={false}
                       fontSize={12}
-                      tickMargin={8}
+                      tickMargin={12}
+                      height={50}
                       padding={{ left: 10, right: 10 }}
                       tick={{ fill: "#64748B" }}
                     />
@@ -194,9 +172,9 @@ export const MarketForecastTab = ({
                       axisLine={false}
                       tickLine={false}
                       fontSize={12}
-                      tickFormatter={(value) => `₹${value/1000}k`}
-                      tickMargin={8}
-                      width={45}
+                      tickFormatter={(value) => formatCurrency(value)}
+                      tickMargin={12}
+                      width={60}
                       tick={{ fill: "#64748B" }}
                       domain={['auto', 'auto']}
                     />
@@ -218,7 +196,7 @@ export const MarketForecastTab = ({
                       dot={{ r: 4, strokeWidth: 2 }}
                       activeDot={{ r: 6, strokeWidth: 2 }}
                       name="yourPharmacy"
-                      animationDuration={0} // Prevent flickering
+                      isAnimationActive={false} // Prevent flickering
                     />
                     <Line
                       type="monotone"
@@ -228,20 +206,20 @@ export const MarketForecastTab = ({
                       strokeDasharray="5 5"
                       dot={{ r: 4, fill: "white", strokeWidth: 2 }}
                       name="industryAverage"
-                      animationDuration={0} // Prevent flickering
+                      isAnimationActive={false} // Prevent flickering
                     />
                     <Legend 
                       align="center"
                       verticalAlign="top"
                       height={36}
-                      wrapperStyle={{ paddingBottom: "10px" }}
+                      wrapperStyle={{ paddingBottom: "16px" }}
                       formatter={(value) => value === "yourPharmacy" ? "Your Pharmacy" : "Industry Average"}
                     />
                   </LineChart>
                 </ChartContainer>
               </div>
               
-              <div className="text-xs text-center text-muted-foreground mt-1">
+              <div className="text-xs text-center text-muted-foreground mt-2">
                 <span className="inline-flex items-center mr-3">
                   <span className="inline-block w-3 h-0.5 bg-[#0D9488] mr-1"></span>
                   Your Pharmacy (Solid Line)
@@ -277,37 +255,45 @@ export const MarketForecastTab = ({
             </CardTitle>
             <CardDescription>Top 5 products with highest projected demand</CardDescription>
           </CardHeader>
-          <CardContent className="h-60">
+          <CardContent className="h-[280px]">
             {regionalDemandData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart 
                   data={regionalDemandData.slice(0, 5)}
                   layout="vertical"
-                  margin={{ top: 5, right: 20, left: 85, bottom: 5 }}
+                  margin={{ top: 5, right: 20, left: 100, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     type="number" 
                     tickFormatter={(value) => `${value}`}
                     tick={{ fill: "#64748B" }}
+                    domain={[0, 'dataMax + 10']}
                   />
                   <YAxis 
                     type="category" 
                     dataKey="product" 
-                    width={85}
-                    fontSize={12}
+                    width={100}
+                    fontSize={11}
                     tick={{ fill: "#64748B" }}
+                    tickFormatter={(value) => value.length > 15 ? `${value.substring(0, 15)}...` : value}
                   />
                   <RechartsTooltip 
                     formatter={(value: number) => [`${value} units`, 'Projected Demand']} 
                     labelFormatter={(label) => `Product: ${label}`}
+                    contentStyle={{
+                      backgroundColor: 'white',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '6px',
+                      padding: '10px',
+                    }}
                   />
                   <Bar 
                     dataKey="demand" 
                     fill="#0D9488" 
                     name="Monthly Demand" 
                     radius={[0, 4, 4, 0]}
-                    animationDuration={0} // Prevent flickering
+                    isAnimationActive={false} // Prevent flickering
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -331,37 +317,45 @@ export const MarketForecastTab = ({
             </CardTitle>
             <CardDescription>Products with highest growth potential in your region</CardDescription>
           </CardHeader>
-          <CardContent className="h-60">
+          <CardContent className="h-[280px]">
             {seasonalTrendsData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart 
                   data={seasonalTrendsData.slice(0, 5)}
                   layout="vertical"
-                  margin={{ top: 5, right: 20, left: 85, bottom: 5 }}
+                  margin={{ top: 5, right: 20, left: 100, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     type="number"
                     tickFormatter={(value) => `${value}%`}
                     tick={{ fill: "#64748B" }}
+                    domain={[0, 'dataMax + 5']}
                   />
                   <YAxis 
                     type="category" 
                     dataKey="name" 
-                    width={85}
-                    fontSize={12}
+                    width={100}
+                    fontSize={11}
                     tick={{ fill: "#64748B" }}
+                    tickFormatter={(value) => value.length > 15 ? `${value.substring(0, 15)}...` : value}
                   />
                   <RechartsTooltip 
                     formatter={(value: number) => [`${value}%`, 'Growth Potential']}
                     labelFormatter={(label) => `Product: ${label}`}
+                    contentStyle={{
+                      backgroundColor: 'white',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '6px',
+                      padding: '10px',
+                    }}
                   />
                   <Bar 
                     dataKey="demand" 
                     fill="#0D9488" 
                     name="Growth %" 
                     radius={[0, 4, 4, 0]}
-                    animationDuration={0} // Prevent flickering
+                    isAnimationActive={false} // Prevent flickering
                   />
                 </BarChart>
               </ResponsiveContainer>

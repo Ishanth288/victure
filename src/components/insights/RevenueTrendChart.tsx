@@ -38,6 +38,17 @@ export const RevenueTrendChart = memo(({ data, timeframe = 'month' }: RevenueTre
   const maxValue = Math.max(...stableData.map(item => item.value)) * 1.1;
   const minValue = 0;
 
+  // Format currency values for better readability
+  const formatCurrency = (value: number) => {
+    if (value >= 1000000) {
+      return `₹${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `₹${(value / 1000).toFixed(0)}k`;
+    } else {
+      return `₹${value}`;
+    }
+  };
+
   return (
     <Card className="shadow-sm">
       <CardHeader>
@@ -47,30 +58,32 @@ export const RevenueTrendChart = memo(({ data, timeframe = 'month' }: RevenueTre
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
             data={stableData}
-            margin={{ top: 20, right: 30, left: 30, bottom: 30 }}
+            margin={{ top: 20, right: 30, left: 30, bottom: 50 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#eee" vertical={false} />
             <XAxis 
               dataKey="name"
               stroke="#888888"
-              fontSize={12}
+              fontSize={11}
               tickLine={false}
               axisLine={false}
               tickFormatter={formatXAxis}
-              tick={{ fill: '#666', fontSize: 12 }}
+              tick={{ fill: '#666', fontSize: 11 }}
               tickMargin={10}
               // Ensure enough space for labels
-              height={50} 
+              height={60}
+              angle={-45}
+              textAnchor="end"
             />
             <YAxis
               stroke="#888888"
-              fontSize={12}
+              fontSize={11}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(value) => `₹${Math.floor(value/1000)}k`}
-              tick={{ fill: '#666', fontSize: 12 }}
+              tickFormatter={(value) => formatCurrency(value)}
+              tick={{ fill: '#666', fontSize: 11 }}
               tickMargin={10}
-              width={65}
+              width={70}
               domain={[minValue, maxValue]} // Fixed domain to prevent recalculation
               // Ensure enough space for labels
               padding={{ top: 10, bottom: 10 }}
@@ -95,7 +108,7 @@ export const RevenueTrendChart = memo(({ data, timeframe = 'month' }: RevenueTre
             <Legend 
               align="right"
               verticalAlign="top"
-              wrapperStyle={{ paddingBottom: '10px' }} 
+              wrapperStyle={{ paddingBottom: '20px' }} 
               formatter={(value) => (
                 <span style={{ 
                   color: value === "Your Pharmacy" ? "#6366f1" : "#65a30d", 
