@@ -37,6 +37,7 @@ function App() {
         <Route path="/prescriptions" element={<AuthWrapper><Prescriptions /></AuthWrapper>} />
         <Route path="/billing" element={<AuthWrapper><Billing /></AuthWrapper>} />
         <Route path="/billing/cart" element={<AuthWrapper><BillingCart /></AuthWrapper>} />
+        <Route path="/billing/cart/:prescriptionId" element={<AuthWrapper><BillingCart /></AuthWrapper>} />
         <Route path="/purchases" element={<AuthWrapper><Purchases /></AuthWrapper>} />
         <Route path="/business-optimization" element={<AuthWrapper><BusinessOptimization /></AuthWrapper>} />
         <Route path="/insights" element={<AuthWrapper><Insights /></AuthWrapper>} />
