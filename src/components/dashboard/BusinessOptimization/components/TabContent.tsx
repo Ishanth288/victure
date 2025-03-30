@@ -49,7 +49,7 @@ export function TabContent({
   const safeSuppliersData = Array.isArray(suppliersData) ? suppliersData : [];
   const safeLocationData = locationData || {};
   
-  // Prepare data with null-safety
+  // Prepare data with null-safety and ensure each chart gets its own complete dataset
   const forecastData = prepareForecastData(safeLocationData, safeSalesData);
   const marginData = prepareMarginData(safeInventoryData);
   const supplierData = prepareSupplierData(safeSuppliersData);

@@ -59,6 +59,8 @@ export const RevenueTrendChart = memo(({ data, timeframe = 'month' }: RevenueTre
               tickFormatter={formatXAxis}
               tick={{ fill: '#666', fontSize: 12 }}
               tickMargin={10}
+              // Ensure enough space for labels
+              height={50} 
             />
             <YAxis
               stroke="#888888"
@@ -70,6 +72,8 @@ export const RevenueTrendChart = memo(({ data, timeframe = 'month' }: RevenueTre
               tickMargin={10}
               width={65}
               domain={[minValue, maxValue]} // Fixed domain to prevent recalculation
+              // Ensure enough space for labels
+              padding={{ top: 10, bottom: 10 }}
             />
             <Tooltip
               formatter={(value: any) => [`₹${value.toLocaleString()}`, '']}

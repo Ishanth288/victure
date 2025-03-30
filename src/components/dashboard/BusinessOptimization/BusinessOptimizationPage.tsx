@@ -74,6 +74,7 @@ export default function BusinessOptimizationPage() {
   const { lastRefreshed, handleRefreshAll, refreshInProgress } = useDataRefresh({
     refreshData,
     refreshLocationData,
+    autoRefreshInterval: 10 * 60 * 1000, // 10 minutes auto-refresh
     onError: (refreshError) => {
       console.error("Refresh error:", refreshError);
       setError(true);

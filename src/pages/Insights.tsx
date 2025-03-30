@@ -1,18 +1,19 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { CreditCard, DollarSign, ShoppingCart, Users } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { ProductsChart } from "@/components/insights/ProductsChart";
 import { RevenueChart } from "@/components/insights/RevenueChart";
 import { StatsCard } from "@/components/insights/StatsCard";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { addDays, format, subDays, subMonths } from "date-fns";
 import { typecastQuery, safeQueryData } from "@/utils/safeSupabaseQueries";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Insights() {
   const navigate = useNavigate();
@@ -34,37 +35,50 @@ export default function Insights() {
   const [topProducts, setTopProducts] = useState<Array<{name: string, value: number}>>([]);
   const [revenueData, setRevenueData] = useState<Array<{date: string, value: number}>>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
   }, []);
 
   const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    try {
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      if (authError) throw authError;
+      
+      if (!session) {
+        toast({
+          title: "Authentication Required",
+          description: "Please login to view insights",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return;
+      }
+      
+      setUserId(session.user.id);
+      fetchInsightsData(session.user.id);
+    } catch (err: any) {
+      console.error("Authentication error:", err);
+      setError("Authentication failed. Please try logging in again.");
       toast({
-        title: "Authentication Required",
-        description: "Please login to view insights",
+        title: "Authentication Error",
+        description: err.message || "Failed to verify authentication",
         variant: "destructive",
       });
-      navigate("/auth");
-      return;
     }
-    
-    setUserId(session.user.id);
-    fetchInsightsData(session.user.id);
   };
 
-  useEffect(() => {
-    if (userId) {
-      fetchInsightsData(userId);
-    }
-  }, [dateRange, userId]);
-
-  const fetchInsightsData = async (userId: string) => {
+  const fetchInsightsData = useCallback(async (userId: string) => {
     try {
       setLoading(true);
+      setError(null);
       if (!userId) return;
+
+      console.log("Fetching insights data for period:", {
+        from: format(dateRange.from, "yyyy-MM-dd"),
+        to: format(dateRange.to, "yyyy-MM-dd")
+      });
 
       // Format dates for query
       const fromDate = format(dateRange.from, "yyyy-MM-dd");
@@ -75,6 +89,7 @@ export default function Insights() {
       const prevFromDate = format(subDays(dateRange.from, daysDiff), "yyyy-MM-dd");
       const prevToDate = format(subDays(dateRange.from, 1), "yyyy-MM-dd");
 
+      console.log("Fetching current bills:", { userId, fromDate, toDate });
       // Fetch bills for current period
       const currentBills = await safeQueryData(
         typecastQuery('bills')
@@ -85,6 +100,8 @@ export default function Insights() {
         []
       );
 
+      console.log("Fetched current bills:", currentBills?.length || 0);
+
       // Fetch bills for previous period
       const prevBills = await safeQueryData(
         typecastQuery('bills')
@@ -94,6 +111,8 @@ export default function Insights() {
           .lte('date', prevToDate),
         []
       );
+
+      console.log("Fetched previous bills:", prevBills?.length || 0);
 
       // Calculate total sales (number of bills)
       const currentSalesCount = currentBills?.length || 0;
@@ -107,9 +126,11 @@ export default function Insights() {
       setSalesChange(Math.round(salesChangePercent));
 
       // Calculate monthly revenue
-      const currentRevenue = currentBills?.reduce((sum: number, bill: any) => sum + (bill.total_amount || 0), 0) || 0;
-      const prevRevenue = prevBills?.reduce((sum: number, bill: any) => sum + (bill.total_amount || 0), 0) || 0;
+      const currentRevenue = currentBills?.reduce((sum: number, bill: any) => sum + (parseFloat(bill.total_amount) || 0), 0) || 0;
+      const prevRevenue = prevBills?.reduce((sum: number, bill: any) => sum + (parseFloat(bill.total_amount) || 0), 0) || 0;
       setMonthlyRevenue(currentRevenue);
+      
+      console.log("Revenue calculation:", { currentRevenue, prevRevenue });
       
       // Calculate revenue change percentage
       const revenueChangePercent = prevRevenue > 0 
@@ -128,6 +149,7 @@ export default function Insights() {
         : 0;
       setAovChange(Math.round(aovChangePercent));
 
+      console.log("Fetching bill items");
       // Fetch top products
       const billItems = await safeQueryData(
         typecastQuery('bill_items')
@@ -147,26 +169,30 @@ export default function Insights() {
         []
       );
 
+      console.log("Fetched bill items:", billItems?.length || 0);
+
       // Process top products by revenue
       const productMap = new Map();
       billItems?.forEach((item: any) => {
         if (item.inventory && item.inventory.name) {
           const productName = item.inventory.name || `Product ${item.inventory_item_id}`;
-          const revenue = item.total_price || 0;
+          const revenue = parseFloat(item.total_price) || 0;
           
           if (productMap.has(productName)) {
             const product = productMap.get(productName);
             product.revenue += revenue;
-            product.quantity += item.quantity || 0;
+            product.quantity += parseInt(item.quantity) || 0;
           } else {
             productMap.set(productName, {
               name: productName,
               revenue,
-              quantity: item.quantity || 0,
+              quantity: parseInt(item.quantity) || 0,
             });
           }
         }
       });
+
+      console.log("Product map created with entries:", productMap.size);
 
       // Convert to array and sort by revenue
       const productsArray = Array.from(productMap.values())
@@ -178,6 +204,7 @@ export default function Insights() {
         }));
       
       setTopProducts(productsArray);
+      console.log("Top products set:", productsArray.length);
 
       // Generate revenue data for chart
       const revenueByDay = new Map();
@@ -195,7 +222,7 @@ export default function Insights() {
         if (bill.date) {
           const dateStr = bill.date.substring(0, 10); // Get YYYY-MM-DD part
           if (revenueByDay.has(dateStr)) {
-            revenueByDay.set(dateStr, revenueByDay.get(dateStr) + (bill.total_amount || 0));
+            revenueByDay.set(dateStr, revenueByDay.get(dateStr) + (parseFloat(bill.total_amount) || 0));
           }
         }
       });
@@ -208,6 +235,7 @@ export default function Insights() {
         }))
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       
+      console.log("Revenue chart data created:", revenueChartData.length);
       setRevenueData(revenueChartData);
 
       // Calculate customer retention (simplified)
@@ -216,37 +244,60 @@ export default function Insights() {
       setRetentionChange(5); // Placeholder value
 
       setLoading(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching insights:", error);
+      setError(error.message || "Failed to load insights data");
       toast({
         title: "Error",
-        description: "Failed to load insights data",
+        description: "Failed to load insights data: " + (error.message || "Unknown error"),
         variant: "destructive",
       });
       setLoading(false);
     }
-  };
+  }, [dateRange, toast]);
+
+  useEffect(() => {
+    if (userId) {
+      fetchInsightsData(userId);
+    }
+  }, [dateRange, userId, fetchInsightsData]);
 
   useEffect(() => {
     if (!userId) return;
+    
+    console.log("Setting up real-time subscription for user:", userId);
     
     // Set up real-time subscription for bills and bill_items
     const channel = supabase
       .channel('insights-updates')
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'bills', filter: `user_id=eq.${userId}` }, 
-        () => fetchInsightsData(userId)
+        (payload) => {
+          console.log("Bills table change detected:", payload);
+          fetchInsightsData(userId);
+        }
       )
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'bill_items' }, 
-        () => fetchInsightsData(userId)
+        (payload) => {
+          console.log("Bill items table change detected:", payload);
+          fetchInsightsData(userId);
+        }
       )
       .subscribe();
     
+    // Set up auto-refresh every 10 minutes
+    const refreshTimer = setInterval(() => {
+      console.log("Auto-refreshing insights data");
+      fetchInsightsData(userId);
+    }, 10 * 60 * 1000); // 10 minutes
+    
     return () => {
+      console.log("Cleaning up insights subscriptions");
       supabase.removeChannel(channel);
+      clearInterval(refreshTimer);
     };
-  }, [userId, dateRange]);
+  }, [userId, fetchInsightsData]);
 
   const handlePeriodChange = (newPeriod: string) => {
     setPeriod(newPeriod);
@@ -312,12 +363,22 @@ export default function Insights() {
     },
   ];
 
-  if (loading) {
+  if (error) {
     return (
       <DashboardLayout>
         <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <p>Loading insights...</p>
+          <div className="flex flex-col items-center justify-center min-h-[60vh]">
+            <h2 className="text-2xl font-bold text-red-600 mb-4">Error Loading Insights</h2>
+            <p className="text-gray-700 mb-4">{error}</p>
+            <button 
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              onClick={() => {
+                if (userId) fetchInsightsData(userId);
+                else checkAuth();
+              }}
+            >
+              Retry
+            </button>
           </div>
         </div>
       </DashboardLayout>
@@ -359,24 +420,40 @@ export default function Insights() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-          {stats.map((stat, index) => (
-            <StatsCard key={index} {...stat} />
-          ))}
-        </div>
+        {loading ? (
+          <>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+              {Array(4).fill(0).map((_, i) => (
+                <Skeleton key={i} className="h-28 w-full" />
+              ))}
+            </div>
+            <div className="grid gap-6 md:grid-cols-2 mb-8">
+              <Skeleton className="h-[400px] w-full" />
+              <Skeleton className="h-[400px] w-full" />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+              {stats.map((stat, index) => (
+                <StatsCard key={index} {...stat} />
+              ))}
+            </div>
 
-        <div className="grid gap-6 md:grid-cols-2 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Revenue Over Time</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <RevenueChart data={revenueData} />
-            </CardContent>
-          </Card>
-          
-          <ProductsChart data={topProducts} />
-        </div>
+            <div className="grid gap-6 md:grid-cols-2 mb-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Revenue Over Time</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <RevenueChart data={revenueData} />
+                </CardContent>
+              </Card>
+              
+              <ProductsChart data={topProducts} />
+            </div>
+          </>
+        )}
       </div>
     </DashboardLayout>
   );

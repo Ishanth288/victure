@@ -1,3 +1,4 @@
+
 export const prepareForecastData = (locationData?: any, salesData?: any[]) => {
   if (locationData?.marketForecasts && locationData.marketForecasts.length > 0) {
     return locationData.marketForecasts;
@@ -71,8 +72,8 @@ function generateRealisticForecast(historicalData: any[]) {
       sum = recentMonths.reduce((total, item) => total + item.prediction, 0);
       const baseValue = sum / recentMonths.length;
       
-      // Add future projections (next 6 months)
-      for (let i = 1; i <= 6; i++) {
+      // Add future projections (next 12 months to ensure each chart gets full data)
+      for (let i = 1; i <= 12; i++) {
         const futureMonth = now.getMonth() + i;
         const futureYear = now.getFullYear() + Math.floor((now.getMonth() + i) / 12);
         const adjustedMonth = (futureMonth % 12) + 1;
@@ -89,14 +90,16 @@ function generateRealisticForecast(historicalData: any[]) {
         
         result.push({
           month: `${adjustedMonth}/${futureYear}`,
-          prediction: Math.round(forecastAmount)
+          prediction: Math.round(forecastAmount),
+          // Add industry average for comparison charts
+          industryAverage: Math.round(forecastAmount * 0.75)
         });
       }
     }
   }
   
   // If we still don't have enough data, generate some placeholder data
-  if (result.length < 6) {
+  if (result.length < 12) {
     return generatePlaceholderForecastData();
   }
   
@@ -128,20 +131,28 @@ function generatePlaceholderForecastData() {
   const result = [];
   const baseValue = 20000 + Math.random() * 10000; // Random baseline between 20k-30k
   
-  // Generate data for the last 2 months plus next 6 months
-  for (let i = -2; i <= 6; i++) {
-    const targetMonth = now.getMonth() + i;
-    const targetYear = now.getFullYear() + Math.floor((now.getMonth() + i) / 12);
-    const adjustedMonth = (targetMonth % 12) + 1;
+  // Generate data for all 12 months to ensure complete dataset for each chart
+  const monthNames = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
+  
+  for (let i = 0; i < 12; i++) {
+    const monthIndex = (now.getMonth() + i) % 12;
+    const year = now.getFullYear() + Math.floor((now.getMonth() + i) / 12);
     
     // Add some realistic seasonal variations and trends
-    const monthFactor = getSeasonalFactor(adjustedMonth);
+    const monthFactor = getSeasonalFactor(monthIndex + 1);
     const trendFactor = 1 + (i * 0.02); // Small increasing trend
     const randomFactor = 0.95 + (Math.random() * 0.1); // 0.95 to 1.05 randomness
     
+    const prediction = Math.round(baseValue * monthFactor * trendFactor * randomFactor);
+    
     result.push({
-      month: `${adjustedMonth}/${targetYear}`,
-      prediction: Math.round(baseValue * monthFactor * trendFactor * randomFactor)
+      month: monthNames[monthIndex],
+      prediction: prediction,
+      industryAverage: Math.round(prediction * 0.75),
+      difference: Math.round(prediction * 0.25)
     });
   }
   
