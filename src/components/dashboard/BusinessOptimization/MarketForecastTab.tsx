@@ -1,4 +1,3 @@
-
 import { AlertCircle, Package, TrendingUp, Clock, Share2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, Legend } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -58,17 +57,54 @@ export const MarketForecastTab = ({
   
   const salesMetrics = calculateSalesMetrics(forecastData);
   
-  // Simplify forecast data - only include every other month to reduce clutter
-  const simplifiedForecastData = forecastData
-    .filter((_, index) => index % 2 === 0) // Take every other month
-    .map(item => ({
-      month: item.month,
-      yourPharmacy: Math.round(item.prediction),
-      industryAverage: Math.round(item.prediction * 0.85) // Simplify by using ~85% of prediction for industry avg
-    }));
+  // Prepare forecast data to show all 12 months or alternating months
+  const prepareChartData = () => {
+    // Make sure we have enough data
+    if (!forecastData || forecastData.length < 6) {
+      return [];
+    }
+    
+    // Show alternating months (every even month) if we have 12 months of data
+    if (forecastData.length >= 12) {
+      const evenMonths = forecastData.filter((_, index) => index % 2 === 0);
+      const oddMonths = forecastData.filter((_, index) => index % 2 !== 0);
+      
+      return {
+        yourPharmacy: evenMonths.map(item => ({
+          month: item.month,
+          value: Math.round(item.prediction)
+        })),
+        industryAverage: oddMonths.map(item => ({
+          month: item.month,
+          value: Math.round(item.prediction * 0.85)
+        }))
+      };
+    }
+    
+    // Otherwise show all months
+    return {
+      yourPharmacy: forecastData.map(item => ({
+        month: item.month,
+        value: Math.round(item.prediction)
+      })),
+      industryAverage: forecastData.map(item => ({
+        month: item.month,
+        value: Math.round(item.prediction * 0.85)
+      }))
+    };
+  };
+  
+  const chartData = prepareChartData();
+  
+  // Combine the data for displaying in the chart
+  const combinedChartData = forecastData.map(item => ({
+    month: item.month,
+    yourPharmacy: Math.round(item.prediction),
+    industryAverage: Math.round(item.prediction * 0.85)
+  }));
   
   // Color customization with higher contrast
-  const yourPharmacyColor = "#4338ca"; // Indigo-700
+  const yourPharmacyColor = "#0D9488"; // Primary color
   const industryAvgColor = "#65a30d"; // Lime-600
   
   // Chart config
@@ -143,7 +179,7 @@ export const MarketForecastTab = ({
               {/* Chart with improved alignment and labels */}
               <div className="h-[250px] w-full">
                 <ChartContainer config={chartConfig}>
-                  <LineChart data={simplifiedForecastData} className="h-full">
+                  <LineChart data={combinedChartData} className="h-full" margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="month"
@@ -152,6 +188,7 @@ export const MarketForecastTab = ({
                       fontSize={12}
                       tickMargin={8}
                       padding={{ left: 10, right: 10 }}
+                      tick={{ fill: "#64748B" }}
                     />
                     <YAxis
                       axisLine={false}
@@ -159,7 +196,9 @@ export const MarketForecastTab = ({
                       fontSize={12}
                       tickFormatter={(value) => `₹${value/1000}k`}
                       tickMargin={8}
-                      width={60} // Fix alignment issue by providing fixed width
+                      width={45}
+                      tick={{ fill: "#64748B" }}
+                      domain={['auto', 'auto']}
                     />
                     <ChartTooltip
                       content={
@@ -204,7 +243,7 @@ export const MarketForecastTab = ({
               
               <div className="text-xs text-center text-muted-foreground mt-1">
                 <span className="inline-flex items-center mr-3">
-                  <span className="inline-block w-3 h-0.5 bg-[#4338ca] mr-1"></span>
+                  <span className="inline-block w-3 h-0.5 bg-[#0D9488] mr-1"></span>
                   Your Pharmacy (Solid Line)
                 </span>
                 <span className="inline-flex items-center">
@@ -233,7 +272,7 @@ export const MarketForecastTab = ({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Package className="w-5 h-5 mr-2 text-blue-500" />
+              <Package className="w-5 h-5 mr-2 text-primary" />
               Inventory Forecast
             </CardTitle>
             <CardDescription>Top 5 products with highest projected demand</CardDescription>
@@ -244,18 +283,20 @@ export const MarketForecastTab = ({
                 <BarChart 
                   data={regionalDemandData.slice(0, 5)}
                   layout="vertical"
-                  margin={{ top: 5, right: 20, left: 80, bottom: 5 }}
+                  margin={{ top: 5, right: 20, left: 85, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     type="number" 
                     tickFormatter={(value) => `${value}`}
+                    tick={{ fill: "#64748B" }}
                   />
                   <YAxis 
                     type="category" 
                     dataKey="product" 
-                    width={80} 
+                    width={85}
                     fontSize={12}
+                    tick={{ fill: "#64748B" }}
                   />
                   <RechartsTooltip 
                     formatter={(value: number) => [`${value} units`, 'Projected Demand']} 
@@ -263,7 +304,7 @@ export const MarketForecastTab = ({
                   />
                   <Bar 
                     dataKey="demand" 
-                    fill="#0088FE" 
+                    fill="#0D9488" 
                     name="Monthly Demand" 
                     radius={[0, 4, 4, 0]}
                     animationDuration={0} // Prevent flickering
@@ -285,7 +326,7 @@ export const MarketForecastTab = ({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <TrendingUp className="w-5 h-5 mr-2 text-green-500" />
+              <TrendingUp className="w-5 h-5 mr-2 text-primary" />
               Growth Opportunities
             </CardTitle>
             <CardDescription>Products with highest growth potential in your region</CardDescription>
@@ -296,18 +337,20 @@ export const MarketForecastTab = ({
                 <BarChart 
                   data={seasonalTrendsData.slice(0, 5)}
                   layout="vertical"
-                  margin={{ top: 5, right: 20, left: 80, bottom: 5 }}
+                  margin={{ top: 5, right: 20, left: 85, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis 
                     type="number"
                     tickFormatter={(value) => `${value}%`}
+                    tick={{ fill: "#64748B" }}
                   />
                   <YAxis 
                     type="category" 
                     dataKey="name" 
-                    width={80} 
+                    width={85}
                     fontSize={12}
+                    tick={{ fill: "#64748B" }}
                   />
                   <RechartsTooltip 
                     formatter={(value: number) => [`${value}%`, 'Growth Potential']}
@@ -315,7 +358,7 @@ export const MarketForecastTab = ({
                   />
                   <Bar 
                     dataKey="demand" 
-                    fill="#00C49F" 
+                    fill="#0D9488" 
                     name="Growth %" 
                     radius={[0, 4, 4, 0]}
                     animationDuration={0} // Prevent flickering

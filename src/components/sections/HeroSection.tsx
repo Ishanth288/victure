@@ -42,41 +42,33 @@ export const HeroSection = memo(() => {
         <Hero />
         <div className="container mx-auto px-4 pb-8">
           <div className="flex flex-wrap justify-center gap-4 mt-8">
-            <AnimatedGradientBorder className="w-full md:w-auto">
-              <TechCard className="w-full md:w-auto px-6 py-3 bg-white border border-primary text-primary">
-                <div className="flex items-center">
-                  <Cpu className="text-primary mr-2" />
-                  <span className="text-primary font-medium">AI-Powered</span>
-                </div>
-              </TechCard>
-            </AnimatedGradientBorder>
+            <TechCard className="w-full md:w-auto px-6 py-3 bg-white border border-primary text-primary">
+              <div className="flex items-center">
+                <Cpu className="text-primary mr-2" />
+                <span className="font-medium">AI-Powered</span>
+              </div>
+            </TechCard>
             
-            <AnimatedGradientBorder className="w-full md:w-auto">
-              <TechCard className="w-full md:w-auto px-6 py-3 bg-white border border-primary text-primary">
-                <div className="flex items-center">
-                  <CloudCog className="text-primary mr-2" />
-                  <span className="text-primary font-medium">Cloud-Based</span>
-                </div>
-              </TechCard>
-            </AnimatedGradientBorder>
+            <TechCard className="w-full md:w-auto px-6 py-3 bg-white border border-primary text-primary">
+              <div className="flex items-center">
+                <CloudCog className="text-primary mr-2" />
+                <span className="font-medium">Cloud-Based</span>
+              </div>
+            </TechCard>
             
-            <AnimatedGradientBorder className="w-full md:w-auto">
-              <TechCard className="w-full md:w-auto px-6 py-3 bg-white border border-primary text-primary">
-                <div className="flex items-center">
-                  <Database className="text-primary mr-2" />
-                  <span className="text-primary font-medium">Secure Storage</span>
-                </div>
-              </TechCard>
-            </AnimatedGradientBorder>
+            <TechCard className="w-full md:w-auto px-6 py-3 bg-white border border-primary text-primary">
+              <div className="flex items-center">
+                <Database className="text-primary mr-2" />
+                <span className="font-medium">Secure Storage</span>
+              </div>
+            </TechCard>
 
-            <AnimatedGradientBorder className="w-full md:w-auto">
-              <TechCard className="w-full md:w-auto px-6 py-3 bg-white border border-primary text-primary">
-                <div className="flex items-center">
-                  <BarChart className="text-primary mr-2" />
-                  <span className="text-primary font-medium">Real-Time Analytics</span>
-                </div>
-              </TechCard>
-            </AnimatedGradientBorder>
+            <TechCard className="w-full md:w-auto px-6 py-3 bg-white border border-primary text-primary">
+              <div className="flex items-center">
+                <BarChart className="text-primary mr-2" />
+                <span className="font-medium">Real-Time Analytics</span>
+              </div>
+            </TechCard>
           </div>
           
           <div className="mt-12 text-center">
@@ -122,4 +114,3 @@ export const HeroSection = memo(() => {
 HeroSection.displayName = 'HeroSection';
 
 export default HeroSection;
-
