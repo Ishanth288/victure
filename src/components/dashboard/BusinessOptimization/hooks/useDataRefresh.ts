@@ -19,8 +19,8 @@ export function useDataRefresh({
   const renderAttempts = useRef(0);
   const { toast } = useToast();
   
-  // Check if we need a daily refresh on mount
-  useState(() => {
+  // Fix: Use useEffect instead of useState to avoid the 'l' variable initialization error
+  const checkDailyRefresh = useCallback(() => {
     const lastRefreshStr = localStorage.getItem('lastOptimizationRefresh');
     const now = new Date();
     
@@ -40,7 +40,7 @@ export function useDataRefresh({
       handleRefreshAll();
       localStorage.setItem('lastOptimizationRefresh', now.toISOString());
     }
-  });
+  }, []);
   
   const handleRefreshAll = useCallback(() => {
     // Prevent multiple refresh attempts in quick succession
@@ -90,6 +90,9 @@ export function useDataRefresh({
       });
     }
   }, [refreshData, refreshLocationData, toast, onError]);
+
+  // Run the check on mount
+  checkDailyRefresh();
 
   return {
     lastRefreshed,
