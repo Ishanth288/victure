@@ -153,7 +153,7 @@ export function InventoryForecastChart({ inventoryData, salesData = [] }: Invent
             {summaryStats.lowStock} Low Stock
           </Badge>
           <Badge variant={summaryStats.criticalItems > 0 ? "destructive" : "outline"} className="text-xs">
-            {summaryStats.criticalItems} Critical (< 7 days)
+            {summaryStats.criticalItems} Critical (&lt; 7 days)
           </Badge>
         </div>
       </CardHeader>
