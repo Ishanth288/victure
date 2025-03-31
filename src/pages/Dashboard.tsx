@@ -11,6 +11,7 @@ import {
   useDashboardData
 } from "@/components/dashboard";
 import { PostLoginOnboarding } from "@/components/onboarding/PostLoginOnboarding";
+import { GrowthOpportunitiesChart } from '@/components/insights/GrowthOpportunitiesChart';
 
 export default function Dashboard() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -65,7 +66,10 @@ export default function Dashboard() {
             <DistributionSection isLoading={isLoading} revenueDistribution={revenueDistribution} />
           </div>
           
-          <DashboardWidgets />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <GrowthOpportunitiesChart opportunities={[]} />
+            <DashboardWidgets />
+          </div>
         </div>
       </ErrorBoundary>
     </DashboardLayout>
