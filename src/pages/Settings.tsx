@@ -1,8 +1,9 @@
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SecuritySettings from "@/components/settings/SecuritySettings";
 import PharmacySettings from "@/components/settings/PharmacySettings";
 import NotificationSettings from "@/components/settings/NotificationSettings";
-import DataMigration from "@/components/settings/DataMigration";
+import { DataMigration } from "@/components/settings/DataMigration";
 import DashboardLayout from "@/components/DashboardLayout";
 
 export default function Settings() {

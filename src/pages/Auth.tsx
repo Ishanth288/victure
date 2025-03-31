@@ -25,9 +25,20 @@ import { HoverInfoCard } from "@/components/ui/hover-info-card";
 import { Package, ShoppingCart, LineChart, Shield } from "lucide-react";
 import { stableToast } from "@/components/ui/stable-toast";
 
+interface LocationState {
+  fromPricing?: boolean;
+  planType?: string;
+  fromLegal?: boolean;
+  isLogin?: boolean;
+}
+
 export default function Auth() {
   const navigate = useNavigate();
-  
+  const location = useLocation();
+  const { toast } = useToast();
+
+  const locationState = location.state as LocationState | null;
+
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -73,9 +84,9 @@ export default function Auth() {
     gstin: "",
   });
 
-  const fromPricing = location.state?.fromPricing || false;
-  const planType = location.state?.planType || 'Free Trial';
-  const fromLegal = location.state?.fromLegal || false;
+  const fromPricing = locationState?.fromPricing || false;
+  const planType = locationState?.planType || 'Free Trial';
+  const fromLegal = locationState?.fromLegal || false;
 
   const showFreePlanInfo = !isLogin;
 
@@ -170,10 +181,10 @@ export default function Auth() {
   }, [navigate, toast]);
 
   useEffect(() => {
-    if (location.state?.isLogin !== undefined) {
-      setIsLogin(location.state.isLogin);
+    if (locationState?.isLogin !== undefined) {
+      setIsLogin(locationState.isLogin);
     }
-  }, [location.state]);
+  }, [locationState]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
