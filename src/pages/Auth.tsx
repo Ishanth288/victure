@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -282,71 +283,55 @@ export default function Auth() {
                 </p>
               </div>
             )}
-            <Form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit}>
               {isLogin ? (
                 <>
-                  <FormField
-                    control={
-                      {
-                        render: ({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="mail@example.com"
-                                type="email"
-                                name="email"
-                                value={loginData.email}
-                                onChange={handleLoginDataChange}
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              Enter your registered email address.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        ),
-                      }}
-                  />
-                  <FormField
-                    control={
-                      {
-                        render: ({ field }) => (
-                          <FormItem>
-                            <FormLabel>Password</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Password"
-                                type="password"
-                                name="password"
-                                value={loginData.password}
-                                onChange={handleLoginDataChange}
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              Enter your account password.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        ),
-                      }}
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      placeholder="mail@example.com"
+                      type="email"
+                      name="email"
+                      value={loginData.email}
+                      onChange={handleLoginDataChange}
+                      required
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Enter your registered email address.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      placeholder="Password"
+                      type="password"
+                      name="password"
+                      value={loginData.password}
+                      onChange={handleLoginDataChange}
+                      required
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Enter your account password.
+                    </p>
+                  </div>
                 </>
               ) : (
                 <>
                   <BasicInfoFields
-                    registrationData={registrationData}
-                    handleRegistrationDataChange={handleRegistrationDataChange}
+                    formData={registrationData}
+                    onChange={handleRegistrationDataChange}
                   />
                   <AddressFields
-                    registrationData={registrationData}
-                    handleRegistrationDataChange={handleRegistrationDataChange}
+                    formData={registrationData}
+                    onChange={handleRegistrationDataChange}
+                    onStateChange={(value) => setRegistrationData(prev => ({ ...prev, state: value }))}
                   />
                   <AccountFields
-                    registrationData={registrationData}
-                    handleRegistrationDataChange={handleRegistrationDataChange}
+                    formData={registrationData}
+                    onChange={handleRegistrationDataChange}
+                    onRoleChange={(value) => setRegistrationData(prev => ({ ...prev, role: value }))}
                   />
                 </>
               )}
@@ -354,11 +339,11 @@ export default function Auth() {
                 <p className="text-red-500 text-sm mt-2">{error}</p>
               )}
               <CardFooter>
-                <Button type="submit" className="w-full" loading={isLoading}>
-                  {isLogin ? "Login" : "Register"}
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Processing..." : (isLogin ? "Login" : "Register")}
                 </Button>
               </CardFooter>
-            </Form>
+            </form>
           </CardContent>
         </Tabs>
       </Card>

@@ -194,7 +194,7 @@ export function InventoryForecastChart({ inventoryData, salesData = [] }: Invent
               dataKey="quantity" 
               name="Current Stock"
               fill="#22c55e"
-              stroke={(entry) => getBarFill(entry)}
+              stroke="#22c55e" // Fixed: Using a string value instead of a function
               radius={[0, 4, 4, 0]}
             />
             <Bar 

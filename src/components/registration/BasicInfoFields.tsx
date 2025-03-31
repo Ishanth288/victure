@@ -12,22 +12,24 @@ export function BasicInfoFields({ formData, onChange }: BasicInfoFieldsProps) {
   return (
     <>
       <div className="space-y-2">
-        <Label htmlFor="pharmacyName">Pharmacy Name*</Label>
+        <Label htmlFor="pharmacy_name">Pharmacy Name*</Label>
         <Input
-          id="pharmacyName"
+          id="pharmacy_name"
+          name="pharmacy_name"
           placeholder="Enter pharmacy name"
-          value={formData.pharmacyName}
+          value={formData.pharmacy_name || formData.pharmacyName}
           onChange={onChange}
           required
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="ownerName">Owner Name*</Label>
+        <Label htmlFor="owner_name">Owner Name*</Label>
         <Input
-          id="ownerName"
+          id="owner_name"
+          name="owner_name"
           placeholder="Enter owner name"
-          value={formData.ownerName}
+          value={formData.owner_name || formData.ownerName}
           onChange={onChange}
           required
         />
@@ -37,6 +39,7 @@ export function BasicInfoFields({ formData, onChange }: BasicInfoFieldsProps) {
         <Label htmlFor="phone">Phone Number*</Label>
         <Input
           id="phone"
+          name="phone"
           type="tel"
           placeholder="Enter phone number"
           value={formData.phone}

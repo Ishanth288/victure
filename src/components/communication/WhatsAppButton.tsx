@@ -10,7 +10,6 @@ interface WhatsAppButtonProps {
   className?: string;
   children?: React.ReactNode;
   buttonText?: string;
-  buttonVariant?: string;
 }
 
 export function WhatsAppButton({
