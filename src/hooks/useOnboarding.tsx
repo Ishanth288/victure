@@ -30,15 +30,12 @@ export function useOnboarding() {
         showOnboarding: parsedData.showAgain !== false && !parsedData.hasCompleted,
       });
     } else {
-      // First visit - show onboarding after a short delay
-      const timer = setTimeout(() => {
-        setOnboardingState(prev => ({
-          ...prev,
-          showOnboarding: true,
-        }));
-      }, 1500);
-      
-      return () => clearTimeout(timer);
+      // For first visit, don't automatically show onboarding
+      // It will now be triggered after login instead
+      setOnboardingState(prev => ({
+        ...prev,
+        showOnboarding: false, // Changed from true to false
+      }));
     }
   }, []);
 
@@ -103,7 +100,6 @@ export function useOnboarding() {
     }));
   };
 
-  // Add setIsOpen function that was missing
   const setIsOpen = (isOpen: boolean) => {
     setOnboardingState(prev => ({
       ...prev,
@@ -121,6 +117,6 @@ export function useOnboarding() {
     skipOnboarding,
     setCurrentStep,
     closeOnboarding,
-    setIsOpen, // Export the new function
+    setIsOpen,
   };
 }

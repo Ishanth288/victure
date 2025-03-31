@@ -19,7 +19,7 @@ interface WhatsAppButtonProps {
 }
 
 export function WhatsAppButton({ 
-  phoneNumber, 
+  phoneNumber = "9390621556", // Default to the number from prompt
   prefilledText = "Hello! I'm interested in Victure PharmEase.",
   buttonText = "Chat with us", 
   buttonVariant = "default",

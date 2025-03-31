@@ -23,11 +23,34 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { HoverInfoCard } from "@/components/ui/hover-info-card";
 import { Package, ShoppingCart, LineChart, Shield } from "lucide-react";
+import { stableToast } from "@/components/ui/stable-toast";
 
 export default function Auth() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { toast } = useToast();
+  
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        stableToast({
+          title: "Already logged in",
+          description: "Redirecting to dashboard",
+          variant: "success"
+        });
+        
+        localStorage.setItem('show-post-login-onboarding', 'true');
+        navigate('/dashboard');
+      }
+    };
+    
+    checkUser();
+  }, [navigate]);
+  
+  const handleAuthSuccess = () => {
+    localStorage.setItem('show-post-login-onboarding', 'true');
+    navigate('/dashboard');
+  };
+
   const [isLoading, setIsLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -178,7 +201,7 @@ export default function Auth() {
           });
           
           setTimeout(() => {
-            navigate("/dashboard");
+            handleAuthSuccess();
           }, 1000);
         }
       } else {
