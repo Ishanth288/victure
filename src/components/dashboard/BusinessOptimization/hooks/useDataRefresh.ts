@@ -115,8 +115,8 @@ export function useDataRefresh({
   }, [refreshData, refreshLocationData, toast, onError]);
 
   // Create a handler specifically for button click events that ignores the event
-  const handleManualRefresh = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
+  const handleManualRefresh = useCallback((event?: React.MouseEvent<HTMLButtonElement>) => {
+    if (event) event.preventDefault();
     handleRefreshAll(false);
   }, [handleRefreshAll]);
 

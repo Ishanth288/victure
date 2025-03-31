@@ -7,7 +7,7 @@ import { MouseEventHandler } from "react";
 
 interface PageHeaderProps {
   pharmacyLocation: { state: string; city: string } | null;
-  onRefresh: MouseEventHandler<HTMLButtonElement>;
+  onRefresh: MouseEventHandler<HTMLButtonElement> | (() => void);  // Updated to accept both types
   lastRefreshed: Date;
   dataSources?: string[];
   hasError?: boolean;
