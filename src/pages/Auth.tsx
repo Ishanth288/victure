@@ -17,23 +17,15 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { BasicInfoFields } from "@/components/registration/BasicInfoFields";
 import { AddressFields } from "@/components/registration/AddressFields";
 import { AccountFields } from "@/components/registration/AccountFields";
-import { Package, ShoppingCart, LineChart, Shield } from "lucide-react";
+import { Package, ShoppingCart } from "lucide-react";
 import { stableToast } from "@/components/ui/stable-toast";
+import { RegistrationData } from "@/types/registration";
 
 interface LocationState {
   fromPricing?: boolean;
@@ -69,7 +61,7 @@ export default function Auth() {
     password: "",
   });
 
-  const [registrationData, setRegistrationData] = useState({
+  const [registrationData, setRegistrationData] = useState<RegistrationData>({
     email: "",
     password: "",
     confirmPassword: "",
@@ -81,6 +73,8 @@ export default function Auth() {
     state: "",
     pincode: "",
     gstin: "",
+    phone: "", // Added the missing phone property
+    role: ""
   });
 
   const fromPricing = locationState?.fromPricing || false;
@@ -188,6 +182,7 @@ export default function Auth() {
             state: registrationData.state,
             pincode: registrationData.pincode,
             gstin: registrationData.gstin,
+            phone: registrationData.phone, // Include the phone in the signup data
             plan_type: planType,
           },
         },
