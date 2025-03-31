@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Tabs } from "@/components/ui/tabs";
@@ -74,7 +73,6 @@ export default function BusinessOptimizationPage() {
   const { lastRefreshed, handleManualRefresh, refreshInProgress } = useDataRefresh({
     refreshData,
     refreshLocationData,
-    autoRefreshInterval: 10 * 60 * 1000, // 10 minutes auto-refresh
     onError: (refreshError) => {
       console.error("Refresh error:", refreshError);
       setError(true);
