@@ -14,4 +14,5 @@ export interface RegistrationData {
   pincode: string;
   gstin: string;
   role?: string;
+  name?: string; // Added name field to fix the type error
 }

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -73,7 +72,7 @@ export default function Auth() {
     state: "",
     pincode: "",
     gstin: "",
-    phone: "", // Added the missing phone property
+    phone: "",
     role: ""
   });
 
@@ -94,7 +93,6 @@ export default function Auth() {
   };
 
   useEffect(() => {
-    // Reset error message when switching between login and register
     setError("");
   }, [isLogin]);
 
@@ -117,10 +115,8 @@ export default function Auth() {
           variant: "destructive",
         });
       } else {
-        // Set a flag to show post-login onboarding
         localStorage.setItem('show-post-login-onboarding', 'true');
         
-        // Show welcome message with pharmacy name if available
         if (data.user) {
           const { data: profileData } = await supabase
             .from('profiles')
@@ -156,7 +152,6 @@ export default function Auth() {
     setIsLoading(true);
     setError("");
 
-    // Validate password match
     if (registrationData.password !== registrationData.confirmPassword) {
       setError("Passwords do not match");
       toast({
@@ -182,7 +177,7 @@ export default function Auth() {
             state: registrationData.state,
             pincode: registrationData.pincode,
             gstin: registrationData.gstin,
-            phone: registrationData.phone, // Include the phone in the signup data
+            phone: registrationData.phone,
             plan_type: planType,
           },
         },
@@ -196,7 +191,6 @@ export default function Auth() {
           variant: "destructive",
         });
       } else {
-        // Set a flag to show the onboarding tour immediately after registration
         localStorage.setItem('show-post-login-onboarding', 'true');
         
         stableToast({
