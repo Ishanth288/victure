@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, AlertCircle } from 'lucide-react';
@@ -25,7 +24,7 @@ export default function LegalFooter() {
     localStorage.setItem('analytics-consent', JSON.stringify(checked));
     
     // Apply analytics consent changes
-    if (window.gtag) {
+    if (typeof window.gtag !== 'undefined') {
       window.gtag('consent', 'update', {
         'analytics_storage': checked ? 'granted' : 'denied'
       });
@@ -37,7 +36,7 @@ export default function LegalFooter() {
     localStorage.setItem('marketing-consent', JSON.stringify(checked));
     
     // Apply marketing consent changes
-    if (window.gtag) {
+    if (typeof window.gtag !== 'undefined') {
       window.gtag('consent', 'update', {
         'ad_storage': checked ? 'granted' : 'denied'
       });

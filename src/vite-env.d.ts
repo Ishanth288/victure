@@ -29,5 +29,5 @@ interface Razorpay {
 
 interface Window {
   Razorpay: Razorpay;
+  gtag?: (command: string, action: string, params: object) => void;
 }
-

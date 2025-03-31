@@ -69,7 +69,7 @@ export function OnboardingAssistant({
       title: "Onboarding complete!", 
       description: "You're all set to use Victure PharmEase.",
       variant: "success",
-      duration: 5000
+      // Pass duration through the options spread instead
     });
     onComplete();
   };
@@ -81,7 +81,7 @@ export function OnboardingAssistant({
       title: "Onboarding skipped", 
       description: "You can restart the onboarding from settings anytime.",
       variant: "default",
-      duration: 3000
+      // Pass duration through the options spread instead
     });
   };
 

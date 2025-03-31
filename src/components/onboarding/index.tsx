@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { OnboardingAssistant } from './OnboardingAssistant';
 import { DeviceCompatibilityChecker } from './DeviceCompatibilityChecker';
@@ -34,7 +33,6 @@ export function OnboardingProvider({
         title: "Compatibility issues detected",
         description: "Some features may not work properly on your device.",
         variant: "warning",
-        duration: 6000
       });
     }
     

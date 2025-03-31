@@ -1,11 +1,23 @@
 
 import { useState } from 'react';
-import { useForm, FormProvider } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { ChevronRight, ChevronLeft, Send, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Form } from '@/components/ui/form';
+import { 
+  Form, 
+  FormField, 
+  FormItem, 
+  FormLabel, 
+  FormControl, 
+  FormMessage 
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { stableToast } from '@/components/ui/stable-toast';
 import { Progress } from '@/components/ui/progress';
 import { sanitizeInput } from '@/utils/securityUtils';
@@ -33,7 +45,7 @@ interface ProgressiveFormProps {
   className?: string;
 }
 
-export function ProgressiveForm({ onSubmit, onStepChange, className = '' }: ProgressiveFormProps) {
+export function ProgressiveForm({ onSubmit: submitHandler, onStepChange, className = '' }: ProgressiveFormProps) {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
@@ -116,7 +128,7 @@ export function ProgressiveForm({ onSubmit, onStepChange, className = '' }: Prog
     }, {});
     
     try {
-      await onSubmit(sanitizedData);
+      await submitHandler(sanitizedData);
       setIsComplete(true);
       stableToast({
         title: "Form submitted successfully!",
@@ -276,30 +288,26 @@ export function ProgressiveForm({ onSubmit, onStepChange, className = '' }: Prog
             <FormItem>
               <FormLabel>Preferred Contact Method*</FormLabel>
               <div className="flex flex-wrap gap-3">
-                {['email', 'phone', 'any'].map((value) => (
-                  <FormControl key={value}>
+                <FormControl>
+                  <RadioGroup 
+                    onValueChange={field.onChange} 
+                    value={field.value}
+                    className="flex flex-row gap-2"
+                  >
                     <div className="flex items-center space-x-2">
-                      <RadioGroup 
-                        onValueChange={field.onChange} 
-                        value={field.value}
-                        className="flex flex-row gap-2"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="email" id="email" />
-                          <Label htmlFor="email">Email</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="phone" id="phone" />
-                          <Label htmlFor="phone">Phone</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="any" id="any" />
-                          <Label htmlFor="any">Either</Label>
-                        </div>
-                      </RadioGroup>
+                      <RadioGroupItem value="email" id="email" />
+                      <Label htmlFor="email">Email</Label>
                     </div>
-                  </FormControl>
-                ))}
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="phone" id="phone" />
+                      <Label htmlFor="phone">Phone</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="any" id="any" />
+                      <Label htmlFor="any">Either</Label>
+                    </div>
+                  </RadioGroup>
+                </FormControl>
               </div>
               <FormMessage />
             </FormItem>
@@ -345,14 +353,6 @@ export function ProgressiveForm({ onSubmit, onStepChange, className = '' }: Prog
       </div>
     </>
   );
-
-  // Import components here to avoid circular dependencies
-  const { FormField, FormItem, FormLabel, FormControl, FormMessage } = Form;
-  const { Input } = require('@/components/ui/input');
-  const { Textarea } = require('@/components/ui/textarea');
-  const { RadioGroup, RadioGroupItem } = require('@/components/ui/radio-group');
-  const { Label } = require('@/components/ui/label');
-  const { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } = require('@/components/ui/select');
   
   const { form, onSubmit, renderFields } = getActiveForm();
 
@@ -391,13 +391,11 @@ export function ProgressiveForm({ onSubmit, onStepChange, className = '' }: Prog
         <Progress value={(step / totalSteps) * 100} className="h-2" />
       </div>
       
-      <FormProvider {...form}>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {renderFields()}
-          </form>
-        </Form>
-      </FormProvider>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          {renderFields()}
+        </form>
+      </Form>
     </div>
   );
 }

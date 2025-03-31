@@ -103,6 +103,14 @@ export function useOnboarding() {
     }));
   };
 
+  // Add setIsOpen function that was missing
+  const setIsOpen = (isOpen: boolean) => {
+    setOnboardingState(prev => ({
+      ...prev,
+      showOnboarding: isOpen,
+    }));
+  };
+
   return {
     isFirstVisit: onboardingState.isFirstVisit,
     hasCompletedOnboarding: onboardingState.hasCompletedOnboarding,
@@ -113,5 +121,6 @@ export function useOnboarding() {
     skipOnboarding,
     setCurrentStep,
     closeOnboarding,
+    setIsOpen, // Export the new function
   };
 }

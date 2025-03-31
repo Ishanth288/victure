@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { stableToast } from "@/components/ui/stable-toast";
@@ -64,7 +63,7 @@ export function useDataRefresh({
         stableToast({
           title: "Refresh in progress",
           description: "Please wait while we load your data...",
-          duration: 2000
+          // Remove duration property
         });
       }
       return;
