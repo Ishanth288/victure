@@ -9,6 +9,8 @@ interface WhatsAppButtonProps {
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
   className?: string;
   children?: React.ReactNode;
+  buttonText?: string;
+  buttonVariant?: string;
 }
 
 export function WhatsAppButton({
@@ -17,7 +19,8 @@ export function WhatsAppButton({
   size = 'default',
   variant = 'default',
   className = '',
-  children
+  children,
+  buttonText
 }: WhatsAppButtonProps) {
   // Format phone number properly for WhatsApp API
   const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber.substring(1) : phoneNumber;
@@ -43,7 +46,7 @@ export function WhatsAppButton({
       className={`whatsapp-button ${className}`}
     >
       <MessageSquare className="mr-2 h-4 w-4" />
-      {children || 'Send Inquiry via WhatsApp'}
+      {children || buttonText || 'Send Inquiry via WhatsApp'}
     </Button>
   );
 }

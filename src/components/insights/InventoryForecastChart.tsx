@@ -112,6 +112,13 @@ export function InventoryForecastChart({ inventoryData, salesData = [] }: Invent
     }
   };
 
+  // Function to determine bar color based on item status
+  const getBarFill = (entry: any) => {
+    if (entry.status === 'Critical') return "#ef4444";
+    if (entry.status === 'Low') return "#eab308";
+    return "#22c55e";
+  };
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -186,11 +193,8 @@ export function InventoryForecastChart({ inventoryData, salesData = [] }: Invent
             <Bar 
               dataKey="quantity" 
               name="Current Stock"
-              fill={(entry) => {
-                if (entry.status === 'Critical') return "#ef4444";
-                if (entry.status === 'Low') return "#eab308";
-                return "#22c55e";
-              }}
+              fill="#22c55e"
+              stroke={(entry) => getBarFill(entry)}
               radius={[0, 4, 4, 0]}
             />
             <Bar 

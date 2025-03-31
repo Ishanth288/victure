@@ -17,11 +17,17 @@ import {
 } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+interface DataItem {
+  name: string;
+  value: number;
+}
+
+interface ForecastDataItem extends DataItem {
+  forecast?: number;
+}
+
 interface RevenueTrendChartProps {
-  data: Array<{
-    name: string;
-    value: number;
-  }>;
+  data: Array<DataItem>;
   timeframe?: 'day' | 'week' | 'month' | 'year';
 }
 
@@ -35,7 +41,7 @@ export const RevenueTrendChart = memo(({ data, timeframe = 'month' }: RevenueTre
     (data[data.length - 1].value - data[0].value) / data.length : 0;
   
   // Create forecast data
-  const extendedData = [...data];
+  const extendedData: ForecastDataItem[] = [...data];
   const lastDate = data.length > 0 ? data[data.length - 1].name : '';
   const forecastPeriod = selectedTimeframe === 'week' ? 7 : 
                          selectedTimeframe === 'month' ? 30 : 90;
@@ -76,7 +82,7 @@ export const RevenueTrendChart = memo(({ data, timeframe = 'month' }: RevenueTre
   // Calculate total revenue and forecast
   const totalRevenue = data.reduce((sum, item) => sum + item.value, 0);
   const forecastTotal = extendedData
-    .filter(item => 'forecast' in item)
+    .filter(item => item.forecast !== undefined)
     .reduce((sum, item) => sum + (item.forecast || 0), 0);
 
   return (
