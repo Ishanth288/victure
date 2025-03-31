@@ -4,7 +4,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  Tooltip,
   ResponsiveContainer,
   Legend,
 } from "recharts";
@@ -26,6 +25,17 @@ interface RevenueDistributionProps {
 
 export function RevenueDistribution({ data }: RevenueDistributionProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  
+  // If no data is provided, use sample data
+  if (!data || data.length === 0) {
+    data = [
+      { name: "Prescription", value: 62000 },
+      { name: "OTC", value: 35000 },
+      { name: "Supplies", value: 18500 },
+      { name: "Other", value: 9800 }
+    ];
+  }
+  
   const chartConfig = {
     prescription: {
       label: "Prescription Sales",
@@ -95,14 +105,33 @@ export function RevenueDistribution({ data }: RevenueDistributionProps) {
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <ChartTooltip content={<ChartTooltipContent formatter={(value: any) => [`₹${value.toLocaleString()}`, `${((value / totalValue) * 100).toFixed(1)}%`]} />} />
-              <Legend formatter={(value, entry, index) => {
-                return (
-                  <span style={{ color: COLORS[index % COLORS.length], fontWeight: activeIndex === index ? 'bold' : 'normal' }}>
-                    {value} (₹{data[index]?.value.toLocaleString() || 0})
-                  </span>
-                );
-              }} />
+              <ChartTooltip 
+                content={
+                  <ChartTooltipContent 
+                    formatter={(value: number) => {
+                      return [
+                        `₹${value.toLocaleString()}`,
+                        `${((value / totalValue) * 100).toFixed(1)}%`
+                      ];
+                    }} 
+                  />
+                } 
+              />
+              <Legend 
+                formatter={(value, entry, index) => {
+                  if (typeof index === 'number') {
+                    return (
+                      <span style={{ 
+                        color: COLORS[index % COLORS.length], 
+                        fontWeight: activeIndex === index ? 'bold' : 'normal' 
+                      }}>
+                        {value} (₹{data[index]?.value.toLocaleString() || 0})
+                      </span>
+                    );
+                  }
+                  return value;
+                }} 
+              />
             </PieChart>
           </ResponsiveContainer>
         </ChartContainer>

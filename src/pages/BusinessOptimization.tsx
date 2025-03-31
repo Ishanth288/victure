@@ -9,6 +9,7 @@ import { displayErrorMessage } from "@/utils/errorHandling";
 export default function BusinessOptimization() {
   const [hasError, setHasError] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const [errorDetails, setErrorDetails] = useState<Error | null>(null);
   
   // Add fade-in effect to prevent flickering
@@ -31,11 +32,23 @@ export default function BusinessOptimization() {
   }, []);
 
   const handleRetry = useCallback(() => {
+    setIsRetrying(true);
     setHasError(false);
     setErrorDetails(null);
+    
     // Force re-mount of the component
     setIsLoaded(false);
-    setTimeout(() => setIsLoaded(true), 10);
+    
+    stableToast({
+      title: "Retrying...",
+      description: "Attempting to load business optimization data again.",
+      variant: "default"
+    });
+    
+    setTimeout(() => {
+      setIsLoaded(true);
+      setIsRetrying(false);
+    }, 500);
   }, []);
 
   if (hasError) {
@@ -61,7 +74,13 @@ export default function BusinessOptimization() {
         }
         onError={(error) => handleError(error)}
       >
-        <BusinessOptimizationPage />
+        {isRetrying ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+          </div>
+        ) : (
+          <BusinessOptimizationPage />
+        )}
       </ErrorBoundary>
     </div>
   );

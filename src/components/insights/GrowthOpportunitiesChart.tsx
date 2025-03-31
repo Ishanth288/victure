@@ -11,8 +11,9 @@ import {
   Cell,
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, ArrowRight } from "lucide-react";
+import { TrendingUp, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useMemo } from "react";
 
 interface GrowthOpportunity {
   name: string;
@@ -28,46 +29,53 @@ interface GrowthOpportunitiesChartProps {
 
 export function GrowthOpportunitiesChart({ opportunities = [] }: GrowthOpportunitiesChartProps) {
   // If no opportunities data is provided, use sample data
-  const data = opportunities.length > 0 ? opportunities : [
-    { 
-      name: "Paracetamol 500mg", 
-      potentialRevenue: 45000, 
-      confidence: 0.85,
-      category: "OTC",
-      action: "Stock up for flu season"
-    },
-    { 
-      name: "Diabetic Supplies", 
-      potentialRevenue: 38000, 
-      confidence: 0.92,
-      category: "Medical Supplies",
-      action: "Increase variety"
-    },
-    { 
-      name: "Multivitamins", 
-      potentialRevenue: 32000, 
-      confidence: 0.78,
-      category: "Supplements",
-      action: "Run promotions"
-    },
-    { 
-      name: "Antibacterial Soaps", 
-      potentialRevenue: 28000, 
-      confidence: 0.72,
-      category: "Personal Care",
-      action: "Add premium options"
-    },
-    { 
-      name: "Blood Pressure Monitors", 
-      potentialRevenue: 25000, 
-      confidence: 0.88,
-      category: "Equipment",
-      action: "Showcase prominently"
-    }
-  ];
+  const data = useMemo(() => {
+    if (opportunities && opportunities.length > 0) return opportunities;
+    
+    return [
+      { 
+        name: "Paracetamol 500mg", 
+        potentialRevenue: 45000, 
+        confidence: 0.85,
+        category: "OTC",
+        action: "Stock up for flu season"
+      },
+      { 
+        name: "Diabetic Supplies", 
+        potentialRevenue: 38000, 
+        confidence: 0.92,
+        category: "Medical Supplies",
+        action: "Increase variety"
+      },
+      { 
+        name: "Multivitamins", 
+        potentialRevenue: 32000, 
+        confidence: 0.78,
+        category: "Supplements",
+        action: "Run promotions"
+      },
+      { 
+        name: "Antibacterial Soaps", 
+        potentialRevenue: 28000, 
+        confidence: 0.72,
+        category: "Personal Care",
+        action: "Add premium options"
+      },
+      { 
+        name: "Blood Pressure Monitors", 
+        potentialRevenue: 25000, 
+        confidence: 0.88,
+        category: "Equipment",
+        action: "Showcase prominently"
+      }
+    ];
+  }, [opportunities]);
 
   // Sort data by potential revenue
-  const sortedData = [...data].sort((a, b) => b.potentialRevenue - a.potentialRevenue);
+  const sortedData = useMemo(() => {
+    return [...data].sort((a, b) => b.potentialRevenue - a.potentialRevenue);
+  }, [data]);
+  
   const topOpportunities = sortedData.slice(0, 5);
 
   // Color scale based on confidence
@@ -131,9 +139,16 @@ export function GrowthOpportunitiesChart({ opportunities = [] }: GrowthOpportuni
                   boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)'
                 }}
               />
-              <Bar dataKey="potentialRevenue" name="Potential Revenue" radius={[0, 6, 6, 0]}>
+              <Bar 
+                dataKey="potentialRevenue" 
+                name="Potential Revenue" 
+                radius={[0, 6, 6, 0]}
+              >
                 {topOpportunities.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={getBarColor(entry.confidence)} />
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={getBarColor(entry.confidence)} 
+                  />
                 ))}
               </Bar>
             </BarChart>
