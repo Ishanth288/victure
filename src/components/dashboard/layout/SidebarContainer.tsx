@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { buttonVariants } from "@/components/ui/button";
@@ -12,7 +13,8 @@ import {
   BarChart2, 
   ChevronRight 
 } from "lucide-react";
-import { Resizable } from "@/components/ui/resizable";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { SidebarLinks } from "@/components/dashboard/SidebarLinks";
 
 // Define an interface for the PaginationProps to fix TypeScript errors
 interface PaginationProps {
@@ -103,23 +105,26 @@ export function SidebarContainer() {
   };
 
   return (
-    <Resizable 
+    <ResizablePanelGroup 
       direction="horizontal" 
       className="h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800"
     >
-      <div className="flex flex-col h-full p-3 w-60">
-        <div className="mb-4 flex-1">
-          <div className="space-y-2.5">
-            <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
-            <p className="text-muted-foreground">
-              Manage your pharmacy with ease.
-            </p>
+      <ResizablePanel defaultSize={20} minSize={15} maxSize={30}>
+        <div className="flex flex-col h-full p-3 w-60">
+          <div className="mb-4 flex-1">
+            <div className="space-y-2.5">
+              <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
+              <p className="text-muted-foreground">
+                Manage your pharmacy with ease.
+              </p>
+            </div>
+          </div>
+          <div className="flex-1">
+            <SidebarLinks />
           </div>
         </div>
-        <div className="flex-1">
-          <SidebarLinks />
-        </div>
-      </div>
+      </ResizablePanel>
+      <ResizableHandle withHandle />
       
       {/* Add Pagination component with correct prop types */}
       <Pagination 
@@ -130,6 +135,6 @@ export function SidebarContainer() {
           console.log(`Clicked page ${index}`);
         }} 
       />
-    </Resizable>
+    </ResizablePanelGroup>
   );
 }
