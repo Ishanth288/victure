@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,22 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Search, BookOpen, Code, FileText } from 'lucide-react';
 import { WhatsAppButton } from '@/components/communication/WhatsAppButton';
 
-// This component would ideally be connected to a searchable knowledge base
-// For now, it's a placeholder UI
 export default function Documentation() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('guides');
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
   useEffect(() => {
-    // Here you would typically perform a search against your knowledge base
-    // This is a mock implementation
     if (searchTerm.trim() === '') {
       setSearchResults([]);
       return;
     }
 
-    // Simulated search results
     const mockResults = [
       {
         id: 1,
@@ -62,7 +56,6 @@ export default function Documentation() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real implementation, this would trigger the search
     console.log('Searching for:', searchTerm);
   };
 
@@ -137,7 +130,6 @@ export default function Documentation() {
           </TabsList>
           
           <TabsContent value="guides">
-            {/* User guides content would go here */}
             <div className="grid gap-6">
               <Card>
                 <CardHeader>
@@ -148,13 +140,10 @@ export default function Documentation() {
                   <Button className="mt-4" variant="outline">Read Guide</Button>
                 </CardContent>
               </Card>
-              
-              {/* More guide cards would go here */}
             </div>
           </TabsContent>
           
           <TabsContent value="api">
-            {/* API reference content would go here */}
             <div className="prose max-w-none">
               <h2>API Overview</h2>
               <p>Our REST API allows you to integrate Victure PharmEase with your existing systems. Use our authentication endpoints to generate API keys and access tokens.</p>
@@ -168,7 +157,6 @@ export default function Documentation() {
           </TabsContent>
           
           <TabsContent value="release-notes">
-            {/* Release notes would go here */}
             <div className="space-y-8">
               <div>
                 <h3 className="text-xl font-semibold mb-2">Version 2.0.0 (June 1, 2023)</h3>
@@ -201,7 +189,7 @@ export default function Documentation() {
           </div>
           <div className="flex gap-4">
             <WhatsAppButton 
-              phoneNumber="+917123456789" 
+              phoneNumber="9390621556" 
               buttonText="Contact Support"
               className="min-w-[150px]"
             />
