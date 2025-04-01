@@ -11,7 +11,8 @@ import {
   FileSpreadsheet, 
   Settings, 
   BarChart2, 
-  ChevronRight 
+  ChevronRight,
+  RotateCcw 
 } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { SidebarLinks } from "@/components/dashboard/SidebarLinks";
@@ -75,8 +76,14 @@ export function SidebarContainer() {
         { title: "Supplier Metrics", href: "/business-optimization?tab=supplier" },
         { title: "Expiry Analysis", href: "/business-optimization?tab=expiry" },
         { title: "Seasonal Trends", href: "/business-optimization?tab=seasonal" },
-        { title: "Regional Demand", href: "/business-optimization?tab=regional" }
+        { title: "Regional Demand", href: "/business-optimization?tab=regional" },
+        { title: "Return Analysis", href: "/business-optimization?tab=returns" }
       ]
+    },
+    {
+      title: "Medicine Returns",
+      icon: <RotateCcw className="mr-2 h-4 w-4" />,
+      href: "/prescriptions"
     },
     {
       title: "Settings",
