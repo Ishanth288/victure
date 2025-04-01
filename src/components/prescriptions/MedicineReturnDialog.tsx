@@ -11,7 +11,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -53,6 +52,7 @@ export function MedicineReturnDialog({
       setBillItems([]);
       setSelectedItems({});
       setReturnDestination({});
+      setReason("");
     }
   }, [isOpen, billId]);
 
@@ -69,7 +69,7 @@ export function MedicineReturnDialog({
           return_quantity,
           unit_price,
           inventory_item_id,
-          inventory:inventory_items_id (name)
+          inventory:inventory(name)
         `)
         .eq('bill_id', billId);
 

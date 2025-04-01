@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { MedicineReturn } from "@/types/returns";
+import { MedicineReturn, ReturnHistoryItem } from "@/types/returns";
+import { safeQueryData } from "./safeSupabaseQueries";
 
 export async function processMedicineReturn(
   returnData: Omit<MedicineReturn, 'id' | 'return_date' | 'processed_by' | 'user_id'>
@@ -45,20 +46,20 @@ export async function updateInventoryAfterReturn(
 }
 
 export async function getReturnAnalytics(userId: string, timeframe: 'week' | 'month' | 'year' = 'month') {
-  let timePeriod: string;
+  let timeCondition: string;
   
   switch (timeframe) {
     case 'week':
-      timePeriod = 'now() - interval \'7 days\'';
+      timeCondition = "return_date >= now() - interval '7 days'";
       break;
     case 'month':
-      timePeriod = 'now() - interval \'30 days\'';
+      timeCondition = "return_date >= now() - interval '30 days'";
       break;
     case 'year':
-      timePeriod = 'now() - interval \'365 days\'';
+      timeCondition = "return_date >= now() - interval '365 days'";
       break;
     default:
-      timePeriod = 'now() - interval \'30 days\'';
+      timeCondition = "return_date >= now() - interval '30 days'";
   }
 
   const { data, error } = await supabase
@@ -69,14 +70,37 @@ export async function getReturnAnalytics(userId: string, timeframe: 'week' | 'mo
       returned_quantity,
       status,
       return_value,
-      return_date
+      return_date,
+      reason
     `)
     .eq('user_id', userId)
-    .gte('return_date', timePeriod)
+    .filter('return_date', 'gte', `now() - interval '${timeframe === 'week' ? '7 days' : timeframe === 'month' ? '30 days' : '365 days'}'`)
     .order('return_date', { ascending: false });
 
   if (error) throw error;
   return data || [];
+}
+
+export async function getReturnHistoryByPrescription(prescriptionId: number) {
+  const { data, error } = await supabase
+    .from('return_analytics')
+    .select(`
+      id,
+      bill_item_id,
+      medicine_name,
+      returned_quantity,
+      original_quantity,
+      unit_price,
+      return_value,
+      return_date,
+      status,
+      reason
+    `)
+    .eq('prescription_id', prescriptionId)
+    .order('return_date', { ascending: false });
+
+  if (error) throw error;
+  return data as ReturnHistoryItem[] || [];
 }
 
 export function calculateReturnMetrics(returnData: any[]) {
