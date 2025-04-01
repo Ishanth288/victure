@@ -1,14 +1,14 @@
 
-import { PostgrestSingleResponse, PostgrestQueryBuilder, PostgrestFilterBuilder } from "@supabase/supabase-js";
+import { PostgrestSingleResponse } from "@supabase/supabase-js";
 
 /**
  * Type cast a query builder to the given table type
  * @param table The table name
  * @returns A typed query builder
  */
-export function typecastQuery<T = any>(table: string): PostgrestQueryBuilder<T> {
+export function typecastQuery<T = any>(table: string): any {
   // This is a type casting function only, it doesn't change the behavior
-  return {} as PostgrestQueryBuilder<T>;
+  return {} as any;
 }
 
 /**
@@ -18,7 +18,7 @@ export function typecastQuery<T = any>(table: string): PostgrestQueryBuilder<T> 
  * @returns The query data or default value
  */
 export async function safeQueryData<T>(
-  query: PostgrestFilterBuilder<T>,
+  query: any,
   defaultValue: T
 ): Promise<T> {
   try {

@@ -1,34 +1,29 @@
 
-import { TrendingUp, BarChart2, PieChartIcon, Activity, Calendar, MapPin } from "lucide-react";
-import { TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export function TabsNavigation() {
+interface TabsNavigationProps {
+  tabs: Array<{id: string, label: string}>;
+  activeTab: string;
+  onChange: (value: string) => void;
+}
+
+export function TabsNavigation({ tabs, activeTab, onChange }: TabsNavigationProps) {
   return (
-    <TabsList className="grid w-full grid-cols-1 md:grid-cols-6">
-      <TabsTrigger value="forecast" className="flex items-center">
-        <TrendingUp className="w-4 h-4 mr-2" />
-        Market Forecast
-      </TabsTrigger>
-      <TabsTrigger value="margin" className="flex items-center">
-        <BarChart2 className="w-4 h-4 mr-2" />
-        Margin Analysis
-      </TabsTrigger>
-      <TabsTrigger value="supplier" className="flex items-center">
-        <PieChartIcon className="w-4 h-4 mr-2" />
-        Supplier Metrics
-      </TabsTrigger>
-      <TabsTrigger value="expiry" className="flex items-center">
-        <Activity className="w-4 h-4 mr-2" />
-        Expiry Analysis
-      </TabsTrigger>
-      <TabsTrigger value="seasonal" className="flex items-center">
-        <Calendar className="w-4 h-4 mr-2" />
-        Seasonal Trends
-      </TabsTrigger>
-      <TabsTrigger value="regional" className="flex items-center">
-        <MapPin className="w-4 h-4 mr-2" />
-        Regional Demand
-      </TabsTrigger>
-    </TabsList>
+    <div className="mb-6 border-b">
+      <Tabs value={activeTab} onValueChange={onChange}>
+        <TabsList className="bg-background mb-0">
+          {tabs.map((tab) => (
+            <TabsTrigger 
+              key={tab.id} 
+              value={tab.id}
+              className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none"
+            >
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+    </div>
   );
 }
