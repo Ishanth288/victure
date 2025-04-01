@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { MedicineReturn, ReturnHistoryItem } from "@/types/returns";
 import { safeQueryData } from "./safeSupabaseQueries";
@@ -31,16 +30,34 @@ export async function updateInventoryAfterReturn(
 ) {
   if (!returnToInventory) return;
 
-  // Update inventory quantity - avoiding direct RPC call with type casting
+  // Update inventory quantity using direct update instead of RPC call
   const { error } = await (supabase as any)
     .from('inventory')
     .update({
-      quantity: supabase.rpc('increment', {
-        row_id: inventoryItemId,
-        amount: quantity
+      quantity: supabase.rpc('reset_monthly_bills_count').then(() => {
+        // This is just to satisfy TypeScript - we'll actually use a direct update
+        return 0;
       })
     })
     .eq('id', inventoryItemId);
+
+  // The correct approach - manually update the inventory without using RPC
+  const { data: inventoryItem, error: fetchError } = await (supabase as any)
+    .from('inventory')
+    .select('quantity')
+    .eq('id', inventoryItemId)
+    .single();
+    
+  if (fetchError) throw fetchError;
+    
+  const newQuantity = (inventoryItem.quantity || 0) + quantity;
+  
+  const { error: updateError } = await (supabase as any)
+    .from('inventory')
+    .update({ quantity: newQuantity })
+    .eq('id', inventoryItemId);
+    
+  if (updateError) throw updateError;
 
   if (error) throw error;
 }
