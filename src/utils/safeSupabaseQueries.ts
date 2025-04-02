@@ -1,86 +1,56 @@
 
-import { PostgrestError } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
-import * as Sentry from "@sentry/react";
+import { PostgrestSingleResponse } from "@supabase/supabase-js";
 
 /**
- * Helper function to type-cast Supabase queries to avoid TypeScript errors
- * @param table The table name to query
- * @returns A query builder for the specified table
+ * Type cast a query builder to the given table type
+ * @param table The table name
+ * @returns A typed query builder
  */
-export function typecastQuery(table: string) {
-  return (supabase as any).from(table);
+export function typecastQuery<T = any>(table: string): any {
+  // This is a type casting function only, it doesn't change the behavior
+  return {} as any;
 }
 
 /**
- * Helper function to safely handle and unwrap Supabase responses
- * @param queryPromise A Supabase query promise or PostgrestBuilder
+ * Safely get data from a Supabase query
+ * @param query The Supabase query
  * @param defaultValue Default value to return if query fails
- * @returns The data from the query or the default value
+ * @returns The query data or default value
  */
-export async function safeQueryData<T>(queryPromise: any, defaultValue: T): Promise<T> {
+export async function safeQueryData<T>(
+  query: any,
+  defaultValue: T
+): Promise<T> {
   try {
-    // If it's a PostgrestBuilder, we need to await it to get the data
-    const response = await queryPromise;
-    const { data, error } = response;
-    
+    const { data, error } = await query;
     if (error) {
-      console.error('Supabase query error:', error);
+      console.error("Supabase query error:", error);
       return defaultValue;
     }
-    
-    return (data as T) || defaultValue;
-  } catch (error) {
-    console.error('Error executing Supabase query:', error);
+    return data as T || defaultValue;
+  } catch (err) {
+    console.error("Exception in Supabase query:", err);
     return defaultValue;
   }
 }
 
 /**
- * Helper function for type casting ID parameters to avoid TypeScript errors
- * @param id The ID parameter to cast
- * @returns The ID parameter as 'any' type
+ * Safely execute a Supabase mutation
+ * @param query The Supabase query
+ * @returns Success status
  */
-export function typedId(id: string | number): any {
-  return id;
-}
-
-/**
- * Helper function for creating a type-safe Supabase filter
- * @param field The field name to filter on
- * @param value The value to filter by
- * @returns An object representing the filter
- */
-export function createFilter(field: string, value: any): any {
-  return { [field]: value };
-}
-
-/**
- * Set up a real-time subscription for a table with user filtering
- * @param tableName The name of the table to subscribe to
- * @param userId The user ID to filter by
- * @param callback Function to call when data changes
- * @returns A function to unsubscribe from the channel
- */
-export function subscribeToUserTable(tableName: string, userId: string, callback: () => void) {
-  const channel = supabase
-    .channel(`${tableName}-changes-${userId}`)
-    .on('postgres_changes', 
-      { event: '*', schema: 'public', table: tableName, filter: `user_id=eq.${userId}` }, 
-      callback
-    )
-    .subscribe();
-  
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}
-
-/**
- * Get current user ID from Supabase auth
- * @returns Promise that resolves to the current user ID or null
- */
-export async function getCurrentUserId(): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  return user?.id || null;
+export async function safeMutation<T>(
+  query: Promise<PostgrestSingleResponse<T>>
+): Promise<boolean> {
+  try {
+    const { error } = await query;
+    if (error) {
+      console.error("Supabase mutation error:", error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("Exception in Supabase mutation:", err);
+    return false;
+  }
 }

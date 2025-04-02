@@ -18,6 +18,7 @@ export function AddressFields({ formData, onChange, onStateChange }: AddressFiel
         <Label htmlFor="address">Address*</Label>
         <Input
           id="address"
+          name="address"
           placeholder="Enter complete address"
           value={formData.address}
           onChange={onChange}
@@ -30,6 +31,7 @@ export function AddressFields({ formData, onChange, onStateChange }: AddressFiel
           <Label htmlFor="city">City*</Label>
           <Input
             id="city"
+            name="city"
             placeholder="Enter city"
             value={formData.city}
             onChange={onChange}
@@ -39,7 +41,11 @@ export function AddressFields({ formData, onChange, onStateChange }: AddressFiel
 
         <div className="space-y-2">
           <Label htmlFor="state">State*</Label>
-          <Select onValueChange={onStateChange} required>
+          <Select 
+            onValueChange={onStateChange} 
+            value={formData.state}
+            required
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select state" />
             </SelectTrigger>
@@ -59,6 +65,7 @@ export function AddressFields({ formData, onChange, onStateChange }: AddressFiel
           <Label htmlFor="pincode">PIN Code*</Label>
           <Input
             id="pincode"
+            name="pincode"
             placeholder="Enter PIN code"
             value={formData.pincode}
             onChange={onChange}
@@ -70,6 +77,7 @@ export function AddressFields({ formData, onChange, onStateChange }: AddressFiel
           <Label htmlFor="gstin">GSTIN (Optional)</Label>
           <Input
             id="gstin"
+            name="gstin"
             placeholder="Enter GSTIN"
             value={formData.gstin}
             onChange={onChange}

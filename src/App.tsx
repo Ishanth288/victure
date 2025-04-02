@@ -23,6 +23,7 @@ import PrivacyPolicy from "@/pages/legal/PrivacyPolicy";
 import RefundPolicy from "@/pages/legal/RefundPolicy";
 import SLA from "@/pages/legal/SLA";
 import TermsOfService from "@/pages/legal/TermsOfService";
+import Documentation from "@/pages/Documentation";
 
 function App() {
   return (
@@ -42,6 +43,9 @@ function App() {
         <Route path="/business-optimization" element={<AuthWrapper><BusinessOptimization /></AuthWrapper>} />
         <Route path="/insights" element={<AuthWrapper><Insights /></AuthWrapper>} />
         <Route path="/admin" element={<AuthWrapper><Admin /></AuthWrapper>} />
+        
+        {/* Public pages */}
+        <Route path="/documentation" element={<Documentation />} />
         
         {/* Legal pages */}
         <Route path="/legal/acceptable-use" element={<AcceptableUsePolicy />} />

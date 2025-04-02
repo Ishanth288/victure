@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RegistrationData } from "@/types/registration";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle, X } from "lucide-react";
 
 interface AccountFieldsProps {
@@ -21,6 +21,10 @@ export function AccountFields({ formData, onChange, onRoleChange }: AccountField
     isStrong: false
   });
   
+  useEffect(() => {
+    validatePassword(formData.password);
+  }, [formData.password]);
+  
   const validatePassword = (password: string) => {
     const minLength = password.length >= 8;
     const hasNumber = /\d/.test(password);
@@ -36,11 +40,6 @@ export function AccountFields({ formData, onChange, onRoleChange }: AccountField
       isStrong
     });
   };
-  
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e);
-    validatePassword(e.target.value);
-  };
 
   return (
     <>
@@ -48,6 +47,7 @@ export function AccountFields({ formData, onChange, onRoleChange }: AccountField
         <Label htmlFor="email">Email Address*</Label>
         <Input
           id="email"
+          name="email"
           type="email"
           placeholder="Enter email address"
           value={formData.email}
@@ -61,10 +61,11 @@ export function AccountFields({ formData, onChange, onRoleChange }: AccountField
         <Label htmlFor="password">Password* (minimum 8 characters)</Label>
         <Input
           id="password"
+          name="password"
           type="password"
           placeholder="Enter password"
           value={formData.password}
-          onChange={handlePasswordChange}
+          onChange={onChange}
           required
           autoComplete="new-password"
           className={formData.password ? (passwordStrength.isStrong ? "border-green-500" : "border-red-500") : ""}
@@ -120,8 +121,27 @@ export function AccountFields({ formData, onChange, onRoleChange }: AccountField
       </div>
 
       <div className="space-y-2">
+        <Label htmlFor="confirmPassword">Confirm Password*</Label>
+        <Input
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          placeholder="Confirm your password"
+          value={formData.confirmPassword}
+          onChange={onChange}
+          required
+          autoComplete="new-password"
+          className={formData.confirmPassword && formData.password === formData.confirmPassword ? "border-green-500" : ""}
+        />
+      </div>
+
+      <div className="space-y-2">
         <Label htmlFor="role">User Role*</Label>
-        <Select onValueChange={onRoleChange} required>
+        <Select 
+          onValueChange={onRoleChange}
+          value={formData.role || ""}
+          required
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select role" />
           </SelectTrigger>

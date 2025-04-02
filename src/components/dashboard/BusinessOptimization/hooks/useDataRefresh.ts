@@ -17,6 +17,7 @@ export function useDataRefresh({
   autoRefreshInterval = 10 * 60 * 1000 // Default 10 minutes
 }: UseDataRefreshOptions) {
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [isAutoRefreshing, setIsAutoRefreshing] = useState<boolean>(false);
   const refreshInProgress = useRef(false);
   const renderAttempts = useRef(0);
   const { toast } = useToast();
@@ -25,7 +26,10 @@ export function useDataRefresh({
   useEffect(() => {
     const autoRefreshTimer = setInterval(() => {
       console.log("Auto-refresh triggered after interval");
-      handleRefreshAll(true);
+      setIsAutoRefreshing(true);
+      handleRefreshAll(true).finally(() => {
+        setIsAutoRefreshing(false);
+      });
     }, autoRefreshInterval);
     
     return () => clearInterval(autoRefreshTimer);
@@ -53,14 +57,13 @@ export function useDataRefresh({
     }
   }, []);
   
-  const handleRefreshAll = useCallback((isAutoRefresh = false) => {
+  const handleRefreshAll = useCallback(async (isAutoRefresh = false) => {
     // Prevent multiple refresh attempts in quick succession
     if (refreshInProgress.current) {
       if (!isAutoRefresh) {
         stableToast({
           title: "Refresh in progress",
-          description: "Please wait while we load your data...",
-          duration: 2000
+          description: "Please wait while we load your data..."
         });
       }
       return;
@@ -69,15 +72,13 @@ export function useDataRefresh({
     console.log(isAutoRefresh ? "Auto refresh triggered" : "Manual refresh triggered");
     refreshInProgress.current = true;
     
-    // Set a timeout to reset the refreshInProgress flag after some time
-    setTimeout(() => {
-      refreshInProgress.current = false;
-    }, 5000);
-    
     try {
       // Call the refresh functions
-      refreshData();
-      refreshLocationData();
+      await Promise.all([
+        Promise.resolve(refreshData()),
+        Promise.resolve(refreshLocationData())
+      ]);
+      
       setLastRefreshed(new Date());
       renderAttempts.current = 0;
       
@@ -87,13 +88,12 @@ export function useDataRefresh({
       if (!isAutoRefresh) {
         toast({
           title: "Refreshing all data",
-          description: "Updating analytics with Google Trends and news data...",
+          description: "Updating analytics with latest business data...",
           duration: 3000
         });
       }
     } catch (error) {
       console.error("Error during refresh:", error);
-      refreshInProgress.current = false;
       if (onError) {
         onError(error);
       }
@@ -105,11 +105,17 @@ export function useDataRefresh({
           variant: "destructive"
         });
       }
+    } finally {
+      // Set a timeout to reset the refreshInProgress flag after some time
+      setTimeout(() => {
+        refreshInProgress.current = false;
+      }, 5000);
     }
   }, [refreshData, refreshLocationData, toast, onError]);
 
-  // Create a handler specifically for button click events
-  const handleManualRefresh = useCallback(() => {
+  // Create a handler specifically for button click events that ignores the event
+  const handleManualRefresh = useCallback((event?: React.MouseEvent<HTMLButtonElement>) => {
+    if (event) event.preventDefault();
     handleRefreshAll(false);
   }, [handleRefreshAll]);
 
@@ -121,8 +127,9 @@ export function useDataRefresh({
   return {
     lastRefreshed,
     handleRefreshAll,
-    handleManualRefresh, // Return the button-safe handler
+    handleManualRefresh,
     refreshInProgress,
-    renderAttempts
+    renderAttempts,
+    isAutoRefreshing
   };
 }

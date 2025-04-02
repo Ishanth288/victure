@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { safeQueryData, getCurrentUserId } from '@/utils/safeSupabaseQueries';
+import { safeQueryData } from '@/utils/safeSupabaseQueries';
 
 // Define valid table endpoints
 export type TableEndpoint = 'inventory' | 'bills' | 'purchase_orders';
