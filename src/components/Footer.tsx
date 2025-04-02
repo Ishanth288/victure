@@ -139,7 +139,7 @@ const Footer = () => {
             
             <div className="flex flex-col sm:flex-row gap-4">
               <WhatsAppButton 
-                phoneNumber="9390621556"
+                phoneNumber="+917123456789"
                 buttonText="Chat with Sales"
                 variant="outline"
               />
