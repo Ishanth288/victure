@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { Clock, PackageOpen, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { ReturnHistoryItem } from "@/types/returns";
 
 interface ReturnItem {
   id: number;
@@ -53,8 +52,8 @@ export function ReturnHistoryDialog({
     
     setLoading(true);
     try {
-      // Using direct query with type assertion to avoid TypeScript errors
-      const { data, error } = await (supabase as any)
+      // Using the return_analytics view we created
+      const { data, error } = await supabase
         .from('return_analytics')
         .select(`
           id,
@@ -71,9 +70,7 @@ export function ReturnHistoryDialog({
 
       if (error) throw error;
       
-      // Type assertion to avoid TypeScript errors
-      const safeData = data || [];
-      setReturnItems(safeData as ReturnItem[]);
+      setReturnItems(data || []);
     } catch (error: any) {
       console.error("Error fetching return history:", error);
       toast({

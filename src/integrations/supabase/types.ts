@@ -15,7 +15,6 @@ export type Database = {
           id: number
           inventory_item_id: number
           quantity: number
-          return_quantity: number
           total_price: number
           unit_price: number
         }
@@ -24,7 +23,6 @@ export type Database = {
           id?: number
           inventory_item_id: number
           quantity: number
-          return_quantity?: number
           total_price: number
           unit_price: number
         }
@@ -33,7 +31,6 @@ export type Database = {
           id?: number
           inventory_item_id?: number
           quantity?: number
-          return_quantity?: number
           total_price?: number
           unit_price?: number
         }
@@ -190,47 +187,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
-      }
-      medicine_returns: {
-        Row: {
-          bill_item_id: number
-          id: number
-          processed_by: string
-          quantity: number
-          reason: string | null
-          return_date: string
-          status: string
-          user_id: string
-        }
-        Insert: {
-          bill_item_id: number
-          id?: number
-          processed_by: string
-          quantity: number
-          reason?: string | null
-          return_date?: string
-          status: string
-          user_id: string
-        }
-        Update: {
-          bill_item_id?: number
-          id?: number
-          processed_by?: string
-          quantity?: number
-          reason?: string | null
-          return_date?: string
-          status?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "medicine_returns_bill_item_id_fkey"
-            columns: ["bill_item_id"]
-            isOneToOne: false
-            referencedRelation: "bill_items"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       patients: {
         Row: {
@@ -556,46 +512,7 @@ export type Database = {
       }
     }
     Views: {
-      return_analytics: {
-        Row: {
-          bill_id: number | null
-          bill_item_id: number | null
-          id: number | null
-          inventory_item_id: number | null
-          medicine_name: string | null
-          original_quantity: number | null
-          reason: string | null
-          return_date: string | null
-          return_value: number | null
-          returned_quantity: number | null
-          status: string | null
-          unit_price: number | null
-          user_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bill_items_bill_id_fkey"
-            columns: ["bill_id"]
-            isOneToOne: false
-            referencedRelation: "bills"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bill_items_inventory_item_id_fkey"
-            columns: ["inventory_item_id"]
-            isOneToOne: false
-            referencedRelation: "inventory"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "medicine_returns_bill_item_id_fkey"
-            columns: ["bill_item_id"]
-            isOneToOne: false
-            referencedRelation: "bill_items"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       reset_monthly_bills_count: {

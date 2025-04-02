@@ -22,5 +22,4 @@ export interface ReturnHistoryItem {
   return_date: string;
   status: 'inventory' | 'disposed';
   reason: string | null;
-  prescription_id?: number;
 }

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +11,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -51,7 +53,6 @@ export function MedicineReturnDialog({
       setBillItems([]);
       setSelectedItems({});
       setReturnDestination({});
-      setReason("");
     }
   }, [isOpen, billId]);
 
@@ -68,14 +69,14 @@ export function MedicineReturnDialog({
           return_quantity,
           unit_price,
           inventory_item_id,
-          inventory(name)
+          inventory:inventory_items_id (name)
         `)
         .eq('bill_id', billId);
 
       if (error) throw error;
       
-      if (items && Array.isArray(items)) {
-        const formattedItems: BillItem[] = items.map((item: any) => ({
+      if (items) {
+        const formattedItems = items.map((item) => ({
           id: item.id,
           name: item.inventory?.name || `Product #${item.inventory_item_id}`,
           quantity: item.quantity,
@@ -168,8 +169,8 @@ export function MedicineReturnDialog({
         const billItem = billItems.find(item => item.id === returnItem.bill_item_id);
         if (!billItem) return;
         
-        // 1. Create return record with as any casting to avoid type errors
-        const { error: returnError } = await (supabase as any)
+        // 1. Create return record
+        const { error: returnError } = await supabase
           .from('medicine_returns')
           .insert({
             bill_item_id: returnItem.bill_item_id,
@@ -182,8 +183,8 @@ export function MedicineReturnDialog({
           
         if (returnError) throw returnError;
         
-        // 2. Update bill_item return_quantity - using explicit casting
-        const { error: billItemError } = await (supabase as any)
+        // 2. Update bill_item return_quantity
+        const { error: billItemError } = await supabase
           .from('bill_items')
           .update({
             return_quantity: billItem.return_quantity + returnItem.quantity
@@ -192,22 +193,15 @@ export function MedicineReturnDialog({
           
         if (billItemError) throw billItemError;
         
-        // 3. Update inventory if returning to stock - using a different approach than the RPC
+        // 3. Update inventory if returning to stock
         if (returnItem.status === 'inventory') {
-          // Get current quantity
-          const { data: invData, error: getError } = await supabase
-            .from('inventory')
-            .select('quantity')
-            .eq('id', billItem.inventory_item_id)
-            .single();
-            
-          if (getError) throw getError;
-          
-          // Update with new quantity
           const { error: inventoryError } = await supabase
             .from('inventory')
             .update({
-              quantity: (invData?.quantity || 0) + returnItem.quantity
+              quantity: supabase.rpc('increment', { 
+                row_id: billItem.inventory_item_id,
+                amount: returnItem.quantity
+              })
             })
             .eq('id', billItem.inventory_item_id);
             

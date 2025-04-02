@@ -16,15 +16,7 @@ import { useBusinessData } from "./hooks/useBusinessData";
 export function BusinessOptimizationPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("forecast");
-  const { 
-    isLoading, 
-    inventoryData, 
-    salesData, 
-    suppliersData,
-    locationData,
-    pharmacyLocation,
-    hasError 
-  } = useBusinessData();
+  const { isLoading, businessData, error } = useBusinessData();
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -48,20 +40,13 @@ export function BusinessOptimizationPage() {
     { id: "returns", label: "Return Analysis" }
   ];
 
-  // Mock data for tabs that need it
-  const mockForecastData = [];
-  const mockMarginData = [];
-  const mockExpiryData = [];
-  const mockSeasonalTrendsData = [];
-  const mockRegionalDemandData = [];
-
   return (
     <div className="container mx-auto px-4 py-6">
       <PageHeader 
         title="Business Optimization" 
         description="Analyze and optimize your pharmacy business performance"
         isLoading={isLoading}
-        hasError={hasError}
+        hasError={!!error}
       />
 
       <TabsNavigation 
@@ -71,45 +56,12 @@ export function BusinessOptimizationPage() {
       />
 
       <TabContent>
-        {activeTab === "forecast" && (
-          <MarketForecastTab 
-            forecastData={mockForecastData} 
-            regionalDemandData={mockRegionalDemandData} 
-            seasonalTrendsData={mockSeasonalTrendsData} 
-            pharmacyLocation={pharmacyLocation} 
-          />
-        )}
-        {activeTab === "margin" && (
-          <MarginAnalysisTab 
-            marginData={mockMarginData} 
-            locationData={locationData} 
-            pharmacyLocation={pharmacyLocation} 
-          />
-        )}
-        {activeTab === "supplier" && (
-          <SupplierMetricsTab supplierData={suppliersData || []} />
-        )}
-        {activeTab === "expiry" && (
-          <ExpiryAnalysisTab 
-            expiryData={mockExpiryData} 
-            inventoryData={inventoryData || []} 
-          />
-        )}
-        {activeTab === "seasonal" && (
-          <SeasonalTrendsTab 
-            locationData={locationData} 
-            pharmacyLocation={pharmacyLocation} 
-            seasonalTrendsData={mockSeasonalTrendsData} 
-            inventoryData={inventoryData || []} 
-          />
-        )}
-        {activeTab === "regional" && (
-          <RegionalDemandTab 
-            regionalDemandData={mockRegionalDemandData} 
-            pharmacyLocation={pharmacyLocation} 
-            locationData={locationData} 
-          />
-        )}
+        {activeTab === "forecast" && <MarketForecastTab />}
+        {activeTab === "margin" && <MarginAnalysisTab />}
+        {activeTab === "supplier" && <SupplierMetricsTab />}
+        {activeTab === "expiry" && <ExpiryAnalysisTab />}
+        {activeTab === "seasonal" && <SeasonalTrendsTab />}
+        {activeTab === "regional" && <RegionalDemandTab />}
         {activeTab === "returns" && <ReturnAnalysisTab />}
       </TabContent>
     </div>
