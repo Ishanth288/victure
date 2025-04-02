@@ -17,6 +17,7 @@ export function SidebarContainer() {
           <button 
             onClick={() => navigate(-1)}
             className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+            aria-label="Go back"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>

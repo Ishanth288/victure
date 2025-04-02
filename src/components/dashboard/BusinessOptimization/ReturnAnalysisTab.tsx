@@ -9,17 +9,18 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { format, subDays } from "date-fns";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { getReturnAnalytics, calculateReturnMetrics } from "@/utils/returnUtils";
-import { LoadingState } from "./components/LoadingState";
+import { Badge } from "@/components/ui/badge";
+import { Undo, CheckCircle } from "lucide-react";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28EFF'];
 
 export function ReturnAnalysisTab() {
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Set initially to false
   const [timeframe, setTimeframe] = useState<'week' | 'month' | 'year'>('month');
   const [returnData, setReturnData] = useState<any[]>([]);
   const [returnMetrics, setReturnMetrics] = useState({
@@ -32,9 +33,19 @@ export function ReturnAnalysisTab() {
   });
   const [topReturnedMedicines, setTopReturnedMedicines] = useState<any[]>([]);
   const [returnTrend, setReturnTrend] = useState<any[]>([]);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    fetchReturnData();
+    if (!initialized) {
+      fetchReturnData();
+      setInitialized(true);
+    }
+  }, [initialized]);
+
+  useEffect(() => {
+    if (initialized) {
+      fetchReturnData();
+    }
   }, [timeframe]);
 
   const fetchReturnData = async () => {
@@ -154,6 +165,15 @@ export function ReturnAnalysisTab() {
       const trendData = Array.from(trendMap.values());
       setReturnTrend(trendData);
 
+      // Show success toast when data is loaded
+      if (data.length > 0) {
+        toast({
+          title: "Return data loaded",
+          description: `Found ${data.length} return records for the selected timeframe.`,
+          variant: "default",
+        });
+      }
+
     } catch (error: any) {
       console.error("Error fetching return data:", error);
       toast({
@@ -167,7 +187,14 @@ export function ReturnAnalysisTab() {
   };
 
   if (loading) {
-    return <LoadingState message="Loading return analytics data..." />;
+    return (
+      <div className="space-y-6 p-6">
+        <div className="h-24 w-full flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+          <p className="ml-3">Loading return analytics data...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -290,6 +317,40 @@ export function ReturnAnalysisTab() {
           </CardContent>
         </Card>
       </div>
+
+      {returnData.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-xl font-semibold mb-4">Recent Returns</h3>
+          <div className="space-y-3">
+            {returnData.slice(0, 5).map((item, index) => (
+              <div key={index} className="p-3 border rounded-md flex justify-between items-center">
+                <div>
+                  <div className="font-medium">{item.medicine_name}</div>
+                  <div className="text-sm text-gray-500">
+                    {format(new Date(item.return_date), "MMM d, yyyy")} • {item.returned_quantity} units
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Badge variant={item.status === "inventory" ? "secondary" : "destructive"}>
+                    {item.status === "inventory" ? 
+                      <><Undo className="h-3 w-3 mr-1" /> Returned to Stock</> : 
+                      <><CheckCircle className="h-3 w-3 mr-1" /> Disposed</>
+                    }
+                  </Badge>
+                  <div className="text-green-600 font-medium">₹{item.return_value?.toFixed(2) || "0.00"}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {returnData.length > 5 && (
+            <div className="text-center mt-4">
+              <p className="text-sm text-muted-foreground">
+                Showing 5 of {returnData.length} returns
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       <Card>
         <CardHeader>
