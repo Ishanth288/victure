@@ -1,32 +1,44 @@
+
 import { useEffect, useState } from "react";
 import { useLocation, Navigate } from "react-router-dom";
-import { useSession, useSupabaseClient } from "@supabase/auth-helpers-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface AuthWrapperProps {
   children: React.ReactNode;
 }
 
 const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
-  const session = useSession();
-  const supabaseClient = useSupabaseClient();
-  const location = useLocation();
+  const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const { toast } = useToast();
 
   useEffect(() => {
     const checkSession = async () => {
       setLoading(true);
       try {
-        if (!session) {
+        // Get the current session
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error checking session:", error);
+          return;
+        }
+
+        setSession(currentSession);
+
+        if (!currentSession) {
           // If no session exists, check if there's a refresh token in the URL
           const params = new URLSearchParams(location.search);
           const refreshToken = params.get('refresh_token');
 
           if (refreshToken) {
             // Try to refresh the session using the refresh token
-            const { error } = await supabaseClient.auth.refreshSession({ refresh_token: refreshToken });
+            const { error: refreshError } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
 
-            if (error) {
-              console.error("Failed to refresh session:", error);
+            if (refreshError) {
+              console.error("Failed to refresh session:", refreshError);
               // Redirect to login if refresh fails
               return;
             }
@@ -37,8 +49,27 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
       }
     };
 
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      setSession(currentSession);
+      
+      // Show login success message
+      if (event === 'SIGNED_IN') {
+        toast({
+          title: "Login Successful",
+          description: "You have been successfully logged in.",
+          variant: "success",
+        });
+      }
+    });
+
     checkSession();
-  }, [session, supabaseClient, location.search]);
+
+    // Cleanup
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [location.search, toast]);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -48,9 +79,6 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
     // Redirect to the authentication page and pass the current location
     return <Navigate to={`/auth?redirect=${location.pathname}${location.search}`} replace />;
   }
-
-  // Add the query parameter to the redirect URL after successful authentication
-  const redirectUrl = `/dashboard?just_logged_in=true`;
 
   return children;
 };
