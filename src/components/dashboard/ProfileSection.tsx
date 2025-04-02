@@ -49,7 +49,7 @@ export function useProfileData() {
         setProfileData(typedData);
         
         // Safely access pharmacy_name with a default value
-        const pharmacyName = typedData.pharmacy_name || 'Pharmacy';
+        const pharmacyName = typedData.pharmacy_name || 'Medplus';
         localStorage.setItem('pharmacyName', pharmacyName);
       }
     }

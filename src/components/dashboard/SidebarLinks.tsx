@@ -2,7 +2,20 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, PackageOpen, FileText, Users, FileSpreadsheet, Settings, BarChart2, ChevronRight, ShoppingBag, RotateCcw, LineChart } from "lucide-react";
+import { 
+  LayoutDashboard, 
+  PackageOpen, 
+  FileText, 
+  Users, 
+  FileSpreadsheet, 
+  Settings, 
+  BarChart2, 
+  ChevronRight, 
+  ShoppingBag, 
+  RotateCcw, 
+  LineChart, 
+  LogOut 
+} from "lucide-react";
 import { useState } from "react";
 
 export function SidebarLinks() {
@@ -38,14 +51,14 @@ export function SidebarLinks() {
       href: "/billing"
     },
     {
-      title: "Patients",
-      icon: <Users className="mr-2 h-4 w-4" />,
-      href: "/patients"
-    },
-    {
       title: "Prescriptions",
       icon: <FileSpreadsheet className="mr-2 h-4 w-4" />,
       href: "/prescriptions"
+    },
+    {
+      title: "Patients",
+      icon: <Users className="mr-2 h-4 w-4" />,
+      href: "/patients"
     },
     {
       title: "Purchases",
@@ -58,7 +71,7 @@ export function SidebarLinks() {
       href: "/insights"
     },
     {
-      title: "Business Analytics",
+      title: "Business Optimization",
       icon: <BarChart2 className="mr-2 h-4 w-4" />,
       href: "/business-optimization",
       subItems: [
@@ -70,11 +83,6 @@ export function SidebarLinks() {
         { title: "Regional Demand", href: "/business-optimization?tab=regional" },
         { title: "Return Analysis", href: "/business-optimization?tab=returns" }
       ]
-    },
-    {
-      title: "Medicine Returns",
-      icon: <RotateCcw className="mr-2 h-4 w-4" />,
-      href: "/medicine-returns"
     },
     {
       title: "Settings",
@@ -144,6 +152,27 @@ export function SidebarLinks() {
           )}
         </div>
       ))}
+
+      {/* Add Sign Out link at the bottom */}
+      <div className="mt-auto pt-4">
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            // Handle sign out logic here
+            navigate('/auth');
+          }}
+          className={cn(
+            buttonVariants({ variant: "ghost" }),
+            "justify-start hover:bg-green-50 hover:text-green-700"
+          )}
+        >
+          <div className="flex items-center">
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Sign Out</span>
+          </div>
+        </a>
+      </div>
     </div>
   );
 }

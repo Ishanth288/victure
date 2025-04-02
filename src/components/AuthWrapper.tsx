@@ -58,7 +58,7 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
         toast({
           title: "Login Successful",
           description: "You have been successfully logged in.",
-          variant: "default", // Changed from "success" to "default"
+          variant: "default", // Use "default" instead of "success"
         });
       }
     });
