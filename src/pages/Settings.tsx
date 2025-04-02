@@ -3,44 +3,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SecuritySettings from "@/components/settings/SecuritySettings";
 import PharmacySettings from "@/components/settings/PharmacySettings";
 import NotificationSettings from "@/components/settings/NotificationSettings";
-import { DataMigration } from "@/components/settings/DataMigration";
 import DashboardLayout from "@/components/DashboardLayout";
 
 export default function Settings() {
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Settings</h1>
-            <p className="text-muted-foreground">
-              Manage your account settings and set preferences.
-            </p>
-          </div>
-        </div>
+      <div className="container mx-auto py-6 space-y-6">
+        <h1 className="text-3xl font-bold">Settings</h1>
         
-        <Tabs defaultValue="pharmacy" className="space-y-4">
+        <Tabs defaultValue="security" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="pharmacy">Pharmacy</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-            <TabsTrigger value="data-migration">Data Migration</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
+            <TabsTrigger value="pharmacy">Pharmacy Details</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="pharmacy" className="space-y-4">
+
+          <TabsContent value="security">
+            <SecuritySettings />
+          </TabsContent>
+
+          <TabsContent value="pharmacy">
             <PharmacySettings />
           </TabsContent>
-          
-          <TabsContent value="notifications" className="space-y-4">
+
+          <TabsContent value="notifications">
             <NotificationSettings />
-          </TabsContent>
-          
-          <TabsContent value="data-migration" className="space-y-4">
-            <DataMigration />
-          </TabsContent>
-          
-          <TabsContent value="security" className="space-y-4">
-            <SecuritySettings />
           </TabsContent>
         </Tabs>
       </div>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { ArrowRight, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -68,6 +69,7 @@ export function OnboardingAssistant({
       title: "Onboarding complete!", 
       description: "You're all set to use Victure PharmEase.",
       variant: "success",
+      // Pass duration through the options spread instead
     });
     onComplete();
   };
@@ -79,6 +81,7 @@ export function OnboardingAssistant({
       title: "Onboarding skipped", 
       description: "You can restart the onboarding from settings anytime.",
       variant: "default",
+      // Pass duration through the options spread instead
     });
   };
 

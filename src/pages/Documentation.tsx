@@ -1,214 +1,136 @@
 
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Search, BookOpen, Code, FileText } from 'lucide-react';
-import { WhatsAppButton } from '@/components/communication/WhatsAppButton';
+import { useState, useEffect } from 'react';
+import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
+import { SearchableKnowledgeBase } from "@/components/documentation/SearchableKnowledgeBase";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Book, FileText, Code, PenTool, Lightbulb, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { WhatsAppButton } from "@/components/communication/WhatsAppButton";
 
-// This component would ideally be connected to a searchable knowledge base
-// For now, it's a placeholder UI
 export default function Documentation() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('guides');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-
+  const [activeTab, setActiveTab] = useState("guides");
+  const [isLoading, setIsLoading] = useState(true);
+  
   useEffect(() => {
-    // Here you would typically perform a search against your knowledge base
-    // This is a mock implementation
-    if (searchTerm.trim() === '') {
-      setSearchResults([]);
-      return;
-    }
-
-    // Simulated search results
-    const mockResults = [
-      {
-        id: 1,
-        title: 'Getting Started with Victure PharmEase',
-        category: 'guides',
-        excerpt: 'Learn how to set up your pharmacy account and dashboard...',
-        url: '#getting-started'
-      },
-      {
-        id: 2,
-        title: 'Inventory Management System',
-        category: 'guides',
-        excerpt: 'Comprehensive guide to managing your pharmacy inventory...',
-        url: '#inventory'
-      },
-      {
-        id: 3,
-        title: 'REST API Documentation',
-        category: 'api',
-        excerpt: 'Learn how to integrate with our REST API endpoints...',
-        url: '#api'
-      },
-      {
-        id: 4, 
-        title: 'Billing System Configuration',
-        category: 'guides',
-        excerpt: 'Set up your billing system with our built-in tools...',
-        url: '#billing'
-      }
-    ].filter(item => 
-      item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      item.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    setSearchResults(mockResults);
-  }, [searchTerm]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // In a real implementation, this would trigger the search
-    console.log('Searching for:', searchTerm);
-  };
+    // Simulate loading delay to demonstrate a smoother experience
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 800);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="text-center mb-10">
-        <h1 className="text-3xl font-bold mb-4">Documentation Center</h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          Explore our comprehensive guides, tutorials, and API documentation to get the most out of Victure PharmEase.
-        </p>
-      </div>
-
-      <div className="max-w-3xl mx-auto mb-10">
-        <form onSubmit={handleSearch} className="relative">
-          <Input
-            placeholder="Search documentation..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pr-10"
-          />
-          <Button 
-            type="submit" 
-            size="sm" 
-            variant="ghost" 
-            className="absolute right-0 top-0 h-full px-3"
-          >
-            <Search className="h-4 w-4" />
-          </Button>
-        </form>
-      </div>
-
-      {searchResults.length > 0 && (
-        <div className="max-w-3xl mx-auto mb-10">
-          <h2 className="text-xl font-semibold mb-4">Search Results</h2>
-          <div className="space-y-4">
-            {searchResults.map((result) => (
-              <Card key={result.id}>
-                <CardContent className="p-4">
-                  <h3 className="font-medium">
-                    <a href={result.url} className="text-primary hover:underline">
-                      {result.title}
-                    </a>
-                  </h3>
-                  <p className="text-muted-foreground text-sm">{result.excerpt}</p>
-                  <div className="mt-2">
-                    <span className="inline-block px-2 py-1 text-xs bg-muted rounded-full">
-                      {result.category === 'guides' ? 'User Guide' : 'API Documentation'}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="max-w-4xl mx-auto">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-3 mb-6">
-            <TabsTrigger value="guides" className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              <span>User Guides</span>
-            </TabsTrigger>
-            <TabsTrigger value="api" className="flex items-center gap-2">
-              <Code className="h-4 w-4" />
-              <span>API Reference</span>
-            </TabsTrigger>
-            <TabsTrigger value="release-notes" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span>Release Notes</span>
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="guides">
-            {/* User guides content would go here */}
-            <div className="grid gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Getting Started</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p>Learn how to set up your pharmacy account, configure your dashboard, and start managing your pharmacy with Victure PharmEase.</p>
-                  <Button className="mt-4" variant="outline">Read Guide</Button>
-                </CardContent>
-              </Card>
-              
-              {/* More guide cards would go here */}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="api">
-            {/* API reference content would go here */}
-            <div className="prose max-w-none">
-              <h2>API Overview</h2>
-              <p>Our REST API allows you to integrate Victure PharmEase with your existing systems. Use our authentication endpoints to generate API keys and access tokens.</p>
-              
-              <h3>Authentication</h3>
-              <p>All API requests require authentication using Bearer tokens...</p>
-              
-              <h3>Rate Limiting</h3>
-              <p>API calls are limited to 100 requests per minute per API key...</p>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="release-notes">
-            {/* Release notes would go here */}
-            <div className="space-y-8">
-              <div>
-                <h3 className="text-xl font-semibold mb-2">Version 2.0.0 (June 1, 2023)</h3>
-                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                  <li>Added AI-powered inventory forecasting</li>
-                  <li>Improved dashboard with real-time analytics</li>
-                  <li>New mobile app for on-the-go pharmacy management</li>
-                  <li>Performance improvements and bug fixes</li>
-                </ul>
-              </div>
-              
-              <div>
-                <h3 className="text-xl font-semibold mb-2">Version 1.5.2 (March 15, 2023)</h3>
-                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                  <li>Fixed issue with billing calculations</li>
-                  <li>Added support for multiple pharmacies under one account</li>
-                  <li>Improved search functionality</li>
-                </ul>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Navigation />
       
-      <div className="max-w-4xl mx-auto mt-16 border-t pt-8">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div>
-            <h3 className="font-semibold text-lg">Need help with implementation?</h3>
-            <p className="text-muted-foreground">Our technical support team is available to assist you.</p>
+      <main className="flex-grow pt-24 pb-16">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center mb-12">
+            <h1 className="text-3xl md:text-4xl font-bold mb-4">Victure Documentation</h1>
+            <p className="text-xl text-gray-600">
+              Everything you need to know about setting up and using Victure PharmEase
+            </p>
           </div>
-          <div className="flex gap-4">
-            <WhatsAppButton 
-              phoneNumber="+917123456789" 
-              buttonText="Contact Support"
-              className="min-w-[150px]"
-            />
-            <Button variant="outline">Email Support</Button>
+          
+          <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="max-w-6xl mx-auto">
+            <div className="flex justify-center mb-8">
+              <TabsList className="grid grid-cols-2 md:grid-cols-6 gap-2">
+                <TabsTrigger value="guides" className="flex flex-col items-center gap-1 py-3">
+                  <Book className="h-4 w-4" />
+                  <span>Guides</span>
+                </TabsTrigger>
+                <TabsTrigger value="api" className="flex flex-col items-center gap-1 py-3">
+                  <Code className="h-4 w-4" />
+                  <span>API Docs</span>
+                </TabsTrigger>
+                <TabsTrigger value="tutorials" className="flex flex-col items-center gap-1 py-3">
+                  <PenTool className="h-4 w-4" />
+                  <span>Tutorials</span>
+                </TabsTrigger>
+                <TabsTrigger value="releases" className="flex flex-col items-center gap-1 py-3">
+                  <FileText className="h-4 w-4" />
+                  <span>Releases</span>
+                </TabsTrigger>
+                <TabsTrigger value="tips" className="flex flex-col items-center gap-1 py-3">
+                  <Lightbulb className="h-4 w-4" />
+                  <span>Tips</span>
+                </TabsTrigger>
+                <TabsTrigger value="config" className="flex flex-col items-center gap-1 py-3">
+                  <Settings className="h-4 w-4" />
+                  <span>Configuration</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            
+            <div className="bg-white shadow-sm rounded-lg p-6">
+              <TabsContent value="guides" className="mt-0">
+                <SearchableKnowledgeBase />
+              </TabsContent>
+              
+              <TabsContent value="api" className="mt-0">
+                <div className="text-center py-12">
+                  <h2 className="text-2xl font-bold mb-4">API Documentation</h2>
+                  <p className="text-gray-600 mb-8">Our comprehensive API documentation is coming soon.</p>
+                  <Button>Request Early Access</Button>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="tutorials" className="mt-0">
+                <div className="text-center py-12">
+                  <h2 className="text-2xl font-bold mb-4">Video Tutorials</h2>
+                  <p className="text-gray-600 mb-8">Step-by-step video tutorials are being prepared.</p>
+                  <Button>Subscribe for Updates</Button>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="releases" className="mt-0">
+                <div className="text-center py-12">
+                  <h2 className="text-2xl font-bold mb-4">Release Notes</h2>
+                  <p className="text-gray-600 mb-8">Detailed information about each release version.</p>
+                  <Button>View Latest Release</Button>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="tips" className="mt-0">
+                <div className="text-center py-12">
+                  <h2 className="text-2xl font-bold mb-4">Tips & Tricks</h2>
+                  <p className="text-gray-600 mb-8">Discover advanced features and productivity shortcuts.</p>
+                  <Button>Browse Tips</Button>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="config" className="mt-0">
+                <div className="text-center py-12">
+                  <h2 className="text-2xl font-bold mb-4">Configuration Guide</h2>
+                  <p className="text-gray-600 mb-8">Learn how to customize Victure PharmEase for your needs.</p>
+                  <Button>View Configuration Options</Button>
+                </div>
+              </TabsContent>
+            </div>
+          </Tabs>
+          
+          <div className="max-w-3xl mx-auto mt-16 bg-white rounded-lg shadow-sm p-8 text-center">
+            <h2 className="text-2xl font-bold mb-4">Need Help?</h2>
+            <p className="text-gray-600 mb-6">
+              Can't find what you're looking for? Our support team is ready to assist you.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <WhatsAppButton 
+                phoneNumber="+917123456789"
+                buttonText="Chat with Support"
+                className="w-full sm:w-auto"
+              />
+              <Button variant="outline" className="w-full sm:w-auto">
+                Email Support
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      </main>
+      
+      <Footer />
     </div>
   );
 }

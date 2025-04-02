@@ -1,3 +1,4 @@
+
 import { Link } from 'react-router-dom';
 import { HashLink } from 'react-router-hash-link';
 import { Facebook, Twitter, Instagram, Linkedin, Youtube, ArrowUpRight } from 'lucide-react';
@@ -141,7 +142,7 @@ const Footer = () => {
               <WhatsAppButton 
                 phoneNumber="+917123456789"
                 buttonText="Chat with Sales"
-                variant="outline"
+                buttonVariant="outline"
               />
               
               <Button className="flex items-center gap-2">

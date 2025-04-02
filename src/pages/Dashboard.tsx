@@ -10,13 +10,9 @@ import {
   DashboardWidgets,
   useDashboardData
 } from "@/components/dashboard";
-import { PostLoginOnboarding } from "@/components/onboarding/PostLoginOnboarding";
-import { GrowthOpportunitiesChart } from '@/components/insights/GrowthOpportunitiesChart';
 
 export default function Dashboard() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
-  const [showPostLoginOnboarding, setShowPostLoginOnboarding] = useState(false);
-  
   const {
     isLoading,
     totalRevenue,
@@ -33,20 +29,11 @@ export default function Dashboard() {
       setIsHelpOpen(true);
       localStorage.setItem('dashboard-help-seen', 'true');
     }
-    
-    // Check if we should show post-login onboarding
-    const showOnboarding = localStorage.getItem('show-post-login-onboarding');
-    if (showOnboarding === 'true') {
-      setShowPostLoginOnboarding(true);
-      // Remove the flag so it doesn't show again on refresh
-      localStorage.removeItem('show-post-login-onboarding');
-    }
   }, []);
 
   return (
     <DashboardLayout>
       <ErrorBoundary>
-        {showPostLoginOnboarding && <PostLoginOnboarding />}
         <WelcomeDialog isOpen={isHelpOpen} onOpenChange={setIsHelpOpen} />
         
         <div className="space-y-6">
@@ -66,10 +53,7 @@ export default function Dashboard() {
             <DistributionSection isLoading={isLoading} revenueDistribution={revenueDistribution} />
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <GrowthOpportunitiesChart opportunities={[]} />
-            <DashboardWidgets />
-          </div>
+          <DashboardWidgets />
         </div>
       </ErrorBoundary>
     </DashboardLayout>

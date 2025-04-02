@@ -5,13 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, User, FileText, DollarSign, Trash2, RotateCcw, History } from "lucide-react";
+import { Clock, User, FileText, DollarSign, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
-import { MedicineReturnDialog } from "@/components/prescriptions/MedicineReturnDialog";
-import { ReturnHistoryDialog } from "@/components/prescriptions/ReturnHistoryDialog";
 import { 
   AlertDialog,
   AlertDialogAction, 
@@ -35,11 +33,6 @@ export default function Prescriptions() {
   const [prescriptionToDelete, setPrescriptionToDelete] = useState<number | null>(null);
   const [billToDelete, setBillToDelete] = useState<number | null>(null);
   const [isDeleteBillDialogOpen, setDeleteBillDialogOpen] = useState(false);
-  
-  const [isMedicineReturnDialogOpen, setMedicineReturnDialogOpen] = useState(false);
-  const [isReturnHistoryDialogOpen, setReturnHistoryDialogOpen] = useState(false);
-  const [selectedBillId, setSelectedBillId] = useState<number | null>(null);
-  const [selectedPrescriptionId, setSelectedPrescriptionId] = useState<number | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -295,16 +288,6 @@ export default function Prescriptions() {
     }
   };
 
-  const handleMedicineReturn = (billId: number) => {
-    setSelectedBillId(billId);
-    setMedicineReturnDialogOpen(true);
-  };
-
-  const handleViewReturnHistory = (prescriptionId: number) => {
-    setSelectedPrescriptionId(prescriptionId);
-    setReturnHistoryDialogOpen(true);
-  };
-
   if (loading) {
     return (
       <DashboardLayout>
@@ -377,47 +360,22 @@ export default function Prescriptions() {
                     
                     {prescription.bills && prescription.bills.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-gray-100">
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="text-sm font-medium">Associated Bills</h4>
-                          {prescription.bills.length > 0 && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              className="h-7 px-2 text-primary"
-                              onClick={() => handleViewReturnHistory(prescription.id)}
-                            >
-                              <History className="h-3.5 w-3.5 mr-1" />
-                              Return History
-                            </Button>
-                          )}
-                        </div>
+                        <h4 className="text-sm font-medium mb-2">Associated Bills</h4>
                         <div className="space-y-2">
                           {prescription.bills.map((bill: any) => (
                             <div key={bill.id} className="flex justify-between items-center text-sm">
                               <span>Bill #{bill.id}</span>
                               <span>₹{bill.total_amount.toFixed(2)}</span>
-                              <div className="flex space-x-1">
+                              {(!bill.status || bill.status === 'pending') ? (
                                 <Button 
                                   variant="ghost" 
                                   size="sm"
-                                  className="h-7 px-2 text-primary hover:text-primary"
-                                  title="Process Return"
-                                  onClick={() => handleMedicineReturn(bill.id)}
+                                  className="h-7 px-2 text-destructive hover:text-destructive"
+                                  onClick={() => handleDeleteBill(bill.id)}
                                 >
-                                  <RotateCcw className="h-3.5 w-3.5" />
+                                  <Trash2 className="h-3.5 w-3.5" />
                                 </Button>
-                                {(!bill.status || bill.status === 'pending') && (
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm"
-                                    className="h-7 px-2 text-destructive hover:text-destructive"
-                                    title="Delete Bill"
-                                    onClick={() => handleDeleteBill(bill.id)}
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
-                                )}
-                              </div>
+                              ) : null}
                             </div>
                           ))}
                         </div>
@@ -493,19 +451,6 @@ export default function Prescriptions() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
-      <MedicineReturnDialog
-        isOpen={isMedicineReturnDialogOpen}
-        onClose={() => setMedicineReturnDialogOpen(false)}
-        billId={selectedBillId}
-        onSuccess={fetchPrescriptions}
-      />
-      
-      <ReturnHistoryDialog
-        isOpen={isReturnHistoryDialogOpen}
-        onClose={() => setReturnHistoryDialogOpen(false)}
-        prescriptionId={selectedPrescriptionId}
-      />
     </DashboardLayout>
   );
 }

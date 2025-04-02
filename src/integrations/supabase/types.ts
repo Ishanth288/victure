@@ -144,7 +144,7 @@ export type Database = {
           storage_condition: string | null
           strength: string | null
           supplier: string | null
-          unit_cost: number | null
+          unit_cost: number
           unit_size: string | null
           user_id: string | null
         }
@@ -163,7 +163,7 @@ export type Database = {
           storage_condition?: string | null
           strength?: string | null
           supplier?: string | null
-          unit_cost?: number | null
+          unit_cost: number
           unit_size?: string | null
           user_id?: string | null
         }
@@ -182,7 +182,7 @@ export type Database = {
           storage_condition?: string | null
           strength?: string | null
           supplier?: string | null
-          unit_cost?: number | null
+          unit_cost?: number
           unit_size?: string | null
           user_id?: string | null
         }
