@@ -8,12 +8,12 @@ export const securityHeaders = {
   // Prevent XSS attacks by controlling which resources can be loaded
   'Content-Security-Policy': `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.sentry-cdn.com https://*.ingest.sentry.io https://cdn.gpteng.co;
-    connect-src 'self' https://*.supabase.co https://*.sentry.io https://*.sentry-cdn.com https://*.ingest.sentry.io https://trends.google.com https://newsapi.org https://api.whatsapp.com;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.sentry-cdn.com https://*.ingest.sentry.io;
+    connect-src 'self' https://*.supabase.co https://*.sentry.io https://*.sentry-cdn.com https://*.ingest.sentry.io https://trends.google.com https://newsapi.org;
     img-src 'self' data: https: blob:;
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    font-src 'self' data: https://fonts.gstatic.com;
-    frame-src 'self' https://www.google.com https://www.youtube.com;
+    style-src 'self' 'unsafe-inline';
+    font-src 'self' data:;
+    frame-src 'self';
     object-src 'none';
     base-uri 'self';
     form-action 'self';
@@ -38,7 +38,7 @@ export const securityHeaders = {
   'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
   
   // Specify permitted capabilities for your application
-  'Permissions-Policy': 'camera=self, microphone=self, geolocation=self, interest-cohort=()',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
   
   // Allow requests from all origins for development and preview environments
   'Access-Control-Allow-Origin': '*',
@@ -48,7 +48,4 @@ export const securityHeaders = {
   
   // Cache control for improved performance and reduced flickering
   'Cache-Control': 'public, max-age=300, stale-while-revalidate=60',
-  
-  // Feature-Policy header for additional security
-  'Feature-Policy': 'camera self; microphone self; geolocation self;',
 };

@@ -1,162 +1,122 @@
 
-import { Link } from 'react-router-dom';
 import { HashLink } from 'react-router-hash-link';
-import { Facebook, Twitter, Instagram, Linkedin, Youtube, ArrowUpRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { WhatsAppButton } from './communication/WhatsAppButton';
-import LegalFooter from './LegalFooter';
+import { Link } from 'react-router-dom';
 
-const Footer = () => {
+export default function Footer() {
+  const handlePricingClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Open Gmail compose for pricing inquiries
+    const subject = "Pricing Inquiry";
+    const body = "Hello,\n\nI would like to inquire about your pricing plans.\n\nThank you.";
+    
+    window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=victurehealthcaresolutions@gmail.com&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+  };
+
+  const handleContactClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Open Gmail compose for general contact
+    const subject = "General Inquiry";
+    const body = "Hello,\n\nI would like to get in touch regarding the following:\n\n[Your message here]\n\nThank you,\n[Your Name]";
+    
+    window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=victurehealthcaresolutions@gmail.com&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+  };
+
   return (
-    <footer id="footer" className="bg-white border-t pt-12 pb-0">
+    <footer id="footer" className="bg-white py-12 border-t">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          <div className="md:col-span-1">
-            <Link to="/" className="inline-block mb-4">
-              <h2 className="text-2xl font-bold text-primary">Victure</h2>
-            </Link>
-            <p className="text-muted-foreground mb-4">
-              Modern pharmacy management system with AI-powered insights and optimization tools.
-            </p>
-            <div className="flex space-x-4">
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-                <Facebook className="h-5 w-5 text-gray-400 hover:text-primary transition-colors" />
-              </a>
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
-                <Twitter className="h-5 w-5 text-gray-400 hover:text-primary transition-colors" />
-              </a>
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                <Instagram className="h-5 w-5 text-gray-400 hover:text-primary transition-colors" />
-              </a>
-              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
-                <Linkedin className="h-5 w-5 text-gray-400 hover:text-primary transition-colors" />
-              </a>
-              <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
-                <Youtube className="h-5 w-5 text-gray-400 hover:text-primary transition-colors" />
-              </a>
-            </div>
-          </div>
-          
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="font-semibold mb-4">Product</h3>
-            <ul className="space-y-3">
+            <HashLink to="/" className="text-2xl font-bold text-primary">
+              Victure
+            </HashLink>
+            <p className="mt-4 text-neutral-600">
+              Streamlining pharmacy operations for better patient care.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-neutral-900 mb-4">Product</h3>
+            <ul className="space-y-2">
               <li>
-                <HashLink smooth to="/#features" className="text-muted-foreground hover:text-primary transition-colors">
+                <HashLink smooth to="#features" className="text-neutral-600 hover:text-primary transition-colors">
                   Features
                 </HashLink>
               </li>
               <li>
-                <HashLink smooth to="/#benefits" className="text-muted-foreground hover:text-primary transition-colors">
+                <HashLink smooth to="#benefits" className="text-neutral-600 hover:text-primary transition-colors">
                   Benefits
                 </HashLink>
               </li>
               <li>
-                <HashLink smooth to="/#pricing" className="text-muted-foreground hover:text-primary transition-colors">
+                <a href="#" onClick={handlePricingClick} className="text-neutral-600 hover:text-primary transition-colors">
                   Pricing
-                </HashLink>
-              </li>
-              <li>
-                <Link to="/documentation" className="text-muted-foreground hover:text-primary transition-colors">
-                  Documentation
-                </Link>
-              </li>
-              <li>
-                <Link to="/api" className="text-muted-foreground hover:text-primary transition-colors">
-                  API
-                </Link>
+                </a>
               </li>
             </ul>
           </div>
-          
+
           <div>
-            <h3 className="font-semibold mb-4">Company</h3>
-            <ul className="space-y-3">
+            <h3 className="font-semibold text-neutral-900 mb-4">Company</h3>
+            <ul className="space-y-2">
               <li>
-                <HashLink smooth to="/#scroll-animation" className="text-muted-foreground hover:text-primary transition-colors">
+                <HashLink smooth to="#scroll-animation" className="text-neutral-600 hover:text-primary transition-colors">
                   About Us
                 </HashLink>
               </li>
               <li>
-                <HashLink smooth to="/#feedback" className="text-muted-foreground hover:text-primary transition-colors">
+                <a href="#" onClick={handleContactClick} className="text-neutral-600 hover:text-primary transition-colors">
                   Contact
-                </HashLink>
-              </li>
-              <li>
-                <Link to="/careers" className="text-muted-foreground hover:text-primary transition-colors">
-                  Careers
-                </Link>
-              </li>
-              <li>
-                <Link to="/blog" className="text-muted-foreground hover:text-primary transition-colors">
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link to="/press" className="text-muted-foreground hover:text-primary transition-colors">
-                  Press
-                </Link>
+                </a>
               </li>
             </ul>
           </div>
-          
+
           <div>
-            <h3 className="font-semibold mb-4">Legal</h3>
-            <ul className="space-y-3">
+            <h3 className="font-semibold text-neutral-900 mb-4">Legal</h3>
+            <ul className="space-y-2">
               <li>
-                <Link to="/legal/terms" className="text-muted-foreground hover:text-primary transition-colors">
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link to="/legal/privacy" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link to="/legal/privacy-policy" className="text-neutral-600 hover:text-green-500 transition-colors">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link to="/legal/acceptable-use" className="text-muted-foreground hover:text-primary transition-colors">
-                  Acceptable Use
+                <Link to="/legal/terms-of-service" className="text-neutral-600 hover:text-green-500 transition-colors">
+                  Terms of Service
                 </Link>
               </li>
               <li>
-                <Link to="/legal/sla" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link to="/legal/eula" className="text-neutral-600 hover:text-green-500 transition-colors">
+                  EULA
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/sla" className="text-neutral-600 hover:text-green-500 transition-colors">
                   SLA
                 </Link>
               </li>
               <li>
-                <Link to="/legal/refund" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link to="/legal/refund-policy" className="text-neutral-600 hover:text-green-500 transition-colors">
                   Refund Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/acceptable-use-policy" className="text-neutral-600 hover:text-green-500 transition-colors">
+                  Acceptable Use Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/disclaimers" className="text-neutral-600 hover:text-green-500 transition-colors">
+                  Disclaimers
                 </Link>
               </li>
             </ul>
           </div>
         </div>
-        
-        <div className="border-t pt-8 pb-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-muted-foreground">
-              <h3 className="font-semibold mb-1">Ready to transform your pharmacy?</h3>
-              <p className="text-sm">Experience the power of AI-driven pharmacy management.</p>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-4">
-              <WhatsAppButton 
-                phoneNumber="+917123456789"
-                buttonText="Chat with Sales"
-                buttonVariant="outline"
-              />
-              
-              <Button className="flex items-center gap-2">
-                Get Started
-                <ArrowUpRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+
+        <div className="border-t border-neutral-200 mt-12 pt-8 text-center text-neutral-600">
+          <p>&copy; {new Date().getFullYear()} Victure. All rights reserved.</p>
         </div>
       </div>
-      
-      <LegalFooter />
     </footer>
   );
-};
-
-export default Footer;
+}

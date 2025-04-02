@@ -7,7 +7,7 @@ import { MouseEventHandler } from "react";
 
 interface PageHeaderProps {
   pharmacyLocation: { state: string; city: string } | null;
-  onRefresh: MouseEventHandler<HTMLButtonElement> | (() => void);  // Updated to accept both types
+  onRefresh: MouseEventHandler<HTMLButtonElement>;
   lastRefreshed: Date;
   dataSources?: string[];
   hasError?: boolean;
@@ -38,7 +38,7 @@ export function PageHeader({
         {dataSources && dataSources.length > 0 && (
           <div className="flex items-center gap-2 mt-1">
             <span className="text-xs text-muted-foreground">Data sources: </span>
-            <div className="flex flex-wrap gap-1">
+            <div className="flex gap-1">
               {dataSources.map((source, index) => (
                 <span key={source} className="text-xs bg-muted px-1.5 py-0.5 rounded-md flex items-center">
                   {source}
