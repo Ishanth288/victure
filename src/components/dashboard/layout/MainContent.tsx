@@ -9,7 +9,7 @@ interface MainContentProps {
 
 export function MainContent({ children }: MainContentProps) {
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col h-screen overflow-hidden">
       <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-6 border-b bg-white shadow-sm">
         <div className="text-2xl font-bold text-neutral-900">
           Victure Healthcare Solutions
@@ -17,11 +17,9 @@ export function MainContent({ children }: MainContentProps) {
         <ProfileSection />
       </header>
       
-      <main className="p-4 md:p-6 overflow-y-auto flex-1">
+      <main className="p-4 md:p-6 flex-1 overflow-auto">
         <PlanBanner />
-        <ScrollArea className="h-full">
-          {children}
-        </ScrollArea>
+        {children}
       </main>
     </div>
   );

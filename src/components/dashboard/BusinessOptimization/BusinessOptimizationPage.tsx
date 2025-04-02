@@ -16,6 +16,7 @@ import { useBusinessData } from "./hooks/useBusinessData";
 export function BusinessOptimizationPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("forecast");
+  const [loadingTab, setLoadingTab] = useState<string | null>(null);
   const { 
     isLoading, 
     inventoryData, 
@@ -36,6 +37,10 @@ export function BusinessOptimizationPage() {
   const handleTabChange = (tabValue: string) => {
     setActiveTab(tabValue);
     setSearchParams({ tab: tabValue });
+    // Only set loading when changing tabs
+    setLoadingTab(tabValue);
+    // Clear loading after a short delay
+    setTimeout(() => setLoadingTab(null), 500);
   };
 
   const tabs = [
@@ -110,7 +115,9 @@ export function BusinessOptimizationPage() {
             locationData={locationData} 
           />
         )}
-        {activeTab === "returns" && <ReturnAnalysisTab />}
+        {activeTab === "returns" && (
+          <ReturnAnalysisTab isLoading={loadingTab === "returns"} />
+        )}
       </TabContent>
     </div>
   );

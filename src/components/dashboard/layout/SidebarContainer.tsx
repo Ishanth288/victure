@@ -11,7 +11,7 @@ export function SidebarContainer() {
   const navigate = useNavigate();
   
   return (
-    <div className="w-60 h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex-shrink-0">
+    <div className="w-60 h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex-shrink-0 overflow-y-auto">
       <div className="flex flex-col h-full p-3">
         <div className="mb-4 flex items-center space-x-2 pl-2">
           <button 

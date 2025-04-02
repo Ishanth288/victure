@@ -18,9 +18,13 @@ import { Undo, CheckCircle } from "lucide-react";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28EFF'];
 
-export function ReturnAnalysisTab() {
+interface ReturnAnalysisTabProps {
+  isLoading?: boolean;
+}
+
+export function ReturnAnalysisTab({ isLoading = false }: ReturnAnalysisTabProps) {
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false); // Set initially to false
+  const [loading, setLoading] = useState(false);
   const [timeframe, setTimeframe] = useState<'week' | 'month' | 'year'>('month');
   const [returnData, setReturnData] = useState<any[]>([]);
   const [returnMetrics, setReturnMetrics] = useState({
@@ -36,17 +40,17 @@ export function ReturnAnalysisTab() {
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    if (!initialized) {
+    if (!initialized && !isLoading) {
       fetchReturnData();
       setInitialized(true);
     }
-  }, [initialized]);
+  }, [initialized, isLoading]);
 
   useEffect(() => {
-    if (initialized) {
+    if (initialized && !isLoading) {
       fetchReturnData();
     }
-  }, [timeframe]);
+  }, [timeframe, initialized, isLoading]);
 
   const fetchReturnData = async () => {
     setLoading(true);
@@ -186,7 +190,7 @@ export function ReturnAnalysisTab() {
     }
   };
 
-  if (loading) {
+  if (isLoading || loading) {
     return (
       <div className="space-y-6 p-6">
         <div className="h-24 w-full flex items-center justify-center">
