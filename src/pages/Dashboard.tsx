@@ -12,10 +12,13 @@ import {
 } from "@/components/dashboard";
 import { PostLoginOnboarding } from "@/components/onboarding/PostLoginOnboarding";
 import { GrowthOpportunitiesChart } from '@/components/insights/GrowthOpportunitiesChart';
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Dashboard() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [showPostLoginOnboarding, setShowPostLoginOnboarding] = useState(false);
+  const { toast } = useToast();
   
   const {
     isLoading,
@@ -41,7 +44,38 @@ export default function Dashboard() {
       // Remove the flag so it doesn't show again on refresh
       localStorage.removeItem('show-post-login-onboarding');
     }
-  }, []);
+    
+    // Check if the user just logged in by checking the URL params
+    const url = new URL(window.location.href);
+    const justLoggedIn = url.searchParams.get('just_logged_in');
+    if (justLoggedIn === 'true') {
+      // Show login success message
+      toast({
+        title: "Login Successful",
+        description: "Welcome to your pharmacy dashboard!",
+        duration: 5000,
+      });
+      
+      // Remove the URL param so the message doesn't show again on refresh
+      url.searchParams.delete('just_logged_in');
+      window.history.replaceState({}, document.title, url.toString());
+    }
+    
+    // Also check auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        toast({
+          title: "Login Successful",
+          description: "Welcome to your pharmacy dashboard!",
+          duration: 5000,
+        });
+      }
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [toast]);
 
   return (
     <DashboardLayout>
