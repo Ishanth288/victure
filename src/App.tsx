@@ -15,7 +15,7 @@ import BusinessOptimization from "@/pages/BusinessOptimization";
 import Insights from "@/pages/Insights";
 import Admin from "@/pages/Admin";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import AuthWrapper from "@/components/AuthWrapper";
+import { AuthWrapper } from "@/components/AuthWrapper";
 import AcceptableUsePolicy from "@/pages/legal/AcceptableUsePolicy";
 import Disclaimers from "@/pages/legal/Disclaimers";
 import EULA from "@/pages/legal/EULA";

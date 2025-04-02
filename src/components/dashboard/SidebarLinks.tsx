@@ -2,7 +2,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, PackageOpen, FileText, Users, FileSpreadsheet, Settings, BarChart2, ChevronRight } from "lucide-react";
+import { LayoutDashboard, PackageOpen, FileText, Users, FileSpreadsheet, Settings, BarChart2, ChevronRight, ShoppingBag, RotateCcw, LineChart } from "lucide-react";
 import { useState } from "react";
 
 export function SidebarLinks() {
@@ -48,6 +48,16 @@ export function SidebarLinks() {
       href: "/prescriptions"
     },
     {
+      title: "Purchases",
+      icon: <ShoppingBag className="mr-2 h-4 w-4" />,
+      href: "/purchases"
+    },
+    {
+      title: "Insights", 
+      icon: <LineChart className="mr-2 h-4 w-4" />,
+      href: "/insights"
+    },
+    {
       title: "Business Analytics",
       icon: <BarChart2 className="mr-2 h-4 w-4" />,
       href: "/business-optimization",
@@ -57,8 +67,14 @@ export function SidebarLinks() {
         { title: "Supplier Metrics", href: "/business-optimization?tab=supplier" },
         { title: "Expiry Analysis", href: "/business-optimization?tab=expiry" },
         { title: "Seasonal Trends", href: "/business-optimization?tab=seasonal" },
-        { title: "Regional Demand", href: "/business-optimization?tab=regional" }
+        { title: "Regional Demand", href: "/business-optimization?tab=regional" },
+        { title: "Return Analysis", href: "/business-optimization?tab=returns" }
       ]
+    },
+    {
+      title: "Medicine Returns",
+      icon: <RotateCcw className="mr-2 h-4 w-4" />,
+      href: "/medicine-returns"
     },
     {
       title: "Settings",

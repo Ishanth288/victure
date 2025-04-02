@@ -8,7 +8,7 @@ interface AuthWrapperProps {
   children: React.ReactNode;
 }
 
-const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
+export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
@@ -80,7 +80,7 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
     return <Navigate to={`/auth?redirect=${location.pathname}${location.search}`} replace />;
   }
 
-  return children;
+  return <>{children}</>;
 };
 
 export default AuthWrapper;

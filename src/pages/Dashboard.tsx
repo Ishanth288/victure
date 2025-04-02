@@ -10,7 +10,6 @@ import {
   DashboardWidgets,
   useDashboardData
 } from "@/components/dashboard";
-import { PostLoginOnboarding } from "@/components/onboarding/PostLoginOnboarding";
 import { GrowthOpportunitiesChart } from '@/components/insights/GrowthOpportunitiesChart';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,27 +59,12 @@ export default function Dashboard() {
       url.searchParams.delete('just_logged_in');
       window.history.replaceState({}, document.title, url.toString());
     }
-    
-    // Also check auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
-        toast({
-          title: "Login Successful",
-          description: "Welcome to your pharmacy dashboard!",
-          duration: 5000,
-        });
-      }
-    });
-    
-    return () => {
-      subscription.unsubscribe();
-    };
   }, [toast]);
 
   return (
     <DashboardLayout>
       <ErrorBoundary>
-        {showPostLoginOnboarding && <PostLoginOnboarding />}
+        {showPostLoginOnboarding && <div className="mb-6">Welcome to your pharmacy dashboard!</div>}
         <WelcomeDialog isOpen={isHelpOpen} onOpenChange={setIsHelpOpen} />
         
         <div className="space-y-6">
