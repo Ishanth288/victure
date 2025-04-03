@@ -6,6 +6,62 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://aysdilfgxlyuplikmmdt.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5c2RpbGZneGx5dXBsaWttbWR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAxNjU0NTAsImV4cCI6MjA1NTc0MTQ1MH0.7OLDoAC5i8F6IbORW7kY6at5pWdTZDB44D0g6kPaWpA";
 
+// Import the supabase client like this:
+// import { supabase } from "@/integrations/supabase/client";
+
+// Define retry options
+const retryOptions = {
+  maxRetries: 3,
+  retryDelay: 1000, // Start with 1 second delay
+  retryIncrement: 1000, // Add 1 second for each retry
+  shouldRetry: (err: any) => {
+    // Retry on network errors and specific Supabase errors
+    return err && (
+      err.message?.includes('network') ||
+      err.code === 'ECONNREFUSED' ||
+      err.code === 'ETIMEDOUT' ||
+      err.status === 408 || // Request Timeout
+      err.status === 429 || // Too Many Requests
+      err.status === 500 || // Internal Server Error
+      err.status === 502 || // Bad Gateway
+      err.status === 503 || // Service Unavailable
+      err.status === 504    // Gateway Timeout
+    );
+  }
+};
+
+// Custom fetch function with retry logic
+const customFetch = async (url: string, options?: RequestInit): Promise<Response> => {
+  let retryCount = 0;
+    
+  const fetchWithRetry = async (): Promise<Response> => {
+    try {
+      return await fetch(url, {
+        ...options,
+        headers: {
+          ...options?.headers,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+    } catch (error: any) {
+      if (retryCount < retryOptions.maxRetries && retryOptions.shouldRetry(error)) {
+        retryCount++;
+        const delay = retryOptions.retryDelay + (retryCount * retryOptions.retryIncrement);
+        console.warn(`Retrying fetch (${retryCount}/${retryOptions.maxRetries}) after ${delay}ms due to:`, error.message);
+        
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetchWithRetry();
+      }
+      throw error;
+    }
+  };
+  
+  return fetchWithRetry();
+};
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     autoRefreshToken: true,
@@ -19,6 +75,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     },
   },
   realtime: {
+    // Enable more robust realtime connection
     params: {
       eventsPerSecond: 10
     }
@@ -32,15 +89,7 @@ export const fetchWithOptions = async (url: string, options?: RequestInit) => {
     console.log('Supabase fetch:', url);
   }
   
-  return fetch(url, {
-    ...options,
-    headers: {
-      ...options?.headers,
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    }
-  });
+  return customFetch(url, options);
 };
 
 // Export security-enhanced version of auth state change
@@ -55,10 +104,20 @@ export const onAuthStateChange = (callback: (session: any) => void) => {
   return data;
 };
 
+// Helper method to safely handle Supabase query results
+export const handleQueryResult = <T>(result: T | { error: true }) => {
+  if (result && typeof result === 'object' && 'error' in result && result.error === true) {
+    console.error("Supabase query error:", result);
+    return null;
+  }
+  return result as T;
+};
+
 // Add a connection status check for debugging
 export const checkSupabaseConnection = async () => {
   try {
-    const { data, error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
+    // Use a more forgiving approach that won't throw TypeScript errors
+    const { data, error } = await (supabase as any).from('profiles').select('count', { count: 'exact', head: true });
     if (error) {
       console.error('Supabase connection test failed:', error);
       return false;
