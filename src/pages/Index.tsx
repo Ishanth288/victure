@@ -1,8 +1,8 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { HeroSection } from "@/components/sections/HeroSection";
-import { FloatingIconsSection } from "@/components/sections/FloatingIconsSection"; // Keep import
-import { ScrollAnimationSection } from "@/components/sections/ScrollAnimationSection";
+import { FloatingIconsSection } from "@/components/sections/FloatingIconsSection";
+import { ScrollAnimationSection } from "@/components/sections/ScrollAnimationSection"; // Keep import
 import { ContentSection } from "@/components/sections/ContentSection";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { useEffect, memo, useRef, useState } from "react";
@@ -80,25 +80,25 @@ const Index = memo(() => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }} // Faster transition
           >
-             <HeroSection /> {/* ---- Step 2: Restored HeroSection ---- */}
+             <HeroSection />
 
-            {/* ---- Step 2: Commented out FloatingIconsSection ---- */}
-            {/*
-            <MainContentWrapper
+            <MainContentWrapper  /* ---- Step 3: Restored FloatingIconsSection ---- */
               useFallback={true}
               onError={handleError}
               className="-mt-24"
             >
               <FloatingIconsSection />
             </MainContentWrapper>
-            */}
 
+            {/* ---- Step 3: Commented out ScrollAnimationSection ---- */}
+            {/*
             <MainContentWrapper
               onError={handleError}
               className="-mt-32"
             >
               <ScrollAnimationSection />
             </MainContentWrapper>
+            */}
 
             <MainContentWrapper
               onError={handleError}
