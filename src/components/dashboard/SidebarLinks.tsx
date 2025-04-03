@@ -2,6 +2,8 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { 
   LayoutDashboard, 
   PackageOpen, 
@@ -18,6 +20,7 @@ import {
 export function SidebarLinks() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
 
   const isCurrentPath = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path);
@@ -76,6 +79,35 @@ export function SidebarLinks() {
     navigate(href);
   };
 
+  const handleSignOut = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Error signing out:", error);
+        toast({
+          title: "Sign out failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Signed out successfully",
+          description: "You have been signed out of your account.",
+          variant: "default",
+        });
+        navigate('/auth');
+      }
+    } catch (err: any) {
+      console.error("Sign out error:", err);
+      toast({
+        title: "Error",
+        description: "There was a problem signing out",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col space-y-1">
       {links.map((link, index) => (
@@ -103,11 +135,7 @@ export function SidebarLinks() {
       <div className="mt-auto pt-4">
         <a
           href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            // Handle sign out logic here
-            navigate('/auth');
-          }}
+          onClick={handleSignOut}
           className={cn(
             buttonVariants({ variant: "ghost" }),
             "justify-start hover:bg-green-50 hover:text-green-700"

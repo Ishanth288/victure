@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { BasicInfoFields } from "@/components/registration/BasicInfoFields";
 import { AddressFields } from "@/components/registration/AddressFields";
 import { AccountFields } from "@/components/registration/AccountFields";
-import { Package, ShoppingCart, Check, CheckCircle2, ListChecks, Shield, Activity, ArrowRight } from "lucide-react";
+import { Package, ShoppingCart, Check, CheckCircle2, ListChecks, Shield, Activity } from "lucide-react";
 import { stableToast } from "@/components/ui/stable-toast";
 import { RegistrationData } from "@/types/registration";
 import Navigation from "@/components/Navigation";
@@ -113,22 +113,28 @@ export default function Auth() {
         localStorage.setItem('show-post-login-onboarding', 'true');
         
         if (data.user) {
-          const { data: profileData } = await supabase
+          // Get pharmacy name from profiles table
+          const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('pharmacy_name')
             .eq('id', data.user.id)
             .single();
             
-          const pharmacyName = profileData?.pharmacy_name || 'Victure';
-          
-          stableToast({
-            title: `Welcome back to ${pharmacyName}!`,
-            description: "You've successfully logged in.",
-            variant: "success",
-          });
+          if (!profileError && profileData) {
+            const pharmacyName = profileData?.pharmacy_name || 'Victure';
+            
+            stableToast({
+              title: `Welcome back to ${pharmacyName}!`,
+              description: "You've successfully logged in.",
+              variant: "success",
+            });
+          }
         }
         
-        navigate('/dashboard');
+        // Get redirect URL from query params or default to dashboard
+        const params = new URLSearchParams(location.search);
+        const redirectTo = params.get('redirect') || '/dashboard';
+        navigate(redirectTo);
       }
     } catch (err: any) {
       setError(err.message || "An error occurred during login");

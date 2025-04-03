@@ -4,31 +4,50 @@ import { HashLink } from 'react-router-hash-link';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Home } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Navigation() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isAuthPage, setIsAuthPage] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     // Check if current page is auth page
     setIsAuthPage(location.pathname === '/auth');
+
+    // Check if user is logged in
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+    };
+    
+    checkAuth();
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setIsLoggedIn(!!session);
+      }
+    );
+    
+    return () => subscription.unsubscribe();
   }, [location.pathname]);
 
   const handleLogin = () => {
     navigate('/auth', { state: { isLogin: true } });
   };
 
-  const handleGetStarted = () => {
-    // If we're on the home page, scroll to pricing section
-    if (location.pathname === '/') {
-      const pricingSection = document.getElementById('pricing');
-      if (pricingSection) {
-        pricingSection.scrollIntoView({ behavior: 'smooth' });
-      }
-    } else {
-      // If we're on another page, navigate to home and then to pricing
-      navigate('/#pricing');
+  const handleDashboard = () => {
+    navigate('/dashboard');
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate('/');
+    } catch (error) {
+      console.error("Error signing out:", error);
     }
   };
 
@@ -89,23 +108,43 @@ export default function Navigation() {
             </div>
           )}
 
-          {/* Only show these buttons on the home page */}
-          {location.pathname === '/' && (
-            <div className="flex items-center space-x-4">
-              <Button 
-                variant="outline" 
-                className="border-primary text-primary hover:bg-primary/10"
-                onClick={handleLogin}
-              >
-                Login
-              </Button>
-              <HashLink smooth to="#pricing">
-                <Button className="bg-primary hover:bg-primary-dark text-white">
-                  Get Started
+          {/* Conditional buttons based on auth state */}
+          <div className="flex items-center space-x-4">
+            {isLoggedIn ? (
+              <>
+                <Button 
+                  variant="outline" 
+                  className="border-primary text-primary hover:bg-primary/10"
+                  onClick={handleDashboard}
+                >
+                  Dashboard
                 </Button>
-              </HashLink>
-            </div>
-          )}
+                <Button 
+                  className="bg-primary hover:bg-primary-dark text-white"
+                  onClick={handleSignOut}
+                >
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              location.pathname === '/' && (
+                <>
+                  <Button 
+                    variant="outline" 
+                    className="border-primary text-primary hover:bg-primary/10"
+                    onClick={handleLogin}
+                  >
+                    Login
+                  </Button>
+                  <HashLink smooth to="#pricing">
+                    <Button className="bg-primary hover:bg-primary-dark text-white">
+                      Get Started
+                    </Button>
+                  </HashLink>
+                </>
+              )
+            )}
+          </div>
         </div>
       </div>
     </nav>

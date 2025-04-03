@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useLocation, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 
 interface AuthWrapperProps {
   children: React.ReactNode;
@@ -15,53 +16,39 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      setSession(currentSession);
+      
+      // Show login success message but avoid showing on initial page load
+      if (event === 'SIGNED_IN' && !loading) {
+        toast({
+          title: "Login Successful",
+          description: "You have been successfully logged in.",
+          variant: "default", 
+        });
+      }
+    });
+
+    // THEN check for existing session
     const checkSession = async () => {
       setLoading(true);
       try {
-        // Get the current session
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error("Error checking session:", error);
-          return;
+          setSession(null);
+        } else {
+          setSession(currentSession);
         }
-
-        setSession(currentSession);
-
-        if (!currentSession) {
-          // If no session exists, check if there's a refresh token in the URL
-          const params = new URLSearchParams(location.search);
-          const refreshToken = params.get('refresh_token');
-
-          if (refreshToken) {
-            // Try to refresh the session using the refresh token
-            const { error: refreshError } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
-
-            if (refreshError) {
-              console.error("Failed to refresh session:", refreshError);
-              // Redirect to login if refresh fails
-              return;
-            }
-          }
-        }
+      } catch (err) {
+        console.error("Session check error:", err);
+        setSession(null);
       } finally {
         setLoading(false);
       }
     };
-
-    // Set up auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
-      setSession(currentSession);
-      
-      // Show login success message
-      if (event === 'SIGNED_IN') {
-        toast({
-          title: "Login Successful",
-          description: "You have been successfully logged in.",
-          variant: "default", // Using "default" instead of "success"
-        });
-      }
-    });
 
     checkSession();
 
@@ -69,12 +56,12 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [location.search, toast]);
+  }, [toast]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+        <LoadingAnimation text="Authenticating..." size="md" />
       </div>
     );
   }
