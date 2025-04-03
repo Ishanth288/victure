@@ -1,7 +1,7 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { HeroSection } from "@/components/sections/HeroSection"; // Keep import
-import { FloatingIconsSection } from "@/components/sections/FloatingIconsSection";
+import { HeroSection } from "@/components/sections/HeroSection";
+import { FloatingIconsSection } from "@/components/sections/FloatingIconsSection"; // Keep import
 import { ScrollAnimationSection } from "@/components/sections/ScrollAnimationSection";
 import { ContentSection } from "@/components/sections/ContentSection";
 import { FeedbackForm } from "@/components/FeedbackForm";
@@ -80,9 +80,10 @@ const Index = memo(() => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }} // Faster transition
           >
-            {/* ---- Step 1: Commented out HeroSection ---- */}
-            {/* <HeroSection /> */}
+             <HeroSection /> {/* ---- Step 2: Restored HeroSection ---- */}
 
+            {/* ---- Step 2: Commented out FloatingIconsSection ---- */}
+            {/*
             <MainContentWrapper
               useFallback={true}
               onError={handleError}
@@ -90,6 +91,7 @@ const Index = memo(() => {
             >
               <FloatingIconsSection />
             </MainContentWrapper>
+            */}
 
             <MainContentWrapper
               onError={handleError}
