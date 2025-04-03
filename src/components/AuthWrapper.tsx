@@ -16,7 +16,7 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up auth state listener
+    // First set up the auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       setSession(currentSession);
       
@@ -25,15 +25,14 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
         toast({
           title: "Login Successful",
           description: "You have been successfully logged in.",
-          variant: "default", 
+          variant: "default",
         });
       }
     });
 
-    // Check for existing session
+    // Then check for existing session
     const checkSession = async () => {
       try {
-        setLoading(true);
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         setSession(currentSession);
       } catch (err) {
@@ -46,7 +45,6 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
 
     checkSession();
 
-    // Cleanup
     return () => {
       subscription.unsubscribe();
     };
@@ -61,8 +59,9 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   }
 
   if (!session) {
-    // Redirect to the authentication page and pass the current location
-    return <Navigate to={`/auth?redirect=${location.pathname}${location.search}`} replace />;
+    // Store the current location to redirect back after login
+    const returnPath = location.pathname === '/auth' ? '/dashboard' : location.pathname;
+    return <Navigate to={`/auth?redirect=${returnPath}`} replace />;
   }
 
   return <>{children}</>;

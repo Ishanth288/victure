@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -41,7 +40,9 @@ export default function Auth() {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate('/dashboard');
+        const params = new URLSearchParams(window.location.search);
+        const redirectTo = params.get('redirect') || '/dashboard';
+        navigate(redirectTo);
       }
     };
     checkUser();
@@ -109,29 +110,7 @@ export default function Auth() {
           description: error.message,
           variant: "destructive",
         });
-      } else {
-        localStorage.setItem('show-post-login-onboarding', 'true');
-        
-        if (data.user) {
-          // Get pharmacy name from profiles table
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('pharmacy_name')
-            .eq('id', data.user.id)
-            .single();
-            
-          if (!profileError && profileData) {
-            const pharmacyName = profileData?.pharmacy_name || 'Victure';
-            
-            stableToast({
-              title: `Welcome back to ${pharmacyName}!`,
-              description: "You've successfully logged in.",
-              variant: "success",
-            });
-          }
-        }
-        
-        // Get redirect URL from query params or default to dashboard
+      } else if (data.user) {
         const params = new URLSearchParams(location.search);
         const redirectTo = params.get('redirect') || '/dashboard';
         navigate(redirectTo);
@@ -192,14 +171,11 @@ export default function Auth() {
           variant: "destructive",
         });
       } else {
-        localStorage.setItem('show-post-login-onboarding', 'true');
-        
-        stableToast({
+        toast({
           title: "Registration successful!",
           description: "Welcome to Victure PharmEase! Your account has been created.",
           variant: "success",
         });
-        
         navigate('/dashboard');
       }
     } catch (err: any) {
@@ -223,7 +199,6 @@ export default function Auth() {
     }
   };
 
-  // Features list for the feature highlight section
   const features = [
     { icon: <CheckCircle2 className="h-5 w-5 text-primary" />, text: "Complete pharmacy management solution" },
     { icon: <Activity className="h-5 w-5 text-primary" />, text: "Real-time inventory tracking" },
@@ -237,7 +212,6 @@ export default function Auth() {
       
       <div className="container mx-auto px-4 pt-16 pb-8">
         <div className="flex flex-col lg:flex-row gap-8 items-center justify-center">
-          {/* Features section */}
           <div className="w-full lg:w-1/2 max-w-lg">
             <h2 className="text-3xl font-bold text-gray-900 mb-6">Victure PharmEase</h2>
             <p className="text-lg text-gray-700 mb-8">
@@ -260,7 +234,6 @@ export default function Auth() {
             </div>
           </div>
 
-          {/* Auth card */}
           <div className="w-full lg:w-1/2 max-w-md">
             <Card className="border-none shadow-lg">
               <CardHeader className="space-y-1">
