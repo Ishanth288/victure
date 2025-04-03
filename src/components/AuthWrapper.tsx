@@ -56,7 +56,7 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [toast]);
+  }, [toast, loading]);
 
   if (loading) {
     return (
