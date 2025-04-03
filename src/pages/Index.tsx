@@ -1,7 +1,6 @@
-
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { HeroSection } from "@/components/sections/HeroSection";
+import { HeroSection } from "@/components/sections/HeroSection"; // Keep import
 import { FloatingIconsSection } from "@/components/sections/FloatingIconsSection";
 import { ScrollAnimationSection } from "@/components/sections/ScrollAnimationSection";
 import { ContentSection } from "@/components/sections/ContentSection";
@@ -19,17 +18,17 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 const Index = memo(() => {
   const feedbackSectionRef = useRef<HTMLElement>(null);
   const [isError, setIsError] = useState(false);
-  const { 
+  const {
     showOnboarding,
     setIsOpen: setShowOnboarding,
     completeOnboarding,
     skipOnboarding
   } = useOnboarding();
-  
+
   useEffect(() => {
     // Setup minimal performance optimizations
     const cleanupOptimizations = setupPageOptimizations();
-    
+
     // Setup visibility observer
     const observer = createVisibilityObserver((isVisible) => {
       // Load resources when sections become visible
@@ -43,7 +42,7 @@ const Index = memo(() => {
     sections.forEach(section => {
       observer.observe(section);
     });
-    
+
     return () => {
       cleanupOptimizations();
       observer.disconnect();
@@ -75,39 +74,40 @@ const Index = memo(() => {
       >
         <div className="min-h-screen bg-white">
           <Navigation />
-          <m.main 
-            className="overflow-hidden" 
+          <m.main
+            className="overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }} // Faster transition
           >
-            <HeroSection />
-            
-            <MainContentWrapper 
-              useFallback={true} 
+            {/* ---- Step 1: Commented out HeroSection ---- */}
+            {/* <HeroSection /> */}
+
+            <MainContentWrapper
+              useFallback={true}
               onError={handleError}
-              className="-mt-24" 
+              className="-mt-24"
             >
               <FloatingIconsSection />
             </MainContentWrapper>
-            
-            <MainContentWrapper 
+
+            <MainContentWrapper
               onError={handleError}
-              className="-mt-32" 
+              className="-mt-32"
             >
               <ScrollAnimationSection />
             </MainContentWrapper>
-            
-            <MainContentWrapper 
+
+            <MainContentWrapper
               onError={handleError}
-              className="-mt-24" 
+              className="-mt-24"
             >
               <ContentSection />
             </MainContentWrapper>
 
-            <section 
-              id="feedback" 
-              className="py-12 bg-gray-50 -mt-16 content-visibility-auto" 
+            <section
+              id="feedback"
+              className="py-12 bg-gray-50 -mt-16 content-visibility-auto"
               ref={feedbackSectionRef}
             >
               <div className="container mx-auto px-4">
