@@ -2,8 +2,8 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { HeroSection } from "@/components/sections/HeroSection";
 import { FloatingIconsSection } from "@/components/sections/FloatingIconsSection";
-import { ScrollAnimationSection } from "@/components/sections/ScrollAnimationSection"; // Keep import
-import { ContentSection } from "@/components/sections/ContentSection";
+import { ScrollAnimationSection } from "@/components/sections/ScrollAnimationSection";
+import { ContentSection } from "@/components/sections/ContentSection"; // Keep import
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { useEffect, memo, useRef, useState } from "react";
 import { LazyMotion, domAnimation, m } from "framer-motion";
@@ -82,7 +82,7 @@ const Index = memo(() => {
           >
              <HeroSection />
 
-            <MainContentWrapper  /* ---- Step 3: Restored FloatingIconsSection ---- */
+            <MainContentWrapper
               useFallback={true}
               onError={handleError}
               className="-mt-24"
@@ -90,22 +90,22 @@ const Index = memo(() => {
               <FloatingIconsSection />
             </MainContentWrapper>
 
-            {/* ---- Step 3: Commented out ScrollAnimationSection ---- */}
-            {/*
-            <MainContentWrapper
+            <MainContentWrapper /* ---- Step 4: Restored ScrollAnimationSection ---- */
               onError={handleError}
               className="-mt-32"
             >
               <ScrollAnimationSection />
             </MainContentWrapper>
-            */}
 
+            {/* ---- Step 4: Commented out ContentSection ---- */}
+            {/*
             <MainContentWrapper
               onError={handleError}
               className="-mt-24"
             >
               <ContentSection />
             </MainContentWrapper>
+            */}
 
             <section
               id="feedback"
