@@ -3,7 +3,7 @@ import Footer from "@/components/Footer";
 import { HeroSection } from "@/components/sections/HeroSection";
 import { FloatingIconsSection } from "@/components/sections/FloatingIconsSection";
 import { ScrollAnimationSection } from "@/components/sections/ScrollAnimationSection";
-import { ContentSection } from "@/components/sections/ContentSection"; // Keep import
+import { ContentSection } from "@/components/sections/ContentSection";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { useEffect, memo, useRef, useState } from "react";
 import { LazyMotion, domAnimation, m } from "framer-motion";
@@ -11,19 +11,22 @@ import * as Sentry from "@sentry/react";
 import { MainContentWrapper } from "@/components/sections/MainContentWrapper";
 import { setupPageOptimizations, deferNonCriticalResources, createVisibilityObserver } from "@/utils/performanceUtils";
 import { Fallback } from "@/components/ui/fallback";
-import { OnboardingProvider } from "@/components/onboarding";
-import { useOnboarding } from "@/hooks/useOnboarding";
+// import { OnboardingProvider } from "@/components/onboarding"; // <-- Commented out import
+// import { useOnboarding } from "@/hooks/useOnboarding"; // <-- Commented out import
 
 // Simplified memo wrapper to reduce re-renders
 const Index = memo(() => {
   const feedbackSectionRef = useRef<HTMLElement>(null);
   const [isError, setIsError] = useState(false);
+  /* ---- Step 6: Commented out Onboarding hook usage ---- */
+  /*
   const {
     showOnboarding,
     setIsOpen: setShowOnboarding,
     completeOnboarding,
     skipOnboarding
   } = useOnboarding();
+  */
 
   useEffect(() => {
     // Setup minimal performance optimizations
@@ -66,12 +69,15 @@ const Index = memo(() => {
 
   return (
     <LazyMotion features={domAnimation} strict>
+      {/* ---- Step 6: Commented out OnboardingProvider wrapper ---- */}
+      {/*
       <OnboardingProvider
-        isOpen={showOnboarding}
-        setIsOpen={setShowOnboarding}
-        onComplete={completeOnboarding}
-        onSkip={skipOnboarding}
+        // isOpen={showOnboarding} // Would cause error
+        // setIsOpen={setShowOnboarding} // Would cause error
+        // onComplete={completeOnboarding} // Would cause error
+        // onSkip={skipOnboarding} // Would cause error
       >
+      */}
         <div className="min-h-screen bg-white">
           <Navigation />
           <m.main
@@ -90,24 +96,21 @@ const Index = memo(() => {
               <FloatingIconsSection />
             </MainContentWrapper>
 
-            <MainContentWrapper /* ---- Step 4: Restored ScrollAnimationSection ---- */
+            <MainContentWrapper
               onError={handleError}
               className="-mt-32"
             >
               <ScrollAnimationSection />
             </MainContentWrapper>
 
-            {/* ---- Step 4: Commented out ContentSection ---- */}
-            {/*
             <MainContentWrapper
               onError={handleError}
               className="-mt-24"
             >
               <ContentSection />
             </MainContentWrapper>
-            */}
 
-            <section
+             <section /* ---- Step 6: Restored FeedbackForm Section ---- */
               id="feedback"
               className="py-12 bg-gray-50 -mt-16 content-visibility-auto"
               ref={feedbackSectionRef}
@@ -117,10 +120,12 @@ const Index = memo(() => {
                 <FeedbackForm />
               </div>
             </section>
+
           </m.main>
           <Footer />
         </div>
-      </OnboardingProvider>
+      {/* </OnboardingProvider> */}
+      {/* ---- Step 6: Commented out OnboardingProvider wrapper ---- */}
     </LazyMotion>
   );
 });
