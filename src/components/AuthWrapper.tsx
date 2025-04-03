@@ -16,7 +16,7 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       setSession(currentSession);
       
@@ -30,18 +30,12 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
       }
     });
 
-    // THEN check for existing session
+    // Check for existing session
     const checkSession = async () => {
-      setLoading(true);
       try {
-        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("Error checking session:", error);
-          setSession(null);
-        } else {
-          setSession(currentSession);
-        }
+        setLoading(true);
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
       } catch (err) {
         console.error("Session check error:", err);
         setSession(null);
@@ -56,7 +50,7 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [toast]);
+  }, [toast, loading]);
 
   if (loading) {
     return (

@@ -11,6 +11,7 @@ export default function Navigation() {
   const location = useLocation();
   const [isAuthPage, setIsAuthPage] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Check if current page is auth page
@@ -18,8 +19,16 @@ export default function Navigation() {
 
     // Check if user is logged in
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsLoggedIn(!!session);
+      setIsLoading(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setIsLoggedIn(!!session);
+      } catch (error) {
+        console.error("Auth check error:", error);
+        setIsLoggedIn(false);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     checkAuth();
@@ -110,7 +119,9 @@ export default function Navigation() {
 
           {/* Conditional buttons based on auth state */}
           <div className="flex items-center space-x-4">
-            {isLoggedIn ? (
+            {isLoading ? (
+              <div className="h-10 w-20 animate-pulse rounded bg-gray-200"></div>
+            ) : isLoggedIn ? (
               <>
                 <Button 
                   variant="outline" 

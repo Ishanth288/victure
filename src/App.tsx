@@ -30,8 +30,19 @@ function App() {
   return (
     <ErrorBoundary>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/documentation" element={<Documentation />} />
+        
+        {/* Legal pages */}
+        <Route path="/legal/acceptable-use" element={<AcceptableUsePolicy />} />
+        <Route path="/legal/disclaimers" element={<Disclaimers />} />
+        <Route path="/legal/eula" element={<EULA />} />
+        <Route path="/legal/privacy" element={<PrivacyPolicy />} />
+        <Route path="/legal/refund" element={<RefundPolicy />} />
+        <Route path="/legal/sla" element={<SLA />} />
+        <Route path="/legal/terms" element={<TermsOfService />} />
         
         {/* Protected Routes */}
         <Route path="/dashboard" element={
@@ -94,18 +105,6 @@ function App() {
             <Admin />
           </AuthWrapper>
         } />
-        
-        {/* Public pages */}
-        <Route path="/documentation" element={<Documentation />} />
-        
-        {/* Legal pages */}
-        <Route path="/legal/acceptable-use" element={<AcceptableUsePolicy />} />
-        <Route path="/legal/disclaimers" element={<Disclaimers />} />
-        <Route path="/legal/eula" element={<EULA />} />
-        <Route path="/legal/privacy" element={<PrivacyPolicy />} />
-        <Route path="/legal/refund" element={<RefundPolicy />} />
-        <Route path="/legal/sla" element={<SLA />} />
-        <Route path="/legal/terms" element={<TermsOfService />} />
         
         {/* 404 route */}
         <Route path="*" element={<NotFound />} />
