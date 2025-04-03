@@ -1,5 +1,5 @@
-import Navigation from "@/components/Navigation"; // Keep import
-import Footer from "@/components/Footer"; // Keep import
+import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
 import { HeroSection } from "@/components/sections/HeroSection";
 import { FloatingIconsSection } from "@/components/sections/FloatingIconsSection";
 import { ScrollAnimationSection } from "@/components/sections/ScrollAnimationSection";
@@ -9,16 +9,16 @@ import { useEffect, memo, useRef, useState } from "react";
 import { LazyMotion, domAnimation, m } from "framer-motion";
 import * as Sentry from "@sentry/react";
 import { MainContentWrapper } from "@/components/sections/MainContentWrapper";
-import { setupPageOptimizations, deferNonCriticalResources, createVisibilityObserver } from "@/utils/performanceUtils";
+import { setupPageOptimizations, deferNonCriticalResources, createVisibilityObserver } from "@/utils/performanceUtils"; // Keep imports
 import { Fallback } from "@/components/ui/fallback";
-import { OnboardingProvider } from "@/components/onboarding"; // Restore import
-import { useOnboarding } from "@/hooks/useOnboarding"; // Restore import
+import { OnboardingProvider } from "@/components/onboarding";
+import { useOnboarding } from "@/hooks/useOnboarding";
 
 // Simplified memo wrapper to reduce re-renders
 const Index = memo(() => {
   const feedbackSectionRef = useRef<HTMLElement>(null);
   const [isError, setIsError] = useState(false);
-  const { /* ---- Step 7: Restored Onboarding hook usage ---- */
+  const {
     showOnboarding,
     setIsOpen: setShowOnboarding,
     completeOnboarding,
@@ -26,6 +26,8 @@ const Index = memo(() => {
   } = useOnboarding();
 
   useEffect(() => {
+    /* ---- Step 8: Commented out useEffect contents ---- */
+    /*
     // Setup minimal performance optimizations
     const cleanupOptimizations = setupPageOptimizations();
 
@@ -47,7 +49,10 @@ const Index = memo(() => {
       cleanupOptimizations();
       observer.disconnect();
     };
-  }, []);
+    */
+    console.log("useEffect running (but empty)"); // Added a log
+    // Return an empty cleanup function or nothing
+  }, []); // Keep dependency array empty
 
   // Simplified error handler
   const handleError = (error: Error) => {
@@ -66,15 +71,14 @@ const Index = memo(() => {
 
   return (
     <LazyMotion features={domAnimation} strict>
-       <OnboardingProvider /* ---- Step 7: Restored OnboardingProvider ---- */
+       <OnboardingProvider
         isOpen={showOnboarding}
         setIsOpen={setShowOnboarding}
         onComplete={completeOnboarding}
         onSkip={skipOnboarding}
       >
         <div className="min-h-screen bg-white">
-          {/* ---- Step 7: Commented out Navigation ---- */}
-          {/* <Navigation /> */}
+           <Navigation /> {/* ---- Step 8: Restored Navigation ---- */}
           <m.main
             className="overflow-hidden"
             initial={{ opacity: 0 }}
@@ -117,8 +121,7 @@ const Index = memo(() => {
             </section>
 
           </m.main>
-          {/* ---- Step 7: Commented out Footer ---- */}
-          {/* <Footer /> */}
+           <Footer /> {/* ---- Step 8: Restored Footer ---- */}
         </div>
        </OnboardingProvider>
     </LazyMotion>
