@@ -1,7 +1,7 @@
 
-import { toast as sonnerToast, type Toast } from "sonner";
+import { toast as sonnerToast, ToastT } from "sonner";
 
-type ToastProps = Toast & {
+type ToastProps = Omit<ToastT, "id"> & {
   title?: string;
   description?: string;
   variant?: "default" | "destructive" | "success";
@@ -36,5 +36,7 @@ export function useToast() {
       toast({ title: message, ...opts }),
     info: (message: string, opts = {}) => 
       toast({ title: message, ...opts }),
+    // The Toaster component expects this, so we need to add it
+    toasts: [] as any[],
   };
 }
