@@ -70,6 +70,8 @@ export const upgradeUserPlan = async (userId: string, newPlan: PlanType) => {
       status: "active"
     }, { merge: true });
     
+    console.log(`User ${userId} upgraded to ${newPlan} plan`);
+    
     toast({
       title: "Plan Upgraded",
       description: `User has been upgraded to ${newPlan} plan`,

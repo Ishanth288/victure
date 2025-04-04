@@ -14,3 +14,6 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const functions = getFunctions(app);
 export const storage = getStorage(app);
+
+// Console log to confirm Firebase initialization
+console.log("Firebase initialized successfully with project:", firebaseConfig.projectId);

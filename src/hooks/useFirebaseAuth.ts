@@ -5,7 +5,8 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  User as FirebaseUser
+  User as FirebaseUser,
+  sendPasswordResetEmail
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/integrations/firebase/client";
@@ -34,8 +35,10 @@ export function useFirebaseAuth() {
     try {
       setLoading(true);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log("User signed in successfully:", userCredential.user.uid);
       return { user: userCredential.user, error: null };
     } catch (error: any) {
+      console.error("Sign in error:", error);
       const errorMessage = error.message || "An error occurred during sign in";
       return { user: null, error: errorMessage };
     } finally {
@@ -70,12 +73,26 @@ export function useFirebaseAuth() {
         updated_at: serverTimestamp()
       });
       
+      console.log("User profile created successfully:", user.uid);
       return { user, error: null };
     } catch (error: any) {
+      console.error("Sign up error:", error);
       const errorMessage = error.message || "An error occurred during registration";
       return { user: null, error: errorMessage };
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Reset password
+  const resetPassword = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return { success: true, error: null };
+    } catch (error: any) {
+      console.error("Password reset error:", error);
+      const errorMessage = error.message || "An error occurred while sending the password reset email";
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -84,8 +101,10 @@ export function useFirebaseAuth() {
     try {
       await signOut(auth);
       navigate('/auth');
+      console.log("User signed out successfully");
       return { error: null };
     } catch (error: any) {
+      console.error("Sign out error:", error);
       const errorMessage = error.message || "An error occurred during sign out";
       return { error: errorMessage };
     }
@@ -100,9 +119,11 @@ export function useFirebaseAuth() {
       if (docSnap.exists()) {
         return { profile: docSnap.data(), error: null };
       } else {
+        console.error("Profile not found for user:", userId);
         return { profile: null, error: "Profile not found" };
       }
     } catch (error: any) {
+      console.error("Get user profile error:", error);
       const errorMessage = error.message || "An error occurred while fetching profile";
       return { profile: null, error: errorMessage };
     }
@@ -114,6 +135,7 @@ export function useFirebaseAuth() {
     signIn,
     signUp,
     logOut,
+    resetPassword,
     getUserProfile
   };
 }
