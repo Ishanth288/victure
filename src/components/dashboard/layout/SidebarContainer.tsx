@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { useProfileData } from "@/components/dashboard/ProfileSection"; // Assuming this hook exists
 import { ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { AdminAccess } from '@/components/admin/AdminAccessButton'; // <-- 1. Import the new button component
+import { AdminAccessButton } from '@/components/admin/AdminAccess'; // <-- 1. Import the new button component
 import { Separator } from "@/components/ui/separator"; // <-- Import Separator for visual spacing
 
 export function SidebarContainer() {
