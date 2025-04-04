@@ -1,12 +1,11 @@
 
 // Firebase configuration
-// Use environment variables for Firebase config
 export const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "YOUR_API_KEY", 
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "your-project-id.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "your-project-id",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "your-project-id.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "YOUR_MESSAGING_SENDER_ID",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "YOUR_APP_ID",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "YOUR_MEASUREMENT_ID"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCtW9ppKIg5nvkGDTKCxnhhMU0YZwfq7X8",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "victure-990aa.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "victure-990aa",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "victure-990aa.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "492159173082",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:492159173082:web:4bece0978700d199f3c0e3",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-0Q0N9Q2ZRC"
 };
