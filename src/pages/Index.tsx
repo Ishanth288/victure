@@ -9,7 +9,7 @@ import { useEffect, memo, useRef, useState } from "react";
 import { LazyMotion, domAnimation, m } from "framer-motion";
 import * as Sentry from "@sentry/react";
 import { MainContentWrapper } from "@/components/sections/MainContentWrapper";
-import { setupPageOptimizations, deferNonCriticalResources, createVisibilityObserver } from "@/utils/performanceUtils"; // Keep imports
+import { setupPageOptimizations, deferNonCriticalResources, createVisibilityObserver } from "@/utils/performanceUtils";
 import { Fallback } from "@/components/ui/fallback";
 import { OnboardingProvider } from "@/components/onboarding";
 import { useOnboarding } from "@/hooks/useOnboarding";
@@ -18,19 +18,17 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 const Index = memo(() => {
   const feedbackSectionRef = useRef<HTMLElement>(null);
   const [isError, setIsError] = useState(false);
-  const {
+  const { 
     showOnboarding,
     setIsOpen: setShowOnboarding,
     completeOnboarding,
     skipOnboarding
   } = useOnboarding();
-
+  
   useEffect(() => {
-    /* ---- Step 8: Commented out useEffect contents ---- */
-    /*
     // Setup minimal performance optimizations
     const cleanupOptimizations = setupPageOptimizations();
-
+    
     // Setup visibility observer
     const observer = createVisibilityObserver((isVisible) => {
       // Load resources when sections become visible
@@ -44,15 +42,12 @@ const Index = memo(() => {
     sections.forEach(section => {
       observer.observe(section);
     });
-
+    
     return () => {
       cleanupOptimizations();
       observer.disconnect();
     };
-    */
-    console.log("useEffect running (but empty)"); // Added a log
-    // Return an empty cleanup function or nothing
-  }, []); // Keep dependency array empty
+  }, []);
 
   // Simplified error handler
   const handleError = (error: Error) => {
@@ -71,47 +66,47 @@ const Index = memo(() => {
 
   return (
     <LazyMotion features={domAnimation} strict>
-       <OnboardingProvider
+      <OnboardingProvider
         isOpen={showOnboarding}
         setIsOpen={setShowOnboarding}
         onComplete={completeOnboarding}
         onSkip={skipOnboarding}
       >
         <div className="min-h-screen bg-white">
-           <Navigation /> {/* ---- Step 8: Restored Navigation ---- */}
-          <m.main
-            className="overflow-hidden"
+          <Navigation />
+          <m.main 
+            className="overflow-hidden" 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }} // Faster transition
           >
-             <HeroSection />
-
-            <MainContentWrapper
-              useFallback={true}
+            <HeroSection />
+            
+            <MainContentWrapper 
+              useFallback={true} 
               onError={handleError}
-              className="-mt-24"
+              className="-mt-24" 
             >
               <FloatingIconsSection />
             </MainContentWrapper>
-
-            <MainContentWrapper
+            
+            <MainContentWrapper 
               onError={handleError}
-              className="-mt-32"
+              className="-mt-32" 
             >
               <ScrollAnimationSection />
             </MainContentWrapper>
-
-            <MainContentWrapper
+            
+            <MainContentWrapper 
               onError={handleError}
-              className="-mt-24"
+              className="-mt-24" 
             >
               <ContentSection />
             </MainContentWrapper>
 
-             <section
-              id="feedback"
-              className="py-12 bg-gray-50 -mt-16 content-visibility-auto"
+            <section 
+              id="feedback" 
+              className="py-12 bg-gray-50 -mt-16 content-visibility-auto" 
               ref={feedbackSectionRef}
             >
               <div className="container mx-auto px-4">
@@ -119,11 +114,10 @@ const Index = memo(() => {
                 <FeedbackForm />
               </div>
             </section>
-
           </m.main>
-           <Footer /> {/* ---- Step 8: Restored Footer ---- */}
+          <Footer />
         </div>
-       </OnboardingProvider>
+      </OnboardingProvider>
     </LazyMotion>
   );
 });
