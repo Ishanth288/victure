@@ -1,3 +1,4 @@
+
 import { Routes, Route } from "react-router-dom";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
@@ -6,6 +7,24 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthWrapper } from "@/components/AuthWrapper";
 import BackButton from "@/components/BackButton";
 import Documentation from "@/pages/Documentation";
+import AcceptableUsePolicy from "@/pages/legal/AcceptableUsePolicy";
+import Disclaimers from "@/pages/legal/Disclaimers";
+import EULA from "@/pages/legal/EULA";
+import PrivacyPolicy from "@/pages/legal/PrivacyPolicy";
+import RefundPolicy from "@/pages/legal/RefundPolicy";
+import SLA from "@/pages/legal/SLA";
+import TermsOfService from "@/pages/legal/TermsOfService";
+import Dashboard from "@/pages/Dashboard";
+import Inventory from "@/pages/Inventory";
+import Settings from "@/pages/Settings";
+import Patients from "@/pages/Patients";
+import Prescriptions from "@/pages/Prescriptions";
+import Billing from "@/pages/Billing";
+import BillingCart from "@/pages/BillingCart";
+import Purchases from "@/pages/Purchases";
+import BusinessOptimization from "@/pages/BusinessOptimization";
+import Insights from "@/pages/Insights";
+import Admin from "@/pages/Admin";
 
 function App() {
   return (
