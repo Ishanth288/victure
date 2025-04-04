@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { auth } from "@/integrations/firebase/client";
+import { onAuthStateChanged } from "firebase/auth";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
 import { ErrorFallback } from "@/components/ui/fallback";
 
@@ -25,38 +26,26 @@ export function AuthCheck({ children }: AuthCheckProps) {
       setIsLoading(true);
       setError(null);
       
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // Set up Firebase auth state listener
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (!user) {
+          console.log("No active session found, redirecting to auth page");
+          navigate('/auth');
+        } else {
+          setIsAuthenticated(true);
+        }
+        setIsLoading(false);
+      }, (error) => {
+        console.error("Auth state change error:", error);
+        setError(error.message);
+        setIsLoading(false);
+      });
       
-      if (sessionError) {
-        throw sessionError;
-      }
-      
-      if (!session) {
-        console.log("No active session found, redirecting to auth page");
-        navigate('/auth');
-      } else {
-        // Set up a listener for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          (event, session) => {
-            if (event === 'SIGNED_OUT') {
-              navigate('/auth');
-            } else if (event === 'TOKEN_REFRESHED') {
-              console.log("Auth token refreshed");
-            }
-          }
-        );
-        
-        setIsAuthenticated(true);
-        
-        // Return cleanup function to unsubscribe
-        return () => {
-          subscription.unsubscribe();
-        };
-      }
+      // Return cleanup function to unsubscribe
+      return unsubscribe;
     } catch (err: any) {
       console.error("Auth check error:", err);
       setError(err.message || "Authentication failed. Please try again.");
-    } finally {
       setIsLoading(false);
     }
   };

@@ -3,6 +3,7 @@ import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeedbackList } from "@/components/admin/FeedbackList";
 import { UserManagement } from "@/components/admin/UserManagement";
+import { PlanManagement } from "@/components/admin/PlanManagement";
 import SystemSettings from "@/pages/admin/SystemSettings";
 import { AdminDashboard } from "@/components/admin/dashboard/AdminDashboard";
 import { AdminTabs } from "@/components/admin/AdminTabs";
@@ -41,6 +42,7 @@ export default function Admin() {
           systemContent={<SystemSettings />}
           feedbackContent={<FeedbackList />}
           usersContent={<UserManagement />}
+          planContent={<PlanManagement />}
         />
       </div>
     </DashboardLayout>
