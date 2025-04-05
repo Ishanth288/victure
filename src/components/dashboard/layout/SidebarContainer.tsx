@@ -7,39 +7,55 @@ import { ChevronLeft, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from "@/components/ui/popover";
+import { format, differenceInDays } from "date-fns";
 
 export function SidebarContainer() {
   const { profileData } = useProfileData();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState(0);
+  const [maintenanceNotice, setMaintenanceNotice] = useState<string | null>(null);
+  const [maintenanceDate, setMaintenanceDate] = useState<Date | null>(null);
   
   // Check for notifications
   useEffect(() => {
     const checkNotifications = async () => {
       try {
-        // This would typically fetch notifications from a database
-        // For now, we'll simulate this with a check for maintenance notices
+        // Check for maintenance notices
         const { data, error } = await supabase
           .from('system_settings')
-          .select('maintenance_mode, maintenance_start_date')
+          .select('maintenance_mode, maintenance_start_date, maintenance_announcement, maintenance_announced_at')
           .eq('id', 1)
           .single();
         
         if (error) throw error;
         
-        if (data && data.maintenance_mode && data.maintenance_start_date) {
+        let notificationCount = 0;
+        
+        // Check if there's upcoming maintenance
+        if (data && data.maintenance_start_date) {
           const now = new Date();
           const startDate = new Date(data.maintenance_start_date);
+          setMaintenanceDate(startDate);
           
           // Calculate days difference
-          const diffTime = startDate.getTime() - now.getTime();
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          const diffDays = differenceInDays(startDate, now);
           
-          // Set notification if within 7 days
-          if (diffDays <= 7 && diffDays > 0) {
-            setNotifications(1);
+          // Set notification if within 7 days or if there's a new announcement
+          if ((diffDays <= 7 && diffDays >= 0) || data.maintenance_announcement) {
+            notificationCount++;
+            setMaintenanceNotice(
+              data.maintenance_announcement || 
+              `Scheduled maintenance on ${format(startDate, "PPP")} at ${format(startDate, "p")}`
+            );
           }
         }
+        
+        setNotifications(notificationCount);
       } catch (error) {
         console.error("Error checking notifications:", error);
       }
@@ -47,8 +63,8 @@ export function SidebarContainer() {
     
     checkNotifications();
     
-    // Check every 30 minutes
-    const interval = setInterval(checkNotifications, 30 * 60 * 1000);
+    // Check every 5 minutes
+    const interval = setInterval(checkNotifications, 5 * 60 * 1000);
     
     return () => clearInterval(interval);
   }, []);
@@ -71,12 +87,32 @@ export function SidebarContainer() {
           </div>
           
           {notifications > 0 && (
-            <div className="relative">
-              <Bell className="h-5 w-5 text-gray-600" />
-              <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                {notifications}
-              </Badge>
-            </div>
+            <Popover>
+              <PopoverTrigger>
+                <div className="relative cursor-pointer">
+                  <Bell className="h-5 w-5 text-gray-600" />
+                  <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                    {notifications}
+                  </Badge>
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-4">
+                <div className="space-y-2">
+                  <h4 className="font-medium">Notifications</h4>
+                  {maintenanceNotice && (
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm">
+                      <p className="font-medium text-yellow-800">Scheduled Maintenance</p>
+                      <p className="text-yellow-700 mt-1">{maintenanceNotice}</p>
+                      {maintenanceDate && (
+                        <p className="text-xs text-yellow-600 mt-2">
+                          {format(maintenanceDate, "PPP 'at' p")}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
           )}
         </div>
         <div className="flex-1 overflow-y-auto">

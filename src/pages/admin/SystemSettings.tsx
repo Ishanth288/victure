@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Settings, AlertTriangle } from "lucide-react";
-import { typecastQuery, safeQueryData } from "@/utils/safeSupabaseQueries";
+import { supabase } from "@/integrations/supabase/client";
 import { MaintenanceTab } from "@/components/admin/settings/MaintenanceTab";
 import { SecurityTab } from "@/components/admin/settings/SecurityTab";
 import { StatusMessage } from "@/components/admin/settings/StatusMessage";
@@ -56,12 +56,13 @@ export default function SystemSettings() {
   const fetchSystemSettings = async () => {
     setIsLoading(true);
     try {
-      const settingsQuery = typecastQuery('system_settings')
+      const { data, error } = await supabase
+        .from('system_settings')
         .select('*')
         .eq('id', 1)
         .single();
 
-      const data = await safeQueryData<SystemSettingsData | null>(settingsQuery, null);
+      if (error) throw error;
 
       if (data) {
         setMaintenanceMode(data.maintenance_mode || false);
@@ -104,7 +105,8 @@ export default function SystemSettings() {
         updated_at: new Date().toISOString()
       };
 
-      const { error } = await typecastQuery('system_settings')
+      const { error } = await supabase
+        .from('system_settings')
         .upsert(settingsData);
 
       if (error) throw error;
@@ -138,7 +140,8 @@ export default function SystemSettings() {
   const cancelMaintenance = async () => {
     setIsLoading(true);
     try {
-      const { error } = await typecastQuery('system_settings')
+      const { error } = await supabase
+        .from('system_settings')
         .update({
           maintenance_mode: false,
           updated_at: new Date().toISOString()

@@ -26,6 +26,7 @@ import BusinessOptimization from "@/pages/BusinessOptimization";
 import Insights from "@/pages/Insights";
 import Admin from "@/pages/Admin";
 import { MaintenanceChecker } from "@/components/admin/MaintenanceChecker";
+import { AdminCheck } from "@/components/admin/AdminCheck";
 
 function App() {
   return (
@@ -102,7 +103,11 @@ function App() {
               <Insights />
             </AuthWrapper>
           } />
-          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin" element={
+            <AdminCheck>
+              <Admin />
+            </AdminCheck>
+          } />
           
           {/* 404 route */}
           <Route path="*" element={<NotFound />} />

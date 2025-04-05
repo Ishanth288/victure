@@ -1,115 +1,119 @@
 
-import { useEffect, useState } from "react";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Clock, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-
-interface MaintenanceInfo {
-  maintenance_mode: boolean;
-  maintenance_message: string;
-  maintenance_start_date: string | null;
-  maintenance_end_date: string | null;
-}
+import { differenceInDays, differenceInHours, differenceInMinutes, format } from "date-fns";
+import { AlertCircle, X, Bell } from "lucide-react";
 
 export function MaintenanceNotification() {
-  const [maintenanceInfo, setMaintenanceInfo] = useState<MaintenanceInfo | null>(null);
-  const [showNotification, setShowNotification] = useState(false);
-  const [isImminentMaintenance, setIsImminentMaintenance] = useState(false);
-  
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState("");
+  const [showNotification, setShowNotification] = useState(true);
+  const [isUpcoming, setIsUpcoming] = useState(false);
+  const [timeUntilMaintenance, setTimeUntilMaintenance] = useState<string>("");
+  const [startDate, setStartDate] = useState<Date | null>(null);
+
   useEffect(() => {
-    const checkMaintenance = async () => {
+    const fetchMaintenanceStatus = async () => {
       try {
         const { data, error } = await supabase
           .from('system_settings')
-          .select('maintenance_mode, maintenance_message, maintenance_start_date, maintenance_end_date')
+          .select('maintenance_mode, maintenance_message, maintenance_start_date, maintenance_end_date, maintenance_announcement')
           .eq('id', 1)
           .single();
-        
+
         if (error) throw error;
-        
-        if (data && data.maintenance_mode && data.maintenance_start_date) {
-          setMaintenanceInfo(data);
+
+        if (data) {
+          const maintenanceStartDate = data.maintenance_start_date ? new Date(data.maintenance_start_date) : null;
+          setStartDate(maintenanceStartDate);
+
+          // Set current maintenance mode
+          setMaintenanceMode(data.maintenance_mode);
+          setMaintenanceMessage(data.maintenance_message || "The system is currently under maintenance. Please try again later.");
           
-          const now = new Date();
-          const startDate = new Date(data.maintenance_start_date);
-          
-          // Calculate days difference
-          const diffTime = startDate.getTime() - now.getTime();
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          
-          // Show notification if within 7 days
-          if (diffDays <= 7 && diffDays > 0) {
-            setShowNotification(true);
+          // Check if maintenance is upcoming (within 7 days) but not currently active
+          if (maintenanceStartDate && !data.maintenance_mode) {
+            const now = new Date();
+            const daysUntilMaintenance = differenceInDays(maintenanceStartDate, now);
             
-            // Check if maintenance is within 24 hours
-            if (diffDays <= 1) {
-              setIsImminentMaintenance(true);
+            if (daysUntilMaintenance <= 7 && daysUntilMaintenance >= 0) {
+              setIsUpcoming(true);
+              
+              // Calculate time until maintenance
+              if (daysUntilMaintenance > 0) {
+                setTimeUntilMaintenance(`${daysUntilMaintenance} day${daysUntilMaintenance !== 1 ? 's' : ''}`);
+              } else {
+                const hoursUntilMaintenance = differenceInHours(maintenanceStartDate, now);
+                if (hoursUntilMaintenance > 0) {
+                  setTimeUntilMaintenance(`${hoursUntilMaintenance} hour${hoursUntilMaintenance !== 1 ? 's' : ''}`);
+                } else {
+                  const minutesUntilMaintenance = differenceInMinutes(maintenanceStartDate, now);
+                  setTimeUntilMaintenance(`${minutesUntilMaintenance} minute${minutesUntilMaintenance !== 1 ? 's' : ''}`);
+                }
+              }
+            } else {
+              setIsUpcoming(false);
             }
+          } else {
+            setIsUpcoming(false);
           }
         }
       } catch (error) {
-        console.error("Error checking maintenance:", error);
+        console.error("Error fetching maintenance status:", error);
       }
     };
+
+    fetchMaintenanceStatus();
     
-    checkMaintenance();
-    
-    // Check every hour
-    const interval = setInterval(checkMaintenance, 60 * 60 * 1000);
+    // Set up an interval to check maintenance status every minute
+    const interval = setInterval(fetchMaintenanceStatus, 60000);
     
     return () => clearInterval(interval);
   }, []);
-  
-  if (!showNotification || !maintenanceInfo) {
+
+  // If there's no maintenance (current or upcoming), don't show anything
+  if (!maintenanceMode && !isUpcoming) {
     return null;
   }
-  
-  // Format date and time for display
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-      weekday: 'short',
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
-  
+
+  // If the user has dismissed the notification, don't show it
+  if (!showNotification) {
+    return null;
+  }
+
   return (
     <Alert 
-      variant={isImminentMaintenance ? "destructive" : "default"}
-      className={isImminentMaintenance 
-        ? "bg-red-50 border-red-200 text-red-800 mb-4" 
-        : "bg-amber-50 border-amber-200 text-amber-800 mb-4"
-      }
+      variant={maintenanceMode ? "destructive" : "warning"} 
+      className="mb-4 animate-fadeIn"
     >
-      <div className="flex items-start gap-3">
-        {isImminentMaintenance 
-          ? <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
-          : <Clock className="h-5 w-5 text-amber-600 mt-0.5" />
-        }
-        <div>
-          <AlertTitle className="text-base font-medium">
-            {isImminentMaintenance 
-              ? "Upcoming Maintenance in Less Than 24 Hours" 
-              : "Scheduled Maintenance Notice"
-            }
-          </AlertTitle>
-          <AlertDescription className="mt-1">
-            <p className="mb-1">
-              {maintenanceInfo.maintenance_message}
-            </p>
-            <p className="text-sm">
-              <strong>Start:</strong> {maintenanceInfo.maintenance_start_date ? formatDateTime(maintenanceInfo.maintenance_start_date) : 'Not specified'}
-              <br />
-              <strong>End:</strong> {maintenanceInfo.maintenance_end_date ? formatDateTime(maintenanceInfo.maintenance_end_date) : 'Not specified'}
-            </p>
-          </AlertDescription>
-        </div>
+      <AlertCircle className="h-4 w-4" />
+      <div className="flex-1">
+        <AlertTitle>
+          {maintenanceMode 
+            ? "System Maintenance" 
+            : `Upcoming Maintenance in ${timeUntilMaintenance}`
+          }
+        </AlertTitle>
+        <AlertDescription>
+          {maintenanceMode 
+            ? maintenanceMessage 
+            : startDate 
+              ? `The system will be undergoing maintenance on ${format(startDate, "PPP")} at ${format(startDate, "p")}. Please save your work before this time.` 
+              : "Scheduled maintenance is upcoming. Please save your work."
+          }
+        </AlertDescription>
       </div>
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="h-6 w-6" 
+        onClick={() => setShowNotification(false)}
+      >
+        <X className="h-4 w-4" />
+        <span className="sr-only">Close</span>
+      </Button>
     </Alert>
   );
 }

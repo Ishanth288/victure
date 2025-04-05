@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { SecurityCodeModal } from "@/components/admin/SecurityCodeModal";
 import { useToast } from "@/hooks/use-toast";
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 
 interface AdminCheckProps {
   children: React.ReactNode;
@@ -22,30 +23,53 @@ export function AdminCheck({ children }: AdminCheckProps) {
 
   const checkAdminAccess = async () => {
     try {
+      setIsLoading(true);
+      
+      // Check if admin verification was already done in this session
+      const adminVerified = sessionStorage.getItem('adminVerified') === 'true';
+      
+      if (adminVerified) {
+        setIsAuthenticated(true);
+        setIsLoading(false);
+        return;
+      }
+      
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate('/auth');
         return;
       }
 
-      // Check if the user has verified admin access previously in this session
-      const adminVerified = sessionStorage.getItem('adminVerified') === 'true';
-      
-      if (adminVerified) {
-        setIsAuthenticated(true);
-        setIsLoading(false);
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      if (profile?.role !== 'admin' && profile?.role !== 'owner') {
+        toast({
+          title: "Access Denied",
+          description: "You do not have permission to access the admin area.",
+          variant: "destructive",
+        });
+        navigate('/dashboard');
       } else {
         setIsSecurityModalOpen(true);
-        setIsLoading(false);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error checking admin access:", error);
       toast({
         title: "Error",
-        description: "Failed to verify admin access",
+        description: "Failed to verify admin access: " + (error.message || "Unknown error"),
         variant: "destructive",
       });
       navigate('/dashboard');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -62,10 +86,7 @@ export function AdminCheck({ children }: AdminCheckProps) {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4">Verifying admin credentials...</p>
-        </div>
+        <LoadingAnimation text="Verifying admin credentials" size="lg" />
       </div>
     );
   }
@@ -79,7 +100,7 @@ export function AdminCheck({ children }: AdminCheckProps) {
           setIsSecurityModalOpen(false);
           navigate('/dashboard');
         }}
-        onVerified={(verified) => handleSecurityVerification(verified)}
+        onVerified={handleSecurityVerification}
       />
     </>
   );

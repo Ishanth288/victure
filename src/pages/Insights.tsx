@@ -12,7 +12,6 @@ import { StatsCard } from "@/components/insights/StatsCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { addDays, format, subDays, subMonths } from "date-fns";
-import { typecastQuery, safeQueryData } from "@/utils/safeSupabaseQueries";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Insights() {
@@ -91,26 +90,26 @@ export default function Insights() {
 
       console.log("Fetching current bills:", { userId, fromDate, toDate });
       // Fetch bills for current period
-      const currentBills = await safeQueryData(
-        typecastQuery('bills')
-          .select('*')
-          .eq('user_id', userId)
-          .gte('date', fromDate)
-          .lte('date', toDate),
-        []
-      );
+      const { data: currentBills, error: currentBillsError } = await supabase
+        .from('bills')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('date', fromDate)
+        .lte('date', toDate);
+
+      if (currentBillsError) throw currentBillsError;
 
       console.log("Fetched current bills:", currentBills?.length || 0);
 
       // Fetch bills for previous period
-      const prevBills = await safeQueryData(
-        typecastQuery('bills')
-          .select('*')
-          .eq('user_id', userId)
-          .gte('date', prevFromDate)
-          .lte('date', prevToDate),
-        []
-      );
+      const { data: prevBills, error: prevBillsError } = await supabase
+        .from('bills')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('date', prevFromDate)
+        .lte('date', prevToDate);
+
+      if (prevBillsError) throw prevBillsError;
 
       console.log("Fetched previous bills:", prevBills?.length || 0);
 
@@ -151,23 +150,23 @@ export default function Insights() {
 
       console.log("Fetching bill items");
       // Fetch top products
-      const billItems = await safeQueryData(
-        typecastQuery('bill_items')
-          .select(`
-            id,
-            inventory_item_id,
-            quantity,
-            unit_price,
-            total_price,
-            bill_id,
-            bills!inner(date, user_id),
-            inventory!inner(name)
-          `)
-          .eq('bills.user_id', userId)
-          .gte('bills.date', fromDate)
-          .lte('bills.date', toDate),
-        []
-      );
+      const { data: billItems, error: billItemsError } = await supabase
+        .from('bill_items')
+        .select(`
+          id,
+          inventory_item_id,
+          quantity,
+          unit_price,
+          total_price,
+          bill_id,
+          bills!inner(date, user_id),
+          inventory!inner(name)
+        `)
+        .eq('bills.user_id', userId)
+        .gte('bills.date', fromDate)
+        .lte('bills.date', toDate);
+
+      if (billItemsError) throw billItemsError;
 
       console.log("Fetched bill items:", billItems?.length || 0);
 

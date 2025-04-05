@@ -1,3 +1,4 @@
+
 import { useNavigate, useLocation } from "react-router-dom";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -29,8 +30,6 @@ export function SidebarLinks() {
   useEffect(() => {
     const checkAdminRole = async () => {
       try {
-        setIsLoading(true);
-        
         // Check if admin verification was already done in this session
         const adminVerified = sessionStorage.getItem('adminVerified') === 'true';
         
@@ -56,8 +55,6 @@ export function SidebarLinks() {
           
           if (profile && (profile.role === 'admin' || profile.role === 'owner')) {
             setIsAdmin(true);
-            // Remember this verification for the session
-            sessionStorage.setItem('adminVerified', 'true');
           }
         }
       } catch (error) {
@@ -122,14 +119,15 @@ export function SidebarLinks() {
     }
   ];
 
-  // Conditionally add admin link if user is admin
-  if (isAdmin) {
-    links.push({
+  // Add admin link if user is admin
+  const allLinks = isAdmin ? [
+    ...links,
+    {
       title: "Admin Portal",
       icon: <Shield className="mr-2 h-4 w-4" />,
       href: "/admin"
-    });
-  }
+    }
+  ] : links;
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
@@ -168,53 +166,9 @@ export function SidebarLinks() {
     }
   };
 
-  if (isLoading) {
-    // Return the same structure but without the admin link while loading
-    return (
-      <div className="flex flex-col space-y-1">
-        {links.map((link, index) => (
-          // ... keep existing code (rendering regular links)
-          <div key={index} className="flex flex-col">
-            <a
-              href={link.href}
-              onClick={(e) => handleClick(e, link.href)}
-              className={cn(
-                buttonVariants({ variant: "ghost" }),
-                isCurrentPath(link.href)
-                  ? "bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-900"
-                  : "hover:bg-green-50 hover:text-green-700",
-                "justify-start"
-              )}
-            >
-              <div className="flex items-center">
-                {link.icon}
-                <span>{link.title}</span>
-              </div>
-            </a>
-          </div>
-        ))}
-        <div className="mt-auto pt-4">
-          <a
-            href="#"
-            onClick={handleSignOut}
-            className={cn(
-              buttonVariants({ variant: "ghost" }),
-              "justify-start hover:bg-green-50 hover:text-green-700"
-            )}
-          >
-            <div className="flex items-center">
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Sign Out</span>
-            </div>
-          </a>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col space-y-1">
-      {links.map((link, index) => (
+      {allLinks.map((link, index) => (
         <div key={index} className="flex flex-col">
           <a
             href={link.href}

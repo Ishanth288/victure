@@ -10,11 +10,18 @@ import { AdminTabs } from "@/components/admin/AdminTabs";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
+import { SecurityCodeModal } from "@/components/admin/SecurityCodeModal";
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const { stats, isLoading } = useAdminStats();
-  const { isLoading: isAccessLoading, isAuthorized } = useAdminAccess();
+  const { 
+    isLoading: isAccessLoading, 
+    isAuthorized, 
+    showSecurityModal, 
+    setShowSecurityModal, 
+    handleSecurityVerification 
+  } = useAdminAccess();
   
   if (isAccessLoading) {
     return (
@@ -24,27 +31,35 @@ export default function Admin() {
     );
   }
 
-  if (!isAuthorized) {
+  if (!isAuthorized && !showSecurityModal) {
     return null; // Access check will redirect if not authorized
   }
 
   return (
-    <DashboardLayout>
-      <div className="container mx-auto py-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-          <h1 className="text-3xl font-bold">Admin Portal</h1>
-        </div>
+    <>
+      <DashboardLayout>
+        <div className="container mx-auto py-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+            <h1 className="text-3xl font-bold">Admin Portal</h1>
+          </div>
 
-        <AdminTabs
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          dashboardContent={<AdminDashboard stats={stats} isLoading={isLoading} />}
-          systemContent={<SystemSettings />}
-          feedbackContent={<FeedbackList />}
-          usersContent={<UserManagement />}
-          planContent={<PlanManagement />}
-        />
-      </div>
-    </DashboardLayout>
+          <AdminTabs
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            dashboardContent={<AdminDashboard stats={stats} isLoading={isLoading} />}
+            systemContent={<SystemSettings />}
+            feedbackContent={<FeedbackList />}
+            usersContent={<UserManagement />}
+            planContent={<PlanManagement />}
+          />
+        </div>
+      </DashboardLayout>
+      
+      <SecurityCodeModal 
+        isOpen={showSecurityModal}
+        onClose={() => setShowSecurityModal(false)}
+        onVerified={handleSecurityVerification}
+      />
+    </>
   );
 }
