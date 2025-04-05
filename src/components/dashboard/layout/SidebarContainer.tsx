@@ -13,6 +13,7 @@ import {
   PopoverTrigger
 } from "@/components/ui/popover";
 import { format, differenceInDays } from "date-fns";
+import { SystemSettings } from "@/types/database";
 
 export function SidebarContainer() {
   const { profileData } = useProfileData();
@@ -32,7 +33,10 @@ export function SidebarContainer() {
           .eq('id', 1)
           .single();
         
-        if (error) throw error;
+        if (error) {
+          console.error("Failed to check maintenance status:", error);
+          return;
+        }
         
         let notificationCount = 0;
         

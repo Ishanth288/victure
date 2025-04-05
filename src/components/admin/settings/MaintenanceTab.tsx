@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { SystemSettings } from "@/types/database";
 
 interface MaintenanceTabProps {
   maintenanceMode: boolean;
@@ -105,7 +107,7 @@ export function MaintenanceTab({
         .update({
           maintenance_announcement: announcementMessage,
           maintenance_announced_at: new Date().toISOString()
-        } as SystemSettings)
+        })
         .eq('id', 1);
 
       if (error) throw error;

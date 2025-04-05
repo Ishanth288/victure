@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays, differenceInHours, differenceInMinutes, format } from "date-fns";
 import { AlertCircle, X } from "lucide-react";
+import { SystemSettings } from "@/types/database";
 
 export function MaintenanceNotification() {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
@@ -23,7 +24,10 @@ export function MaintenanceNotification() {
           .eq('id', 1)
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching maintenance status:", error);
+          return;
+        }
 
         if (data) {
           const maintenanceStartDate = data.maintenance_start_date ? new Date(data.maintenance_start_date) : null;
