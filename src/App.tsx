@@ -102,11 +102,7 @@ function App() {
               <Insights />
             </AuthWrapper>
           } />
-          <Route path="/admin" element={
-            <AuthWrapper>
-              <Admin />
-            </AuthWrapper>
-          } />
+          <Route path="/admin" element={<Admin />} />
           
           {/* 404 route */}
           <Route path="*" element={<NotFound />} />

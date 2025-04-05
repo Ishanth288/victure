@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeedbackList } from "@/components/admin/FeedbackList";
 import { UserManagement } from "@/components/admin/UserManagement";
@@ -10,8 +10,6 @@ import { AdminTabs } from "@/components/admin/AdminTabs";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
-import { AdminCheck } from "@/components/admin/AdminCheck";
-import { FirebaseAuthCheck } from "@/components/dashboard/layout/FirebaseAuthCheck";
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -31,26 +29,22 @@ export default function Admin() {
   }
 
   return (
-    <FirebaseAuthCheck>
-      <AdminCheck>
-        <DashboardLayout>
-          <div className="container mx-auto py-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-              <h1 className="text-3xl font-bold">Admin Portal</h1>
-            </div>
+    <DashboardLayout>
+      <div className="container mx-auto py-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+          <h1 className="text-3xl font-bold">Admin Portal</h1>
+        </div>
 
-            <AdminTabs
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              dashboardContent={<AdminDashboard stats={stats} isLoading={isLoading} />}
-              systemContent={<SystemSettings />}
-              feedbackContent={<FeedbackList />}
-              usersContent={<UserManagement />}
-              planContent={<PlanManagement />}
-            />
-          </div>
-        </DashboardLayout>
-      </AdminCheck>
-    </FirebaseAuthCheck>
+        <AdminTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          dashboardContent={<AdminDashboard stats={stats} isLoading={isLoading} />}
+          systemContent={<SystemSettings />}
+          feedbackContent={<FeedbackList />}
+          usersContent={<UserManagement />}
+          planContent={<PlanManagement />}
+        />
+      </div>
+    </DashboardLayout>
   );
 }

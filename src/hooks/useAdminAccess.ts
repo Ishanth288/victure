@@ -16,17 +16,30 @@ export function useAdminAccess() {
 
   const checkAdminAccess = async () => {
     try {
+      // Check if admin verification was already done in this session
+      const adminVerified = sessionStorage.getItem('adminVerified') === 'true';
+      
+      if (adminVerified) {
+        setIsAuthorized(true);
+        setIsLoading(false);
+        return;
+      }
+      
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate('/auth');
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', session.user.id)
         .single();
+
+      if (error) {
+        throw error;
+      }
 
       if (profile?.role !== 'admin' && profile?.role !== 'owner') {
         toast({

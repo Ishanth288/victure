@@ -1,4 +1,3 @@
-
 import { useNavigate, useLocation } from "react-router-dom";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -24,21 +23,47 @@ export function SidebarLinks() {
   const location = useLocation();
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Check if user has admin role
   useEffect(() => {
     const checkAdminRole = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
+      try {
+        setIsLoading(true);
         
-        if (profile && (profile.role === 'admin' || profile.role === 'owner')) {
+        // Check if admin verification was already done in this session
+        const adminVerified = sessionStorage.getItem('adminVerified') === 'true';
+        
+        if (adminVerified) {
           setIsAdmin(true);
+          setIsLoading(false);
+          return;
         }
+        
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (error) {
+            console.error("Error fetching profile:", error);
+            setIsLoading(false);
+            return;
+          }
+          
+          if (profile && (profile.role === 'admin' || profile.role === 'owner')) {
+            setIsAdmin(true);
+            // Remember this verification for the session
+            sessionStorage.setItem('adminVerified', 'true');
+          }
+        }
+      } catch (error) {
+        console.error("Error checking admin role:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -123,6 +148,9 @@ export function SidebarLinks() {
           variant: "destructive",
         });
       } else {
+        // Clear admin verification on sign out
+        sessionStorage.removeItem('adminVerified');
+        
         toast({
           title: "Signed out successfully",
           description: "You have been signed out of your account.",
@@ -139,6 +167,50 @@ export function SidebarLinks() {
       });
     }
   };
+
+  if (isLoading) {
+    // Return the same structure but without the admin link while loading
+    return (
+      <div className="flex flex-col space-y-1">
+        {links.map((link, index) => (
+          // ... keep existing code (rendering regular links)
+          <div key={index} className="flex flex-col">
+            <a
+              href={link.href}
+              onClick={(e) => handleClick(e, link.href)}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                isCurrentPath(link.href)
+                  ? "bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-900"
+                  : "hover:bg-green-50 hover:text-green-700",
+                "justify-start"
+              )}
+            >
+              <div className="flex items-center">
+                {link.icon}
+                <span>{link.title}</span>
+              </div>
+            </a>
+          </div>
+        ))}
+        <div className="mt-auto pt-4">
+          <a
+            href="#"
+            onClick={handleSignOut}
+            className={cn(
+              buttonVariants({ variant: "ghost" }),
+              "justify-start hover:bg-green-50 hover:text-green-700"
+            )}
+          >
+            <div className="flex items-center">
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Sign Out</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col space-y-1">
