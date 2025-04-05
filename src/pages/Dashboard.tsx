@@ -13,6 +13,7 @@ import {
 import { GrowthOpportunitiesChart } from '@/components/insights/GrowthOpportunitiesChart';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { MaintenanceNotification } from "@/components/admin/MaintenanceNotification";
 
 export default function Dashboard() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -66,6 +67,8 @@ export default function Dashboard() {
       <ErrorBoundary>
         {showPostLoginOnboarding && <div className="mb-6">Welcome to your pharmacy dashboard!</div>}
         <WelcomeDialog isOpen={isHelpOpen} onOpenChange={setIsHelpOpen} />
+        
+        <MaintenanceNotification />
         
         <div className="space-y-6">
           <div className="flex justify-between items-center">

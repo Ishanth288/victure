@@ -14,13 +14,36 @@ import {
   BarChart2, 
   ShoppingBag, 
   LineChart, 
-  LogOut 
+  LogOut,
+  Shield
 } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export function SidebarLinks() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if user has admin role
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profile && (profile.role === 'admin' || profile.role === 'owner')) {
+          setIsAdmin(true);
+        }
+      }
+    };
+    
+    checkAdminRole();
+  }, []);
 
   const isCurrentPath = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path);
@@ -73,6 +96,15 @@ export function SidebarLinks() {
       href: "/settings"
     }
   ];
+
+  // Conditionally add admin link if user is admin
+  if (isAdmin) {
+    links.push({
+      title: "Admin Portal",
+      icon: <Shield className="mr-2 h-4 w-4" />,
+      href: "/admin"
+    });
+  }
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();

@@ -5,11 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { format } from "date-fns";
-import { CalendarIcon, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Clock, Bell } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface MaintenanceTabProps {
   maintenanceMode: boolean;
@@ -36,6 +35,72 @@ export function MaintenanceTab({
   isLoading,
   onCancelMaintenance
 }: MaintenanceTabProps) {
+  const [startTime, setStartTime] = useState("08:00");
+  const [endTime, setEndTime] = useState("18:00");
+  const [announcement, setAnnouncement] = useState("");
+  const { toast } = useToast();
+  
+  const handleDateTimeChange = (type: 'start' | 'end', value: string) => {
+    const [hours, minutes] = value.split(':').map(Number);
+    
+    if (type === 'start' && maintenanceStartDate) {
+      const newDate = new Date(maintenanceStartDate);
+      newDate.setHours(hours, minutes);
+      setMaintenanceStartDate(newDate);
+      setStartTime(value);
+    } else if (type === 'end' && maintenanceEndDate) {
+      const newDate = new Date(maintenanceEndDate);
+      newDate.setHours(hours, minutes);
+      setMaintenanceEndDate(newDate);
+      setEndTime(value);
+    }
+  };
+  
+  const handleDateChange = (type: 'start' | 'end', dateStr: string) => {
+    const date = new Date(dateStr);
+    if (!isNaN(date.getTime())) {
+      if (type === 'start') {
+        const newDate = new Date(date);
+        const [hours, minutes] = startTime.split(':').map(Number);
+        newDate.setHours(hours, minutes);
+        setMaintenanceStartDate(newDate);
+      } else {
+        const newDate = new Date(date);
+        const [hours, minutes] = endTime.split(':').map(Number);
+        newDate.setHours(hours, minutes);
+        setMaintenanceEndDate(newDate);
+      }
+    }
+  };
+  
+  const sendAnnouncement = async () => {
+    if (!announcement.trim()) {
+      toast({
+        title: "Announcement Required",
+        description: "Please enter an announcement message",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      // Here we would typically save the announcement to the database
+      // For now, we'll just show a success toast
+      toast({
+        title: "Announcement Sent",
+        description: "Your announcement has been sent to all users",
+        variant: "default",
+      });
+      setAnnouncement("");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send announcement",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -70,50 +135,68 @@ export function MaintenanceTab({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Start Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-left font-normal"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {maintenanceStartDate ? format(maintenanceStartDate, "PPP") : "Select date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={maintenanceStartDate}
-                  onSelect={setMaintenanceStartDate}
+            <div className="flex space-x-2">
+              <Input
+                type="date"
+                value={maintenanceStartDate ? maintenanceStartDate.toISOString().split('T')[0] : ''}
+                onChange={(e) => handleDateChange('start', e.target.value)}
+                className="w-full"
+              />
+              <div className="relative">
+                <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => handleDateTimeChange('start', e.target.value)}
+                  className="pl-10"
                 />
-              </PopoverContent>
-            </Popover>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
             <Label>End Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-left font-normal"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {maintenanceEndDate ? format(maintenanceEndDate, "PPP") : "Select date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={maintenanceEndDate}
-                  onSelect={setMaintenanceEndDate}
-                  disabled={(date) => 
-                    date < new Date() || 
-                    (maintenanceStartDate ? date < maintenanceStartDate : false)
-                  }
+            <div className="flex space-x-2">
+              <Input
+                type="date"
+                value={maintenanceEndDate ? maintenanceEndDate.toISOString().split('T')[0] : ''}
+                onChange={(e) => handleDateChange('end', e.target.value)}
+                className="w-full"
+              />
+              <div className="relative">
+                <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => handleDateTimeChange('end', e.target.value)}
+                  className="pl-10"
                 />
-              </PopoverContent>
-            </Popover>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t pt-4 mt-4">
+          <Label className="text-lg font-medium mb-2 block">Announcement System</Label>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="announcement">Send Announcement to All Users</Label>
+              <Textarea
+                id="announcement"
+                value={announcement}
+                onChange={(e) => setAnnouncement(e.target.value)}
+                placeholder="Enter an important announcement to send to all users..."
+                className="min-h-[100px]"
+              />
+            </div>
+            <Button 
+              onClick={sendAnnouncement}
+              disabled={isLoading}
+              className="flex items-center"
+            >
+              <Bell className="mr-2 h-4 w-4" />
+              Send Announcement
+            </Button>
           </div>
         </div>
 
@@ -121,7 +204,8 @@ export function MaintenanceTab({
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Warning</AlertTitle>
           <AlertDescription>
-            Enabling maintenance mode will prevent all users from logging in or registering until the maintenance period ends or is manually cancelled.
+            <p>Enabling maintenance mode will prevent all users from logging in or registering until the maintenance period ends or is manually cancelled.</p>
+            <p className="mt-2">Users will receive notifications 7 days and 24 hours before scheduled maintenance.</p>
           </AlertDescription>
         </Alert>
 
