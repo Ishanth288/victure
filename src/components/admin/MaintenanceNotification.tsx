@@ -1,10 +1,10 @@
 
+import React, { useState, useEffect } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays, differenceInHours, differenceInMinutes, format } from "date-fns";
-import { AlertCircle, X, Bell } from "lucide-react";
+import { AlertCircle, X } from "lucide-react";
 
 export function MaintenanceNotification() {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
@@ -30,8 +30,8 @@ export function MaintenanceNotification() {
           setStartDate(maintenanceStartDate);
 
           // Set current maintenance mode
-          setMaintenanceMode(data.maintenance_mode);
-          setMaintenanceMessage(data.maintenance_message || "The system is currently under maintenance. Please try again later.");
+          setMaintenanceMode(data.maintenance_mode || false);
+          setMaintenanceMessage(data.maintenance_message || "The system is currently undergoing scheduled maintenance. Please try again later.");
           
           // Check if maintenance is upcoming (within 7 days) but not currently active
           if (maintenanceStartDate && !data.maintenance_mode) {
@@ -85,7 +85,7 @@ export function MaintenanceNotification() {
 
   return (
     <Alert 
-      variant={maintenanceMode ? "destructive" : "warning"} 
+      variant={maintenanceMode ? "destructive" : "default"} 
       className="mb-4 animate-fadeIn"
     >
       <AlertCircle className="h-4 w-4" />

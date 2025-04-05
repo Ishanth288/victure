@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,7 +47,6 @@ export function MaintenanceTab({
   );
   const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
 
-  // Combine date and time
   const getFullDateTime = (date: Date | undefined, timeString: string): Date | undefined => {
     if (!date) return undefined;
     
@@ -58,10 +56,8 @@ export function MaintenanceTab({
     return newDate;
   };
 
-  // Set start date with time
   const handleStartDateChange = (date: Date | undefined) => {
     setMaintenanceStartDate(date);
-    // Update announcement message when date changes
     if (date) {
       setAnnouncementMessage(
         "We will be performing scheduled maintenance on " + format(date, "PPP") + 
@@ -70,14 +66,12 @@ export function MaintenanceTab({
     }
   };
 
-  // Update combined dates when time changes
   const handleStartTimeChange = (time: string) => {
     setStartTime(time);
     if (maintenanceStartDate) {
       const fullDate = getFullDateTime(maintenanceStartDate, time);
       setMaintenanceStartDate(fullDate);
       
-      // Update announcement message when time changes
       setAnnouncementMessage(
         "We will be performing scheduled maintenance on " + 
         format(maintenanceStartDate, "PPP") + 
@@ -106,13 +100,12 @@ export function MaintenanceTab({
 
     setSendingAnnouncement(true);
     try {
-      // Update system_settings with the announcement
       const { error } = await supabase
         .from('system_settings')
         .update({
           maintenance_announcement: announcementMessage,
           maintenance_announced_at: new Date().toISOString()
-        })
+        } as SystemSettings)
         .eq('id', 1);
 
       if (error) throw error;

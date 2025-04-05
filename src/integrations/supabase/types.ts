@@ -516,6 +516,8 @@ export type Database = {
           enable_two_factor: boolean | null
           id: number
           ip_restriction: boolean | null
+          maintenance_announced_at: string | null
+          maintenance_announcement: string | null
           maintenance_end_date: string | null
           maintenance_message: string | null
           maintenance_mode: boolean | null
@@ -530,6 +532,8 @@ export type Database = {
           enable_two_factor?: boolean | null
           id?: number
           ip_restriction?: boolean | null
+          maintenance_announced_at?: string | null
+          maintenance_announcement?: string | null
           maintenance_end_date?: string | null
           maintenance_message?: string | null
           maintenance_mode?: boolean | null
@@ -544,6 +548,8 @@ export type Database = {
           enable_two_factor?: boolean | null
           id?: number
           ip_restriction?: boolean | null
+          maintenance_announced_at?: string | null
+          maintenance_announcement?: string | null
           maintenance_end_date?: string | null
           maintenance_message?: string | null
           maintenance_mode?: boolean | null
