@@ -25,8 +25,10 @@ export function AdminCheck({ children }: AdminCheckProps) {
     try {
       setIsLoading(true);
       
-      // First check if user is already authenticated in this component's state
-      if (isAuthenticated) {
+      // Check if user is already verified in this session
+      const verifiedInSession = sessionStorage.getItem('adminVerified') === 'true';
+      if (verifiedInSession) {
+        setIsAuthenticated(true);
         setIsLoading(false);
         return;
       }
@@ -55,10 +57,8 @@ export function AdminCheck({ children }: AdminCheckProps) {
         });
         navigate('/dashboard');
       } else {
-        // If not authenticated yet, show security modal
-        if (!isAuthenticated) {
-          setIsSecurityModalOpen(true);
-        }
+        // If user has admin role but is not yet verified, show security modal
+        setIsSecurityModalOpen(true);
       }
     } catch (error: any) {
       console.error("Error checking admin access:", error);
@@ -75,6 +75,8 @@ export function AdminCheck({ children }: AdminCheckProps) {
 
   const handleSecurityVerification = (verified: boolean) => {
     if (verified) {
+      // Store verification in session storage
+      sessionStorage.setItem('adminVerified', 'true');
       setIsAuthenticated(true);
       setIsSecurityModalOpen(false);
     } else {

@@ -17,8 +17,12 @@ export function useAdminAccess() {
 
   const checkAdminAccess = async () => {
     try {
-      // First check if user is already authorized in this component's state
-      if (isAuthorized) {
+      setIsLoading(true);
+      
+      // Check if user is already verified in this session
+      const verifiedInSession = sessionStorage.getItem('adminVerified') === 'true';
+      if (verifiedInSession) {
+        setIsAuthorized(true);
         setIsLoading(false);
         return;
       }
@@ -47,10 +51,8 @@ export function useAdminAccess() {
         });
         navigate('/dashboard');
       } else {
-        // If not authorized yet, show the security modal
-        if (!isAuthorized) {
-          setShowSecurityModal(true);
-        }
+        // If user has admin role but is not yet verified, show security modal
+        setShowSecurityModal(true);
       }
     } catch (error) {
       console.error("Error checking admin access:", error);
@@ -67,11 +69,14 @@ export function useAdminAccess() {
 
   const handleSecurityVerification = (verified: boolean) => {
     if (verified) {
+      // Store verification in session storage
+      sessionStorage.setItem('adminVerified', 'true');
       setIsAuthorized(true);
       setShowSecurityModal(false);
     } else {
-      navigate('/dashboard');
+      // If verification fails, redirect to dashboard
       setShowSecurityModal(false);
+      navigate('/dashboard');
     }
   };
 

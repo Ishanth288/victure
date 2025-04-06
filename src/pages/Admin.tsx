@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeedbackList } from "@/components/admin/FeedbackList";
 import { UserManagement } from "@/components/admin/UserManagement";
@@ -13,6 +14,7 @@ import { LoadingAnimation } from "@/components/ui/loading-animation";
 import { SecurityCodeModal } from "@/components/admin/SecurityCodeModal";
 
 export default function Admin() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
   const { stats, isLoading } = useAdminStats();
   const { 
@@ -23,6 +25,7 @@ export default function Admin() {
     handleSecurityVerification 
   } = useAdminAccess();
   
+  // Display loading state while checking access
   if (isAccessLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
@@ -31,20 +34,22 @@ export default function Admin() {
     );
   }
 
-  // Don't render anything but the modal while waiting for authorization
+  // Show only the security modal while waiting for authorization
   if (!isAuthorized) {
     return (
       <SecurityCodeModal 
         isOpen={showSecurityModal}
         onClose={() => {
+          // When modal is closed without verification, redirect to dashboard
           setShowSecurityModal(false);
-          window.location.href = '/dashboard';
+          navigate('/dashboard');
         }}
         onVerified={handleSecurityVerification}
       />
     );
   }
 
+  // Once authorized, show the admin portal
   return (
     <DashboardLayout>
       <div className="container mx-auto py-6">
