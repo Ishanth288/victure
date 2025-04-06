@@ -1,5 +1,4 @@
 
-
 export type DBPurchaseOrder = {
   id: number;
   supplier_name: string;
@@ -58,4 +57,3 @@ export interface PricingPlan {
   updated_at: string | null;
   updated_by: string | null;
 }
-

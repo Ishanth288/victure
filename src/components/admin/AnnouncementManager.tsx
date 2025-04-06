@@ -55,7 +55,7 @@ export function AnnouncementManager() {
       if (error) throw error;
 
       if (data) {
-        setAnnouncements(data as Announcement[]);
+        setAnnouncements(data as unknown as Announcement[]);
       }
     } catch (error: any) {
       console.error("Error fetching announcements:", error);

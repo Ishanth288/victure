@@ -73,7 +73,7 @@ export function PricingPlanManager() {
       if (error) throw error;
 
       if (data) {
-        setPlans(data as PricingPlan[]);
+        setPlans(data as unknown as PricingPlan[]);
       }
     } catch (error: any) {
       console.error("Error fetching pricing plans:", error);

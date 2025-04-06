@@ -27,7 +27,8 @@ export function AnnouncementBanner() {
         }
 
         if (data) {
-          setAnnouncements(data as Announcement[]);
+          // Cast the data to the correct type
+          setAnnouncements(data as unknown as Announcement[]);
         }
       } catch (error) {
         console.error("Error fetching announcements:", error);

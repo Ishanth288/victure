@@ -32,7 +32,7 @@ export const fetchPricingPlans = async (): Promise<PricingPlanUI[]> => {
     }
     
     // Transform the database plans to the format expected by the UI
-    return data.map((plan: PricingPlan): PricingPlanUI => {
+    return (data as unknown as PricingPlan[]).map((plan: PricingPlan): PricingPlanUI => {
       return {
         name: plan.name,
         price: plan.price_monthly.toString(),
