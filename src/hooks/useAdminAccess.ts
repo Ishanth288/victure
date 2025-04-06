@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { SecurityCodeModal } from "@/components/admin/SecurityCodeModal";
 
 export function useAdminAccess() {
   const navigate = useNavigate();
@@ -18,15 +17,7 @@ export function useAdminAccess() {
 
   const checkAdminAccess = async () => {
     try {
-      // Check if admin verification was already done in this session
-      const adminVerified = sessionStorage.getItem('adminVerified') === 'true';
-      
-      if (adminVerified) {
-        setIsAuthorized(true);
-        setIsLoading(false);
-        return;
-      }
-      
+      // Remove the sessionStorage check to always require verification
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate('/auth');
@@ -51,7 +42,7 @@ export function useAdminAccess() {
         });
         navigate('/dashboard');
       } else {
-        // Show security code modal
+        // Always show security code modal, regardless of session storage
         setShowSecurityModal(true);
       }
     } catch (error) {
@@ -69,7 +60,7 @@ export function useAdminAccess() {
 
   const handleSecurityVerification = (verified: boolean) => {
     if (verified) {
-      sessionStorage.setItem('adminVerified', 'true');
+      // We'll no longer store this in sessionStorage
       setIsAuthorized(true);
     } else {
       navigate('/dashboard');

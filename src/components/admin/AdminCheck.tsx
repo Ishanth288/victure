@@ -25,14 +25,7 @@ export function AdminCheck({ children }: AdminCheckProps) {
     try {
       setIsLoading(true);
       
-      // Check if admin verification was already done in this session
-      const adminVerified = sessionStorage.getItem('adminVerified') === 'true';
-      
-      if (adminVerified) {
-        setIsAuthenticated(true);
-        setIsLoading(false);
-        return;
-      }
+      // Remove sessionStorage check to always require verification
       
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -75,7 +68,7 @@ export function AdminCheck({ children }: AdminCheckProps) {
 
   const handleSecurityVerification = (verified: boolean) => {
     if (verified) {
-      sessionStorage.setItem('adminVerified', 'true');
+      // Don't store in sessionStorage anymore
       setIsAuthenticated(true);
     } else {
       navigate('/dashboard');
