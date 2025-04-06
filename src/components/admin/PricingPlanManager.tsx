@@ -288,7 +288,6 @@ export function PricingPlanManager() {
                         <Input 
                           type="number" 
                           placeholder="0" 
-                          {...field}
                           onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
                           value={field.value}
                         />
@@ -311,7 +310,6 @@ export function PricingPlanManager() {
                         <Input 
                           type="number" 
                           placeholder="0" 
-                          {...field}
                           onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
                           value={field.value}
                         />
@@ -353,7 +351,6 @@ export function PricingPlanManager() {
                         <Input 
                           type="number" 
                           placeholder="0" 
-                          {...field}
                           onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
                           value={field.value}
                         />

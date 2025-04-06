@@ -17,7 +17,12 @@ export function useAdminAccess() {
 
   const checkAdminAccess = async () => {
     try {
-      // Remove the sessionStorage check to always require verification
+      // First check if user is already authorized in this component's state
+      if (isAuthorized) {
+        setIsLoading(false);
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate('/auth');
@@ -42,8 +47,10 @@ export function useAdminAccess() {
         });
         navigate('/dashboard');
       } else {
-        // Always show security code modal, regardless of session storage
-        setShowSecurityModal(true);
+        // If not authorized yet, show the security modal
+        if (!isAuthorized) {
+          setShowSecurityModal(true);
+        }
       }
     } catch (error) {
       console.error("Error checking admin access:", error);
@@ -60,12 +67,12 @@ export function useAdminAccess() {
 
   const handleSecurityVerification = (verified: boolean) => {
     if (verified) {
-      // We'll no longer store this in sessionStorage
       setIsAuthorized(true);
+      setShowSecurityModal(false);
     } else {
       navigate('/dashboard');
+      setShowSecurityModal(false);
     }
-    setShowSecurityModal(false);
   };
 
   return { 

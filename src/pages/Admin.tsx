@@ -31,35 +31,37 @@ export default function Admin() {
     );
   }
 
-  if (!isAuthorized && !showSecurityModal) {
-    return null; // Access check will redirect if not authorized
+  // Don't render anything but the modal while waiting for authorization
+  if (!isAuthorized) {
+    return (
+      <SecurityCodeModal 
+        isOpen={showSecurityModal}
+        onClose={() => {
+          setShowSecurityModal(false);
+          window.location.href = '/dashboard';
+        }}
+        onVerified={handleSecurityVerification}
+      />
+    );
   }
 
   return (
-    <>
-      <DashboardLayout>
-        <div className="container mx-auto py-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-            <h1 className="text-3xl font-bold">Admin Portal</h1>
-          </div>
-
-          <AdminTabs
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            dashboardContent={<AdminDashboard stats={stats} isLoading={isLoading} />}
-            systemContent={<SystemSettings />}
-            feedbackContent={<FeedbackList />}
-            usersContent={<UserManagement />}
-            planContent={<PlanManagement />}
-          />
+    <DashboardLayout>
+      <div className="container mx-auto py-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+          <h1 className="text-3xl font-bold">Admin Portal</h1>
         </div>
-      </DashboardLayout>
-      
-      <SecurityCodeModal 
-        isOpen={showSecurityModal}
-        onClose={() => setShowSecurityModal(false)}
-        onVerified={handleSecurityVerification}
-      />
-    </>
+
+        <AdminTabs
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          dashboardContent={<AdminDashboard stats={stats} isLoading={isLoading} />}
+          systemContent={<SystemSettings />}
+          feedbackContent={<FeedbackList />}
+          usersContent={<UserManagement />}
+          planContent={<PlanManagement />}
+        />
+      </div>
+    </DashboardLayout>
   );
 }

@@ -25,7 +25,11 @@ export function AdminCheck({ children }: AdminCheckProps) {
     try {
       setIsLoading(true);
       
-      // Remove sessionStorage check to always require verification
+      // First check if user is already authenticated in this component's state
+      if (isAuthenticated) {
+        setIsLoading(false);
+        return;
+      }
       
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -51,7 +55,10 @@ export function AdminCheck({ children }: AdminCheckProps) {
         });
         navigate('/dashboard');
       } else {
-        setIsSecurityModalOpen(true);
+        // If not authenticated yet, show security modal
+        if (!isAuthenticated) {
+          setIsSecurityModalOpen(true);
+        }
       }
     } catch (error: any) {
       console.error("Error checking admin access:", error);
@@ -68,12 +75,11 @@ export function AdminCheck({ children }: AdminCheckProps) {
 
   const handleSecurityVerification = (verified: boolean) => {
     if (verified) {
-      // Don't store in sessionStorage anymore
       setIsAuthenticated(true);
+      setIsSecurityModalOpen(false);
     } else {
       navigate('/dashboard');
     }
-    setIsSecurityModalOpen(false);
   };
 
   if (isLoading) {
