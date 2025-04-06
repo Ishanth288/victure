@@ -1,16 +1,16 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ReactNode } from "react";
-import { BarChart3, Users, Settings, MessageSquare, CreditCard } from "lucide-react";
+import { AnnouncementManager } from "./AnnouncementManager";
+import { PricingPlanManager } from "./PricingPlanManager";
 
 interface AdminTabsProps {
   activeTab: string;
   onTabChange: (value: string) => void;
-  dashboardContent: ReactNode;
-  systemContent: ReactNode;
-  feedbackContent: ReactNode;
-  usersContent: ReactNode;
-  planContent: ReactNode;
+  dashboardContent: React.ReactNode;
+  systemContent: React.ReactNode;
+  feedbackContent: React.ReactNode;
+  usersContent: React.ReactNode;
+  planContent: React.ReactNode;
 }
 
 export function AdminTabs({
@@ -20,35 +20,34 @@ export function AdminTabs({
   systemContent,
   feedbackContent,
   usersContent,
-  planContent
+  planContent,
 }: AdminTabsProps) {
   return (
-    <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-4">
-      <TabsList className="grid grid-cols-5 w-full md:w-auto">
-        <TabsTrigger value="dashboard" className="flex items-center gap-2">
-          <BarChart3 className="h-4 w-4" />
-          <span className="hidden md:inline">Dashboard</span>
-        </TabsTrigger>
-        <TabsTrigger value="users" className="flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          <span className="hidden md:inline">Users</span>
-        </TabsTrigger>
-        <TabsTrigger value="plans" className="flex items-center gap-2">
-          <CreditCard className="h-4 w-4" />
-          <span className="hidden md:inline">Plans</span>
-        </TabsTrigger>
-        <TabsTrigger value="feedback" className="flex items-center gap-2">
-          <MessageSquare className="h-4 w-4" />
-          <span className="hidden md:inline">Feedback</span>
-        </TabsTrigger>
-        <TabsTrigger value="system" className="flex items-center gap-2">
-          <Settings className="h-4 w-4" />
-          <span className="hidden md:inline">System</span>
-        </TabsTrigger>
+    <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-6">
+      <TabsList className="grid grid-cols-7 max-w-4xl">
+        <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+        <TabsTrigger value="system">System</TabsTrigger>
+        <TabsTrigger value="announcements">Announcements</TabsTrigger>
+        <TabsTrigger value="feedback">Feedback</TabsTrigger>
+        <TabsTrigger value="users">Users</TabsTrigger>
+        <TabsTrigger value="plans">Plans</TabsTrigger>
+        <TabsTrigger value="pricing">Pricing</TabsTrigger>
       </TabsList>
       
       <TabsContent value="dashboard" className="space-y-4">
         {dashboardContent}
+      </TabsContent>
+      
+      <TabsContent value="system" className="space-y-4">
+        {systemContent}
+      </TabsContent>
+      
+      <TabsContent value="announcements" className="space-y-4">
+        <AnnouncementManager />
+      </TabsContent>
+      
+      <TabsContent value="feedback" className="space-y-4">
+        {feedbackContent}
       </TabsContent>
       
       <TabsContent value="users" className="space-y-4">
@@ -59,12 +58,8 @@ export function AdminTabs({
         {planContent}
       </TabsContent>
       
-      <TabsContent value="feedback" className="space-y-4">
-        {feedbackContent}
-      </TabsContent>
-      
-      <TabsContent value="system" className="space-y-4">
-        {systemContent}
+      <TabsContent value="pricing" className="space-y-4">
+        <PricingPlanManager />
       </TabsContent>
     </Tabs>
   );

@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          message: string
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message: string
+          title: string
+          type?: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message?: string
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       bill_items: {
         Row: {
           bill_id: number
@@ -365,6 +398,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pricing_plans: {
+        Row: {
+          category: string | null
+          description: string
+          display_order: number | null
+          features: Json
+          id: string
+          is_popular: boolean | null
+          name: string
+          plan_id: string | null
+          price_monthly: number
+          price_yearly: number
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          category?: string | null
+          description: string
+          display_order?: number | null
+          features: Json
+          id?: string
+          is_popular?: boolean | null
+          name: string
+          plan_id?: string | null
+          price_monthly: number
+          price_yearly: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string | null
+          description?: string
+          display_order?: number | null
+          features?: Json
+          id?: string
+          is_popular?: boolean | null
+          name?: string
+          plan_id?: string | null
+          price_monthly?: number
+          price_yearly?: number
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {

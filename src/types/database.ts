@@ -1,4 +1,5 @@
 
+
 export type DBPurchaseOrder = {
   id: number;
   supplier_name: string;
@@ -31,3 +32,30 @@ export interface SystemSettings {
   maintenance_announcement?: string;
   maintenance_announced_at?: string;
 }
+
+export interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'warning' | 'success' | 'error';
+  is_active: boolean;
+  created_at: string | null;
+  expires_at: string | null;
+  created_by: string | null;
+}
+
+export interface PricingPlan {
+  id: string;
+  name: string;
+  description: string;
+  price_monthly: number;
+  price_yearly: number;
+  features: string[];
+  is_popular: boolean | null;
+  category: string | null;
+  plan_id: string | null;
+  display_order: number | null;
+  updated_at: string | null;
+  updated_by: string | null;
+}
+
