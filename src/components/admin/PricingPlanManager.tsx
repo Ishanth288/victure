@@ -16,24 +16,16 @@ import { PricingPlan } from "@/types/database";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
+// Define the input schema - note that the numeric fields now use coerce instead of preprocess
 const pricingPlanSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   description: z.string().min(5, "Description must be at least 5 characters"),
-  price_monthly: z.preprocess(
-    (a) => parseInt(a as string, 10),
-    z.number().min(0, "Price cannot be negative")
-  ),
-  price_yearly: z.preprocess(
-    (a) => parseInt(a as string, 10),
-    z.number().min(0, "Price cannot be negative")
-  ),
+  price_monthly: z.coerce.number().min(0, "Price cannot be negative"),
+  price_yearly: z.coerce.number().min(0, "Price cannot be negative"),
   category: z.string().optional(),
   plan_id: z.string().min(1, "Plan ID is required"),
   is_popular: z.boolean(),
-  display_order: z.preprocess(
-    (a) => parseInt(a as string, 10),
-    z.number().min(0, "Display order cannot be negative")
-  ),
+  display_order: z.coerce.number().min(0, "Display order cannot be negative"),
   features: z.string().transform(val => 
     val.split('\n')
       .map(line => line.trim())
@@ -42,7 +34,17 @@ const pricingPlanSchema = z.object({
 });
 
 // Define the form input type - features is a string in the form
-type PricingPlanFormInput = z.input<typeof pricingPlanSchema>;
+type PricingPlanFormInput = {
+  name: string;
+  description: string;
+  price_monthly: number | string;
+  price_yearly: number | string;
+  category?: string;
+  plan_id: string;
+  is_popular: boolean;
+  display_order: number | string;
+  features: string;
+};
 
 // Define the form output type - features is transformed to string[] by the schema
 type PricingPlanFormOutput = z.output<typeof pricingPlanSchema>;
@@ -283,7 +285,13 @@ export function PricingPlanManager() {
                     <FormItem>
                       <FormLabel>Monthly Price</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0" {...field} />
+                        <Input 
+                          type="number" 
+                          placeholder="0" 
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
+                          value={field.value}
+                        />
                       </FormControl>
                       <FormDescription>
                         In INR, without decimals
@@ -300,7 +308,13 @@ export function PricingPlanManager() {
                     <FormItem>
                       <FormLabel>Yearly Price</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0" {...field} />
+                        <Input 
+                          type="number" 
+                          placeholder="0" 
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
+                          value={field.value}
+                        />
                       </FormControl>
                       <FormDescription>
                         In INR, without decimals
@@ -336,7 +350,13 @@ export function PricingPlanManager() {
                     <FormItem>
                       <FormLabel>Display Order</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0" {...field} />
+                        <Input 
+                          type="number" 
+                          placeholder="0" 
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
+                          value={field.value}
+                        />
                       </FormControl>
                       <FormDescription>
                         Lower numbers appear first
