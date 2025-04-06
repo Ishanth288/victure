@@ -58,7 +58,7 @@ export function PricingPlanManager() {
       plan_id: "",
       is_popular: false,
       display_order: 0,
-      features: [], // Change this to an empty array
+      features: "",  // Keep as string for form input
     },
   });
 
