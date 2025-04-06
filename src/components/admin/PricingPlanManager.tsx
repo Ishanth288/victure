@@ -41,13 +41,19 @@ const pricingPlanSchema = z.object({
   ),
 });
 
+// Define the form input type - features is a string in the form
+type PricingPlanFormInput = z.input<typeof pricingPlanSchema>;
+
+// Define the form output type - features is transformed to string[] by the schema
+type PricingPlanFormOutput = z.output<typeof pricingPlanSchema>;
+
 export function PricingPlanManager() {
   const [plans, setPlans] = useState<PricingPlan[]>([]);
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof pricingPlanSchema>>({
+  const form = useForm<PricingPlanFormInput>({
     resolver: zodResolver(pricingPlanSchema),
     defaultValues: {
       name: "",
@@ -142,20 +148,23 @@ export function PricingPlanManager() {
     }
   };
 
-  const onSubmit = async (values: z.infer<typeof pricingPlanSchema>) => {
+  const onSubmit = async (values: PricingPlanFormInput) => {
     try {
       setIsLoading(true);
+      
+      // Transform the form values using the schema
+      const transformedValues = pricingPlanSchema.parse(values) as PricingPlanFormOutput;
 
       const planData = {
-        name: values.name,
-        description: values.description,
-        price_monthly: values.price_monthly,
-        price_yearly: values.price_yearly,
-        category: values.category || null,
-        plan_id: values.plan_id,
-        is_popular: values.is_popular,
-        display_order: values.display_order,
-        features: values.features,
+        name: transformedValues.name,
+        description: transformedValues.description,
+        price_monthly: transformedValues.price_monthly,
+        price_yearly: transformedValues.price_yearly,
+        category: transformedValues.category || null,
+        plan_id: transformedValues.plan_id,
+        is_popular: transformedValues.is_popular,
+        display_order: transformedValues.display_order,
+        features: transformedValues.features, // This is now string[] after transformation
       };
 
       if (isEditing) {
