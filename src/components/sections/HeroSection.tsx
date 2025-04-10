@@ -6,6 +6,7 @@ import { TechCard } from "@/components/ui/tech-card";
 import { AnimatedGradientBorder } from "@/components/ui/animated-gradient-border";
 import { TextScramble } from "@/components/ui/text-scramble";
 import { TypingEffect } from "@/components/ui/typing-effect";
+import { Robot } from "@/components/ui/robot";
 import { Cpu, CloudCog, Database, BarChart } from "lucide-react";
 import { memo, Suspense, lazy, useState, useEffect } from "react";
 
@@ -41,6 +42,10 @@ export const HeroSection = memo(() => {
       <div className="relative z-10">
         <Hero />
         <div className="container mx-auto px-4 pb-8">
+          <div className="flex justify-center mb-8">
+            <Robot className="scale-75 md:scale-100" />
+          </div>
+          
           <div className="flex flex-wrap justify-center gap-4 mt-8">
             <TechCard className="w-full md:w-auto px-6 py-3 bg-white border border-primary text-primary">
               <div className="flex items-center">
