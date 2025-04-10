@@ -42,8 +42,8 @@ export const HeroSection = memo(() => {
       <div className="relative z-10">
         <Hero />
         <div className="container mx-auto px-4 pb-8">
-          <div className="flex justify-center mb-12">
-            <Robot className="scale-90 md:scale-110 animate-float shadow-lg" />
+          <div className="flex justify-center mb-8">
+            <Robot className="scale-75 md:scale-100" />
           </div>
           
           <div className="flex flex-wrap justify-center gap-4 mt-8">
