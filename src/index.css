@@ -344,34 +344,3 @@ html {
     page-break-before: avoid;
   }
 }
-
-@keyframes robot-float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-}
-
-.robot-container {
-  transform-style: preserve-3d;
-  perspective: 1000px;
-  transform: translateZ(0);
-  will-change: transform;
-}
-
-.robot-head {
-  transform-origin: bottom center;
-  will-change: transform;
-}
-
-.robot-eye {
-  will-change: transform, background-color;
-}
-
-.robot-antenna {
-  transform-origin: bottom center;
-  will-change: transform;
-}
-
-.robot-arm {
-  transform-origin: top center;
-  will-change: transform;
-}
