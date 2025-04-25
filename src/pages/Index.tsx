@@ -83,11 +83,43 @@ const Index = memo(() => {
             <MainContentWrapper onError={handleError} className="-mt-32">
               <ScrollAnimationSection />
             </MainContentWrapper>
+
+            {/* 🔥 Custom Flash Card Section */}
+            <section className="relative z-10 py-16 px-4 sm:px-8 lg:px-20 flex justify-center bg-white">
+              <div className="max-w-3xl w-full glass-card backdrop-blur-lg border border-white/20 rounded-2xl shadow-xl p-8 bg-white/10 bg-opacity-20">
+                <h2 className="text-3xl font-semibold text-white text-center mb-2 tracking-tight">
+                  Ishanth
+                </h2>
+                <p className="text-center text-teal-200 mb-1">GD Goenka University</p>
+                <p className="text-center text-white text-lg mb-4">
+                  Victure - AI-powered Pharmacy Management System
+                </p>
+                <p className="text-center text-gray-200 text-sm mb-6">
+                  Built with love and innovation to showcase my full-stack dev journey into AI, healthcare tech, and SaaS architecture. A portfolio project that blends design, AI smarts, and practical functionality.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <a
+                    href="mailto:ishanth28.28@gmail.com"
+                    className="text-sm px-4 py-2 bg-teal-500 text-white rounded-md shadow hover:bg-teal-600 transition"
+                  >
+                    📧 ishanth28.28@gmail.com
+                  </a>
+                  <a
+                    href="https://github.com/Ishanth288"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm px-4 py-2 bg-gray-800 text-white rounded-md shadow hover:bg-gray-900 transition"
+                  >
+                    💻 GitHub Repository
+                  </a>
+                </div>
+              </div>
+            </section>
+
+            {/* 👇 Normal sections continue */}
             <MainContentWrapper onError={handleError} className="-mt-24">
               <ContentSection />
             </MainContentWrapper>
-
-            {/* Removed portfolio/flash card section here */}
 
             <section id="feedback" className="py-12 bg-gray-50 -mt-16 content-visibility-auto" ref={feedbackSectionRef}>
               <div className="container mx-auto px-4">
@@ -106,5 +138,4 @@ const Index = memo(() => {
 Index.displayName = 'Index';
 
 export default Index;
-
 
