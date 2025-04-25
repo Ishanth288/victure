@@ -55,6 +55,8 @@ export function SidebarLinks() {
           
           if (profile && (profile.role === 'admin' || profile.role === 'owner')) {
             setIsAdmin(true);
+            // Store admin status in session storage to avoid checking again
+            sessionStorage.setItem('adminVerified', 'true');
           }
         }
       } catch (error) {
@@ -168,7 +170,7 @@ export function SidebarLinks() {
 
   return (
     <div className="flex flex-col space-y-1">
-      {allLinks.map((link, index) => (
+      {!isLoading && allLinks.map((link, index) => (
         <div key={index} className="flex flex-col">
           <a
             href={link.href}
