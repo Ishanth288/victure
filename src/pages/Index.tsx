@@ -1,21 +1,24 @@
-import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
-import { HeroSection } from "@/components/sections/HeroSection";
-import { FloatingIconsSection } from "@/components/sections/FloatingIconsSection";
-import { ScrollAnimationSection } from "@/components/sections/ScrollAnimationSection";
-import { ContentSection } from "@/components/sections/ContentSection";
-import { FeedbackForm } from "@/components/FeedbackForm";
-import { useEffect, memo, useRef, useState } from "react";
-import { LazyMotion, domAnimation, m } from "framer-motion";
-import * as Sentry from "@sentry/react";
-import { MainContentWrapper } from "@/components/sections/MainContentWrapper";
-import { setupPageOptimizations, deferNonCriticalResources, createVisibilityObserver } from "@/utils/performanceUtils";
-import { Fallback } from "@/components/ui/fallback";
-import { OnboardingProvider } from "@/components/onboarding";
-import { useOnboarding } from "@/hooks/useOnboarding";
-// Removed unused icons: Contact, Mail, Link as LinkIcon
+'use client';
 
-// Simplified memo wrapper to reduce re-renders
+import { useEffect, useRef, useState, memo } from 'react';
+import { domAnimation, LazyMotion, m } from 'framer-motion';
+import * as Sentry from '@sentry/nextjs';
+
+import { useOnboarding } from '@/hooks/use-onboarding';
+import { createVisibilityObserver } from '@/lib/visibility-observer';
+import { deferNonCriticalResources, setupPageOptimizations } from '@/lib/optimizations';
+
+import { Navigation } from '@/components/navigation';
+import { OnboardingProvider } from '@/components/onboarding/onboarding-provider';
+import { FloatingIconsSection } from '@/components/sections/floating-icons';
+import { ScrollAnimationSection } from '@/components/sections/scroll-animation';
+import { ContentSection } from '@/components/sections/content';
+import { Footer } from '@/components/footer';
+import { HeroSection } from '@/components/sections/hero';
+import { FeedbackForm } from '@/components/forms/feedback';
+import { MainContentWrapper } from '@/components/wrappers/main-content-wrapper';
+import { Fallback } from '@/components/fallback';
+
 const Index = memo(() => {
   const feedbackSectionRef = useRef<HTMLElement>(null);
   const [isError, setIsError] = useState(false);
@@ -27,30 +30,22 @@ const Index = memo(() => {
   } = useOnboarding();
 
   useEffect(() => {
-    // Setup minimal performance optimizations
     const cleanupOptimizations = setupPageOptimizations();
-
-    // Setup visibility observer
     const observer = createVisibilityObserver((isVisible) => {
-      // Load resources when sections become visible
       if (isVisible) {
         deferNonCriticalResources();
       }
     });
-
-    // Observe main content sections
     const sections = document.querySelectorAll('.content-visibility-auto');
     sections.forEach(section => {
       observer.observe(section);
     });
-
     return () => {
       cleanupOptimizations();
       observer.disconnect();
     };
   }, []);
 
-  // Simplified error handler
   const handleError = (error: Error) => {
     console.error('Component failed to load:', error);
     Sentry.captureException(error);
@@ -82,36 +77,19 @@ const Index = memo(() => {
             transition={{ duration: 0.2 }}
           >
             <HeroSection />
-
-            <MainContentWrapper
-              useFallback={true}
-              onError={handleError}
-              className="-mt-24"
-            >
+            <MainContentWrapper useFallback={true} onError={handleError} className="-mt-24">
               <FloatingIconsSection />
             </MainContentWrapper>
-
-            <MainContentWrapper
-              onError={handleError}
-              className="-mt-32"
-            >
+            <MainContentWrapper onError={handleError} className="-mt-32">
               <ScrollAnimationSection />
             </MainContentWrapper>
-
-            <MainContentWrapper
-              onError={handleError}
-              className="-mt-24"
-            >
+            <MainContentWrapper onError={handleError} className="-mt-24">
               <ContentSection />
             </MainContentWrapper>
 
-            {/* Portfolio Section Removed */}
+            {/* Removed portfolio/flash card section here */}
 
-            <section
-              id="feedback"
-              className="py-12 bg-gray-50 -mt-16 content-visibility-auto" // Adjusted margin-top if needed after removing the portfolio section
-              ref={feedbackSectionRef}
-            >
+            <section id="feedback" className="py-12 bg-gray-50 -mt-16 content-visibility-auto" ref={feedbackSectionRef}>
               <div className="container mx-auto px-4">
                 <h2 className="text-3xl font-bold text-center mb-8">Your Feedback Matters</h2>
                 <FeedbackForm />
@@ -128,3 +106,5 @@ const Index = memo(() => {
 Index.displayName = 'Index';
 
 export default Index;
+
+
