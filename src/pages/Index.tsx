@@ -1,4 +1,3 @@
-
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { HeroSection } from "@/components/sections/HeroSection";
@@ -14,9 +13,10 @@ import { setupPageOptimizations, deferNonCriticalResources, createVisibilityObse
 import { Fallback } from "@/components/ui/fallback";
 import { OnboardingProvider } from "@/components/onboarding";
 import { useOnboarding } from "@/hooks/useOnboarding";
-import { Contact, Mail, Link as LinkIcon } from "lucide-react";
+import { Mail, Github, Link as LinkIcon } from "lucide-react";
+import { CardTilt } from "@/components/ui/card-tilt";
+import { AnimatedGradientBorder } from "@/components/ui/animated-gradient-border";
 
-// Simplified memo wrapper to reduce re-renders
 const Index = memo(() => {
   const feedbackSectionRef = useRef<HTMLElement>(null);
   const [isError, setIsError] = useState(false);
@@ -28,30 +28,24 @@ const Index = memo(() => {
   } = useOnboarding();
   
   useEffect(() => {
-    // Setup minimal performance optimizations
     const cleanupOptimizations = setupPageOptimizations();
-    
-    // Setup visibility observer
     const observer = createVisibilityObserver((isVisible) => {
-      // Load resources when sections become visible
       if (isVisible) {
         deferNonCriticalResources();
       }
     });
 
-    // Observe main content sections
     const sections = document.querySelectorAll('.content-visibility-auto');
     sections.forEach(section => {
       observer.observe(section);
     });
-    
+
     return () => {
       cleanupOptimizations();
       observer.disconnect();
     };
   }, []);
 
-  // Simplified error handler
   const handleError = (error: Error) => {
     console.error('Component failed to load:', error);
     Sentry.captureException(error);
@@ -82,6 +76,48 @@ const Index = memo(() => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }}
           >
+            <section className="py-12 bg-gray-50">
+              <div className="container mx-auto px-4">
+                <AnimatedGradientBorder className="max-w-3xl mx-auto">
+                  <CardTilt className="bg-white p-8">
+                    <div className="text-center space-y-4">
+                      <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600">
+                        Ishanth
+                      </h1>
+                      <p className="text-xl text-neutral-600 font-medium">
+                        GD Goenka University
+                      </p>
+                      <div className="max-w-2xl mx-auto">
+                        <h2 className="text-2xl font-semibold mb-4 text-neutral-800">Victure - Pharmacy Management System</h2>
+                        <p className="text-neutral-600 mb-6">
+                          A comprehensive AI-powered pharmacy management solution developed as a portfolio project 
+                          to showcase full-stack development skills and innovative technology integration.
+                        </p>
+                        <div className="flex flex-wrap justify-center gap-4">
+                          <a 
+                            href="mailto:ishanth28.28@gmail.com" 
+                            className="flex items-center text-primary hover:text-primary/80 transition-colors bg-primary/5 px-4 py-2 rounded-lg"
+                          >
+                            <Mail className="mr-2 h-4 w-4" />
+                            ishanth28.28@gmail.com
+                          </a>
+                          <a 
+                            href="https://github.com/Ishanth288/victure.git" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center text-primary hover:text-primary/80 transition-colors bg-primary/5 px-4 py-2 rounded-lg"
+                          >
+                            <Github className="mr-2 h-4 w-4" />
+                            GitHub Repository
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </CardTilt>
+                </AnimatedGradientBorder>
+              </div>
+            </section>
+
             <HeroSection />
             
             <MainContentWrapper 
@@ -107,51 +143,6 @@ const Index = memo(() => {
             </MainContentWrapper>
 
             <section 
-              id="portfolio" 
-              className="py-16 bg-gray-50 text-center"
-            >
-              <div className="container mx-auto px-4">
-                <h2 className="text-3xl font-bold mb-6 text-neutral-900">Portfolio Project</h2>
-                <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
-                  <h3 className="text-2xl font-semibold mb-4">Victure - Pharmacy Management System</h3>
-                  <p className="text-neutral-600 mb-6">
-                    A comprehensive AI-powered pharmacy management solution developed as a portfolio project 
-                    to showcase full-stack development skills and innovative technology integration.
-                  </p>
-                  <div className="flex justify-center space-x-4 mb-6">
-                    <a 
-                      href="mailto:ishanth28.28@gmail.com" 
-                      className="flex items-center text-primary hover:text-primary/80 transition-colors"
-                    >
-                      <Mail className="mr-2" />
-                      ishanth28.28@gmail.com
-                    </a>
-                  </div>
-                  <div className="flex justify-center space-x-4">
-                    <a 
-                      href="https://github.com/your-github-profile" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center text-primary hover:text-primary/80 transition-colors"
-                    >
-                      <LinkIcon className="mr-2" />
-                      GitHub Profile
-                    </a>
-                    <a 
-                      href="https://linkedin.com/in/your-linkedin-profile" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center text-primary hover:text-primary/80 transition-colors"
-                    >
-                      <Contact className="mr-2" />
-                      LinkedIn
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section 
               id="feedback" 
               className="py-12 bg-gray-50 -mt-16 content-visibility-auto" 
               ref={feedbackSectionRef}
@@ -172,4 +163,3 @@ const Index = memo(() => {
 Index.displayName = 'Index';
 
 export default Index;
-
