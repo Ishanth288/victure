@@ -1,4 +1,3 @@
-
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { HeroSection } from "@/components/sections/HeroSection";
@@ -14,23 +13,23 @@ import { setupPageOptimizations, deferNonCriticalResources, createVisibilityObse
 import { Fallback } from "@/components/ui/fallback";
 import { OnboardingProvider } from "@/components/onboarding";
 import { useOnboarding } from "@/hooks/useOnboarding";
-import { Contact, Mail, Link as LinkIcon } from "lucide-react";
+// Removed unused icons: Contact, Mail, Link as LinkIcon
 
 // Simplified memo wrapper to reduce re-renders
 const Index = memo(() => {
   const feedbackSectionRef = useRef<HTMLElement>(null);
   const [isError, setIsError] = useState(false);
-  const { 
+  const {
     showOnboarding,
     setIsOpen: setShowOnboarding,
     completeOnboarding,
     skipOnboarding
   } = useOnboarding();
-  
+
   useEffect(() => {
     // Setup minimal performance optimizations
     const cleanupOptimizations = setupPageOptimizations();
-    
+
     // Setup visibility observer
     const observer = createVisibilityObserver((isVisible) => {
       // Load resources when sections become visible
@@ -44,7 +43,7 @@ const Index = memo(() => {
     sections.forEach(section => {
       observer.observe(section);
     });
-    
+
     return () => {
       cleanupOptimizations();
       observer.disconnect();
@@ -76,84 +75,41 @@ const Index = memo(() => {
       >
         <div className="min-h-screen bg-white">
           <Navigation />
-          <m.main 
-            className="overflow-hidden" 
+          <m.main
+            className="overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }}
           >
             <HeroSection />
-            
-            <MainContentWrapper 
-              useFallback={true} 
+
+            <MainContentWrapper
+              useFallback={true}
               onError={handleError}
-              className="-mt-24" 
+              className="-mt-24"
             >
               <FloatingIconsSection />
             </MainContentWrapper>
-            
-            <MainContentWrapper 
+
+            <MainContentWrapper
               onError={handleError}
-              className="-mt-32" 
+              className="-mt-32"
             >
               <ScrollAnimationSection />
             </MainContentWrapper>
-            
-            <MainContentWrapper 
+
+            <MainContentWrapper
               onError={handleError}
-              className="-mt-24" 
+              className="-mt-24"
             >
               <ContentSection />
             </MainContentWrapper>
 
-            <section 
-              id="portfolio" 
-              className="py-16 bg-gray-50 text-center"
-            >
-              <div className="container mx-auto px-4">
-                <h2 className="text-3xl font-bold mb-6 text-neutral-900">Portfolio Project</h2>
-                <div className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md">
-                  <h3 className="text-2xl font-semibold mb-4">Victure - Pharmacy Management System</h3>
-                  <p className="text-neutral-600 mb-6">
-                    A comprehensive AI-powered pharmacy management solution developed as a portfolio project 
-                    to showcase full-stack development skills and innovative technology integration.
-                  </p>
-                  <div className="flex justify-center space-x-4 mb-6">
-                    <a 
-                      href="mailto:ishanth28.28@gmail.com" 
-                      className="flex items-center text-primary hover:text-primary/80 transition-colors"
-                    >
-                      <Mail className="mr-2" />
-                      ishanth28.28@gmail.com
-                    </a>
-                  </div>
-                  <div className="flex justify-center space-x-4">
-                    <a 
-                      href="https://github.com/your-github-profile" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center text-primary hover:text-primary/80 transition-colors"
-                    >
-                      <LinkIcon className="mr-2" />
-                      GitHub Profile
-                    </a>
-                    <a 
-                      href="https://linkedin.com/in/your-linkedin-profile" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center text-primary hover:text-primary/80 transition-colors"
-                    >
-                      <Contact className="mr-2" />
-                      LinkedIn
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </section>
+            {/* Portfolio Section Removed */}
 
-            <section 
-              id="feedback" 
-              className="py-12 bg-gray-50 -mt-16 content-visibility-auto" 
+            <section
+              id="feedback"
+              className="py-12 bg-gray-50 -mt-16 content-visibility-auto" // Adjusted margin-top if needed after removing the portfolio section
               ref={feedbackSectionRef}
             >
               <div className="container mx-auto px-4">
@@ -172,4 +128,3 @@ const Index = memo(() => {
 Index.displayName = 'Index';
 
 export default Index;
-
