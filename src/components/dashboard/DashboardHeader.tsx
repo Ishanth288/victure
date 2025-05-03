@@ -22,20 +22,27 @@ export function DashboardHeader({ title, isSidebarOpen }: DashboardHeaderProps) 
   };
   
   return (
-    <div className="flex items-center h-16 px-4 border-b border-neutral-200 overflow-hidden bg-white rounded-t-lg shadow-sm">
+    <div className="flex items-center h-16 px-4 border-b border-neutral-200 overflow-hidden">
       <Button
         variant="ghost"
         size="icon"
-        className="mr-2 flex-shrink-0 text-gray-600 hover:text-primary hover:bg-gray-100"
+        className="mr-2 flex-shrink-0"
         onClick={handleBack}
       >
         <ChevronLeft className="h-5 w-5" />
       </Button>
-      <div className="flex items-center">
-        <h1 className="text-lg font-medium text-gray-800 truncate">
-          {title}
-        </h1>
-      </div>
+      <motion.div 
+        className="flex items-center overflow-hidden"
+        animate={{ 
+          width: isSidebarOpen ? "auto" : "0px",
+          opacity: isSidebarOpen ? 1 : 0
+        }}
+        transition={{ duration: 0.2, ease: "easeInOut" }}
+      >
+        <span className="text-lg font-medium text-primary truncate">
+          Victure Healthcare Solutions
+        </span>
+      </motion.div>
     </div>
   );
 }
