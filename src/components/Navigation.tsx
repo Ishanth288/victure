@@ -5,6 +5,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Home } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Navigation() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export default function Navigation() {
   const [isAuthPage, setIsAuthPage] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Check if current page is auth page
@@ -48,15 +50,25 @@ export default function Navigation() {
   };
 
   const handleDashboard = () => {
-    navigate('/dashboard');
+    navigate('/dashboard?just_logged_in=true');
   };
 
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
+      toast({
+        title: "Signed out successfully",
+        description: "You have been logged out of your account.",
+        variant: "success",
+      });
       navigate('/');
     } catch (error) {
       console.error("Error signing out:", error);
+      toast({
+        title: "Sign out failed",
+        description: "There was a problem signing you out. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 

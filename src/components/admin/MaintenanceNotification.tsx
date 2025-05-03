@@ -87,6 +87,13 @@ export function MaintenanceNotification() {
     return null;
   }
 
+  // Handle the close button click
+  const handleDismiss = () => {
+    setShowNotification(false);
+    // Store in localStorage to remember user's preference
+    localStorage.setItem('maintenance-dismissed', 'true');
+  };
+
   return (
     <Alert 
       variant={maintenanceMode ? "destructive" : "default"} 
@@ -120,7 +127,7 @@ export function MaintenanceNotification() {
         variant="ghost" 
         size="icon" 
         className="h-7 w-7 absolute top-2 right-2 bg-transparent p-1 hover:bg-gray-200 rounded-full text-gray-700"
-        onClick={() => setShowNotification(false)}
+        onClick={handleDismiss}
         aria-label="Close notification"
       >
         <X className="h-4 w-4" />

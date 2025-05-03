@@ -53,6 +53,7 @@ export default function Dashboard() {
       toast({
         title: "Login Successful",
         description: "Welcome to your pharmacy dashboard!",
+        variant: "success",
         duration: 5000,
       });
       

@@ -12,25 +12,12 @@ interface AuthWrapperProps {
 export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
   const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
-    // First set up the auth listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
-      setSession(currentSession);
-      
-      // Show login success message but avoid showing on initial page load
-      if (event === 'SIGNED_IN' && !loading) {
-        toast({
-          title: "Login Successful",
-          description: "You have been successfully logged in.",
-          variant: "default",
-        });
-      }
-    });
-
-    // Then check for existing session
+    // First check for existing session
     const checkSession = async () => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -40,15 +27,37 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
         setSession(null);
       } finally {
         setLoading(false);
+        setInitialLoad(false);
       }
     };
 
     checkSession();
+    
+    // Then set up the auth listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      setSession(currentSession);
+      
+      // Show login success message but avoid showing on initial page load
+      if (event === 'SIGNED_IN' && !initialLoad) {
+        console.log("User signed in, showing toast notification");
+        toast({
+          title: "Login Successful",
+          description: "You have been successfully logged in.",
+          variant: "success",
+        });
+      } else if (event === 'SIGNED_OUT') {
+        toast({
+          title: "Signed Out",
+          description: "You have been signed out successfully.",
+          variant: "default",
+        });
+      }
+    });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [toast, loading]);
+  }, [toast, initialLoad]);
 
   if (loading) {
     return (

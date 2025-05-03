@@ -9,7 +9,7 @@ type ToastProps = Omit<ToastT, "id"> & {
 
 // Keep track of displayed toast IDs to prevent duplicates
 const activeToasts = new Set<string>();
-const MAX_VISIBLE_TOASTS = 3;
+const MAX_VISIBLE_TOASTS = 2;
 
 /**
  * Enhanced toast function that prevents duplicates and limits concurrent toasts
@@ -21,7 +21,7 @@ export function toast({
   ...props
 }: ToastProps) {
   // Create a unique ID based on content to prevent duplicates
-  const toastId = `${title}-${description?.substring(0, 20)}`;
+  const toastId = `${title}-${description?.substring(0, 20) || ""}`;
   
   // Don't show duplicate toasts
   if (activeToasts.has(toastId)) {
