@@ -40,7 +40,7 @@ export function DashboardHeader({ title, pharmacyName, isSidebarOpen }: Dashboar
         transition={{ duration: 0.2, ease: "easeInOut" }}
       >
         <span className="text-lg font-medium text-primary truncate">
-          {pharmacyName || 'Medplus'}
+          Victure Healthcare Solutions
         </span>
       </motion.div>
     </div>

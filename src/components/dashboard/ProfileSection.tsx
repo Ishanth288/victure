@@ -42,15 +42,10 @@ export function useProfileData() {
       if (!error && data) {
         // Type-safe conversion of the data
         const typedData = safeCast<ProfileData>(data, {
-          pharmacy_name: 'Pharmacy',
           owner_name: 'Owner'
         });
         
         setProfileData(typedData);
-        
-        // Safely access pharmacy_name with a default value
-        const pharmacyName = typedData.pharmacy_name || 'Medplus';
-        localStorage.setItem('pharmacyName', pharmacyName);
       }
     }
   };
