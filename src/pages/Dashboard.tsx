@@ -14,6 +14,7 @@ import { GrowthOpportunitiesChart } from '@/components/insights/GrowthOpportunit
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { MaintenanceNotification } from "@/components/admin/MaintenanceNotification";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Dashboard() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -66,14 +67,24 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       <ErrorBoundary>
-        {showPostLoginOnboarding && <div className="mb-6">Welcome to your pharmacy dashboard!</div>}
+        {showPostLoginOnboarding && (
+          <Card className="mb-6 bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+            <CardContent className="p-6">
+              <h2 className="text-xl font-semibold text-primary">Welcome to your pharmacy dashboard!</h2>
+              <p className="text-gray-600 mt-2">
+                Get started by exploring your inventory, managing prescriptions, or viewing insights about your pharmacy.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+        
         <WelcomeDialog isOpen={isHelpOpen} onOpenChange={setIsHelpOpen} />
         
         <MaintenanceNotification />
         
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">Dashboard</h1>
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
           </div>
           
           <DashboardStats 
@@ -83,12 +94,12 @@ export default function Dashboard() {
             lowStockItems={lowStockItems}
           />
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <RevenueSection isLoading={isLoading} revenueData={revenueData} />
             <DistributionSection isLoading={isLoading} revenueDistribution={revenueDistribution} />
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <GrowthOpportunitiesChart opportunities={[]} />
             <DashboardWidgets />
           </div>

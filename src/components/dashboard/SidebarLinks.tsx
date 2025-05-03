@@ -1,6 +1,5 @@
 
 import { useNavigate, useLocation } from "react-router-dom";
-import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -176,11 +175,10 @@ export function SidebarLinks() {
             href={link.href}
             onClick={(e) => handleClick(e, link.href)}
             className={cn(
-              buttonVariants({ variant: "ghost" }),
               isCurrentPath(link.href)
-                ? "bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-900"
-                : "hover:bg-green-50 hover:text-green-700",
-              "justify-start"
+                ? "bg-[#1e2e3f] text-white border-l-4 border-primary"
+                : "text-gray-300 hover:bg-[#1e2e3f] hover:text-white",
+              "flex items-center px-4 py-3 text-sm font-medium transition-colors"
             )}
           >
             <div className="flex items-center">
@@ -196,10 +194,7 @@ export function SidebarLinks() {
         <a
           href="#"
           onClick={handleSignOut}
-          className={cn(
-            buttonVariants({ variant: "ghost" }),
-            "justify-start hover:bg-green-50 hover:text-green-700"
-          )}
+          className="flex items-center px-4 py-3 text-sm font-medium text-gray-300 hover:bg-[#1e2e3f] hover:text-white transition-colors"
         >
           <div className="flex items-center">
             <LogOut className="mr-2 h-4 w-4" />
