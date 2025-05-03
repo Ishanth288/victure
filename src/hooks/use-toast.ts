@@ -1,3 +1,4 @@
+
 import { toast as sonnerToast, ToastT } from "sonner";
 
 type ToastProps = Omit<ToastT, "id"> & {
@@ -53,7 +54,9 @@ export function toast({
     duration: props.duration || 5000,
     onDismiss: () => {
       activeToasts.delete(toastId);
-      props.onDismiss?.();
+      if (props.onDismiss) {
+        props.onDismiss();
+      }
     },
   });
 }
