@@ -90,11 +90,18 @@ export function MaintenanceNotification() {
   return (
     <Alert 
       variant={maintenanceMode ? "destructive" : "default"} 
-      className="mb-4 animate-fadeIn"
+      className={`mb-4 relative shadow-lg border ${
+        maintenanceMode 
+          ? "bg-red-50 text-red-800 border-red-200" 
+          : "bg-yellow-50 text-yellow-800 border-yellow-200"
+      } rounded-lg animate-fadeIn z-10`}
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
     >
       <AlertCircle className="h-4 w-4" />
       <div className="flex-1">
-        <AlertTitle>
+        <AlertTitle className="font-semibold">
           {maintenanceMode 
             ? "System Maintenance" 
             : `Upcoming Maintenance in ${timeUntilMaintenance}`
@@ -112,8 +119,9 @@ export function MaintenanceNotification() {
       <Button 
         variant="ghost" 
         size="icon" 
-        className="h-6 w-6" 
+        className="h-7 w-7 absolute top-2 right-2 bg-transparent p-1 hover:bg-gray-200 rounded-full text-gray-700"
         onClick={() => setShowNotification(false)}
+        aria-label="Close notification"
       >
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
