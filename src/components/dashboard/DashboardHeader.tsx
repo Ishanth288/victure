@@ -6,11 +6,11 @@ import { motion } from "framer-motion";
 
 interface DashboardHeaderProps {
   title: string;
-  pharmacyName: string;
+  pharmacyName?: string; // Make this prop optional
   isSidebarOpen: boolean;
 }
 
-export function DashboardHeader({ title, pharmacyName, isSidebarOpen }: DashboardHeaderProps) {
+export function DashboardHeader({ title, isSidebarOpen }: DashboardHeaderProps) {
   const navigate = useNavigate();
 
   const handleBack = () => {

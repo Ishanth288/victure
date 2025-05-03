@@ -46,7 +46,7 @@ export function toast({
   };
   
   // Show the toast
-  return sonnerToast(title ?? "", {
+  const toastInstance = sonnerToast(title ?? "", {
     description,
     id: toastId,
     ...props,
@@ -58,7 +58,10 @@ export function toast({
         props.onDismiss(toastData);
       }
     },
+    closeButton: true,
   });
+  
+  return toastInstance;
 }
 
 export function useToast() {

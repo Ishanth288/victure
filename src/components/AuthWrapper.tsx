@@ -22,6 +22,22 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         setSession(currentSession);
+        
+        // Check if user just logged in via URL parameter
+        const url = new URL(window.location.href);
+        const justLoggedIn = url.searchParams.get('just_logged_in');
+        
+        if (justLoggedIn === 'true' && currentSession) {
+          toast({
+            title: "Login Successful",
+            description: "Welcome to your pharmacy dashboard!",
+            variant: "success",
+          });
+          
+          // Remove the parameter so it doesn't show again on refresh
+          url.searchParams.delete('just_logged_in');
+          window.history.replaceState({}, document.title, url.toString());
+        }
       } catch (err) {
         console.error("Session check error:", err);
         setSession(null);
@@ -57,7 +73,7 @@ export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [toast, initialLoad]);
+  }, [toast, initialLoad, location.pathname]);
 
   if (loading) {
     return (

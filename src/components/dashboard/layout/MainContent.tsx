@@ -2,7 +2,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PlanBanner } from "@/components/PlanBanner";
 import { ProfileSection } from "@/components/dashboard/ProfileSection";
-import { useProfileData } from "@/components/dashboard/ProfileSection";
 
 interface MainContentProps {
   children: React.ReactNode;

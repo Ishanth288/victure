@@ -14,19 +14,6 @@ export function useProfileData() {
   
   useEffect(() => {
     fetchProfile();
-
-    const handlePharmacyNameUpdate = () => {
-      const updatedName = localStorage.getItem('pharmacyName');
-      if (updatedName && profileData) {
-        setProfileData({ ...profileData, pharmacy_name: updatedName });
-      }
-    };
-
-    window.addEventListener('pharmacyNameUpdated', handlePharmacyNameUpdate);
-
-    return () => {
-      window.removeEventListener('pharmacyNameUpdated', handlePharmacyNameUpdate);
-    };
   }, []);
 
   const fetchProfile = async () => {
