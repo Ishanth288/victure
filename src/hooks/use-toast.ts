@@ -52,10 +52,10 @@ export function toast({
     ...props,
     className: `shadow-lg ${variantStyles[variant]}`,
     duration: props.duration || 5000,
-    onDismiss: () => {
+    onDismiss: (toastData) => {
       activeToasts.delete(toastId);
       if (props.onDismiss) {
-        props.onDismiss();
+        props.onDismiss(toastData);
       }
     },
   });
