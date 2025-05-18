@@ -80,17 +80,9 @@ export function SidebarContainer() {
   }, [dismissedNotices]);
 
   const dismissNotification = (noticeId: string) => {
-    // Store the dismissed notifications in state
     setDismissedNotices(prev => [...prev, noticeId]);
-    
-    // Decrease notification count
     if (notifications > 0) {
-      setNotifications(prev => prev - 1);
-    }
-    
-    // If notification popup is open, close it
-    if (isPopoverOpen) {
-      setIsPopoverOpen(false);
+      setNotifications(notifications - 1);
     }
   };
   

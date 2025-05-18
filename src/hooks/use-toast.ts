@@ -1,4 +1,3 @@
-
 import { toast as sonnerToast, ToastT } from "sonner";
 
 type ToastProps = Omit<ToastT, "id"> & {
@@ -9,7 +8,7 @@ type ToastProps = Omit<ToastT, "id"> & {
 
 // Keep track of displayed toast IDs to prevent duplicates
 const activeToasts = new Set<string>();
-const MAX_VISIBLE_TOASTS = 2;
+const MAX_VISIBLE_TOASTS = 3;
 
 /**
  * Enhanced toast function that prevents duplicates and limits concurrent toasts
@@ -21,7 +20,7 @@ export function toast({
   ...props
 }: ToastProps) {
   // Create a unique ID based on content to prevent duplicates
-  const toastId = `${title}-${description?.substring(0, 20) || ""}`;
+  const toastId = `${title}-${description?.substring(0, 20)}`;
   
   // Don't show duplicate toasts
   if (activeToasts.has(toastId)) {
@@ -46,22 +45,17 @@ export function toast({
   };
   
   // Show the toast
-  const toastInstance = sonnerToast(title ?? "", {
+  return sonnerToast(title ?? "", {
     description,
     id: toastId,
     ...props,
     className: `shadow-lg ${variantStyles[variant]}`,
     duration: props.duration || 5000,
-    onDismiss: (toastData) => {
+    onDismiss: () => {
       activeToasts.delete(toastId);
-      if (props.onDismiss) {
-        props.onDismiss(toastData);
-      }
+      props.onDismiss?.();
     },
-    closeButton: true,
   });
-  
-  return toastInstance;
 }
 
 export function useToast() {

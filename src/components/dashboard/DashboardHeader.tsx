@@ -6,11 +6,11 @@ import { motion } from "framer-motion";
 
 interface DashboardHeaderProps {
   title: string;
-  pharmacyName?: string; // Make this prop optional
+  pharmacyName: string;
   isSidebarOpen: boolean;
 }
 
-export function DashboardHeader({ title, isSidebarOpen }: DashboardHeaderProps) {
+export function DashboardHeader({ title, pharmacyName, isSidebarOpen }: DashboardHeaderProps) {
   const navigate = useNavigate();
 
   const handleBack = () => {
@@ -40,7 +40,7 @@ export function DashboardHeader({ title, isSidebarOpen }: DashboardHeaderProps) 
         transition={{ duration: 0.2, ease: "easeInOut" }}
       >
         <span className="text-lg font-medium text-primary truncate">
-          Victure Healthcare Solutions
+          {pharmacyName || 'Medplus'}
         </span>
       </motion.div>
     </div>

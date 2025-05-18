@@ -14,6 +14,19 @@ export function useProfileData() {
   
   useEffect(() => {
     fetchProfile();
+
+    const handlePharmacyNameUpdate = () => {
+      const updatedName = localStorage.getItem('pharmacyName');
+      if (updatedName && profileData) {
+        setProfileData({ ...profileData, pharmacy_name: updatedName });
+      }
+    };
+
+    window.addEventListener('pharmacyNameUpdated', handlePharmacyNameUpdate);
+
+    return () => {
+      window.removeEventListener('pharmacyNameUpdated', handlePharmacyNameUpdate);
+    };
   }, []);
 
   const fetchProfile = async () => {
@@ -29,10 +42,15 @@ export function useProfileData() {
       if (!error && data) {
         // Type-safe conversion of the data
         const typedData = safeCast<ProfileData>(data, {
+          pharmacy_name: 'Pharmacy',
           owner_name: 'Owner'
         });
         
         setProfileData(typedData);
+        
+        // Safely access pharmacy_name with a default value
+        const pharmacyName = typedData.pharmacy_name || 'Medplus';
+        localStorage.setItem('pharmacyName', pharmacyName);
       }
     }
   };

@@ -12,68 +12,43 @@ interface AuthWrapperProps {
 export const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
   const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
-    // First check for existing session
-    const checkSession = async () => {
-      try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        setSession(currentSession);
-        
-        // Check if user just logged in via URL parameter
-        const url = new URL(window.location.href);
-        const justLoggedIn = url.searchParams.get('just_logged_in');
-        
-        if (justLoggedIn === 'true' && currentSession) {
-          toast({
-            title: "Login Successful",
-            description: "Welcome to your pharmacy dashboard!",
-            variant: "success",
-          });
-          
-          // Remove the parameter so it doesn't show again on refresh
-          url.searchParams.delete('just_logged_in');
-          window.history.replaceState({}, document.title, url.toString());
-        }
-      } catch (err) {
-        console.error("Session check error:", err);
-        setSession(null);
-      } finally {
-        setLoading(false);
-        setInitialLoad(false);
-      }
-    };
-
-    checkSession();
-    
-    // Then set up the auth listener
+    // First set up the auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       setSession(currentSession);
       
       // Show login success message but avoid showing on initial page load
-      if (event === 'SIGNED_IN' && !initialLoad) {
-        console.log("User signed in, showing toast notification");
+      if (event === 'SIGNED_IN' && !loading) {
         toast({
           title: "Login Successful",
           description: "You have been successfully logged in.",
-          variant: "success",
-        });
-      } else if (event === 'SIGNED_OUT') {
-        toast({
-          title: "Signed Out",
-          description: "You have been signed out successfully.",
           variant: "default",
         });
       }
     });
 
+    // Then check for existing session
+    const checkSession = async () => {
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
+      } catch (err) {
+        console.error("Session check error:", err);
+        setSession(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkSession();
+
     return () => {
       subscription.unsubscribe();
     };
-  }, [toast, initialLoad, location.pathname]);
+  }, [toast, loading]);
 
   if (loading) {
     return (
