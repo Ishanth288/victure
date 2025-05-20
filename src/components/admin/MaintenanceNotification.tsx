@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays, differenceInHours, differenceInMinutes, format } from "date-fns";
 import { AlertCircle, X } from "lucide-react";
 import { SystemSettings } from "@/types/database";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function MaintenanceNotification() {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
@@ -87,45 +88,72 @@ export function MaintenanceNotification() {
     return null;
   }
 
+  const handleDismiss = () => {
+    // Add smooth exit animation
+    setShowNotification(false);
+    
+    // Store dismissal in localStorage to persist across page refreshes
+    const noticeId = startDate ? `maintenance-${startDate.toISOString()}` : 'maintenance-general';
+    const dismissedNotices = JSON.parse(localStorage.getItem('dismissed-maintenance-notices') || '[]');
+    dismissedNotices.push(noticeId);
+    localStorage.setItem('dismissed-maintenance-notices', JSON.stringify(dismissedNotices));
+    
+    // Dispatch custom event for other components to react to dismissal
+    window.dispatchEvent(new CustomEvent('maintenance-notification-dismissed', { 
+      detail: { noticeId } 
+    }));
+  };
+
   return (
-    <Alert 
-      variant={maintenanceMode ? "destructive" : "default"} 
-      className={`mb-4 relative shadow-lg border ${
-        maintenanceMode 
-          ? "bg-red-50 text-red-800 border-red-200" 
-          : "bg-yellow-50 text-yellow-800 border-yellow-200"
-      } rounded-lg animate-fadeIn z-10`}
-      role="alert"
-      aria-live="assertive"
-      aria-atomic="true"
-    >
-      <AlertCircle className="h-4 w-4" />
-      <div className="flex-1">
-        <AlertTitle className="font-semibold">
-          {maintenanceMode 
-            ? "System Maintenance" 
-            : `Upcoming Maintenance in ${timeUntilMaintenance}`
-          }
-        </AlertTitle>
-        <AlertDescription>
-          {maintenanceMode 
-            ? maintenanceMessage 
-            : startDate 
-              ? `The system will be undergoing maintenance on ${format(startDate, "PPP")} at ${format(startDate, "p")}. Please save your work before this time.` 
-              : "Scheduled maintenance is upcoming. Please save your work."
-          }
-        </AlertDescription>
-      </div>
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className="h-7 w-7 absolute top-2 right-2 bg-transparent p-1 hover:bg-gray-200 rounded-full text-gray-700"
-        onClick={() => setShowNotification(false)}
-        aria-label="Close notification"
-      >
-        <X className="h-4 w-4" />
-        <span className="sr-only">Close</span>
-      </Button>
-    </Alert>
+    <AnimatePresence>
+      {showNotification && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.2 }}
+        >
+          <Alert 
+            variant={maintenanceMode ? "destructive" : "default"} 
+            className={`mb-4 relative shadow-lg border ${
+              maintenanceMode 
+                ? "bg-red-50 text-red-800 border-red-200" 
+                : "bg-yellow-50 text-yellow-800 border-yellow-200"
+            } rounded-lg z-10`}
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+          >
+            <AlertCircle className="h-4 w-4" />
+            <div className="flex-1">
+              <AlertTitle className="font-semibold">
+                {maintenanceMode 
+                  ? "System Maintenance" 
+                  : `Upcoming Maintenance in ${timeUntilMaintenance}`
+                }
+              </AlertTitle>
+              <AlertDescription>
+                {maintenanceMode 
+                  ? maintenanceMessage 
+                  : startDate 
+                    ? `The system will be undergoing maintenance on ${format(startDate, "PPP")} at ${format(startDate, "p")}. Please save your work before this time.` 
+                    : "Scheduled maintenance is upcoming. Please save your work."
+                }
+              </AlertDescription>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-7 w-7 absolute top-2 right-2 bg-transparent p-1 hover:bg-gray-200 rounded-full text-gray-700"
+              onClick={handleDismiss}
+              aria-label="Close notification"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </Alert>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
