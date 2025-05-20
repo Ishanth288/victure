@@ -1,10 +1,13 @@
+
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, BookOpen, Code, FileText } from 'lucide-react';
+import { Search, BookOpen, Code, FileText, Home } from 'lucide-react';
 import { WhatsAppButton } from '@/components/communication/WhatsAppButton';
+import { Link } from 'react-router-dom';
+import { SearchableKnowledgeBase } from '@/components/documentation/SearchableKnowledgeBase';
 
 export default function Documentation() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,13 +62,99 @@ export default function Documentation() {
     console.log('Searching for:', searchTerm);
   };
 
+  const pharmacyDocsData = {
+    api: [
+      {
+        id: 'api-1',
+        title: 'Authentication',
+        excerpt: 'Secure your API requests with our authentication system',
+        content: 'Our REST API uses Bearer token authentication. Get your API key from the Settings page.',
+        tags: ['api', 'security', 'authentication'],
+        category: 'API',
+        updatedAt: '2023-11-15',
+        readTime: 5
+      },
+      {
+        id: 'api-2',
+        title: 'Inventory Endpoints',
+        excerpt: 'Manage your inventory programmatically',
+        content: 'Use these endpoints to create, read, update and delete inventory items.',
+        tags: ['api', 'inventory', 'REST'],
+        category: 'API',
+        updatedAt: '2023-10-20',
+        readTime: 8
+      }
+    ],
+    guides: [
+      {
+        id: 'guide-1',
+        title: 'First-time Setup Guide',
+        excerpt: 'Complete walkthrough for new pharmacy owners',
+        content: 'This comprehensive guide will walk you through setting up your pharmacy profile, configuring your inventory, and processing your first prescription.',
+        tags: ['setup', 'configuration', 'beginners'],
+        category: 'Guides',
+        updatedAt: '2023-12-10',
+        readTime: 12
+      },
+      {
+        id: 'guide-2',
+        title: 'Prescription Management',
+        excerpt: 'Learn how to handle digital prescriptions',
+        content: 'This guide explains how to receive, verify, fill, and track prescriptions in the system.',
+        tags: ['prescriptions', 'workflow', 'intermediate'],
+        category: 'Guides',
+        updatedAt: '2023-11-25',
+        readTime: 10
+      },
+      {
+        id: 'guide-3',
+        title: 'Managing Patient Records',
+        excerpt: 'Best practices for patient data management',
+        content: 'Learn how to create, update, and maintain patient records while ensuring compliance with healthcare regulations.',
+        tags: ['patients', 'compliance', 'data-management'],
+        category: 'Guides',
+        updatedAt: '2023-10-15',
+        readTime: 9
+      }
+    ],
+    notes: [
+      {
+        id: 'note-1',
+        title: 'Version 2.1.0 Release Notes',
+        excerpt: 'Major update with new features and improvements',
+        content: 'This release includes a redesigned dashboard, improved inventory forecasting, and new billing integration options.',
+        tags: ['release', 'update', 'features'],
+        category: 'Release Notes',
+        updatedAt: '2023-12-05',
+        readTime: 7
+      },
+      {
+        id: 'note-2',
+        title: 'Security Update 1.9.5',
+        excerpt: 'Critical security patches and enhancements',
+        content: 'This update addresses several security vulnerabilities and improves data encryption throughout the application.',
+        tags: ['security', 'update', 'critical'],
+        category: 'Release Notes',
+        updatedAt: '2023-11-01',
+        readTime: 4
+      }
+    ]
+  };
+
   return (
     <div className="container mx-auto px-4 py-12">
-      <div className="text-center mb-10">
-        <h1 className="text-3xl font-bold mb-4">Documentation Center</h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          Explore our comprehensive guides, tutorials, and API documentation to get the most out of Victure PharmEase.
-        </p>
+      <div className="mb-6 flex items-center">
+        <Link to="/" className="mr-4">
+          <Button variant="ghost" size="icon">
+            <Home className="h-5 w-5" />
+          </Button>
+        </Link>
+        <div>
+          <h1 className="text-3xl font-bold">Documentation Center</h1>
+          <p className="text-muted-foreground">
+            Explore our comprehensive guides, tutorials, and API documentation to get the most out of Victure PharmEase.
+          </p>
+        </div>
       </div>
 
       <div className="max-w-3xl mx-auto mb-10">
@@ -130,53 +219,15 @@ export default function Documentation() {
           </TabsList>
           
           <TabsContent value="guides">
-            <div className="grid gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Getting Started</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p>Learn how to set up your pharmacy account, configure your dashboard, and start managing your pharmacy with Victure PharmEase.</p>
-                  <Button className="mt-4" variant="outline">Read Guide</Button>
-                </CardContent>
-              </Card>
-            </div>
+            <SearchableKnowledgeBase initialArticles={pharmacyDocsData.guides} />
           </TabsContent>
           
           <TabsContent value="api">
-            <div className="prose max-w-none">
-              <h2>API Overview</h2>
-              <p>Our REST API allows you to integrate Victure PharmEase with your existing systems. Use our authentication endpoints to generate API keys and access tokens.</p>
-              
-              <h3>Authentication</h3>
-              <p>All API requests require authentication using Bearer tokens...</p>
-              
-              <h3>Rate Limiting</h3>
-              <p>API calls are limited to 100 requests per minute per API key...</p>
-            </div>
+            <SearchableKnowledgeBase initialArticles={pharmacyDocsData.api} />
           </TabsContent>
           
           <TabsContent value="release-notes">
-            <div className="space-y-8">
-              <div>
-                <h3 className="text-xl font-semibold mb-2">Version 2.0.0 (June 1, 2023)</h3>
-                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                  <li>Added AI-powered inventory forecasting</li>
-                  <li>Improved dashboard with real-time analytics</li>
-                  <li>New mobile app for on-the-go pharmacy management</li>
-                  <li>Performance improvements and bug fixes</li>
-                </ul>
-              </div>
-              
-              <div>
-                <h3 className="text-xl font-semibold mb-2">Version 1.5.2 (March 15, 2023)</h3>
-                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                  <li>Fixed issue with billing calculations</li>
-                  <li>Added support for multiple pharmacies under one account</li>
-                  <li>Improved search functionality</li>
-                </ul>
-              </div>
-            </div>
+            <SearchableKnowledgeBase initialArticles={pharmacyDocsData.notes} />
           </TabsContent>
         </Tabs>
       </div>

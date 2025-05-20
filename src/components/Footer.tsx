@@ -60,11 +60,6 @@ const Footer = () => {
                   Documentation
                 </Link>
               </li>
-              <li>
-                <Link to="/api" className="text-muted-foreground hover:text-primary transition-colors">
-                  API
-                </Link>
-              </li>
             </ul>
           </div>
           
@@ -84,16 +79,6 @@ const Footer = () => {
               <li>
                 <Link to="/careers" className="text-muted-foreground hover:text-primary transition-colors">
                   Careers
-                </Link>
-              </li>
-              <li>
-                <Link to="/blog" className="text-muted-foreground hover:text-primary transition-colors">
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link to="/press" className="text-muted-foreground hover:text-primary transition-colors">
-                  Press
                 </Link>
               </li>
             </ul>
