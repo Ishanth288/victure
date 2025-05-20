@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/integrations/supabase/client";
 import { PreviewItem, MigrationLog } from "@/types/dataMigration";
@@ -293,21 +292,6 @@ export async function rollbackMigration(
   type: 'Inventory' | 'Patients' | 'Prescriptions'
 ): Promise<boolean> {
   try {
-    // Define the table name based on the type
-    let tableName: string;
-    
-    switch (type) {
-      case 'Inventory':
-        tableName = 'inventory';
-        break;
-      case 'Patients':
-        tableName = 'patients';
-        break;
-      case 'Prescriptions':
-        tableName = 'prescriptions';
-        break;
-    }
-    
     // Using the type-safe approach for known table names
     if (type === 'Inventory') {
       const { error } = await supabase
