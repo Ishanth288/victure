@@ -25,12 +25,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <AuthWrapper>
       <div className="flex h-screen overflow-hidden bg-gray-50">
         <SidebarContainer />
-        <MainContent>
-          <div className="container mx-auto px-4 py-4">
-            <AnnouncementBanner />
-            {children}
-          </div>
-        </MainContent>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          <MainContent>
+            <div className="container mx-auto px-4 py-4">
+              <AnnouncementBanner />
+              {children}
+            </div>
+          </MainContent>
+        </div>
       </div>
     </AuthWrapper>
   );

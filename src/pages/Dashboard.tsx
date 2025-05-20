@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -11,8 +12,9 @@ import {
 } from "@/components/dashboard";
 import { GrowthOpportunitiesChart } from '@/components/insights/GrowthOpportunitiesChart';
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { MaintenanceNotification } from "@/components/admin/MaintenanceNotification";
+import { PrescriptionRecommendations } from '@/components/ai/PrescriptionRecommendations';
+import { InventoryOptimization } from '@/components/ai/InventoryOptimization';
 
 export default function Dashboard() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -87,9 +89,20 @@ export default function Dashboard() {
             <DistributionSection isLoading={isLoading} revenueDistribution={revenueDistribution} />
           </div>
           
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-1">
+              <PrescriptionRecommendations />
+            </div>
+            <div className="md:col-span-1">
+              <InventoryOptimization />
+            </div>
+            <div className="md:col-span-1">
+              <DashboardWidgets />
+            </div>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <GrowthOpportunitiesChart opportunities={[]} />
-            <DashboardWidgets />
           </div>
         </div>
       </ErrorBoundary>

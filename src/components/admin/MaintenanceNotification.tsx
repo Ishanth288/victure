@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays, differenceInHours, differenceInMinutes, format } from "date-fns";
 import { AlertCircle, X } from "lucide-react";
-import { SystemSettings } from "@/types/database";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function MaintenanceNotification() {
@@ -17,6 +16,22 @@ export function MaintenanceNotification() {
   const [startDate, setStartDate] = useState<Date | null>(null);
 
   useEffect(() => {
+    // Check if this notification was previously dismissed
+    const checkDismissalStatus = () => {
+      if (startDate) {
+        const noticeId = `maintenance-${startDate.toISOString()}`;
+        const dismissedNotices = JSON.parse(localStorage.getItem('dismissed-maintenance-notices') || '[]');
+        if (dismissedNotices.includes(noticeId)) {
+          setShowNotification(false);
+        }
+      } else {
+        const dismissedNotices = JSON.parse(localStorage.getItem('dismissed-maintenance-notices') || '[]');
+        if (dismissedNotices.includes('maintenance-general')) {
+          setShowNotification(false);
+        }
+      }
+    };
+
     const fetchMaintenanceStatus = async () => {
       try {
         const { data, error } = await supabase
@@ -64,6 +79,9 @@ export function MaintenanceNotification() {
           } else {
             setIsUpcoming(false);
           }
+          
+          // Check dismissal status after setting the start date
+          checkDismissalStatus();
         }
       } catch (error) {
         console.error("Error fetching maintenance status:", error);
@@ -92,11 +110,17 @@ export function MaintenanceNotification() {
     // Add smooth exit animation
     setShowNotification(false);
     
-    // Store dismissal in localStorage to persist across page refreshes
+    // Generate a unique notice ID based on the maintenance date or general
     const noticeId = startDate ? `maintenance-${startDate.toISOString()}` : 'maintenance-general';
+    
+    // Store dismissal in localStorage to persist across page refreshes and sessions
     const dismissedNotices = JSON.parse(localStorage.getItem('dismissed-maintenance-notices') || '[]');
-    dismissedNotices.push(noticeId);
-    localStorage.setItem('dismissed-maintenance-notices', JSON.stringify(dismissedNotices));
+    
+    // Only add if not already dismissed
+    if (!dismissedNotices.includes(noticeId)) {
+      dismissedNotices.push(noticeId);
+      localStorage.setItem('dismissed-maintenance-notices', JSON.stringify(dismissedNotices));
+    }
     
     // Dispatch custom event for other components to react to dismissal
     window.dispatchEvent(new CustomEvent('maintenance-notification-dismissed', { 

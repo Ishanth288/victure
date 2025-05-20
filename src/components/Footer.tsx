@@ -5,6 +5,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { WhatsAppButton } from './communication/WhatsAppButton';
 import LegalFooter from './LegalFooter';
+import { AISearchButton } from './ai/AISearchButton';
 
 const Footer = () => {
   return (
@@ -18,6 +19,7 @@ const Footer = () => {
             <p className="text-muted-foreground mb-4">
               Modern pharmacy management system with AI-powered insights and optimization tools.
             </p>
+            <AISearchButton />
           </div>
           
           <div>
