@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertContent, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Shield, AlertCircle, Key } from "lucide-react";
 
 interface SecurityCodeModalProps {
@@ -46,6 +46,7 @@ export function SecurityCodeModal({ isOpen, onClose, onVerified }: SecurityCodeM
         toast({
           title: "Success",
           description: "Admin access granted",
+          variant: "success",
         });
         
         if (onVerified) {
@@ -97,10 +98,14 @@ export function SecurityCodeModal({ isOpen, onClose, onVerified }: SecurityCodeM
         </DialogHeader>
         <div className="space-y-4 py-4">
           {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Access Denied</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
+            <Alert variant="error">
+              <AlertContent>
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Access Denied</AlertTitle>
+                </div>
+                <AlertDescription>{error}</AlertDescription>
+              </AlertContent>
             </Alert>
           )}
           <div className="flex items-center space-x-2 bg-neutral-50 p-3 rounded-md">
@@ -119,8 +124,8 @@ export function SecurityCodeModal({ isOpen, onClose, onVerified }: SecurityCodeM
             <Button variant="outline" onClick={onClose} disabled={isVerifying}>
               Cancel
             </Button>
-            <Button onClick={handleVerify} disabled={isVerifying}>
-              {isVerifying ? "Verifying..." : "Verify"}
+            <Button onClick={handleVerify} disabled={isVerifying} loading={isVerifying}>
+              Verify
             </Button>
           </div>
         </div>

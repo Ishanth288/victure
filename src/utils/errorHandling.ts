@@ -1,6 +1,7 @@
 
 import * as Sentry from "@sentry/react";
 import { toast } from "@/hooks/use-toast";
+import { AlertCircle, WifiOff, Database, ServerCrash, UserX, AlertTriangle } from "lucide-react";
 
 /**
  * Error boundary component that catches errors and logs them
@@ -98,6 +99,26 @@ export function getUserFriendlyErrorMessage(error: any): string {
 }
 
 /**
+ * Get an appropriate icon based on error type
+ */
+function getErrorIcon(errorType: 'connection' | 'database' | 'server' | 'auth' | 'validation' | 'unknown') {
+  switch (errorType) {
+    case 'connection':
+      return <WifiOff className="h-4 w-4" />;
+    case 'database':
+      return <Database className="h-4 w-4" />;
+    case 'server':
+      return <ServerCrash className="h-4 w-4" />;
+    case 'auth':
+      return <UserX className="h-4 w-4" />;
+    case 'validation':
+      return <AlertTriangle className="h-4 w-4" />;
+    default:
+      return <AlertCircle className="h-4 w-4" />;
+  }
+}
+
+/**
  * Display appropriate error message based on error type
  */
 export function displayErrorMessage(error: any, context?: string): void {
@@ -107,7 +128,8 @@ export function displayErrorMessage(error: any, context?: string): void {
   toast({
     title: `Error${context ? ` in ${context}` : ''}`,
     description: userMessage,
-    variant: "destructive"
+    variant: "destructive",
+    icon: getErrorIcon(errorType)
   });
 }
 

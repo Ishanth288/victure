@@ -1,6 +1,6 @@
 
 import { AlertCircle, CheckCircle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertContent, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface StatusMessageProps {
   type: 'error' | 'success' | null;
@@ -12,20 +12,21 @@ export function StatusMessage({ type, message }: StatusMessageProps) {
   
   return (
     <Alert 
-      variant={type === 'error' ? 'destructive' : 'default'} 
-      className={`mb-4 ${type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : ''}`}
-    >
-      {type === 'error' ? (
-        <AlertCircle className="h-4 w-4" />
-      ) : (
+      variant={type === 'error' ? 'error' : 'success'} 
+      className="mb-4"
+      icon={type === 'error' ? 
+        <AlertCircle className="h-4 w-4" /> : 
         <CheckCircle className="h-4 w-4" />
-      )}
-      <AlertTitle>
-        {type === 'error' ? 'Error' : 'Success'}
-      </AlertTitle>
-      <AlertDescription>
-        {message}
-      </AlertDescription>
+      }
+    >
+      <AlertContent>
+        <AlertTitle>
+          {type === 'error' ? 'Error' : 'Success'}
+        </AlertTitle>
+        <AlertDescription>
+          {message}
+        </AlertDescription>
+      </AlertContent>
     </Alert>
   );
 }

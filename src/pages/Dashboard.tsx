@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import DashboardLayout from "@/components/DashboardLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -49,10 +48,11 @@ export default function Dashboard() {
     const url = new URL(window.location.href);
     const justLoggedIn = url.searchParams.get('just_logged_in');
     if (justLoggedIn === 'true') {
-      // Show login success message
+      // Show login success message with new styling
       toast({
         title: "Login Successful",
         description: "Welcome to your pharmacy dashboard!",
+        variant: "success",
         duration: 5000,
       });
       

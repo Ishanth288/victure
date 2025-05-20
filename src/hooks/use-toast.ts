@@ -1,5 +1,6 @@
 
 import { toast as sonnerToast, ToastT } from "sonner";
+import { CheckCircle, AlertCircle, Info, AlertTriangle, X } from "lucide-react";
 
 type ToastProps = Omit<ToastT, "id"> & {
   title?: string;
@@ -38,21 +39,46 @@ export function toast({
   // Add to active toasts
   activeToasts.add(toastId);
   
+  // Get appropriate icon based on variant
+  let icon;
+  switch (variant) {
+    case "destructive":
+      icon = <AlertCircle className="h-4 w-4 text-red-600" />;
+      break;
+    case "success":
+      icon = <CheckCircle className="h-4 w-4 text-emerald-600" />;
+      break;
+    case "warning":
+      icon = <AlertTriangle className="h-4 w-4 text-amber-600" />;
+      break;
+    case "info":
+      icon = <Info className="h-4 w-4 text-blue-600" />;
+      break;
+    default:
+      icon = null;
+  }
+  
   // Determine variant-specific styles
   const variantStyles = {
     default: "",
-    destructive: "bg-destructive text-destructive-foreground border border-destructive/20",
-    success: "bg-green-50 text-green-800 border border-green-200",
-    warning: "bg-yellow-50 text-yellow-800 border border-yellow-200",
-    info: "bg-blue-50 text-blue-800 border border-blue-200",
+    destructive: "border-red-500/50 text-red-600",
+    success: "border-emerald-500/50 text-emerald-600",
+    warning: "border-amber-500/50 text-amber-600",
+    info: "border-blue-500/50 text-blue-600",
   };
   
-  // Show the toast
+  // Show the toast with enhanced styling
   return sonnerToast(title ?? "", {
     description,
     id: toastId,
     ...props,
-    className: `shadow-lg ${variantStyles[variant]}`,
+    classNames: {
+      toast: `relative rounded-lg border shadow-lg ${variantStyles[variant]} px-4 py-3`,
+      title: "text-sm font-medium",
+      description: "text-sm text-muted-foreground mt-1",
+    },
+    icon: icon,
+    closeButton: true,
     duration: props.duration || 5000,
     onDismiss: (toast) => {
       activeToasts.delete(toastId);
