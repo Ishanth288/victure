@@ -30,14 +30,14 @@ export function validateInventoryItem(item: PreviewItem): {
   // Check price
   if (item.selling_price === undefined || item.selling_price === null) {
     warnings.push({ type: "missing", message: "Selling price is required" });
-  } else if (isNaN(item.selling_price) || item.selling_price < 0) {
+  } else if (isNaN(Number(item.selling_price)) || Number(item.selling_price) < 0) {
     warnings.push({ type: "price", message: "Invalid selling price" });
   }
 
   // Check quantity
   if (item.quantity === undefined || item.quantity === null) {
     warnings.push({ type: "missing", message: "Quantity is required" });
-  } else if (isNaN(item.quantity) || item.quantity < 0) {
+  } else if (isNaN(Number(item.quantity)) || Number(item.quantity) < 0) {
     warnings.push({ type: "invalid", message: "Invalid quantity" });
   }
 
@@ -63,7 +63,7 @@ export function validatePatientData(patient: PreviewItem): {
 
   if (!patient.phone_number) {
     warnings.push({ type: "missing", message: "Phone number is required" });
-  } else if (!/^\d{10}$/.test(patient.phone_number.replace(/\D/g, ''))) {
+  } else if (!/^\d{10}$/.test(patient.phone_number.toString().replace(/\D/g, ''))) {
     warnings.push({ type: "invalid", message: "Invalid phone number format" });
   }
 
@@ -130,15 +130,15 @@ export function autoFixData(items: PreviewItem[]): PreviewItem[] {
     
     // Fix numeric values
     if (typeof fixed.selling_price === 'string') {
-      fixed.selling_price = parseFloat(fixed.selling_price.replace(/[^\d.-]/g, ''));
+      fixed.selling_price = parseFloat(fixed.selling_price.toString().replace(/[^\d.-]/g, ''));
     }
     
     if (typeof fixed.unit_cost === 'string') {
-      fixed.unit_cost = parseFloat(fixed.unit_cost.replace(/[^\d.-]/g, ''));
+      fixed.unit_cost = parseFloat(fixed.unit_cost.toString().replace(/[^\d.-]/g, ''));
     }
     
     if (typeof fixed.quantity === 'string') {
-      fixed.quantity = parseInt(fixed.quantity.replace(/[^\d]/g, ''), 10);
+      fixed.quantity = parseInt(fixed.quantity.toString().replace(/[^\d]/g, ''), 10);
     }
     
     // Standardize date formats (assuming Indian format DD/MM/YYYY)

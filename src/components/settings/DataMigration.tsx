@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,7 +31,7 @@ import {
   autoDetectFieldMappings
 } from '@/utils/migrationUtils';
 import { autoFixData, hasTooManyInvalidItems } from '@/utils/dataValidation';
-import { PreviewItem } from '@/types/dataMigration';
+import { PreviewItem, WarningType } from '@/types/dataMigration';
 
 export function DataMigration() {
   const { user } = useAuth();
@@ -128,7 +127,7 @@ export function DataMigration() {
         stableToast({
           title: "Error Processing File",
           description: err.message || 'Failed to parse file',
-          variant: "destructive",
+          variant: "error",
         });
       } finally {
         setLoading(false);
@@ -141,7 +140,7 @@ export function DataMigration() {
       stableToast({
         title: "Error",
         description: "Failed to read the file.",
-        variant: "destructive",
+        variant: "error",
       });
     };
 
@@ -263,7 +262,7 @@ export function DataMigration() {
       stableToast({
         title: "Error",
         description: err.message || 'Failed to create preview',
-        variant: "destructive",
+        variant: "error",
       });
     } finally {
       setLoading(false);
@@ -272,7 +271,7 @@ export function DataMigration() {
   
   const validateInventoryItems = (items: PreviewItem[]): PreviewItem[] => {
     return items.map(item => {
-      const warnings: {hasWarning: boolean, warningType?: string, warningMessage?: string} = {hasWarning: false};
+      const warnings: {hasWarning: boolean, warningType?: WarningType, warningMessage?: string} = {hasWarning: false};
       
       // Check expiry date
       if (item.expiry_date) {
@@ -301,7 +300,7 @@ export function DataMigration() {
   
   const validatePatientItems = (items: PreviewItem[]): PreviewItem[] => {
     return items.map(item => {
-      const warnings: {hasWarning: boolean, warningType?: string, warningMessage?: string} = {hasWarning: false};
+      const warnings: {hasWarning: boolean, warningType?: WarningType, warningMessage?: string} = {hasWarning: false};
       
       // Check for name
       if (!item.name) {
@@ -323,7 +322,7 @@ export function DataMigration() {
   
   const validatePrescriptionItems = (items: PreviewItem[]): PreviewItem[] => {
     return items.map(item => {
-      const warnings: {hasWarning: boolean, warningType?: string, warningMessage?: string} = {hasWarning: false};
+      const warnings: {hasWarning: boolean, warningType?: WarningType, warningMessage?: string} = {hasWarning: false};
       
       // Check for prescription number
       if (!item.prescription_number) {
@@ -380,7 +379,7 @@ export function DataMigration() {
       stableToast({
         title: "Import Failed",
         description: err.message || 'An error occurred during import',
-        variant: "destructive",
+        variant: "error",
       });
     } finally {
       setLoading(false);
@@ -417,7 +416,7 @@ export function DataMigration() {
       stableToast({
         title: "Rollback Failed",
         description: err.message || 'An error occurred during rollback',
-        variant: "destructive",
+        variant: "error",
       });
     } finally {
       setLoading(false);

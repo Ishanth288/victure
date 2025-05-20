@@ -166,11 +166,13 @@ export type Database = {
       }
       inventory: {
         Row: {
+          category: string | null
           dosage_form: string | null
           expiry_date: string | null
           generic_name: string | null
           id: number
           manufacturer: string | null
+          migration_id: string | null
           name: string
           ndc: string | null
           quantity: number
@@ -185,11 +187,13 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          category?: string | null
           dosage_form?: string | null
           expiry_date?: string | null
           generic_name?: string | null
           id?: number
           manufacturer?: string | null
+          migration_id?: string | null
           name: string
           ndc?: string | null
           quantity?: number
@@ -204,11 +208,13 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          category?: string | null
           dosage_form?: string | null
           expiry_date?: string | null
           generic_name?: string | null
           id?: number
           manufacturer?: string | null
+          migration_id?: string | null
           name?: string
           ndc?: string | null
           quantity?: number
@@ -265,11 +271,43 @@ export type Database = {
           },
         ]
       }
+      migration_logs: {
+        Row: {
+          added_count: number
+          id: string
+          issues: Json | null
+          migration_id: string
+          skipped_count: number
+          timestamp: string
+          type: string
+        }
+        Insert: {
+          added_count?: number
+          id?: string
+          issues?: Json | null
+          migration_id: string
+          skipped_count?: number
+          timestamp?: string
+          type: string
+        }
+        Update: {
+          added_count?: number
+          id?: string
+          issues?: Json | null
+          migration_id?: string
+          skipped_count?: number
+          timestamp?: string
+          type?: string
+        }
+        Relationships: []
+      }
       patients: {
         Row: {
           created_at: string
           id: number
+          migration_id: string | null
           name: string
+          patient_type: string | null
           phone_number: string
           status: string | null
           user_id: string
@@ -277,7 +315,9 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: number
+          migration_id?: string | null
           name: string
+          patient_type?: string | null
           phone_number: string
           status?: string | null
           user_id: string
@@ -285,7 +325,9 @@ export type Database = {
         Update: {
           created_at?: string
           id?: number
+          migration_id?: string | null
           name?: string
+          patient_type?: string | null
           phone_number?: string
           status?: string | null
           user_id?: string
@@ -318,8 +360,11 @@ export type Database = {
           date: string
           doctor_name: string
           id: number
+          migration_id: string | null
           patient_id: number
+          polytherapy: boolean | null
           prescription_number: string
+          prescription_type: string | null
           status: string
           user_id: string
         }
@@ -327,8 +372,11 @@ export type Database = {
           date?: string
           doctor_name: string
           id?: number
+          migration_id?: string | null
           patient_id: number
+          polytherapy?: boolean | null
           prescription_number: string
+          prescription_type?: string | null
           status?: string
           user_id: string
         }
@@ -336,8 +384,11 @@ export type Database = {
           date?: string
           doctor_name?: string
           id?: number
+          migration_id?: string | null
           patient_id?: number
+          polytherapy?: boolean | null
           prescription_number?: string
+          prescription_type?: string | null
           status?: string
           user_id?: string
         }

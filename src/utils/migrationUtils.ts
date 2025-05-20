@@ -130,7 +130,8 @@ export async function processPatients(
       phone_number: patient.phone_number,
       status: patient.status || 'active',
       patient_type: patientType,
-      migration_id: migrationId
+      migration_id: migrationId,
+      user_id: patient.user_id // Make sure user_id is set from the current authenticated user
     };
     
     processedPatients.push(dbPatient);
@@ -201,8 +202,8 @@ export async function processPrescriptions(
     let prescriptionType = "Regular";
     let polytherapy = false;
     
-    if (prescription.items) {
-      const classification = classifyPrescription(prescription.items as any);
+    if (prescription.items && Array.isArray(prescription.items)) {
+      const classification = classifyPrescription(prescription.items);
       prescriptionType = classification.prescription_type;
       polytherapy = classification.polytherapy;
     }

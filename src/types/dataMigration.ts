@@ -1,6 +1,6 @@
 
 // Data migration types
-export type WarningType = "expired" | "duplicate" | "missing" | "price" | "controlled";
+export type WarningType = "expired" | "duplicate" | "missing" | "price" | "controlled" | "invalid";
 
 export interface PreviewItem {
   name: string;
@@ -34,12 +34,16 @@ export interface PreviewItem {
   date?: string;
   polytherapy?: boolean;
   prescription_type?: string;
+  items?: PreviewItem[];
+  patient_id?: number;
+  user_id?: string;
   
   // Migration tracking
   migration_id?: string;
 }
 
 export interface MigrationLog {
+  id?: string;
   migration_id: string;
   type: 'Inventory' | 'Patients' | 'Prescriptions';
   timestamp: string;

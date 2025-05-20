@@ -13,7 +13,7 @@ export const displayErrorMessage = (error: any, context?: string) => {
   stableToast({
     title: "Error",
     description: `${contextPrefix}${errorMessage}`,
-    variant: "destructive",
+    variant: "error",
   });
   
   console.error(`Error in ${context || 'application'}:`, error);
@@ -45,4 +45,14 @@ export const getErrorMessage = (error: any): string => {
   if (error?.statusText) return error.statusText;
   
   return 'An unknown error occurred';
+};
+
+/**
+ * Log an error to the console and potentially to a monitoring service
+ * @param error The error to log
+ * @param info Additional information about the error
+ */
+export const logError = (error: any, info?: string): void => {
+  console.error(`Application error ${info ? `in ${info}` : ''}:`, error);
+  // This would be a good place to add Sentry or other error logging service
 };
