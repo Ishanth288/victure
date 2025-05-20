@@ -1,4 +1,6 @@
+
 // Export all error handling utilities from a single file
+import { supabase } from '@/integrations/supabase/client';
 export * from './errorHandling';
 export * from './supabaseConnection';
 export * from './queryRetry';
@@ -12,7 +14,7 @@ export async function checkSupabaseConnection(): Promise<boolean> {
     console.log("Testing Supabase connection...");
     
     // Try with a timeout to prevent hanging connections
-    const connectionPromise = (supabase as any).from('profiles').select('count', { count: 'exact', head: true });
+    const connectionPromise = supabase.from('profiles').select('count', { count: 'exact', head: true });
     
     // Add a timeout for the connection check
     const timeoutPromise = new Promise<{error: {message: string}}>((resolve) => {
@@ -65,7 +67,7 @@ async function recoverConnection(): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Try a simple query to check if connection is restored
-    const { error: testError } = await (supabase as any).from('profiles').select('count', { count: 'exact', head: true });
+    const { error: testError } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
     
     if (testError) {
       console.error('Connection still failed after recovery attempt:', testError);
