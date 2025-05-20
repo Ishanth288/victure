@@ -1,4 +1,3 @@
-
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import React, { useState, createContext, useContext } from "react";
@@ -77,14 +76,19 @@ interface SidebarBodyProps {
 }
 
 export const SidebarBody = ({ className, children, ...props }: SidebarBodyProps & Omit<React.ComponentProps<typeof motion.div>, 'className' | 'children'>) => {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  
   return (
     <>
-      <DesktopSidebar className={className} {...props}>
-        {children}
-      </DesktopSidebar>
-      <MobileSidebar className={className}>
-        {children}
-      </MobileSidebar>
+      {!isMobile ? (
+        <DesktopSidebar className={className} {...props}>
+          {children}
+        </DesktopSidebar>
+      ) : (
+        <MobileSidebar className={className}>
+          {children}
+        </MobileSidebar>
+      )}
     </>
   );
 };
@@ -145,17 +149,22 @@ export const MobileSidebar = ({
                 ease: "easeInOut",
               }}
               className={cn(
-                "fixed h-full w-full inset-0 bg-white dark:bg-neutral-900 p-10 z-[100] flex flex-col justify-between",
+                "fixed h-full w-full inset-0 bg-white dark:bg-neutral-900 p-6 z-[100] flex flex-col justify-between",
                 className
               )}
             >
-              <div
-                className="absolute right-10 top-10 z-50 text-neutral-800 dark:text-neutral-200 cursor-pointer"
-                onClick={() => setOpen(!open)}
-              >
-                <X />
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold">Victure Healthcare</h2>
+                <div
+                  className="text-neutral-800 dark:text-neutral-200 cursor-pointer"
+                  onClick={() => setOpen(!open)}
+                >
+                  <X />
+                </div>
               </div>
-              {children}
+              <div className="flex-1 overflow-y-auto">
+                {children}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
