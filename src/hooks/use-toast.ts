@@ -30,8 +30,9 @@ export function toast({
   
   // Limit number of concurrent toasts
   if (activeToasts.size >= MAX_VISIBLE_TOASTS) {
-    // Pass empty string as toastId to dismiss the oldest toast
-    sonnerToast.dismiss("");
+    // Pass the oldest toast ID to dismiss if available, or a dummy ID
+    const oldestToastId = activeToasts.values().next().value || "oldest-toast";
+    sonnerToast.dismiss(oldestToastId);
   }
   
   // Add to active toasts
@@ -63,7 +64,7 @@ export function toast({
 export function useToast() {
   return {
     toast,
-    dismiss: (toastId: string = "") => sonnerToast.dismiss(toastId),
+    dismiss: (toastId: string = "all-toasts") => sonnerToast.dismiss(toastId),
     error: (message: string, opts = {}) => 
       toast({ title: message, variant: "destructive", ...opts }),
     success: (message: string, opts = {}) => 
