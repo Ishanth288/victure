@@ -71,7 +71,7 @@ export async function processInventoryItems(
         stableToast({
           title: "Import Failed",
           description: `Error: ${error.message}`,
-          variant: "error",
+          variant: "destructive",
         });
         return { success: false, added: 0, skipped: items.length, issues: [{ row: 0, reason: error.message }] };
       }
@@ -148,7 +148,7 @@ export async function processPatients(
         stableToast({
           title: "Patient Import Failed",
           description: `Error: ${error.message}`,
-          variant: "error",
+          variant: "destructive",
         });
         return { success: false, added: 0, skipped: patients.length, issues: [{ row: 0, reason: error.message }] };
       }
@@ -235,7 +235,7 @@ export async function processPrescriptions(
         stableToast({
           title: "Prescription Import Failed",
           description: `Error: ${error.message}`,
-          variant: "error",
+          variant: "destructive",
         });
         return { success: false, added: 0, skipped: prescriptions.length, issues: [{ row: 0, reason: error.message }] };
       }
@@ -253,7 +253,7 @@ export async function processPrescriptions(
       return {
         success: true,
         added: processedPrescriptions.length,
-        skipped: prescriptions.length - prescedPrescriptions.length,
+        skipped: prescriptions.length - processedPrescriptions.length,
         issues
       };
     } catch (err) {
