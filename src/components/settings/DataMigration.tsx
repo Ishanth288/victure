@@ -12,6 +12,7 @@ export function DataMigration() {
   const { user } = useAuth();
   const [recentMigrations, setRecentMigrations] = useState<any[]>([]);
   const [isRollingBack, setIsRollingBack] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("import");
 
   // Load migration history
   useEffect(() => {
@@ -66,33 +67,50 @@ export function DataMigration() {
     }
   };
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+
   return (
-    <Card>
-      <CardHeader>
+    <Card className="flex flex-col h-full">
+      <CardHeader className="flex-none">
         <CardTitle>Data Migration</CardTitle>
         <CardDescription>
           Import data from other pharmacy systems
         </CardDescription>
       </CardHeader>
       
-      <CardContent>
-        <Tabs defaultValue="import" className="w-full">
-          <TabsList>
+      <CardContent className="flex-1 overflow-auto pb-0">
+        <Tabs 
+          defaultValue="import" 
+          className="flex flex-col h-full" 
+          value={activeTab}
+          onValueChange={handleTabChange}
+        >
+          <TabsList className="flex-none">
             <TabsTrigger value="import">Import Data</TabsTrigger>
             <TabsTrigger value="history">Migration History</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="import" className="space-y-6">
-            <ImportTabContent user={user} loadMigrationHistory={loadMigrationHistory} />
-          </TabsContent>
-          
-          <TabsContent value="history">
-            <MigrationHistory 
-              recentMigrations={recentMigrations} 
-              onRollback={handleRollback}
-              isRollingBack={isRollingBack}
-            />
-          </TabsContent>
+          <div className="flex-1 overflow-auto">
+            <TabsContent 
+              value="import" 
+              className="flex-1 data-[state=active]:flex data-[state=inactive]:hidden flex-col"
+            >
+              <ImportTabContent user={user} loadMigrationHistory={loadMigrationHistory} />
+            </TabsContent>
+            
+            <TabsContent 
+              value="history" 
+              className="flex-1 h-full data-[state=active]:flex data-[state=inactive]:hidden"
+            >
+              <MigrationHistory 
+                recentMigrations={recentMigrations} 
+                onRollback={handleRollback}
+                isRollingBack={isRollingBack}
+              />
+            </TabsContent>
+          </div>
         </Tabs>
       </CardContent>
     </Card>
