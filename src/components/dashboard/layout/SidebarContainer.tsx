@@ -1,9 +1,8 @@
-
 import React, { useEffect, useState } from "react";
 import { SidebarLinks } from "@/components/dashboard/SidebarLinks";
 import { cn } from "@/lib/utils";
 import { useProfileData } from "@/components/dashboard/ProfileSection";
-import { ChevronLeft, Bell, X } from "lucide-react";
+import { Bell, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -111,14 +110,6 @@ export function SidebarContainer() {
       <div className="flex flex-col h-full p-3">
         <div className="mb-4 flex items-center justify-between pl-2">
           <div className="flex items-center space-x-2">
-            <button 
-              onClick={() => navigate(-1)}
-              className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-              aria-label="Go back"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            
             {profileLoading ? (
               <PharmacyNameSkeleton />
             ) : (
