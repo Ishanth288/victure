@@ -36,6 +36,7 @@ export default function Patients() {
   const [activeTab, setActiveTab] = useState<string>("active");
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState<number | null>(null);
+  const [isFilterActive, setIsFilterActive] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -43,8 +44,23 @@ export default function Patients() {
   }, []);
 
   useEffect(() => {
-    filterPatients();
-  }, [searchQuery, startDate, endDate, patients, activeTab]);
+    if (isFilterActive) {
+      applyFilters();
+    } else {
+      // Show recent patients without filtering by date
+      const recents = patients
+        .filter(patient => activeTab === "all" || patient.status === activeTab)
+        .filter(patient => 
+          searchQuery === "" || 
+          patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          patient.phone_number.includes(searchQuery)
+        )
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 20); // Limit to 20 most recent patients
+      
+      setFilteredPatients(recents);
+    }
+  }, [searchQuery, patients, activeTab, isFilterActive]);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -129,9 +145,9 @@ export default function Patients() {
     }
   };
 
-  const filterPatients = () => {
+  const applyFilters = () => {
     const startTimestamp = new Date(startDate).getTime();
-    const endTimestamp = new Date(endDate).getTime() + 86400000;
+    const endTimestamp = new Date(endDate).getTime() + 86400000; // Add one day to include end date
 
     const filtered = patients.filter((patient) => {
       if (activeTab !== "all" && patient.status !== activeTab) {
@@ -150,6 +166,17 @@ export default function Patients() {
     });
 
     setFilteredPatients(filtered);
+  };
+
+  const toggleFilter = () => {
+    if (isFilterActive) {
+      // Clear filters
+      setIsFilterActive(false);
+    } else {
+      // Apply filters
+      setIsFilterActive(true);
+      applyFilters();
+    }
   };
 
   const handleViewBill = async (billId: number) => {
@@ -344,6 +371,8 @@ export default function Patients() {
           endDate={endDate}
           onStartDateChange={setStartDate}
           onEndDateChange={setEndDate}
+          onFilterApply={toggleFilter}
+          isFilterActive={isFilterActive}
         />
 
         <div className="mb-6 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 items-center">

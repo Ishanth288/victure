@@ -19,14 +19,7 @@ export function useAdminAccess() {
     try {
       setIsLoading(true);
       
-      // Check if user is already verified in this session
-      const verifiedInSession = sessionStorage.getItem('adminVerified') === 'true';
-      if (verifiedInSession) {
-        setIsAuthorized(true);
-        setIsLoading(false);
-        return;
-      }
-
+      // Always require verification - don't use session storage anymore
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate('/auth');
@@ -51,7 +44,7 @@ export function useAdminAccess() {
         });
         navigate('/dashboard');
       } else {
-        // If user has admin role but is not yet verified, show security modal
+        // Always show security modal for admin verification
         setShowSecurityModal(true);
       }
     } catch (error) {
@@ -69,8 +62,8 @@ export function useAdminAccess() {
 
   const handleSecurityVerification = (verified: boolean) => {
     if (verified) {
-      // Store verification in session storage
-      sessionStorage.setItem('adminVerified', 'true');
+      // Do NOT store verification in session storage anymore
+      // This will force re-verification every time the admin portal is accessed
       setIsAuthorized(true);
       setShowSecurityModal(false);
     } else {

@@ -2,7 +2,6 @@
 import { m, AnimatePresence } from "framer-motion";
 import { ArrowUpDown, Edit, Trash2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import {
   Table,
@@ -77,9 +76,6 @@ export default function InventoryTable({
         <Table>
           <TableHeader className="bg-neutral-50 border-b border-neutral-200">
             <TableRow>
-              <TableHead className="w-12">
-                <Checkbox />
-              </TableHead>
               <TableHead>
                 <div className="flex items-center gap-2">
                   <span>Name</span>
@@ -100,7 +96,7 @@ export default function InventoryTable({
           <TableBody>
             {!items || items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="px-4 py-6 text-center text-gray-500">
+                <TableCell colSpan={10} className="px-4 py-6 text-center text-gray-500">
                   No inventory items found. Add an item to get started.
                 </TableCell>
               </TableRow>
@@ -111,12 +107,6 @@ export default function InventoryTable({
                     key={item.id}
                     className="border-b border-neutral-200 hover:bg-neutral-50"
                   >
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedItems.includes(item.id)}
-                        onCheckedChange={() => onToggleItem(item.id)}
-                      />
-                    </TableCell>
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell className="text-neutral-600">{item.ndc || "N/A"}</TableCell>
                     <TableCell className="text-neutral-600">{item.manufacturer || "N/A"}</TableCell>

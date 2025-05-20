@@ -25,14 +25,7 @@ export function AdminCheck({ children }: AdminCheckProps) {
     try {
       setIsLoading(true);
       
-      // Check if user is already verified in this session
-      const verifiedInSession = sessionStorage.getItem('adminVerified') === 'true';
-      if (verifiedInSession) {
-        setIsAuthenticated(true);
-        setIsLoading(false);
-        return;
-      }
-      
+      // Always require verification on each access
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate('/auth');
@@ -57,7 +50,7 @@ export function AdminCheck({ children }: AdminCheckProps) {
         });
         navigate('/dashboard');
       } else {
-        // If user has admin role but is not yet verified, show security modal
+        // Always show security modal
         setIsSecurityModalOpen(true);
       }
     } catch (error: any) {
@@ -75,8 +68,7 @@ export function AdminCheck({ children }: AdminCheckProps) {
 
   const handleSecurityVerification = (verified: boolean) => {
     if (verified) {
-      // Store verification in session storage
-      sessionStorage.setItem('adminVerified', 'true');
+      // Don't store verification in session storage anymore
       setIsAuthenticated(true);
       setIsSecurityModalOpen(false);
     } else {

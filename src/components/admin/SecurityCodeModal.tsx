@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { Shield, AlertCircle } from "lucide-react";
+import { Shield, AlertCircle, Key } from "lucide-react";
 
 interface SecurityCodeModalProps {
   isOpen: boolean;
@@ -84,33 +84,37 @@ export function SecurityCodeModal({ isOpen, onClose, onVerified }: SecurityCodeM
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()} modal>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            Admin Access Verification
+            High Security Admin Access
           </DialogTitle>
           <DialogDescription>
-            Please enter the admin security code to access the admin portal.
+            This area requires special authorization. Please enter the developer security code to proceed.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
+              <AlertTitle>Access Denied</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          <Input
-            placeholder="Enter security code"
-            type="password"
-            value={securityCode}
-            onChange={(e) => setSecurityCode(e.target.value)}
-            className="text-center text-lg tracking-widest"
-            onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
-          />
+          <div className="flex items-center space-x-2 bg-neutral-50 p-3 rounded-md">
+            <Key className="h-5 w-5 text-neutral-500" />
+            <Input
+              placeholder="Enter developer security code"
+              type="password"
+              value={securityCode}
+              onChange={(e) => setSecurityCode(e.target.value)}
+              className="text-center text-lg tracking-widest border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+              onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
+              autoFocus
+            />
+          </div>
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={onClose} disabled={isVerifying}>
               Cancel
