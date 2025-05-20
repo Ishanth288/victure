@@ -1,3 +1,4 @@
+
 import { toast as sonnerToast, ToastT } from "sonner";
 
 type ToastProps = Omit<ToastT, "id"> & {
@@ -29,7 +30,7 @@ export function toast({
   
   // Limit number of concurrent toasts
   if (activeToasts.size >= MAX_VISIBLE_TOASTS) {
-    sonnerToast.dismiss();
+    sonnerToast.dismiss(); // This is fine because sonnerToast.dismiss() can be called without parameters
   }
   
   // Add to active toasts
@@ -61,7 +62,7 @@ export function toast({
 export function useToast() {
   return {
     toast,
-    dismiss: sonnerToast.dismiss,
+    dismiss: (toastId?: string) => sonnerToast.dismiss(toastId), // Fix: Pass the toastId to sonnerToast.dismiss
     error: (message: string, opts = {}) => 
       toast({ title: message, variant: "destructive", ...opts }),
     success: (message: string, opts = {}) => 
