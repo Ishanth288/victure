@@ -1,3 +1,4 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/integrations/supabase/client";
 import { PreviewItem, MigrationLog, MappingTemplate } from "@/types/dataMigration";
@@ -490,7 +491,7 @@ export function autoDetectFieldMappings(headers: string[]): Record<string, strin
     ],
     
     // Patient fields
-    "name": [
+    patient_name: [ // Changed from "name" to "patient_name" to avoid duplication
       /^patient[\s_-]?name$/i,
       /^client[\s_-]?name$/i,
       /^customer[\s_-]?name$/i,
@@ -586,7 +587,8 @@ export function autoDetectFieldMappings(headers: string[]): Record<string, strin
         phone_number: ["phone", "mobile", "contact", "cell"],
         prescription_number: ["rx", "prescription", "script"],
         doctor_name: ["doctor", "physician", "dr", "prescriber"],
-        date: ["date", "issued", "created", "order date"]
+        date: ["date", "issued", "created", "order date"],
+        patient_name: ["patient", "client", "customer", "person"] // Added patient_name to match the key in patternDictionary
       };
       
       for (const [fieldName, keywords] of Object.entries(directMatches)) {
