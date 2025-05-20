@@ -1,3 +1,4 @@
+
 import { Link } from 'react-router-dom';
 import { HashLink } from 'react-router-hash-link';
 import { Facebook, Twitter, Instagram, Linkedin, Youtube, ArrowUpRight } from 'lucide-react';
@@ -7,7 +8,7 @@ import LegalFooter from './LegalFooter';
 
 const Footer = () => {
   return (
-    <footer id="footer" className="bg-white border-t pt-12 pb-0">
+    <footer id="footer" className="bg-white border-t pt-12 pb-0 mt-auto">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           <div className="md:col-span-1">

@@ -26,7 +26,7 @@ export function MainContent({ children }: MainContentProps) {
         </div>
       </header>
       
-      <main className="p-2 md:p-6 flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto">
         <PlanBanner />
         <div className={isMobile ? "pb-16" : ""}>
           {children}

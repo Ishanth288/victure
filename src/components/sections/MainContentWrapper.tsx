@@ -23,14 +23,14 @@ export const MainContentWrapper = memo(({
   onError
 }: MainContentWrapperProps) => {
   return (
-    <section id={id} className={`${className} transition-opacity duration-200 ease-in-out`}>
+    <section id={id} className={`${className}`}>
       <Suspense fallback={
         useFallback ? (
-          <div className="transition-opacity duration-200 ease-in-out">
+          <div>
             <Fallback />
           </div>
         ) : (
-          <div className="transition-opacity duration-200 ease-in-out">
+          <div>
             <LoadingPlaceholder 
               height={loadingHeight} 
               message={loadingMessage} 
@@ -74,7 +74,7 @@ class ErrorBoundaryWrapper extends Component<{
 
   render() {
     if (this.state.hasError) {
-      return <div className="transition-opacity duration-200 ease-in-out">
+      return <div>
         <Fallback message="Component failed to load" />
       </div>;
     }

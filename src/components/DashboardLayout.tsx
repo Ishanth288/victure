@@ -26,7 +26,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="flex h-screen overflow-hidden bg-gray-50">
         <SidebarContainer />
         <MainContent>
-          <div className="container px-4 py-4 mx-auto">
+          <div className="container mx-auto px-4 py-4">
             <AnnouncementBanner />
             {children}
           </div>
