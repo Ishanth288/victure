@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,7 +57,7 @@ export function DataMigration() {
       stableToast({
         title: "Error",
         description: "Could not load migration history",
-        variant: "error",
+        variant: "destructive",
       });
     }
   };
@@ -225,7 +226,7 @@ export function DataMigration() {
         stableToast({
           title: "Import Failed",
           description: "Failed to import data. Please check the logs.",
-          variant: "error",
+          variant: "destructive",
         });
       }
     } catch (err) {
@@ -240,7 +241,7 @@ export function DataMigration() {
       stableToast({
         title: "Import Failed",
         description: `Error: ${err}`,
-        variant: "error",
+        variant: "destructive",
       });
     } finally {
       setIsImporting(false);
@@ -322,7 +323,7 @@ export function DataMigration() {
         stableToast({
           title: "Rollback Failed",
           description: `Failed to roll back ${type} migration`,
-          variant: "error",
+          variant: "destructive",
         });
       }
     } catch (err) {
@@ -330,7 +331,7 @@ export function DataMigration() {
       stableToast({
         title: "Rollback Failed",
         description: `Error: ${err}`,
-        variant: "error",
+        variant: "destructive",
       });
     } finally {
       setIsRollingBack(false);
@@ -355,7 +356,7 @@ export function DataMigration() {
           
           <TabsContent value="import" className="space-y-6">
             {!user && (
-              <Alert variant="error">
+              <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Authentication Required</AlertTitle>
                 <AlertDescription>
@@ -388,7 +389,7 @@ export function DataMigration() {
                 <FileUpload setSelectedFile={setSelectedFile} setUploadError={setUploadError} />
                 
                 {uploadError && (
-                  <Alert variant="error">
+                  <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Upload Error</AlertTitle>
                     <AlertDescription>{uploadError}</AlertDescription>
