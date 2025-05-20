@@ -47,11 +47,11 @@ export function useRevenueData(userId: string | null, dateRange: { from: Date, t
       
       // Calculate current revenue
       const currentRevenue = currentBills?.reduce((sum, bill) => 
-        sum + (parseFloat(bill.total_amount) || 0), 0) || 0;
+        sum + (parseFloat(String(bill.total_amount)) || 0), 0) || 0;
       
       // Calculate previous revenue
       const prevRevenue = prevBills?.reduce((sum, bill) => 
-        sum + (parseFloat(bill.total_amount) || 0), 0) || 0;
+        sum + (parseFloat(String(bill.total_amount)) || 0), 0) || 0;
       
       setTotalRevenue(currentRevenue);
       
@@ -77,7 +77,7 @@ export function useRevenueData(userId: string | null, dateRange: { from: Date, t
         if (bill.date) {
           const dateStr = bill.date.substring(0, 10); // Get YYYY-MM-DD part
           if (revenueByDay.has(dateStr)) {
-            revenueByDay.set(dateStr, revenueByDay.get(dateStr) + (parseFloat(bill.total_amount) || 0));
+            revenueByDay.set(dateStr, revenueByDay.get(dateStr) + (parseFloat(String(bill.total_amount)) || 0));
           }
         }
       });

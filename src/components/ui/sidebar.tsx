@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import React, { useState, createContext, useContext } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface Links {
   label: string;

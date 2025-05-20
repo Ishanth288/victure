@@ -87,7 +87,8 @@ export function useCustomerRetention(userId: string | null, dateRange: { from: D
     fetchCustomerData();
   }, [fetchCustomerData]);
   
-  const retentionRate = customerMap => {
+  // Fix the type issue by explicitly typing the customerMap parameter
+  const retentionRate = (customerMap: Map<string, Customer>) => {
     if (!customerMap || customerMap.size === 0) return 0;
     
     const totalCustomers = customerMap.size;

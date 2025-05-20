@@ -43,17 +43,17 @@ export function useProductData(userId: string | null, dateRange: { from: Date, t
       billItems?.forEach((item) => {
         if (item.inventory && item.inventory.name) {
           const productName = item.inventory.name || `Product ${item.inventory_item_id}`;
-          const revenue = parseFloat(item.total_price) || 0;
+          const revenue = parseFloat(String(item.total_price)) || 0;
           
           if (productMap.has(productName)) {
             const product = productMap.get(productName);
             product.revenue += revenue;
-            product.quantity += parseInt(item.quantity) || 0;
+            product.quantity += parseInt(String(item.quantity)) || 0;
           } else {
             productMap.set(productName, {
               name: productName,
               revenue,
-              quantity: parseInt(item.quantity) || 0,
+              quantity: parseInt(String(item.quantity)) || 0,
             });
           }
         }

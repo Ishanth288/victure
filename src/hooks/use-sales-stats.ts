@@ -77,11 +77,11 @@ export function useSalesStats(userId: string | null, dateRange: { from: Date, to
       
       // Calculate current revenue
       const currentRevenue = currentBills?.reduce((sum, bill) => 
-        sum + (parseFloat(bill.total_amount) || 0), 0) || 0;
+        sum + (parseFloat(String(bill.total_amount)) || 0), 0) || 0;
       
       // Calculate previous revenue
       const prevRevenue = prevBills?.reduce((sum, bill) => 
-        sum + (parseFloat(bill.total_amount) || 0), 0) || 0;
+        sum + (parseFloat(String(bill.total_amount)) || 0), 0) || 0;
       
       // Calculate average order value
       const currentAOV = currentSalesCount > 0 ? currentRevenue / currentSalesCount : 0;
