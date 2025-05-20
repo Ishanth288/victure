@@ -105,13 +105,14 @@ export async function getReturnAnalytics(userId: string, timeframe: 'week' | 'mo
 
 export async function getReturnHistoryByBill(billIds: number[]) {
   try {
-    // Direct query to the return_analytics view filtered by bill_id
+    // Update the query to include inventory_item_id field from the return_analytics view
     const { data, error } = await supabase
       .from('return_analytics')
       .select(`
         id,
         bill_id,
         bill_item_id,
+        inventory_item_id,
         medicine_name,
         returned_quantity,
         original_quantity,
@@ -126,7 +127,15 @@ export async function getReturnHistoryByBill(billIds: number[]) {
 
     if (error) throw error;
     console.log("Fetched return history by bills:", data?.length || 0, "records");
-    return (data || []) as ReturnHistoryItem[];
+    
+    // Type assertion to ensure all required fields are present
+    const returnHistory = data?.map(item => ({
+      ...item,
+      // If inventory_item_id is not present in the result, provide a fallback value
+      inventory_item_id: item.inventory_item_id || 0
+    })) as ReturnHistoryItem[];
+    
+    return returnHistory || [];
   } catch (error) {
     console.error("Error in getReturnHistoryByBill:", error);
     throw error;
