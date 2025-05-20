@@ -56,7 +56,9 @@ export function toast({
     duration: props.duration || 5000,
     onDismiss: () => {
       activeToasts.delete(toastId);
-      props.onDismiss?.();
+      if (props.onDismiss) {
+        props.onDismiss(toastId); // Ensuring we pass the toastId to onDismiss
+      }
     },
   });
 }
