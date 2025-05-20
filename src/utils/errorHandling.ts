@@ -13,7 +13,7 @@ export const displayErrorMessage = (error: any, context?: string) => {
   stableToast({
     title: "Error",
     description: `${contextPrefix}${errorMessage}`,
-    variant: "error",
+    variant: "destructive",
   });
   
   console.error(`Error in ${context || 'application'}:`, error);

@@ -35,8 +35,8 @@ export interface PreviewItem {
   polytherapy?: boolean;
   prescription_type?: string;
   items?: PreviewItem[];
-  patient_id?: number;
-  user_id?: string;
+  patient_id?: number | null;
+  user_id?: string | null;
   
   // Migration tracking
   migration_id?: string;

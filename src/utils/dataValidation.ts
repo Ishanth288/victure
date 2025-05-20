@@ -63,8 +63,11 @@ export function validatePatientData(patient: PreviewItem): {
 
   if (!patient.phone_number) {
     warnings.push({ type: "missing", message: "Phone number is required" });
-  } else if (!/^\d{10}$/.test(patient.phone_number.toString().replace(/\D/g, ''))) {
-    warnings.push({ type: "invalid", message: "Invalid phone number format" });
+  } else {
+    const phoneString = String(patient.phone_number);
+    if (!/^\d{10}$/.test(phoneString.replace(/\D/g, ''))) {
+      warnings.push({ type: "invalid", message: "Invalid phone number format" });
+    }
   }
 
   return {
@@ -130,15 +133,18 @@ export function autoFixData(items: PreviewItem[]): PreviewItem[] {
     
     // Fix numeric values
     if (typeof fixed.selling_price === 'string') {
-      fixed.selling_price = parseFloat(fixed.selling_price.toString().replace(/[^\d.-]/g, ''));
+      const sellingPriceStr = String(fixed.selling_price);
+      fixed.selling_price = parseFloat(sellingPriceStr.replace(/[^\d.-]/g, ''));
     }
     
     if (typeof fixed.unit_cost === 'string') {
-      fixed.unit_cost = parseFloat(fixed.unit_cost.toString().replace(/[^\d.-]/g, ''));
+      const unitCostStr = String(fixed.unit_cost);
+      fixed.unit_cost = parseFloat(unitCostStr.replace(/[^\d.-]/g, ''));
     }
     
     if (typeof fixed.quantity === 'string') {
-      fixed.quantity = parseInt(fixed.quantity.toString().replace(/[^\d]/g, ''), 10);
+      const quantityStr = String(fixed.quantity);
+      fixed.quantity = parseInt(quantityStr.replace(/[^\d]/g, ''), 10);
     }
     
     // Standardize date formats (assuming Indian format DD/MM/YYYY)
