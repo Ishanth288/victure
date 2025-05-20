@@ -7,8 +7,10 @@ import { Toaster } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ConnectionErrorBoundary } from "@/components/ConnectionErrorBoundary";
 import * as Sentry from "@sentry/react";
 import { initializeAppMonitoring } from "@/utils/supabaseHelpers";
+import { connectionManager } from "@/utils/connectionManager";
 import { BrowserRouter } from "react-router-dom";
 
 // Initialize Sentry with reduced sampling rates to improve performance
@@ -36,12 +38,12 @@ Sentry.init({
   },
 });
 
-// Create a client with performance optimizations
+// Create a client with performance optimizations and connection retry
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 2, // Reduced retries
-      retryDelay: attemptIndex => Math.min(1000 * 1.5 ** attemptIndex, 10000), // Faster retries
+      retry: 3, // Increased retries for better resilience
+      retryDelay: attemptIndex => Math.min(1000 * 1.5 ** attemptIndex, 10000), // Exponential backoff
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
@@ -56,6 +58,8 @@ const queryClient = new QueryClient({
       }
     },
     mutations: {
+      retry: 2, // Add retry for mutations
+      retryDelay: attemptIndex => Math.min(1000 * 1.5 ** attemptIndex, 5000),
       meta: {
         errorHandler: (error: any) => {
           console.error('Mutation error:', error);
@@ -69,8 +73,9 @@ const queryClient = new QueryClient({
   },
 });
 
-// Initialize minimal app monitoring
+// Initialize application monitoring and connection management
 initializeAppMonitoring();
+connectionManager.initialize();
 
 // Health check endpoint
 if (window.location.pathname === '/health') {
@@ -81,15 +86,17 @@ if (window.location.pathname === '/health') {
 const root = ReactDOM.createRoot(document.getElementById("root")!);
 root.render(
   <React.StrictMode>
-    <ErrorBoundary>
-      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-        <QueryClientProvider client={queryClient}>
-          <BrowserRouter>
-            <App />
-            <Toaster position="top-center" richColors closeButton />
-          </BrowserRouter>
-        </QueryClientProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
+    <ConnectionErrorBoundary>
+      <ErrorBoundary>
+        <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+          <QueryClientProvider client={queryClient}>
+            <BrowserRouter>
+              <App />
+              <Toaster position="top-center" richColors closeButton />
+            </BrowserRouter>
+          </QueryClientProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
+    </ConnectionErrorBoundary>
   </React.StrictMode>
 );
