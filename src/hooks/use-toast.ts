@@ -1,3 +1,4 @@
+
 import { toast as sonnerToast, ToastT } from "sonner";
 
 type ToastProps = Omit<ToastT, "id"> & {
@@ -62,7 +63,7 @@ export function toast({
 export function useToast() {
   return {
     toast,
-    dismiss: (toastId: string = "") => sonnerToast.dismiss(toastId), // Fix: Make toastId optional with default empty string
+    dismiss: (toastId: string = "") => sonnerToast.dismiss(toastId), // Fix: Make toastId parameter required with default empty string
     error: (message: string, opts = {}) => 
       toast({ title: message, variant: "destructive", ...opts }),
     success: (message: string, opts = {}) => 
