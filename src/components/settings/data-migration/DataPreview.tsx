@@ -98,7 +98,7 @@ export const DataPreview: React.FC<DataPreviewProps> = ({
         </button>
       </div>
       
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto max-h-[500px]">
         <Table className="border">
           <TableHeader>
             <TableRow>
@@ -131,7 +131,7 @@ export const DataPreview: React.FC<DataPreviewProps> = ({
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select field" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white dark:bg-gray-800 border shadow-md">
                       <SelectItem value="none">Not Selected</SelectItem>
                       {getSelectableFields().map((field) => (
                         <SelectItem 

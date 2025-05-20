@@ -339,7 +339,7 @@ export function DataMigration() {
   };
 
   return (
-    <Card>
+    <Card className="overflow-visible">
       <CardHeader>
         <CardTitle>Data Migration</CardTitle>
         <CardDescription>
@@ -347,16 +347,16 @@ export function DataMigration() {
         </CardDescription>
       </CardHeader>
       
-      <CardContent>
-        <Tabs defaultValue="import">
+      <CardContent className="overflow-visible">
+        <Tabs defaultValue="import" className="overflow-visible">
           <TabsList>
             <TabsTrigger value="import">Import Data</TabsTrigger>
             <TabsTrigger value="history">Migration History</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="import" className="space-y-6">
+          <TabsContent value="import" className="space-y-6 overflow-visible">
             {!user && (
-              <Alert variant="error">
+              <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Authentication Required</AlertTitle>
                 <AlertDescription>
@@ -378,7 +378,7 @@ export function DataMigration() {
               </AlertDescription>
             </Alert>
             
-            <div className="space-y-6">
+            <div className="space-y-6 overflow-visible">
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Step 1: Select Data Type</h3>
                 <ModeSelector migrationMode={migrationMode} setMigrationMode={setMigrationMode} />
@@ -389,7 +389,7 @@ export function DataMigration() {
                 <FileUpload setSelectedFile={setSelectedFile} setUploadError={setUploadError} />
                 
                 {uploadError && (
-                  <Alert variant="error">
+                  <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Upload Error</AlertTitle>
                     <AlertDescription>{uploadError}</AlertDescription>
@@ -444,7 +444,7 @@ export function DataMigration() {
             </div>
           </TabsContent>
           
-          <TabsContent value="history">
+          <TabsContent value="history" className="overflow-visible">
             <MigrationHistory 
               recentMigrations={recentMigrations} 
               onRollback={handleRollback}

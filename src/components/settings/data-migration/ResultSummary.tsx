@@ -7,6 +7,7 @@ import {
   AlertTitle 
 } from "@/components/ui/alert";
 import { ResultSummaryProps } from './types';
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const ResultSummary: React.FC<ResultSummaryProps> = ({ importResults }) => {
   if (!importResults) return null;
@@ -16,7 +17,7 @@ export const ResultSummary: React.FC<ResultSummaryProps> = ({ importResults }) =
   return (
     <div className="space-y-4">
       <Alert 
-        variant={success ? "default" : "error"}
+        variant={success ? "default" : "destructive"}
         className={success ? "bg-green-50 border-green-200" : ""}
       >
         {success ? (
@@ -43,14 +44,16 @@ export const ResultSummary: React.FC<ResultSummaryProps> = ({ importResults }) =
             <AlertTriangle className="h-4 w-4 mr-2 text-amber-500" />
             Issues ({issues.length})
           </h3>
-          <div className="max-h-40 overflow-y-auto bg-gray-50 p-4 rounded border">
-            <ul className="list-disc pl-5 space-y-1">
-              {issues.map((issue, index) => (
-                <li key={index} className="text-sm">
-                  Row {issue.row}: {issue.reason}
-                </li>
-              ))}
-            </ul>
+          <div className="bg-gray-50 p-4 rounded border">
+            <ScrollArea className="max-h-40">
+              <ul className="list-disc pl-5 space-y-1">
+                {issues.map((issue, index) => (
+                  <li key={index} className="text-sm">
+                    Row {issue.row}: {issue.reason}
+                  </li>
+                ))}
+              </ul>
+            </ScrollArea>
           </div>
         </div>
       )}
