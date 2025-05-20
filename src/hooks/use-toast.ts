@@ -1,4 +1,6 @@
+
 import { toast as sonnerToast, ToastT } from "sonner";
+import React from "react";
 import { CheckCircle, AlertCircle, Info, AlertTriangle, X } from "lucide-react";
 
 type ToastProps = Omit<ToastT, "id"> & {
@@ -40,18 +42,20 @@ export function toast({
   
   // Get appropriate icon based on variant
   let icon = null;
+  const iconProps = { className: "h-4 w-4" };
+  
   switch (variant) {
     case "destructive":
-      icon = <AlertCircle className="h-4 w-4 text-red-600" />;
+      icon = React.createElement(AlertCircle, { className: "h-4 w-4 text-red-600" });
       break;
     case "success":
-      icon = <CheckCircle className="h-4 w-4 text-emerald-600" />;
+      icon = React.createElement(CheckCircle, { className: "h-4 w-4 text-emerald-600" });
       break;
     case "warning":
-      icon = <AlertTriangle className="h-4 w-4 text-amber-600" />;
+      icon = React.createElement(AlertTriangle, { className: "h-4 w-4 text-amber-600" });
       break;
     case "info":
-      icon = <Info className="h-4 w-4 text-blue-600" />;
+      icon = React.createElement(Info, { className: "h-4 w-4 text-blue-600" });
       break;
   }
   
