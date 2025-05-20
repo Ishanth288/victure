@@ -340,7 +340,8 @@ export async function getRecentMigrations(): Promise<MigrationLog[]> {
       return [];
     }
     
-    return data as MigrationLog[];
+    // Add explicit type assertion to handle the type mismatch
+    return (data as unknown) as MigrationLog[];
   } catch (err) {
     console.error('Error fetching migration logs:', err);
     return [];
