@@ -10,7 +10,7 @@ import { AuthProvider } from '@/hooks/useAuth';
 export default function Settings() {
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-6">
         <div className="flex justify-between">
           <div>
             <h1 className="text-2xl font-bold">Settings</h1>

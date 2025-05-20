@@ -67,7 +67,7 @@ export function DataMigration() {
   };
 
   return (
-    <Card className="overflow-visible">
+    <Card>
       <CardHeader>
         <CardTitle>Data Migration</CardTitle>
         <CardDescription>
@@ -75,18 +75,18 @@ export function DataMigration() {
         </CardDescription>
       </CardHeader>
       
-      <CardContent className="overflow-visible">
-        <Tabs defaultValue="import" className="overflow-visible">
+      <CardContent>
+        <Tabs defaultValue="import" className="w-full">
           <TabsList>
             <TabsTrigger value="import">Import Data</TabsTrigger>
             <TabsTrigger value="history">Migration History</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="import" className="space-y-6 overflow-visible">
+          <TabsContent value="import" className="space-y-6">
             <ImportTabContent user={user} loadMigrationHistory={loadMigrationHistory} />
           </TabsContent>
           
-          <TabsContent value="history" className="overflow-visible">
+          <TabsContent value="history">
             <MigrationHistory 
               recentMigrations={recentMigrations} 
               onRollback={handleRollback}

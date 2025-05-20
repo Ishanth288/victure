@@ -49,14 +49,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({ setSelectedFile, setUplo
 
   return (
     <div 
-      className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+      className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50 transition-colors"
       onDragEnter={handleDrag}
       onDragLeave={handleDrag}
       onDragOver={handleDrag}
       onDrop={handleDrop}
       style={{ borderColor: dragActive ? "rgb(99 102 241)" : "rgb(209 213 219)" }}
     >
-      <Upload className="mx-auto h-12 w-12 text-gray-400" />
+      <Upload className="mx-auto h-10 w-10 text-gray-400" />
       <div className="mt-2">
         <label htmlFor="file-upload" className="cursor-pointer">
           <span className="text-indigo-600 font-medium">Click to upload</span>
@@ -72,8 +72,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ setSelectedFile, setUplo
         onChange={handleChange}
         accept=".csv,.xls,.xlsx"
       />
-      <div className="mt-4">
-        <Button variant="outline" onClick={() => document.getElementById('file-upload')?.click()}>
+      <div className="mt-2">
+        <Button variant="outline" size="sm" onClick={() => document.getElementById('file-upload')?.click()}>
           Select File
         </Button>
       </div>

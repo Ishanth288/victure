@@ -221,7 +221,7 @@ export const ImportTabContent: React.FC<ImportTabContentProps> = ({ user, loadMi
   };
 
   return (
-    <div className="space-y-6 overflow-visible">
+    <div className="space-y-6 max-h-full">
       {!user && (
         <Alert variant="error">
           <AlertCircle className="h-4 w-4" />
@@ -246,7 +246,7 @@ export const ImportTabContent: React.FC<ImportTabContentProps> = ({ user, loadMi
         </AlertDescription>
       </Alert>
       
-      <div className="space-y-6 overflow-visible">
+      <div className="space-y-6">
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Step 1: Select Data Type</h3>
           <ModeSelector migrationMode={migrationMode} setMigrationMode={setMigrationMode} />
