@@ -16,7 +16,7 @@ export const ResultSummary: React.FC<ResultSummaryProps> = ({ importResults }) =
   return (
     <div className="space-y-4">
       <Alert 
-        variant={success ? "default" : "destructive"}
+        variant={success ? "default" : "error"}
         className={success ? "bg-green-50 border-green-200" : ""}
       >
         {success ? (

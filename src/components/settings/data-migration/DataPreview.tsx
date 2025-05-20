@@ -75,6 +75,17 @@ export const DataPreview: React.FC<DataPreviewProps> = ({
 
   const requiredFields = getRequiredFields();
 
+  // Function to safely render cell content as string
+  const formatCellContent = (value: any): string => {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+    return String(value);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -132,7 +143,7 @@ export const DataPreview: React.FC<DataPreviewProps> = ({
                   </Select>
                 </TableCell>
                 <TableCell className="max-w-[200px] truncate">
-                  {previewItems.length > 0 && previewItems[0][header as keyof typeof previewItems[0]]}
+                  {previewItems.length > 0 && formatCellContent(previewItems[0][header])}
                 </TableCell>
               </TableRow>
             ))}

@@ -1,17 +1,9 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from '@/hooks/useAuth';
-import * as XLSX from 'xlsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { 
-  processInventoryItems, 
-  processPatients, 
-  processPrescriptions, 
-  getRecentMigrations, 
-  rollbackMigration 
-} from "@/utils/migrationUtils";
 import { InfoIcon, AlertCircle } from "lucide-react";
 import { stableToast } from "@/components/ui/stable-toast";
 import { PreviewItem } from "@/types/dataMigration";
@@ -22,6 +14,14 @@ import { ResultSummary } from "./data-migration/ResultSummary";
 import { MigrationHistory } from "./data-migration/MigrationHistory";
 import { ModeSelector } from "./data-migration/ModeSelector";
 import { MigrationMode } from "./data-migration/types";
+import { 
+  processInventoryItems, 
+  processPatients, 
+  processPrescriptions, 
+  getRecentMigrations, 
+  rollbackMigration 
+} from "@/utils/migrationUtils";
+import * as XLSX from 'xlsx';
 
 export function DataMigration() {
   const { user } = useAuth();
@@ -57,7 +57,7 @@ export function DataMigration() {
       stableToast({
         title: "Error",
         description: "Could not load migration history",
-        variant: "destructive",
+        variant: "error",
       });
     }
   };
@@ -226,7 +226,7 @@ export function DataMigration() {
         stableToast({
           title: "Import Failed",
           description: "Failed to import data. Please check the logs.",
-          variant: "destructive",
+          variant: "error",
         });
       }
     } catch (err) {
@@ -241,7 +241,7 @@ export function DataMigration() {
       stableToast({
         title: "Import Failed",
         description: `Error: ${err}`,
-        variant: "destructive",
+        variant: "error",
       });
     } finally {
       setIsImporting(false);
@@ -323,7 +323,7 @@ export function DataMigration() {
         stableToast({
           title: "Rollback Failed",
           description: `Failed to roll back ${type} migration`,
-          variant: "destructive",
+          variant: "error",
         });
       }
     } catch (err) {
@@ -331,7 +331,7 @@ export function DataMigration() {
       stableToast({
         title: "Rollback Failed",
         description: `Error: ${err}`,
-        variant: "destructive",
+        variant: "error",
       });
     } finally {
       setIsRollingBack(false);
@@ -356,7 +356,7 @@ export function DataMigration() {
           
           <TabsContent value="import" className="space-y-6">
             {!user && (
-              <Alert variant="destructive">
+              <Alert variant="error">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Authentication Required</AlertTitle>
                 <AlertDescription>
@@ -389,7 +389,7 @@ export function DataMigration() {
                 <FileUpload setSelectedFile={setSelectedFile} setUploadError={setUploadError} />
                 
                 {uploadError && (
-                  <Alert variant="destructive">
+                  <Alert variant="error">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Upload Error</AlertTitle>
                     <AlertDescription>{uploadError}</AlertDescription>
