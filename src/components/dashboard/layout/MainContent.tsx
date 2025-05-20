@@ -14,7 +14,7 @@ export function MainContent({ children }: MainContentProps) {
       <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-6 border-b bg-white shadow-sm">
         <div className="flex-1"></div>
         <div className="text-2xl font-bold text-neutral-900 flex-1 text-center flex justify-center items-center">
-          <span className="transition-opacity duration-300">Victure Healthcare Solutions</span>
+          <span className="transition-opacity duration-300 whitespace-nowrap">Victure Healthcare Solutions</span>
         </div>
         <div className="flex-1 flex justify-end">
           <ProfileSection />
