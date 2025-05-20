@@ -21,7 +21,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { Badge } from '@/components/ui/badge';
 import { Loader2, AlertCircle, CheckCircle2, X, Check, Download, Upload, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/useFirebaseAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   processInventoryItems, 
   processPatients, 
@@ -127,7 +127,7 @@ export function DataMigration() {
         stableToast({
           title: "Error Processing File",
           description: err.message || 'Failed to parse file',
-          variant: "error",
+          variant: "destructive",
         });
       } finally {
         setLoading(false);
@@ -140,7 +140,7 @@ export function DataMigration() {
       stableToast({
         title: "Error",
         description: "Failed to read the file.",
-        variant: "error",
+        variant: "destructive",
       });
     };
 
@@ -262,7 +262,7 @@ export function DataMigration() {
       stableToast({
         title: "Error",
         description: err.message || 'Failed to create preview',
-        variant: "error",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -379,7 +379,7 @@ export function DataMigration() {
       stableToast({
         title: "Import Failed",
         description: err.message || 'An error occurred during import',
-        variant: "error",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -416,7 +416,7 @@ export function DataMigration() {
       stableToast({
         title: "Rollback Failed",
         description: err.message || 'An error occurred during rollback',
-        variant: "error",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
