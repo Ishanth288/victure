@@ -1,6 +1,7 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/integrations/supabase/client";
-import { PreviewItem, MigrationLog } from "@/types/dataMigration";
+import { PreviewItem, MigrationLog, MappingTemplate } from "@/types/dataMigration";
 import { classifyMedicine, classifyPatient, classifyPrescription } from "./classificationUtils";
 import { validateInventoryItem, validatePatientData, validatePrescriptionData } from "./dataValidation";
 import { stableToast } from "@/components/ui/stable-toast";
@@ -362,66 +363,328 @@ export async function getRecentMigrations(): Promise<MigrationLog[]> {
 export function autoDetectFieldMappings(headers: string[]): Record<string, string> {
   const mappings: Record<string, string> = {};
   
+  // Pattern dictionary for different field types
+  const patternDictionary = {
+    // Inventory item fields
+    name: [
+      /^med(icine)?[\s_-]?name$/i,
+      /^product[\s_-]?name$/i,
+      /^drug[\s_-]?name$/i,
+      /^item[\s_-]?name$/i,
+      /^prod(uct)?[\s_-]?(title|name)$/i,
+      /^title$/i,
+      /^med[\s_-]?title$/i,
+      /^product_item$/i,
+      /^item[\s_-]?descr(iption)?$/i,
+      /^drug[\s_-]?descr(iption)?$/i,
+      /^med[\s_-]?descr(iption)?$/i,
+      /^item[\s_-]?p$/i,
+      /^p[\s_-]?name$/i
+    ],
+    
+    generic_name: [
+      /^generic$/i,
+      /^gen[\s_-]?name$/i,
+      /^generic[\s_-]?descr(iption)?$/i,
+      /^chemical[\s_-]?name$/i,
+      /^molecule$/i,
+      /^mol[\s_-]?name$/i,
+      /^mole?[\s_-]?name$/i,
+      /^cmn$/i, // common molecular name
+      /^inn$/i  // international nonproprietary name
+    ],
+    
+    manufacturer: [
+      /^mfg$/i,
+      /^manufacturer$/i,
+      /^company$/i,
+      /^maker$/i,
+      /^vendor$/i,
+      /^manuf$/i,
+      /^comp[\s_-]?name$/i,
+      /^firm$/i,
+      /^producer$/i,
+      /^lab$/i,
+      /^laboratory$/i,
+      /^brand$/i
+    ],
+    
+    batch_number: [
+      /^batch$/i,
+      /^lot[\s_-]?no$/i,
+      /^batch[\s_-]?number$/i,
+      /^lot[\s_-]?number$/i,
+      /^lot[\s_-]?id$/i,
+      /^ndc$/i,
+      /^batch[\s_-]?id$/i,
+      /^lot$/i,
+      /^batch[\s_-]?no$/i,
+      /^serial[\s_-]?no$/i,
+      /^serial$/i
+    ],
+    
+    expiry_date: [
+      /^exp$/i,
+      /^expir[ey]$/i,
+      /^expir(y|ation)[\s_-]?date$/i,
+      /^valid[\s_-]?until$/i,
+      /^exp[\s_-]?date$/i,
+      /^use[\s_-]?by$/i,
+      /^good[\s_-]?until$/i,
+      /^exp[\s_-]?dt$/i,
+      /^perm$/i,
+      /^shelf[\s_-]?life$/i
+    ],
+    
+    quantity: [
+      /^qty$/i,
+      /^quant(ity)?$/i,
+      /^stock$/i,
+      /^avail(able)?[\s_-]?units$/i,
+      /^count$/i,
+      /^units$/i,
+      /^stock[\s_-]?level$/i,
+      /^avail(able)?[\s_-]?count$/i,
+      /^inventory$/i,
+      /^inv[\s_-]?count$/i,
+      /^stock[\s_-]?qty$/i,
+      /^pcs$/i,
+      /^in[\s_-]?stock$/i,
+      /^on[\s_-]?hand$/i
+    ],
+    
+    unit_cost: [
+      /^cost$/i,
+      /^buy[\s_-]?price$/i,
+      /^purchase[\s_-]?price$/i,
+      /^cost[\s_-]?price$/i,
+      /^unit[\s_-]?cost$/i,
+      /^acquisition[\s_-]?cost$/i,
+      /^per[\s_-]?unit[\s_-]?cost$/i,
+      /^wholesale[\s_-]?price$/i,
+      /^wsp$/i,
+      /^base[\s_-]?price$/i,
+      /^cp$/i // cost price
+    ],
+    
+    selling_price: [
+      /^mrp$/i,
+      /^sell[\s_-]?price$/i,
+      /^retail[\s_-]?price$/i,
+      /^price$/i,
+      /^sales[\s_-]?price$/i,
+      /^unit[\s_-]?price$/i,
+      /^msp$/i, // maximum selling price
+      /^max[\s_-]?retail[\s_-]?price$/i,
+      /^sp$/i,
+      /^rp$/i, // retail price
+      /^rate$/i
+    ],
+    
+    hsn_code: [
+      /^hsn[\s_-]?code$/i,
+      /^gst[\s_-]?code$/i,
+      /^tax[\s_-]?code$/i,
+      /^tax[\s_-]?class$/i,
+      /^tariff$/i,
+      /^tax[\s_-]?category$/i
+    ],
+    
+    // Patient fields
+    "name": [
+      /^patient[\s_-]?name$/i,
+      /^client[\s_-]?name$/i,
+      /^customer[\s_-]?name$/i,
+      /^cust[\s_-]?name$/i,
+      /^pt[\s_-]?name$/i,
+      /^person$/i,
+      /^full[\s_-]?name$/i,
+      /^name$/i
+    ],
+    
+    phone_number: [
+      /^phone$/i,
+      /^mobile$/i,
+      /^contact$/i,
+      /^phone[\s_-]?number$/i,
+      /^mobile[\s_-]?number$/i,
+      /^tel$/i,
+      /^telephone$/i,
+      /^contact[\s_-]?number$/i,
+      /^cell$/i,
+      /^cell[\s_-]?number$/i,
+      /^ph[\s_-]?no$/i,
+      /^mob[\s_-]?no$/i
+    ],
+    
+    // Prescription fields
+    prescription_number: [
+      /^rx[\s_-]?(no|number)$/i,
+      /^prescription[\s_-]?(no|number)$/i,
+      /^script[\s_-]?(no|number)$/i,
+      /^presc[\s_-]?(no|number)$/i,
+      /^rx[\s_-]?id$/i,
+      /^script[\s_-]?id$/i,
+      /^order[\s_-]?(no|number|id)$/i
+    ],
+    
+    doctor_name: [
+      /^doctor$/i,
+      /^physician$/i,
+      /^prescribed[\s_-]?by$/i,
+      /^dr[\s_-]?name$/i,
+      /^prescriber$/i,
+      /^md$/i,
+      /^doctor[\s_-]?name$/i,
+      /^practitioner$/i,
+      /^consultant$/i
+    ],
+    
+    date: [
+      /^date$/i,
+      /^rx[\s_-]?date$/i,
+      /^prescription[\s_-]?date$/i,
+      /^prescribed[\s_-]?(on|date)$/i,
+      /^issue[\s_-]?date$/i,
+      /^order[\s_-]?date$/i,
+      /^visit[\s_-]?date$/i,
+      /^pres[\s_-]?date$/i,
+      /^created[\s_-]?(on|at|date)$/i
+    ]
+  };
+  
+  // Apply pattern matching to each header
   headers.forEach(header => {
-    const lowerHeader = header.toLowerCase();
+    const cleanHeader = header.trim();
+    let matched = false;
     
-    // Inventory mappings
-    if (/med(icine)?[\s_-]?name|product[\s_-]?name|drug[\s_-]?name|item[\s_-]?name/i.test(lowerHeader)) {
-      mappings[header] = 'name';
-    } 
-    else if (/generic/i.test(lowerHeader)) {
-      mappings[header] = 'generic_name';
-    }
-    else if (/mfg|manufacturer|company|maker/i.test(lowerHeader)) {
-      mappings[header] = 'manufacturer';
-    }
-    else if (/batch|lot[\s_-]?no|batch[\s_-]?number|ndc/i.test(lowerHeader)) {
-      mappings[header] = 'batch_number';
-    }
-    else if (/exp|expir(y|ation)|valid[\s_-]?until/i.test(lowerHeader)) {
-      mappings[header] = 'expiry_date';
-    }
-    else if (/qty|quant(ity)?|stock/i.test(lowerHeader)) {
-      mappings[header] = 'quantity';
-    }
-    else if (/cost|buy[\s_-]?price|purchase[\s_-]?price/i.test(lowerHeader)) {
-      mappings[header] = 'unit_cost';
-    }
-    else if (/mrp|sell[\s_-]?price|retail[\s_-]?price|price/i.test(lowerHeader)) {
-      mappings[header] = 'selling_price';
-    }
-    else if (/sched(ule)?|control(led)?/i.test(lowerHeader)) {
-      mappings[header] = 'schedule';
-    }
-    else if (/hsn[\s_-]?code|gst[\s_-]?code/i.test(lowerHeader)) {
-      mappings[header] = 'hsn_code';
+    // Check against each pattern category
+    for (const [fieldName, patterns] of Object.entries(patternDictionary)) {
+      for (const pattern of patterns) {
+        if (pattern.test(cleanHeader)) {
+          mappings[header] = fieldName;
+          matched = true;
+          break;
+        }
+      }
+      if (matched) break;
     }
     
-    // Patient mappings
-    else if (/patient[\s_-]?name|name/i.test(lowerHeader)) {
-      mappings[header] = 'name';
-    }
-    else if (/phone|mobile|contact/i.test(lowerHeader)) {
-      mappings[header] = 'phone_number';
-    }
-    else if (/status|state/i.test(lowerHeader)) {
-      mappings[header] = 'status';
-    }
-    else if (/visits|visit[\s_-]?count/i.test(lowerHeader)) {
-      mappings[header] = 'visit_count';
-    }
-    
-    // Prescription mappings
-    else if (/rx[\s_-]?(no|number)|prescription[\s_-]?(no|number)/i.test(lowerHeader)) {
-      mappings[header] = 'prescription_number';
-    }
-    else if (/doctor|physician|prescribed[\s_-]?by/i.test(lowerHeader)) {
-      mappings[header] = 'doctor_name';
-    }
-    else if (/date|rx[\s_-]?date|prescribed[\s_-]?on/i.test(lowerHeader)) {
-      mappings[header] = 'date';
+    // Fallback to direct partial string matching if no pattern match
+    if (!matched) {
+      const lowerHeader = cleanHeader.toLowerCase();
+      
+      // Direct key matches
+      const directMatches: Record<string, string[]> = {
+        name: ["name", "title", "product", "medicine", "drug", "item"],
+        generic_name: ["generic", "molecule", "chemical"],
+        manufacturer: ["manufacturer", "company", "vendor", "maker", "producer", "lab"],
+        batch_number: ["batch", "lot", "serial", "ndc"],
+        expiry_date: ["expiry", "expire", "expiration", "valid until", "use by"],
+        quantity: ["quantity", "qty", "stock", "count", "units", "inventory"],
+        unit_cost: ["cost", "buy price", "purchase price"],
+        selling_price: ["selling", "price", "mrp", "retail", "sale"],
+        phone_number: ["phone", "mobile", "contact", "cell"],
+        prescription_number: ["rx", "prescription", "script"],
+        doctor_name: ["doctor", "physician", "dr", "prescriber"],
+        date: ["date", "issued", "created", "order date"]
+      };
+      
+      for (const [fieldName, keywords] of Object.entries(directMatches)) {
+        for (const keyword of keywords) {
+          if (lowerHeader.includes(keyword)) {
+            mappings[header] = fieldName;
+            matched = true;
+            break;
+          }
+        }
+        if (matched) break;
+      }
     }
   });
   
   return mappings;
+}
+
+/**
+ * Saves a mapping template to the database
+ */
+export async function saveMappingTemplate(template: MappingTemplate): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('mapping_templates')
+      .insert([template]);
+      
+    if (error) {
+      console.error('Failed to save mapping template:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (err) {
+    console.error('Error saving mapping template:', err);
+    return false;
+  }
+}
+
+/**
+ * Gets mapping templates for a specific data type
+ */
+export async function getMappingTemplates(dataType: 'Inventory' | 'Patients' | 'Prescriptions'): Promise<MappingTemplate[]> {
+  try {
+    const { data, error } = await supabase
+      .from('mapping_templates')
+      .select('*')
+      .eq('data_type', dataType)
+      .order('name');
+      
+    if (error) {
+      console.error('Failed to fetch mapping templates:', error);
+      return [];
+    }
+    
+    return data as MappingTemplate[];
+  } catch (err) {
+    console.error('Error fetching mapping templates:', err);
+    return [];
+  }
+}
+
+/**
+ * Deletes a mapping template
+ */
+export async function deleteMappingTemplate(id: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('mapping_templates')
+      .delete()
+      .eq('id', id);
+      
+    if (error) {
+      console.error('Failed to delete mapping template:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (err) {
+    console.error('Error deleting mapping template:', err);
+    return false;
+  }
+}
+
+/**
+ * Preview data transformation using a mapping template
+ */
+export function previewMappedData(data: any[], mappings: Record<string, string>): PreviewItem[] {
+  return data.map(item => {
+    const mappedItem: Record<string, any> = {};
+    
+    Object.entries(mappings).forEach(([sourceKey, targetKey]) => {
+      if (item[sourceKey] !== undefined) {
+        mappedItem[targetKey] = item[sourceKey];
+      }
+    });
+    
+    return mappedItem as PreviewItem;
+  });
 }

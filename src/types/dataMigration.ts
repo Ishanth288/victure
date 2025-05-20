@@ -56,7 +56,12 @@ export interface MigrationLog {
 }
 
 export interface MappingTemplate {
+  id?: string;
+  user_id?: string;
   name: string;
-  source: string;
+  source_system: string;
+  data_type: 'Inventory' | 'Patients' | 'Prescriptions';
   mappings: Record<string, string>;
+  created_at?: string;
+  updated_at?: string;
 }

@@ -230,6 +230,39 @@ export type Database = {
         }
         Relationships: []
       }
+      mapping_templates: {
+        Row: {
+          created_at: string
+          data_type: string
+          id: string
+          mappings: Json
+          name: string
+          source_system: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_type: string
+          id?: string
+          mappings: Json
+          name: string
+          source_system: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_type?: string
+          id?: string
+          mappings?: Json
+          name?: string
+          source_system?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       medicine_returns: {
         Row: {
           bill_item_id: number
