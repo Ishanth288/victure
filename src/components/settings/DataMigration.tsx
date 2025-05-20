@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -345,9 +344,9 @@ export function DataMigration() {
     });
   };
 
-  const generatePreviewData = () => {
+  const generatePreviewData = (): PreviewItem[] => {
     // This would be replaced with actual data parsing from the uploaded file
-    const mockInventoryData = [
+    const mockInventoryData: PreviewItem[] = [
       { name: 'Paracetamol 500mg', generic_name: 'Acetaminophen', manufacturer: 'Cipla Ltd', batch_number: 'CP2023A45', expiry_date: '2024-11-30', quantity: 150, unit_cost: 2.5, selling_price: 5.0, schedule: 'OTC', hsn_code: '30049099' },
       { name: 'Amoxicillin 250mg', generic_name: 'Amoxicillin', manufacturer: 'Sun Pharma', batch_number: 'SP2023B22', expiry_date: '2023-06-15', quantity: 75, unit_cost: 3.25, selling_price: 7.5, schedule: 'H', hsn_code: '30041010', hasWarning: true, warningType: 'expired', warningMessage: 'Medicine is expired' },
       { name: 'Azithromycin 500mg', generic_name: 'Azithromycin', manufacturer: 'Mankind Pharma', batch_number: 'MK2023C15', expiry_date: '2024-10-20', quantity: 60, unit_cost: 9.5, selling_price: 18.0, schedule: 'H', hsn_code: '30042033' },
@@ -367,12 +366,12 @@ export function DataMigration() {
       { name: 'Amoxicillin 250mg', generic_name: 'Amoxicillin', manufacturer: 'Sun Pharma', batch_number: 'SP2023B23', expiry_date: '2024-08-15', quantity: 60, unit_cost: 3.25, selling_price: 7.5, schedule: 'H', hsn_code: '30041010', hasWarning: true, warningType: 'duplicate', warningMessage: 'Possible duplicate item' }
     ];
     
-    const mockPatientData = [
+    const mockPatientData: PreviewItem[] = [
       { name: 'John Doe', phone_number: '9876543210', external_id: 'PT0001', status: 'active' },
       { name: 'Jane Smith', phone_number: '8765432109', external_id: 'PT0002', status: 'active' }
     ];
     
-    const mockPrescriptionData = [
+    const mockPrescriptionData: PreviewItem[] = [
       { prescription_number: 'RX100123', doctor_name: 'Dr. Mehta', date: '2023-05-15', patient_id: 'PT0001', status: 'active' },
       { prescription_number: 'RX100124', doctor_name: 'Dr. Sharma', date: '2023-05-16', patient_id: 'PT0002', status: 'active' }
     ];
@@ -1212,6 +1211,9 @@ export function DataMigration() {
             </div>
           </div>
         );
+        
+      default:
+        return null;
     }
   };
 
