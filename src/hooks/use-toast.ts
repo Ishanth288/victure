@@ -1,3 +1,4 @@
+
 import { toast as sonnerToast, ToastT } from "sonner";
 
 type ToastProps = Omit<ToastT, "id"> & {
@@ -53,11 +54,11 @@ export function toast({
     ...props,
     className: `shadow-lg ${variantStyles[variant]}`,
     duration: props.duration || 5000,
-    onDismiss: () => {
+    onDismiss: (toast) => {
       activeToasts.delete(toastId);
       if (props.onDismiss) {
-        // Calling onDismiss without passing toastId as it expects a different type
-        props.onDismiss();
+        // Calling onDismiss with the toast object as required by the type
+        props.onDismiss(toast);
       }
     },
   });
