@@ -27,3 +27,32 @@ export function TextSkeleton({ className }: { className?: string }) {
     />
   );
 }
+
+export function PharmacyNameSkeleton() {
+  return (
+    <div className="flex animate-pulse">
+      <Skeleton className="h-7 w-32 bg-gray-100 dark:bg-gray-800/50 rounded" />
+    </div>
+  );
+}
+
+export function NavItemSkeleton({ count = 8 }: { count?: number }) {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="flex items-center space-x-3">
+          <Skeleton className="h-4 w-4 rounded-full bg-gray-100 dark:bg-gray-800/50" />
+          <Skeleton className="h-4 w-24 bg-gray-100 dark:bg-gray-800/50 rounded" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function CompanyLogoSkeleton() {
+  return (
+    <div className="flex justify-center animate-pulse">
+      <Skeleton className="h-8 w-64 bg-gray-100 dark:bg-gray-800/50 rounded" />
+    </div>
+  );
+}

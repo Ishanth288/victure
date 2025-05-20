@@ -2,6 +2,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PlanBanner } from "@/components/PlanBanner";
 import { ProfileSection } from "@/components/dashboard/ProfileSection";
+import { CompanyLogoSkeleton } from "@/components/ui/loading-skeleton";
 
 interface MainContentProps {
   children: React.ReactNode;

@@ -26,17 +26,23 @@ export function SidebarLinks() {
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [linksVisible, setLinksVisible] = useState(false);
 
   // Check if user has admin role
   useEffect(() => {
     const checkAdminRole = async () => {
       try {
+        // Show loading state immediately
+        setIsLoading(true);
+        
         // Check if admin verification was already done in this session
         const adminVerified = sessionStorage.getItem('adminVerified') === 'true';
         
         if (adminVerified) {
           setIsAdmin(true);
           setIsLoading(false);
+          // Add a small delay before showing the links to ensure smooth transition
+          setTimeout(() => setLinksVisible(true), 100);
           return;
         }
         
@@ -64,6 +70,8 @@ export function SidebarLinks() {
         console.error("Error checking admin role:", error);
       } finally {
         setIsLoading(false);
+        // Add a small delay before showing the links to ensure smooth transition
+        setTimeout(() => setLinksVisible(true), 100);
       }
     };
     
@@ -151,6 +159,8 @@ export function SidebarLinks() {
       } else {
         // Clear admin verification on sign out
         sessionStorage.removeItem('adminVerified');
+        // Clear pharmacy name from localStorage
+        localStorage.removeItem('pharmacyName');
         
         toast({
           title: "Signed out successfully",
@@ -174,7 +184,7 @@ export function SidebarLinks() {
       {isLoading ? (
         <ButtonSkeleton count={9} />
       ) : (
-        <>
+        <div className={`transition-opacity duration-300 ${linksVisible ? 'opacity-100' : 'opacity-0'}`}>
           {allLinks.map((link, index) => (
             <div key={index} className="flex flex-col">
               <a
@@ -195,25 +205,25 @@ export function SidebarLinks() {
               </a>
             </div>
           ))}
-        </>
-      )}
-
-      {/* Add Sign Out link at the bottom */}
-      <div className="mt-auto pt-4">
-        <a
-          href="#"
-          onClick={handleSignOut}
-          className={cn(
-            buttonVariants({ variant: "ghost" }),
-            "justify-start hover:bg-green-50 hover:text-green-700"
-          )}
-        >
-          <div className="flex items-center">
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Sign Out</span>
+          
+          {/* Add Sign Out link at the bottom */}
+          <div className="mt-auto pt-4">
+            <a
+              href="#"
+              onClick={handleSignOut}
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "justify-start hover:bg-green-50 hover:text-green-700"
+              )}
+            >
+              <div className="flex items-center">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sign Out</span>
+              </div>
+            </a>
           </div>
-        </a>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -7,7 +7,7 @@ import { ChevronLeft, Bell, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { TextSkeleton } from "@/components/ui/loading-skeleton";
+import { TextSkeleton, PharmacyNameSkeleton } from "@/components/ui/loading-skeleton";
 import { 
   Popover,
   PopoverContent,
@@ -23,6 +23,17 @@ export function SidebarContainer() {
   const [notificationItems, setNotificationItems] = useState<{id: string, type: string, message: string, date?: Date}[]>([]);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [dismissedNotices, setDismissedNotices] = useState<string[]>([]);
+  const [pharmacyNameVisible, setPharmacyNameVisible] = useState(false);
+  
+  // Control pharmacy name visibility with animation
+  useEffect(() => {
+    if (!profileLoading && profileData?.pharmacy_name) {
+      // Add a small delay to ensure a smooth transition
+      setTimeout(() => setPharmacyNameVisible(true), 100);
+    } else {
+      setPharmacyNameVisible(false);
+    }
+  }, [profileLoading, profileData]);
   
   // Check for notifications
   useEffect(() => {
@@ -107,12 +118,18 @@ export function SidebarContainer() {
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
+            
             {profileLoading ? (
-              <TextSkeleton className="w-32" />
+              <PharmacyNameSkeleton />
             ) : (
-              <h2 className="text-xl font-medium text-primary truncate">
+              <motion.h2 
+                className="text-xl font-medium text-primary truncate"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: pharmacyNameVisible ? 1 : 0 }}
+                transition={{ duration: 0.3 }}
+              >
                 {profileData?.pharmacy_name || 'My Pharmacy'}
-              </h2>
+              </motion.h2>
             )}
           </div>
           

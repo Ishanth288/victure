@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { safeSelectByField, safeCast } from "@/utils/supabaseHelpers";
-import { TextSkeleton } from "@/components/ui/loading-skeleton";
+import { TextSkeleton, PharmacyNameSkeleton } from "@/components/ui/loading-skeleton";
 
 interface ProfileData {
   pharmacy_name?: string;
@@ -15,6 +15,55 @@ export function useProfileData() {
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
+    // Clear any existing profile data immediately to prevent overlap
+    setProfileData(null);
+    setIsLoading(true);
+    
+    // Clean up any old pharmacy name in localStorage to prevent leakage
+    localStorage.removeItem('pharmacyName');
+    
+    const fetchProfile = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          const { data, error } = await safeSelectByField(
+            'profiles',
+            'id',
+            session.user.id,
+            { single: true }
+          );
+
+          if (error) {
+            console.error("Error fetching profile:", error);
+            setIsLoading(false);
+            return;
+          }
+
+          if (data) {
+            // Type-safe conversion of the data
+            const typedData = safeCast<ProfileData>(data, {
+              pharmacy_name: 'Pharmacy',
+              owner_name: 'Owner'
+            });
+            
+            setProfileData(typedData);
+            
+            // Safely access pharmacy_name with a default value
+            const pharmacyName = typedData.pharmacy_name || 'Pharmacy';
+            // Store pharmacy name in localStorage
+            localStorage.setItem('pharmacyName', pharmacyName);
+            
+            // Dispatch event to update pharmacy name throughout the app
+            window.dispatchEvent(new Event('pharmacyNameUpdated'));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     fetchProfile();
 
     const handlePharmacyNameUpdate = () => {
@@ -30,41 +79,6 @@ export function useProfileData() {
       window.removeEventListener('pharmacyNameUpdated', handlePharmacyNameUpdate);
     };
   }, []);
-
-  const fetchProfile = async () => {
-    setIsLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.id) {
-        const { data, error } = await safeSelectByField(
-          'profiles',
-          'id',
-          session.user.id,
-          { single: true }
-        );
-
-        if (!error && data) {
-          // Type-safe conversion of the data
-          const typedData = safeCast<ProfileData>(data, {
-            pharmacy_name: 'Pharmacy',
-            owner_name: 'Owner'
-          });
-          
-          setProfileData(typedData);
-          
-          // Safely access pharmacy_name with a default value
-          const pharmacyName = typedData.pharmacy_name || 'Pharmacy';
-          // Clear any old pharmacy name before setting the new one
-          localStorage.removeItem('pharmacyName');
-          localStorage.setItem('pharmacyName', pharmacyName);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return { profileData, isLoading };
 }
