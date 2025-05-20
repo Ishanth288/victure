@@ -1,7 +1,7 @@
 
 import { Link } from 'react-router-dom';
 import { HashLink } from 'react-router-hash-link';
-import { Facebook, Twitter, Instagram, Linkedin, Youtube, ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { WhatsAppButton } from './communication/WhatsAppButton';
 import LegalFooter from './LegalFooter';
@@ -18,23 +18,6 @@ const Footer = () => {
             <p className="text-muted-foreground mb-4">
               Modern pharmacy management system with AI-powered insights and optimization tools.
             </p>
-            <div className="flex space-x-4">
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
-                <Facebook className="h-5 w-5 text-gray-400 hover:text-primary transition-colors" />
-              </a>
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
-                <Twitter className="h-5 w-5 text-gray-400 hover:text-primary transition-colors" />
-              </a>
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                <Instagram className="h-5 w-5 text-gray-400 hover:text-primary transition-colors" />
-              </a>
-              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
-                <Linkedin className="h-5 w-5 text-gray-400 hover:text-primary transition-colors" />
-              </a>
-              <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
-                <Youtube className="h-5 w-5 text-gray-400 hover:text-primary transition-colors" />
-              </a>
-            </div>
           </div>
           
           <div>
