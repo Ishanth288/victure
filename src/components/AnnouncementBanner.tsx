@@ -65,8 +65,11 @@ export function AnnouncementBanner() {
     }
   };
 
-  const getAlertVariant = (type: string): "default" | "destructive" => {
-    return type === 'error' ? "destructive" : "default";
+  const getAlertVariant = (type: string): "success" | "default" | "warning" | "info" | "error" => {
+    return type === 'error' ? "error" : 
+           type === 'success' ? "success" :
+           type === 'warning' ? "warning" :
+           type === 'info' ? "info" : "default";
   };
 
   const handleDismiss = () => {

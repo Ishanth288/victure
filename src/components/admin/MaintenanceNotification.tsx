@@ -114,7 +114,7 @@ export function MaintenanceNotification() {
           transition={{ duration: 0.2 }}
         >
           <Alert 
-            variant={maintenanceMode ? "destructive" : "default"} 
+            variant={maintenanceMode ? "error" : "warning"} 
             className={`mb-4 relative shadow-lg border ${
               maintenanceMode 
                 ? "bg-red-50 text-red-800 border-red-200" 

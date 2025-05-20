@@ -89,7 +89,7 @@ export class ErrorBoundary extends Component<Props, State> {
       const { connectionStatus, error } = this.state;
       
       return (
-        <Alert variant="destructive" className="mt-4 mx-2 p-6">
+        <Alert variant="error" className="mt-4 mx-2 p-6">
           <div className="flex items-start">
             <AlertCircle className="h-5 w-5 mt-0.5 mr-2" />
             <div>

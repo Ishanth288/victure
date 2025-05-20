@@ -161,7 +161,7 @@ export default function SecuritySettings() {
       <CardContent>
         {statusMessage.type && (
           <Alert 
-            variant={statusMessage.type === 'error' ? 'destructive' : 'default'} 
+            variant={statusMessage.type === 'error' ? 'error' : 'success'} 
             className={`mb-4 ${statusMessage.type === 'success' ? 'bg-green-50 text-green-800 border-green-200' : ''}`}
           >
             {statusMessage.type === 'error' ? (

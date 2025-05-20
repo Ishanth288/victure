@@ -1,4 +1,3 @@
-
 import * as Sentry from "@sentry/react";
 import { toast } from "@/hooks/use-toast";
 import { AlertCircle, WifiOff, Database, ServerCrash, UserX, AlertTriangle } from "lucide-react";
@@ -131,7 +130,7 @@ export function displayErrorMessage(error: any, context?: string): void {
   toast({
     title: `Error${context ? ` in ${context}` : ''}`,
     description: userMessage,
-    variant: "destructive",
+    variant: "error",
     icon: getErrorIcon(errorType)
   });
 }

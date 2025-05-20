@@ -81,7 +81,7 @@ export function MaintenanceChecker({
             
             <h1 className="text-2xl font-bold text-gray-900">System Maintenance</h1>
             
-            <Alert variant="destructive" className="bg-amber-50 text-amber-800 border-amber-200">
+            <Alert variant="warning" className="bg-amber-50 text-amber-800 border-amber-200">
               <AlertTitle>Scheduled Maintenance</AlertTitle>
               <AlertDescription>
                 {maintenanceInfo.maintenance_message}
