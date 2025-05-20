@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/integrations/supabase/client";
 import { PreviewItem, MigrationLog } from "@/types/dataMigration";
@@ -271,7 +270,7 @@ export async function processPrescriptions(
  */
 async function logMigration(log: MigrationLog) {
   try {
-    // Use the `from` as a string with insert to bypass type constraints
+    // Use explicit typing to bypass type constraints
     await supabase.from('migration_logs').insert([{
       migration_id: log.migration_id,
       type: log.type,
@@ -293,22 +292,24 @@ export async function rollbackMigration(
   type: 'Inventory' | 'Patients' | 'Prescriptions'
 ): Promise<boolean> {
   try {
-    let tableName = '';
+    // Define the actual table name based on the type
+    let table: 'inventory' | 'patients' | 'prescriptions'; 
+    
     switch (type) {
       case 'Inventory':
-        tableName = 'inventory';
+        table = 'inventory';
         break;
       case 'Patients':
-        tableName = 'patients';
+        table = 'patients';
         break;
       case 'Prescriptions':
-        tableName = 'prescriptions';
+        table = 'prescriptions';
         break;
     }
     
-    // Use from with tableName directly instead of as a dynamic expression
+    // Use with correct typing
     const { error } = await supabase
-      .from(tableName)
+      .from(table)
       .delete()
       .eq('migration_id', migrationId);
       
