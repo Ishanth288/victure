@@ -1,108 +1,107 @@
 
 import React from 'react';
+import { format } from 'date-fns';
+import { Trash2, HistoryIcon, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Undo2 } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatRelative } from 'date-fns';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
+import { MigrationHistoryProps } from './types';
+import { Badge } from "@/components/ui/badge";
 
-interface MigrationHistoryProps {
-  recentMigrations: Array<{
-    id: string;
-    migration_id: string;
-    type: 'Inventory' | 'Patients' | 'Prescriptions';
-    timestamp: string;
-    added_count: number;
-    skipped_count: number;
-  }>;
-  onRollback: (migrationId: string, type: 'Inventory' | 'Patients' | 'Prescriptions') => void;
-  isRollingBack: boolean;
-}
-
-export const MigrationHistory: React.FC<MigrationHistoryProps> = ({
-  recentMigrations,
+export const MigrationHistory: React.FC<MigrationHistoryProps> = ({ 
+  recentMigrations, 
   onRollback,
   isRollingBack
 }) => {
-  // Format date to relative time (e.g., "3 days ago")
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return formatRelative(date, new Date());
-    } catch (err) {
-      return dateString;
-    }
-  };
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'Inventory':
-        return '📦';
-      case 'Patients':
-        return '👤';
-      case 'Prescriptions':
-        return '📝';
-      default:
-        return '📄';
-    }
-  };
+  if (recentMigrations.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        <HistoryIcon className="mx-auto h-12 w-12 text-gray-400" />
+        <h3 className="mt-2 text-sm font-medium text-gray-900">No migration history</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Your recent data imports will appear here
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-full">
-      <h3 className="text-lg font-medium mb-4">Recent Data Migrations</h3>
-      
-      {recentMigrations.length === 0 ? (
-        <div className="text-center p-6 bg-gray-50 border rounded-md">
-          <p className="text-gray-500">No migration history available.</p>
-          <p className="text-sm text-gray-400 mt-2">
-            Import data to see your migration history.
-          </p>
-        </div>
-      ) : (
-        <ScrollArea className="flex-1">
-          <div className="space-y-4">
-            {recentMigrations.map((migration) => (
-              <div 
-                key={migration.id}
-                className="bg-white border rounded-md p-4 shadow-sm"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center">
-                    <span className="text-2xl mr-3">
-                      {getTypeIcon(migration.type)}
-                    </span>
-                    <div>
-                      <h4 className="font-medium">{migration.type} Import</h4>
-                      <p className="text-sm text-gray-500">
-                        {formatDate(migration.timestamp)}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onRollback(migration.migration_id, migration.type)}
-                    disabled={isRollingBack}
-                    className="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
-                  >
-                    <Undo2 className="mr-2 h-4 w-4" />
-                    Rollback
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Type</TableHead>
+          <TableHead>Date</TableHead>
+          <TableHead>Records</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="text-right">Action</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {recentMigrations.map((migration) => (
+          <TableRow key={migration.migration_id}>
+            <TableCell>
+              <Badge variant="outline">{migration.type}</Badge>
+            </TableCell>
+            <TableCell>{format(new Date(migration.timestamp), 'PPp')}</TableCell>
+            <TableCell>{migration.added_count} added, {migration.skipped_count} skipped</TableCell>
+            <TableCell>
+              {migration.issues && migration.issues.length > 0 ? (
+                <div className="flex items-center">
+                  <AlertTriangle className="h-4 w-4 text-amber-500 mr-1" />
+                  <span>With warnings</span>
+                </div>
+              ) : (
+                <span className="text-green-600">Clean</span>
+              )}
+            </TableCell>
+            <TableCell className="text-right">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <span className="sr-only">Rollback</span>
+                    <Trash2 className="h-4 w-4" />
                   </Button>
-                </div>
-                <div className="mt-3 text-sm">
-                  <span className="text-green-600 font-medium">
-                    {migration.added_count} added
-                  </span>
-                  {migration.skipped_count > 0 && (
-                    <span className="text-amber-600 ml-3">
-                      {migration.skipped_count} skipped
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
-      )}
-    </div>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Rollback Migration</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will delete all {migration.added_count} records imported during this migration. 
+                      This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      disabled={isRollingBack}
+                      onClick={() => onRollback(migration.migration_id, migration.type)}
+                    >
+                      {isRollingBack ? 'Rolling back...' : 'Rollback'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
-}
+};

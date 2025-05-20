@@ -16,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { DataPreviewProps } from './types';
 
 export const DataPreview: React.FC<DataPreviewProps> = ({ 
@@ -88,7 +87,7 @@ export const DataPreview: React.FC<DataPreviewProps> = ({
   };
 
   return (
-    <div className="flex flex-col space-y-4">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">Map Data Fields</h3>
         <button 
@@ -99,7 +98,7 @@ export const DataPreview: React.FC<DataPreviewProps> = ({
         </button>
       </div>
       
-      <ScrollArea className="h-[400px]">
+      <div className="overflow-x-auto max-h-[500px]">
         <Table className="border">
           <TableHeader>
             <TableRow>
@@ -157,7 +156,7 @@ export const DataPreview: React.FC<DataPreviewProps> = ({
             ))}
           </TableBody>
         </Table>
-      </ScrollArea>
+      </div>
     </div>
   );
 };

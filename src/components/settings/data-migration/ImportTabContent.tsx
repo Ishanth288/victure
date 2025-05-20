@@ -221,7 +221,7 @@ export const ImportTabContent: React.FC<ImportTabContentProps> = ({ user, loadMi
   };
 
   return (
-    <div className="flex flex-col space-y-6">
+    <div className="space-y-6 max-h-full">
       {!user && (
         <Alert variant="error">
           <AlertCircle className="h-4 w-4" />
@@ -246,7 +246,7 @@ export const ImportTabContent: React.FC<ImportTabContentProps> = ({ user, loadMi
         </AlertDescription>
       </Alert>
       
-      <div className="flex flex-col space-y-6">
+      <div className="space-y-6">
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Step 1: Select Data Type</h3>
           <ModeSelector migrationMode={migrationMode} setMigrationMode={setMigrationMode} />
@@ -282,7 +282,7 @@ export const ImportTabContent: React.FC<ImportTabContentProps> = ({ user, loadMi
           )}
         </div>
         
-        {selectedFile && fileHeaders.length > 0 ? (
+        {selectedFile && fileHeaders.length > 0 && (
           <>
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Step 3: Map Fields</h3>
@@ -320,7 +320,7 @@ export const ImportTabContent: React.FC<ImportTabContentProps> = ({ user, loadMi
               </div>
             )}
           </>
-        ) : null}
+        )}
       </div>
     </div>
   );
