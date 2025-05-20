@@ -113,19 +113,26 @@ export const DataPreview: React.FC<DataPreviewProps> = ({
                 <TableCell>{header}</TableCell>
                 <TableCell>
                   <Select
-                    value={selectedFields[header] || ''}
+                    value={selectedFields[header] || "none"}
                     onValueChange={(value) => {
-                      setSelectedFields({
-                        ...selectedFields,
-                        [header]: value
-                      });
+                      if (value === "none") {
+                        // Remove the field mapping if "Not Selected" is chosen
+                        const updatedFields = { ...selectedFields };
+                        delete updatedFields[header];
+                        setSelectedFields(updatedFields);
+                      } else {
+                        setSelectedFields({
+                          ...selectedFields,
+                          [header]: value
+                        });
+                      }
                     }}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select field" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Not Selected</SelectItem>
+                      <SelectItem value="none">Not Selected</SelectItem>
                       {getSelectableFields().map((field) => (
                         <SelectItem 
                           key={field.value} 
