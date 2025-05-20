@@ -63,7 +63,7 @@ export function toast({
 export function useToast() {
   return {
     toast,
-    dismiss: (toastId: string = "") => sonnerToast.dismiss(toastId), // Fix: Make toastId parameter required with default empty string
+    dismiss: (toastId: string = "") => sonnerToast.dismiss(toastId),
     error: (message: string, opts = {}) => 
       toast({ title: message, variant: "destructive", ...opts }),
     success: (message: string, opts = {}) => 
