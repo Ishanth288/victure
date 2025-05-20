@@ -7,17 +7,17 @@ import { ChevronLeft, Bell, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { TextSkeleton } from "@/components/ui/loading-skeleton";
 import { 
   Popover,
   PopoverContent,
   PopoverTrigger
 } from "@/components/ui/popover";
 import { format, differenceInDays } from "date-fns";
-import { SystemSettings } from "@/types/database";
 import { AnimatePresence, motion } from "framer-motion";
 
 export function SidebarContainer() {
-  const { profileData } = useProfileData();
+  const { profileData, isLoading: profileLoading } = useProfileData();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState(0);
   const [notificationItems, setNotificationItems] = useState<{id: string, type: string, message: string, date?: Date}[]>([]);
@@ -107,9 +107,13 @@ export function SidebarContainer() {
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
-            <h2 className="text-xl font-medium text-primary truncate">
-              {profileData?.pharmacy_name || 'Victure Healthcare Solutions'}
-            </h2>
+            {profileLoading ? (
+              <TextSkeleton className="w-32" />
+            ) : (
+              <h2 className="text-xl font-medium text-primary truncate">
+                {profileData?.pharmacy_name || 'My Pharmacy'}
+              </h2>
+            )}
           </div>
           
           {notifications > 0 && (

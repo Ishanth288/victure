@@ -4,6 +4,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ButtonSkeleton } from "@/components/ui/loading-skeleton";
 import { 
   LayoutDashboard, 
   PackageOpen, 
@@ -170,26 +171,32 @@ export function SidebarLinks() {
 
   return (
     <div className="flex flex-col space-y-1">
-      {!isLoading && allLinks.map((link, index) => (
-        <div key={index} className="flex flex-col">
-          <a
-            href={link.href}
-            onClick={(e) => handleClick(e, link.href)}
-            className={cn(
-              buttonVariants({ variant: "ghost" }),
-              isCurrentPath(link.href)
-                ? "bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-900"
-                : "hover:bg-green-50 hover:text-green-700",
-              "justify-start"
-            )}
-          >
-            <div className="flex items-center">
-              {link.icon}
-              <span>{link.title}</span>
+      {isLoading ? (
+        <ButtonSkeleton count={9} />
+      ) : (
+        <>
+          {allLinks.map((link, index) => (
+            <div key={index} className="flex flex-col">
+              <a
+                href={link.href}
+                onClick={(e) => handleClick(e, link.href)}
+                className={cn(
+                  buttonVariants({ variant: "ghost" }),
+                  isCurrentPath(link.href)
+                    ? "bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-900"
+                    : "hover:bg-green-50 hover:text-green-700",
+                  "justify-start"
+                )}
+              >
+                <div className="flex items-center">
+                  {link.icon}
+                  <span>{link.title}</span>
+                </div>
+              </a>
             </div>
-          </a>
-        </div>
-      ))}
+          ))}
+        </>
+      )}
 
       {/* Add Sign Out link at the bottom */}
       <div className="mt-auto pt-4">
