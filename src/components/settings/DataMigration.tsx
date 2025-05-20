@@ -1,1530 +1,458 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { stableToast } from '@/components/ui/stable-toast';
-import * as XLSX from 'xlsx';
-import { DataTable } from "@/components/ui/data-table";
-import { Badge } from '@/components/ui/badge';
-import { Loader2, AlertCircle, CheckCircle2, X, Check, Download, Upload, FileText } from 'lucide-react';
-import { cn } from '@/lib/utils';
+
+import React, { useState, useEffect } from "react";
 import { useAuth } from '@/hooks/useAuth';
+import * as XLSX from 'xlsx';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
   processInventoryItems, 
   processPatients, 
-  processPrescriptions,
-  rollbackMigration,
-  getRecentMigrations,
-  autoDetectFieldMappings
-} from '@/utils/migrationUtils';
-import { autoFixData, hasTooManyInvalidItems } from '@/utils/dataValidation';
-import { PreviewItem, WarningType } from '@/types/dataMigration';
+  processPrescriptions, 
+  getRecentMigrations, 
+  rollbackMigration 
+} from "@/utils/migrationUtils";
+import { InfoIcon, AlertCircle } from "lucide-react";
+import { stableToast } from "@/components/ui/stable-toast";
+import { PreviewItem } from "@/types/dataMigration";
+import { FileUpload } from "./data-migration/FileUpload";
+import { DataPreview } from "./data-migration/DataPreview";
+import { ImportControls } from "./data-migration/ImportControls";
+import { ResultSummary } from "./data-migration/ResultSummary";
+import { MigrationHistory } from "./data-migration/MigrationHistory";
+import { ModeSelector } from "./data-migration/ModeSelector";
+import { MigrationMode } from "./data-migration/types";
 
 export function DataMigration() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('inventory');
-  const [step, setStep] = useState<number>(1);
-  const [file, setFile] = useState<File | null>(null);
-  const [fileData, setFileData] = useState<any[]>([]);
-  const [columns, setColumns] = useState<string[]>([]);
-  const [mappings, setMappings] = useState<Record<string, string>>({});
+  
+  // State management
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [fileHeaders, setFileHeaders] = useState<string[]>([]);
   const [previewItems, setPreviewItems] = useState<PreviewItem[]>([]);
-  const [filteredPreviewItems, setFilteredPreviewItems] = useState<PreviewItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [selectedFields, setSelectedFields] = useState<Record<string, string>>({});
+  const [migrationMode, setMigrationMode] = useState<MigrationMode>("Inventory");
+  const [importResults, setImportResults] = useState<{
+    success: boolean;
+    added: number;
+    skipped: number;
+    issues: Array<{ row: number; reason: string }>;
+  } | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [isRollingBack, setIsRollingBack] = useState(false);
   const [recentMigrations, setRecentMigrations] = useState<any[]>([]);
-  const [rollbackDialogOpen, setRollbackDialogOpen] = useState(false);
-  const [selectedRollbackMigration, setSelectedRollbackMigration] = useState<any>(null);
-  const [summaryDialog, setSummaryDialog] = useState(false);
-  const [migrationSummary, setMigrationSummary] = useState<any>(null);
 
-  // Load recent migrations on component mount
+  // Load migration history
   useEffect(() => {
-    if (user) {
-      loadRecentMigrations();
-    }
-  }, [user]);
+    loadMigrationHistory();
+  }, []);
 
-  const loadRecentMigrations = async () => {
-    const migrations = await getRecentMigrations();
-    setRecentMigrations(migrations);
+  const loadMigrationHistory = async () => {
+    try {
+      const migrations = await getRecentMigrations();
+      setRecentMigrations(migrations);
+    } catch (err) {
+      console.error('Failed to load migration history:', err);
+      stableToast({
+        title: "Error",
+        description: "Could not load migration history",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
+  // Process file upload
+  useEffect(() => {
     if (selectedFile) {
-      setFile(selectedFile);
-      setError(null);
-      parseFile(selectedFile);
-    }
-  };
-
-  const parseFile = (file: File) => {
-    setLoading(true);
-    setProgress(10);
-    
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = e.target?.result;
-        setProgress(30);
-        
-        let parsedData: any[] = [];
-        let headers: string[] = [];
-        
-        // Parse based on file type
-        if (file.name.endsWith('.csv')) {
-          const result = parseCSV(data as string);
-          parsedData = result.data;
-          headers = result.headers;
-        } 
-        else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-          const result = parseExcel(data as ArrayBuffer);
-          parsedData = result.data;
-          headers = result.headers;
-        }
-        else if (file.name.endsWith('.json')) {
-          const result = parseJSON(data as string);
-          parsedData = result.data;
-          headers = result.headers;
-        }
-        else {
-          throw new Error('Unsupported file format. Please upload CSV, Excel, or JSON file.');
-        }
-        
-        setFileData(parsedData);
-        setColumns(headers);
-        setProgress(60);
-        
-        // Auto-detect mappings
-        const detectedMappings = autoDetectFieldMappings(headers);
-        setMappings(detectedMappings);
-        
-        setProgress(100);
-        setStep(2);
-        stableToast({
-          title: "File Processed Successfully",
-          description: `${parsedData.length} records found.`,
-          variant: "success",
-        });
-      } catch (err: any) {
-        setError(err.message || 'Failed to parse file');
-        stableToast({
-          title: "Error Processing File",
-          description: err.message || 'Failed to parse file',
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    reader.onerror = () => {
-      setError('Error reading file');
-      setLoading(false);
-      stableToast({
-        title: "Error",
-        description: "Failed to read the file.",
-        variant: "destructive",
-      });
-    };
-
-    if (file.name.endsWith('.csv') || file.name.endsWith('.json')) {
-      reader.readAsText(file);
+      processFile(selectedFile);
     } else {
-      reader.readAsArrayBuffer(file);
+      setFileHeaders([]);
+      setPreviewItems([]);
+      setSelectedFields({});
+      setImportResults(null);
     }
-  };
+  }, [selectedFile]);
 
-  const parseCSV = (data: string) => {
-    const lines = data.split('\n');
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-    
-    const parsedData = lines.slice(1).filter(line => line.trim()).map(line => {
-      const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-      const row: Record<string, any> = {};
-      
-      headers.forEach((header, i) => {
-        row[header] = values[i] || '';
-      });
-      
-      return row;
-    });
-    
-    return { data: parsedData, headers };
-  };
-
-  const parseExcel = (data: ArrayBuffer) => {
-    const workbook = XLSX.read(data, { type: 'array' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const parsedData = XLSX.utils.sheet_to_json(worksheet);
-    
-    // Extract headers
-    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-    const headers: string[] = [];
-    
-    for (let C = range.s.c; C <= range.e.c; ++C) {
-      const cell = worksheet[XLSX.utils.encode_cell({ r: range.s.r, c: C })];
-      headers.push(cell?.v || `Column${C}`);
-    }
-    
-    return { data: parsedData, headers };
-  };
-
-  const parseJSON = (data: string) => {
-    const parsedData = JSON.parse(data);
-    
-    if (!Array.isArray(parsedData) || parsedData.length === 0) {
-      throw new Error('Invalid JSON format. Expected an array of objects.');
-    }
-    
-    const headers = Object.keys(parsedData[0]);
-    return { data: parsedData, headers };
-  };
-
-  const handleDragStart = (column: string, e: React.DragEvent) => {
-    e.dataTransfer.setData('column', column);
-  };
-
-  const handleDrop = (field: string, e: React.DragEvent) => {
-    e.preventDefault();
-    const column = e.dataTransfer.getData('column');
-    
-    setMappings(prev => ({
-      ...prev,
-      [column]: field
-    }));
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleMapField = (column: string, field: string) => {
-    setMappings(prev => ({
-      ...prev,
-      [column]: field
-    }));
-  };
-
-  const createPreviewItems = () => {
-    setLoading(true);
-    
+  const processFile = async (file: File) => {
     try {
-      let previewItems: PreviewItem[] = [];
+      const fileType = file.name.split('.').pop()?.toLowerCase();
+      let data: any[] = [];
       
-      // Map data based on user-defined mappings
-      fileData.forEach((row) => {
+      if (fileType === 'csv') {
+        const text = await file.text();
+        const workbook = XLSX.read(text, { type: 'string' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        data = XLSX.utils.sheet_to_json(worksheet);
+      } else {
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        data = XLSX.utils.sheet_to_json(worksheet);
+      }
+      
+      if (data.length === 0) {
+        setUploadError("The file appears to be empty");
+        return;
+      }
+      
+      // Get headers
+      const headers = Object.keys(data[0]);
+      setFileHeaders(headers);
+      
+      // Create preview items
+      const preview = data.slice(0, 5).map(row => {
         const item: Record<string, any> = {};
-        
-        Object.entries(mappings).forEach(([column, field]) => {
-          item[field] = row[column];
+        headers.forEach(header => {
+          item[header] = row[header];
         });
-        
-        // Add as PreviewItem
-        previewItems.push(item as PreviewItem);
+        return item as PreviewItem;
       });
       
-      // Apply automatic fixes
-      previewItems = autoFixData(previewItems);
+      setPreviewItems(preview);
       
-      // Generate warnings based on data type
-      if (activeTab === 'inventory') {
-        previewItems = validateInventoryItems(previewItems);
-      } else if (activeTab === 'patients') {
-        previewItems = validatePatientItems(previewItems);
-      } else if (activeTab === 'prescriptions') {
-        previewItems = validatePrescriptionItems(previewItems);
-      }
+      // Auto-detect field mappings
+      const mappings = autoDetectFieldMappings(headers);
+      setSelectedFields(mappings);
       
-      setPreviewItems(previewItems);
-      setFilteredPreviewItems(previewItems);
-      setStep(3);
-      
-    } catch (err: any) {
-      setError(err.message || 'Failed to create preview');
-      stableToast({
-        title: "Error",
-        description: err.message || 'Failed to create preview',
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error('File processing error:', err);
+      setUploadError("Failed to process file");
     }
   };
-  
-  const validateInventoryItems = (items: PreviewItem[]): PreviewItem[] => {
-    return items.map(item => {
-      const warnings: {hasWarning: boolean, warningType?: WarningType, warningMessage?: string} = {hasWarning: false};
+
+  const autoDetectFieldMappings = (headers: string[]): Record<string, string> => {
+    const mappings: Record<string, string> = {};
+    
+    headers.forEach(header => {
+      const lowerHeader = header.toLowerCase();
       
-      // Check expiry date
-      if (item.expiry_date) {
-        const expiryDate = new Date(item.expiry_date);
-        if (!isNaN(expiryDate.getTime()) && expiryDate < new Date()) {
-          warnings.hasWarning = true;
-          warnings.warningType = "expired";
-          warnings.warningMessage = "Medicine is expired";
-        }
-      } else if (!item.name) {
-        warnings.hasWarning = true;
-        warnings.warningType = "missing";
-        warnings.warningMessage = "Missing medicine name";
+      // Inventory mappings
+      if (/med(icine)?[\s_-]?name|product[\s_-]?name|drug[\s_-]?name|item[\s_-]?name/i.test(lowerHeader)) {
+        mappings[header] = 'name';
+      } 
+      else if (/generic/i.test(lowerHeader)) {
+        mappings[header] = 'generic_name';
+      }
+      else if (/mfg|manufacturer|company|maker/i.test(lowerHeader)) {
+        mappings[header] = 'manufacturer';
+      }
+      else if (/batch|lot[\s_-]?no|batch[\s_-]?number|ndc/i.test(lowerHeader)) {
+        mappings[header] = 'batch_number';
+      }
+      else if (/exp|expir(y|ation)|valid[\s_-]?until/i.test(lowerHeader)) {
+        mappings[header] = 'expiry_date';
+      }
+      else if (/qty|quant(ity)?|stock/i.test(lowerHeader)) {
+        mappings[header] = 'quantity';
+      }
+      else if (/cost|buy[\s_-]?price|purchase[\s_-]?price/i.test(lowerHeader)) {
+        mappings[header] = 'unit_cost';
+      }
+      else if (/mrp|sell[\s_-]?price|retail[\s_-]?price|price/i.test(lowerHeader)) {
+        mappings[header] = 'selling_price';
       }
       
-      // Check price
-      if (item.selling_price === undefined || isNaN(Number(item.selling_price)) || Number(item.selling_price) <= 0) {
-        warnings.hasWarning = true;
-        warnings.warningType = "price";
-        warnings.warningMessage = "Invalid price";
+      // Patient mappings
+      else if (/patient[\s_-]?name|name/i.test(lowerHeader)) {
+        mappings[header] = 'name';
+      }
+      else if (/phone|mobile|contact/i.test(lowerHeader)) {
+        mappings[header] = 'phone_number';
       }
       
-      return { ...item, ...warnings };
+      // Prescription mappings
+      else if (/rx[\s_-]?(no|number)|prescription[\s_-]?(no|number)/i.test(lowerHeader)) {
+        mappings[header] = 'prescription_number';
+      }
+      else if (/doctor|physician|prescribed[\s_-]?by/i.test(lowerHeader)) {
+        mappings[header] = 'doctor_name';
+      }
+      else if (/date|rx[\s_-]?date|prescribed[\s_-]?on/i.test(lowerHeader)) {
+        mappings[header] = 'date';
+      }
     });
-  };
-  
-  const validatePatientItems = (items: PreviewItem[]): PreviewItem[] => {
-    return items.map(item => {
-      const warnings: {hasWarning: boolean, warningType?: WarningType, warningMessage?: string} = {hasWarning: false};
-      
-      // Check for name
-      if (!item.name) {
-        warnings.hasWarning = true;
-        warnings.warningType = "missing";
-        warnings.warningMessage = "Missing patient name";
-      }
-      
-      // Check phone number
-      if (!item.phone_number) {
-        warnings.hasWarning = true;
-        warnings.warningType = "missing";
-        warnings.warningMessage = "Missing phone number";
-      }
-      
-      return { ...item, ...warnings };
-    });
-  };
-  
-  const validatePrescriptionItems = (items: PreviewItem[]): PreviewItem[] => {
-    return items.map(item => {
-      const warnings: {hasWarning: boolean, warningType?: WarningType, warningMessage?: string} = {hasWarning: false};
-      
-      // Check for prescription number
-      if (!item.prescription_number) {
-        warnings.hasWarning = true;
-        warnings.warningType = "missing";
-        warnings.warningMessage = "Missing prescription number";
-      }
-      
-      // Check for doctor name
-      if (!item.doctor_name) {
-        warnings.hasWarning = true;
-        warnings.warningType = "missing";
-        warnings.warningMessage = "Missing doctor name";
-      }
-      
-      return { ...item, ...warnings };
-    });
+    
+    return mappings;
   };
 
-  const handleRemoveItem = (index: number) => {
-    setFilteredPreviewItems(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleConfirmImport = () => {
-    setConfirmDialogOpen(true);
-  };
-
-  const handleExecuteImport = async () => {
-    setConfirmDialogOpen(false);
-    setLoading(true);
+  const handleStartImport = async () => {
+    if (!selectedFile) return;
+    
+    setIsImporting(true);
+    setImportResults(null);
     
     try {
-      let result: any;
+      const rawData = await readFileData(selectedFile);
+      const transformedData = transformData(rawData, selectedFields);
       
-      if (activeTab === 'inventory') {
-        result = await processInventoryItems(filteredPreviewItems);
-      } else if (activeTab === 'patients') {
-        result = await processPatients(filteredPreviewItems);
-      } else if (activeTab === 'prescriptions') {
-        result = await processPrescriptions(filteredPreviewItems);
+      let result;
+      if (migrationMode === "Inventory") {
+        result = await processInventoryItems(transformedData);
+      } else if (migrationMode === "Patients") {
+        if (!user) {
+          throw new Error("User not authenticated");
+        }
+        // Add user_id to each patient
+        const patientsWithUserId = transformedData.map(patient => ({
+          ...patient,
+          user_id: user.uid
+        }));
+        result = await processPatients(patientsWithUserId);
+      } else if (migrationMode === "Prescriptions") {
+        if (!user) {
+          throw new Error("User not authenticated");
+        }
+        // Add user_id to each prescription
+        const prescriptionsWithUserId = transformedData.map(prescription => ({
+          ...prescription,
+          user_id: user.uid
+        }));
+        result = await processPrescriptions(prescriptionsWithUserId);
       }
+      
+      setImportResults(result);
       
       if (result && result.success) {
-        setMigrationSummary(result);
-        setSummaryDialog(true);
-        await loadRecentMigrations(); // Refresh the migrations list
-        setStep(4);
+        stableToast({
+          title: "Import Successful",
+          description: `Successfully imported ${result.added} items`,
+          variant: "default",
+        });
+        
+        // Refresh migration history
+        loadMigrationHistory();
       } else {
-        throw new Error('Import failed');
+        stableToast({
+          title: "Import Failed",
+          description: "Failed to import data. Please check the logs.",
+          variant: "destructive",
+        });
       }
+    } catch (err) {
+      console.error("Import error:", err);
+      setImportResults({
+        success: false,
+        added: 0,
+        skipped: 0,
+        issues: [{ row: 0, reason: String(err) }]
+      });
       
-    } catch (err: any) {
-      setError(err.message || 'Import failed');
       stableToast({
         title: "Import Failed",
-        description: err.message || 'An error occurred during import',
+        description: `Error: ${err}`,
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsImporting(false);
     }
   };
 
-  const handleRollback = (migration: any) => {
-    setSelectedRollbackMigration(migration);
-    setRollbackDialogOpen(true);
+  const readFileData = async (file: File): Promise<any[]> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        try {
+          const data = e.target?.result;
+          if (!data) {
+            reject(new Error("Failed to read file"));
+            return;
+          }
+          
+          let workbook;
+          if (typeof data === 'string') {
+            workbook = XLSX.read(data, { type: 'string' });
+          } else {
+            workbook = XLSX.read(new Uint8Array(data as ArrayBuffer), { type: 'array' });
+          }
+          
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+          
+          resolve(jsonData);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      
+      reader.onerror = () => {
+        reject(new Error("Error reading file"));
+      };
+      
+      if (file.name.endsWith('.csv')) {
+        reader.readAsText(file);
+      } else {
+        reader.readAsArrayBuffer(file);
+      }
+    });
   };
 
-  const executeRollback = async () => {
-    setRollbackDialogOpen(false);
-    setLoading(true);
+  const transformData = (data: any[], fieldMappings: Record<string, string>): PreviewItem[] => {
+    return data.map(row => {
+      const transformedRow: Record<string, any> = {};
+      
+      // Map fields according to selected mappings
+      Object.keys(row).forEach(key => {
+        const mappedField = fieldMappings[key];
+        if (mappedField) {
+          transformedRow[mappedField] = row[key];
+        }
+      });
+      
+      return transformedRow as PreviewItem;
+    });
+  };
+
+  const handleRollback = async (migrationId: string, type: 'Inventory' | 'Patients' | 'Prescriptions') => {
+    setIsRollingBack(true);
     
     try {
-      const success = await rollbackMigration(
-        selectedRollbackMigration.migration_id, 
-        selectedRollbackMigration.type
-      );
+      const success = await rollbackMigration(migrationId, type);
       
       if (success) {
         stableToast({
           title: "Rollback Successful",
-          description: `Successfully rolled back ${selectedRollbackMigration.type} migration`,
-          variant: "success",
+          description: `Successfully rolled back ${type} migration`,
+          variant: "default",
         });
-        await loadRecentMigrations();
+        
+        // Refresh migration history
+        loadMigrationHistory();
       } else {
-        throw new Error('Rollback failed');
+        stableToast({
+          title: "Rollback Failed",
+          description: `Failed to roll back ${type} migration`,
+          variant: "destructive",
+        });
       }
-    } catch (err: any) {
-      setError(err.message || 'Rollback failed');
+    } catch (err) {
+      console.error('Rollback error:', err);
       stableToast({
         title: "Rollback Failed",
-        description: err.message || 'An error occurred during rollback',
+        description: `Error: ${err}`,
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsRollingBack(false);
     }
-  };
-
-  const resetProcess = () => {
-    setStep(1);
-    setFile(null);
-    setFileData([]);
-    setColumns([]);
-    setMappings({});
-    setPreviewItems([]);
-    setFilteredPreviewItems([]);
-    setError(null);
-  };
-
-  // Mapping fields based on the selected data type
-  const getDataFields = () => {
-    if (activeTab === 'inventory') {
-      return [
-        { key: 'name', label: 'Medicine Name' },
-        { key: 'generic_name', label: 'Generic Name' },
-        { key: 'manufacturer', label: 'Manufacturer' },
-        { key: 'batch_number', label: 'Batch Number' },
-        { key: 'expiry_date', label: 'Expiry Date' },
-        { key: 'quantity', label: 'Quantity' },
-        { key: 'unit_cost', label: 'Unit Cost' },
-        { key: 'selling_price', label: 'Selling Price' },
-        { key: 'schedule', label: 'Schedule' },
-        { key: 'hsn_code', label: 'HSN Code' }
-      ];
-    } else if (activeTab === 'patients') {
-      return [
-        { key: 'name', label: 'Patient Name' },
-        { key: 'phone_number', label: 'Phone Number' },
-        { key: 'external_id', label: 'External ID' },
-        { key: 'status', label: 'Status' },
-        { key: 'visit_count', label: 'Visit Count' },
-        { key: 'is_first_visit', label: 'Is First Visit' },
-        { key: 'chronic_diseases', label: 'Chronic Diseases' },
-        { key: 'recent_prescription_count', label: 'Recent Prescriptions' }
-      ];
-    } else if (activeTab === 'prescriptions') {
-      return [
-        { key: 'prescription_number', label: 'Prescription Number' },
-        { key: 'doctor_name', label: 'Doctor Name' },
-        { key: 'date', label: 'Date' },
-        { key: 'status', label: 'Status' },
-        { key: 'patient_id', label: 'Patient ID' }
-      ];
-    }
-    return [];
-  };
-
-  const renderStepIndicator = () => {
-    return (
-      <div className="w-full mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <div className="flex-1 text-center">
-            <div className={`rounded-full w-8 h-8 mx-auto flex items-center justify-center ${step >= 1 ? 'bg-primary text-white' : 'bg-gray-200'}`}>
-              1
-            </div>
-            <span className="text-xs mt-1 block">Upload</span>
-          </div>
-          <div className="flex-1 border-t border-gray-300"></div>
-          <div className="flex-1 text-center">
-            <div className={`rounded-full w-8 h-8 mx-auto flex items-center justify-center ${step >= 2 ? 'bg-primary text-white' : 'bg-gray-200'}`}>
-              2
-            </div>
-            <span className="text-xs mt-1 block">Map</span>
-          </div>
-          <div className="flex-1 border-t border-gray-300"></div>
-          <div className="flex-1 text-center">
-            <div className={`rounded-full w-8 h-8 mx-auto flex items-center justify-center ${step >= 3 ? 'bg-primary text-white' : 'bg-gray-200'}`}>
-              3
-            </div>
-            <span className="text-xs mt-1 block">Preview</span>
-          </div>
-          <div className="flex-1 border-t border-gray-300"></div>
-          <div className="flex-1 text-center">
-            <div className={`rounded-full w-8 h-8 mx-auto flex items-center justify-center ${step >= 4 ? 'bg-primary text-white' : 'bg-gray-200'}`}>
-              4
-            </div>
-            <span className="text-xs mt-1 block">Confirm</span>
-          </div>
-        </div>
-      </div>
-    );
   };
 
   return (
-    <Card className="w-full">
+    <Card>
       <CardHeader>
-        <div className="flex flex-wrap items-center justify-between">
-          <div>
-            <CardTitle>Data Migration</CardTitle>
-            <CardDescription>Import and migrate data from various pharmacy systems</CardDescription>
-          </div>
-        </div>
+        <CardTitle>Data Migration</CardTitle>
+        <CardDescription>
+          Import data from other pharmacy systems
+        </CardDescription>
       </CardHeader>
       
       <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="inventory">Inventory</TabsTrigger>
-            <TabsTrigger value="patients">Patients</TabsTrigger>
-            <TabsTrigger value="prescriptions">Prescriptions</TabsTrigger>
+        <Tabs defaultValue="import">
+          <TabsList>
+            <TabsTrigger value="import">Import Data</TabsTrigger>
             <TabsTrigger value="history">Migration History</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="inventory" className="space-y-4">
-            {renderStepIndicator()}
-            
-            {step === 1 && (
-              <div className="space-y-4">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <div className="flex flex-col items-center">
-                    <Upload className="h-10 w-10 text-gray-400 mb-2" />
-                    <h3 className="font-medium text-lg mb-1">Upload Inventory File</h3>
-                    <p className="text-sm text-gray-500 mb-4">
-                      Supported formats: CSV, Excel (.xlsx, .xls), JSON
-                    </p>
-                    
-                    <Input
-                      id="file-upload"
-                      type="file"
-                      className="hidden"
-                      accept=".csv,.xlsx,.xls,.json"
-                      onChange={handleFileChange}
-                    />
-                    <div className="flex space-x-2">
-                      <Button onClick={() => document.getElementById('file-upload')?.click()}>
-                        Select File
-                      </Button>
-                    </div>
-                    {file && (
-                      <div className="mt-4 p-3 bg-gray-100 rounded-md flex items-center">
-                        <FileText className="h-5 w-5 mr-2 text-gray-500" />
-                        <span className="text-sm">{file.name}</span>
-                      </div>
-                    )}
-                    {loading && <Progress value={progress} className="mt-4 w-1/2" />}
-                    {error && (
-                      <Alert variant="warning" className="mt-4">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Error</AlertTitle>
-                        <AlertDescription>{error}</AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-                </div>
-              </div>
+          <TabsContent value="import" className="space-y-6">
+            {!user && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Authentication Required</AlertTitle>
+                <AlertDescription>
+                  You need to be logged in to use this feature
+                </AlertDescription>
+              </Alert>
             )}
             
-            {step === 2 && (
-              <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Map Columns to Fields</CardTitle>
-                    <CardDescription>
-                      Drag columns from your file to map them to the correct fields
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <h3 className="font-medium">Source Columns</h3>
-                        <div className="space-y-2">
-                          {columns.map((column) => (
-                            <div
-                              key={column}
-                              className={cn(
-                                "p-2 bg-gray-100 rounded-md cursor-move flex justify-between items-center",
-                                mappings[column] && "border-l-4 border-green-500 pl-2"
-                              )}
-                              draggable
-                              onDragStart={(e) => handleDragStart(column, e)}
-                            >
-                              <span>{column}</span>
-                              {mappings[column] && (
-                                <Badge variant="outline" className="bg-green-50">
-                                  {mappings[column]}
-                                </Badge>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <h3 className="font-medium">Target Fields</h3>
-                        <div className="space-y-2">
-                          {getDataFields().map((field) => (
-                            <div
-                              key={field.key}
-                              className={cn(
-                                "p-2 bg-gray-50 border border-gray-200 rounded-md",
-                                Object.values(mappings).includes(field.key) && "bg-green-50 border-green-300"
-                              )}
-                              onDrop={(e) => handleDrop(field.key, e)}
-                              onDragOver={handleDragOver}
-                            >
-                              {field.label}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={resetProcess}>Back</Button>
-                  <Button onClick={createPreviewItems} disabled={loading || Object.keys(mappings).length === 0}>
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing
-                      </>
-                    ) : 'Preview Data'}
-                  </Button>
-                </div>
-              </div>
-            )}
+            <Alert variant="default" className="bg-blue-50 border-blue-200">
+              <InfoIcon className="h-4 w-4 text-blue-600" />
+              <AlertTitle>Import Guidelines</AlertTitle>
+              <AlertDescription className="text-sm">
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Make sure your CSV/Excel file has headers</li>
+                  <li>Data should be consistently formatted</li>
+                  <li>Dates should be in YYYY-MM-DD format</li>
+                  <li>Numbers should not contain currency symbols</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
             
-            {step === 3 && (
+            <div className="space-y-6">
               <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-lg">Data Preview</CardTitle>
-                      <Badge variant={hasTooManyInvalidItems(filteredPreviewItems) ? "destructive" : "default"}>
-                        {filteredPreviewItems.filter(item => item.hasWarning).length} issues
-                      </Badge>
-                    </div>
-                    <CardDescription>
-                      Review your data before importing. Click "-" to exclude items.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="border rounded-md overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Action
-                            </th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Status
-                            </th>
-                            {getDataFields().filter(field => Object.values(mappings).includes(field.key)).map((field) => (
-                              <th key={field.key} className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                {field.label}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {filteredPreviewItems.slice(0, 20).map((item, index) => (
-                            <tr key={index} className={item.hasWarning ? "bg-red-50" : ""}>
-                              <td className="px-3 py-2 whitespace-nowrap">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRemoveItem(index)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </td>
-                              <td className="px-3 py-2 whitespace-nowrap">
-                                {item.hasWarning ? (
-                                  <Badge variant="destructive">
-                                    {item.warningMessage}
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="bg-green-50">
-                                    Valid
-                                  </Badge>
-                                )}
-                              </td>
-                              {getDataFields().filter(field => Object.values(mappings).includes(field.key)).map((field) => (
-                                <td key={field.key} className="px-3 py-2 whitespace-nowrap text-sm">
-                                  {String(item[field.key] || '-')}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      {filteredPreviewItems.length > 20 && (
-                        <div className="px-3 py-2 text-sm text-gray-500 bg-gray-50 border-t">
-                          Showing 20 of {filteredPreviewItems.length} items
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <h3 className="text-lg font-medium">Step 1: Select Data Type</h3>
+                <ModeSelector migrationMode={migrationMode} setMigrationMode={setMigrationMode} />
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Step 2: Upload File</h3>
+                <FileUpload setSelectedFile={setSelectedFile} setUploadError={setUploadError} />
                 
-                {hasTooManyInvalidItems(filteredPreviewItems) && (
-                  <Alert variant="warning">
+                {uploadError && (
+                  <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Too many invalid items</AlertTitle>
-                    <AlertDescription>
-                      More than 10% of items have issues. Please fix them before proceeding.
-                    </AlertDescription>
+                    <AlertTitle>Upload Error</AlertTitle>
+                    <AlertDescription>{uploadError}</AlertDescription>
                   </Alert>
                 )}
                 
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
-                  <Button 
-                    onClick={handleConfirmImport} 
-                    disabled={loading || filteredPreviewItems.length === 0 || hasTooManyInvalidItems(filteredPreviewItems)}
-                  >
-                    Import Data
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {step === 4 && (
-              <div className="space-y-4">
-                <Alert variant="default" className="bg-green-50 border-green-200">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <AlertTitle>Success</AlertTitle>
-                  <AlertDescription>
-                    Data migration completed successfully
-                  </AlertDescription>
-                </Alert>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Migration Summary</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="bg-gray-50 p-4 rounded-md">
-                          <div className="text-sm text-gray-500">Total Items</div>
-                          <div className="text-2xl font-semibold">
-                            {migrationSummary?.added + migrationSummary?.skipped || 0}
-                          </div>
-                        </div>
-                        <div className="bg-green-50 p-4 rounded-md">
-                          <div className="text-sm text-gray-500">Successfully Added</div>
-                          <div className="text-2xl font-semibold text-green-600">
-                            {migrationSummary?.added || 0}
-                          </div>
-                        </div>
-                        <div className="bg-amber-50 p-4 rounded-md">
-                          <div className="text-sm text-gray-500">Skipped Items</div>
-                          <div className="text-2xl font-semibold text-amber-600">
-                            {migrationSummary?.skipped || 0}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {migrationSummary?.issues && migrationSummary.issues.length > 0 && (
-                        <div className="mt-4">
-                          <h3 className="font-medium mb-2">Issues</h3>
-                          <div className="border rounded-md overflow-hidden">
-                            <table className="min-w-full divide-y divide-gray-200">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Row</th>
-                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
-                                </tr>
-                              </thead>
-                              <tbody className="bg-white divide-y divide-gray-200">
-                                {migrationSummary.issues.slice(0, 5).map((issue: any, index: number) => (
-                                  <tr key={index}>
-                                    <td className="px-3 py-2 whitespace-nowrap text-sm">{issue.row}</td>
-                                    <td className="px-3 py-2 whitespace-nowrap text-sm">{issue.reason}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                            {migrationSummary.issues.length > 5 && (
-                              <div className="px-3 py-2 text-sm text-gray-500 bg-gray-50 border-t">
-                                Showing 5 of {migrationSummary.issues.length} issues
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                {selectedFile && (
+                  <div className="py-2 px-3 bg-gray-50 border rounded flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium">{selectedFile.name}</span>
+                      <span className="text-xs text-gray-500 ml-2">
+                        ({(selectedFile.size / 1024).toFixed(2)} KB)
+                      </span>
                     </div>
-                  </CardContent>
-                </Card>
-                
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={resetProcess}>Start New Import</Button>
-                </div>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="patients" className="space-y-4">
-            {renderStepIndicator()}
-            
-            {step === 1 && (
-              <div className="space-y-4">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <div className="flex flex-col items-center">
-                    <Upload className="h-10 w-10 text-gray-400 mb-2" />
-                    <h3 className="font-medium text-lg mb-1">Upload Patient Data File</h3>
-                    <p className="text-sm text-gray-500 mb-4">
-                      Supported formats: CSV, Excel (.xlsx, .xls), JSON
-                    </p>
-                    
-                    <Input
-                      id="patient-file-upload"
-                      type="file"
-                      className="hidden"
-                      accept=".csv,.xlsx,.xls,.json"
-                      onChange={handleFileChange}
-                    />
-                    <div className="flex space-x-2">
-                      <Button onClick={() => document.getElementById('patient-file-upload')?.click()}>
-                        Select File
-                      </Button>
-                    </div>
-                    {file && (
-                      <div className="mt-4 p-3 bg-gray-100 rounded-md flex items-center">
-                        <FileText className="h-5 w-5 mr-2 text-gray-500" />
-                        <span className="text-sm">{file.name}</span>
-                      </div>
-                    )}
-                    {loading && <Progress value={progress} className="mt-4 w-1/2" />}
-                    {error && (
-                      <Alert variant="warning" className="mt-4">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Error</AlertTitle>
-                        <AlertDescription>{error}</AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {step === 2 && (
-              <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Map Columns to Fields</CardTitle>
-                    <CardDescription>
-                      Drag columns from your file to map them to the correct fields
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <h3 className="font-medium">Source Columns</h3>
-                        <div className="space-y-2">
-                          {columns.map((column) => (
-                            <div
-                              key={column}
-                              className={cn(
-                                "p-2 bg-gray-100 rounded-md cursor-move flex justify-between items-center",
-                                mappings[column] && "border-l-4 border-green-500 pl-2"
-                              )}
-                              draggable
-                              onDragStart={(e) => handleDragStart(column, e)}
-                            >
-                              <span>{column}</span>
-                              {mappings[column] && (
-                                <Badge variant="outline" className="bg-green-50">
-                                  {mappings[column]}
-                                </Badge>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <h3 className="font-medium">Target Fields</h3>
-                        <div className="space-y-2">
-                          {getDataFields().map((field) => (
-                            <div
-                              key={field.key}
-                              className={cn(
-                                "p-2 bg-gray-50 border border-gray-200 rounded-md",
-                                Object.values(mappings).includes(field.key) && "bg-green-50 border-green-300"
-                              )}
-                              onDrop={(e) => handleDrop(field.key, e)}
-                              onDragOver={handleDragOver}
-                            >
-                              {field.label}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={resetProcess}>Back</Button>
-                  <Button onClick={createPreviewItems} disabled={loading || Object.keys(mappings).length === 0}>
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing
-                      </>
-                    ) : 'Preview Data'}
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {step === 3 && (
-              <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-lg">Data Preview</CardTitle>
-                      <Badge variant={hasTooManyInvalidItems(filteredPreviewItems) ? "destructive" : "default"}>
-                        {filteredPreviewItems.filter(item => item.hasWarning).length} issues
-                      </Badge>
-                    </div>
-                    <CardDescription>
-                      Review your data before importing. Click "-" to exclude items.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="border rounded-md overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Action
-                            </th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Status
-                            </th>
-                            {getDataFields().filter(field => Object.values(mappings).includes(field.key)).map((field) => (
-                              <th key={field.key} className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                {field.label}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {filteredPreviewItems.slice(0, 20).map((item, index) => (
-                            <tr key={index} className={item.hasWarning ? "bg-red-50" : ""}>
-                              <td className="px-3 py-2 whitespace-nowrap">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRemoveItem(index)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </td>
-                              <td className="px-3 py-2 whitespace-nowrap">
-                                {item.hasWarning ? (
-                                  <Badge variant="destructive">
-                                    {item.warningMessage}
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="bg-green-50">
-                                    Valid
-                                  </Badge>
-                                )}
-                              </td>
-                              {getDataFields().filter(field => Object.values(mappings).includes(field.key)).map((field) => (
-                                <td key={field.key} className="px-3 py-2 whitespace-nowrap text-sm">
-                                  {String(item[field.key] || '-')}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      {filteredPreviewItems.length > 20 && (
-                        <div className="px-3 py-2 text-sm text-gray-500 bg-gray-50 border-t">
-                          Showing 20 of {filteredPreviewItems.length} items
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                {hasTooManyInvalidItems(filteredPreviewItems) && (
-                  <Alert variant="warning">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Too many invalid items</AlertTitle>
-                    <AlertDescription>
-                      More than 10% of items have issues. Please fix them before proceeding.
-                    </AlertDescription>
-                  </Alert>
-                )}
-                
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
-                  <Button 
-                    onClick={handleConfirmImport} 
-                    disabled={loading || filteredPreviewItems.length === 0 || hasTooManyInvalidItems(filteredPreviewItems)}
-                  >
-                    Import Data
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {step === 4 && (
-              <div className="space-y-4">
-                <Alert variant="default" className="bg-green-50 border-green-200">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <AlertTitle>Success</AlertTitle>
-                  <AlertDescription>
-                    Data migration completed successfully
-                  </AlertDescription>
-                </Alert>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Migration Summary</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="bg-gray-50 p-4 rounded-md">
-                          <div className="text-sm text-gray-500">Total Items</div>
-                          <div className="text-2xl font-semibold">
-                            {migrationSummary?.added + migrationSummary?.skipped || 0}
-                          </div>
-                        </div>
-                        <div className="bg-green-50 p-4 rounded-md">
-                          <div className="text-sm text-gray-500">Successfully Added</div>
-                          <div className="text-2xl font-semibold text-green-600">
-                            {migrationSummary?.added || 0}
-                          </div>
-                        </div>
-                        <div className="bg-amber-50 p-4 rounded-md">
-                          <div className="text-sm text-gray-500">Skipped Items</div>
-                          <div className="text-2xl font-semibold text-amber-600">
-                            {migrationSummary?.skipped || 0}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {migrationSummary?.issues && migrationSummary.issues.length > 0 && (
-                        <div className="mt-4">
-                          <h3 className="font-medium mb-2">Issues</h3>
-                          <div className="border rounded-md overflow-hidden">
-                            <table className="min-w-full divide-y divide-gray-200">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Row</th>
-                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
-                                </tr>
-                              </thead>
-                              <tbody className="bg-white divide-y divide-gray-200">
-                                {migrationSummary.issues.slice(0, 5).map((issue: any, index: number) => (
-                                  <tr key={index}>
-                                    <td className="px-3 py-2 whitespace-nowrap text-sm">{issue.row}</td>
-                                    <td className="px-3 py-2 whitespace-nowrap text-sm">{issue.reason}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                            {migrationSummary.issues.length > 5 && (
-                              <div className="px-3 py-2 text-sm text-gray-500 bg-gray-50 border-t">
-                                Showing 5 of {migrationSummary.issues.length} issues
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={resetProcess}>Start New Import</Button>
-                </div>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="prescriptions" className="space-y-4">
-            {renderStepIndicator()}
-            
-            {step === 1 && (
-              <div className="space-y-4">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <div className="flex flex-col items-center">
-                    <Upload className="h-10 w-10 text-gray-400 mb-2" />
-                    <h3 className="font-medium text-lg mb-1">Upload Prescription Data File</h3>
-                    <p className="text-sm text-gray-500 mb-4">
-                      Supported formats: CSV, Excel (.xlsx, .xls), JSON
-                    </p>
-                    
-                    <Input
-                      id="prescription-file-upload"
-                      type="file"
-                      className="hidden"
-                      accept=".csv,.xlsx,.xls,.json"
-                      onChange={handleFileChange}
-                    />
-                    <div className="flex space-x-2">
-                      <Button onClick={() => document.getElementById('prescription-file-upload')?.click()}>
-                        Select File
-                      </Button>
-                    </div>
-                    {file && (
-                      <div className="mt-4 p-3 bg-gray-100 rounded-md flex items-center">
-                        <FileText className="h-5 w-5 mr-2 text-gray-500" />
-                        <span className="text-sm">{file.name}</span>
-                      </div>
-                    )}
-                    {loading && <Progress value={progress} className="mt-4 w-1/2" />}
-                    {error && (
-                      <Alert variant="warning" className="mt-4">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Error</AlertTitle>
-                        <AlertDescription>{error}</AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {step === 2 && (
-              <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Map Columns to Fields</CardTitle>
-                    <CardDescription>
-                      Drag columns from your file to map them to the correct fields
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <h3 className="font-medium">Source Columns</h3>
-                        <div className="space-y-2">
-                          {columns.map((column) => (
-                            <div
-                              key={column}
-                              className={cn(
-                                "p-2 bg-gray-100 rounded-md cursor-move flex justify-between items-center",
-                                mappings[column] && "border-l-4 border-green-500 pl-2"
-                              )}
-                              draggable
-                              onDragStart={(e) => handleDragStart(column, e)}
-                            >
-                              <span>{column}</span>
-                              {mappings[column] && (
-                                <Badge variant="outline" className="bg-green-50">
-                                  {mappings[column]}
-                                </Badge>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <h3 className="font-medium">Target Fields</h3>
-                        <div className="space-y-2">
-                          {getDataFields().map((field) => (
-                            <div
-                              key={field.key}
-                              className={cn(
-                                "p-2 bg-gray-50 border border-gray-200 rounded-md",
-                                Object.values(mappings).includes(field.key) && "bg-green-50 border-green-300"
-                              )}
-                              onDrop={(e) => handleDrop(field.key, e)}
-                              onDragOver={handleDragOver}
-                            >
-                              {field.label}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={resetProcess}>Back</Button>
-                  <Button onClick={createPreviewItems} disabled={loading || Object.keys(mappings).length === 0}>
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing
-                      </>
-                    ) : 'Preview Data'}
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {step === 3 && (
-              <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-lg">Data Preview</CardTitle>
-                      <Badge variant={hasTooManyInvalidItems(filteredPreviewItems) ? "destructive" : "default"}>
-                        {filteredPreviewItems.filter(item => item.hasWarning).length} issues
-                      </Badge>
-                    </div>
-                    <CardDescription>
-                      Review your data before importing. Click "-" to exclude items.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="border rounded-md overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Action
-                            </th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Status
-                            </th>
-                            {getDataFields().filter(field => Object.values(mappings).includes(field.key)).map((field) => (
-                              <th key={field.key} className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                {field.label}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {filteredPreviewItems.slice(0, 20).map((item, index) => (
-                            <tr key={index} className={item.hasWarning ? "bg-red-50" : ""}>
-                              <td className="px-3 py-2 whitespace-nowrap">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRemoveItem(index)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </td>
-                              <td className="px-3 py-2 whitespace-nowrap">
-                                {item.hasWarning ? (
-                                  <Badge variant="destructive">
-                                    {item.warningMessage}
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="bg-green-50">
-                                    Valid
-                                  </Badge>
-                                )}
-                              </td>
-                              {getDataFields().filter(field => Object.values(mappings).includes(field.key)).map((field) => (
-                                <td key={field.key} className="px-3 py-2 whitespace-nowrap text-sm">
-                                  {String(item[field.key] || '-')}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      {filteredPreviewItems.length > 20 && (
-                        <div className="px-3 py-2 text-sm text-gray-500 bg-gray-50 border-t">
-                          Showing 20 of {filteredPreviewItems.length} items
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                {hasTooManyInvalidItems(filteredPreviewItems) && (
-                  <Alert variant="warning">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Too many invalid items</AlertTitle>
-                    <AlertDescription>
-                      More than 10% of items have issues. Please fix them before proceeding.
-                    </AlertDescription>
-                  </Alert>
-                )}
-                
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
-                  <Button 
-                    onClick={handleConfirmImport} 
-                    disabled={loading || filteredPreviewItems.length === 0 || hasTooManyInvalidItems(filteredPreviewItems)}
-                  >
-                    Import Data
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {step === 4 && (
-              <div className="space-y-4">
-                <Alert variant="default" className="bg-green-50 border-green-200">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <AlertTitle>Success</AlertTitle>
-                  <AlertDescription>
-                    Data migration completed successfully
-                  </AlertDescription>
-                </Alert>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Migration Summary</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="bg-gray-50 p-4 rounded-md">
-                          <div className="text-sm text-gray-500">Total Items</div>
-                          <div className="text-2xl font-semibold">
-                            {migrationSummary?.added + migrationSummary?.skipped || 0}
-                          </div>
-                        </div>
-                        <div className="bg-green-50 p-4 rounded-md">
-                          <div className="text-sm text-gray-500">Successfully Added</div>
-                          <div className="text-2xl font-semibold text-green-600">
-                            {migrationSummary?.added || 0}
-                          </div>
-                        </div>
-                        <div className="bg-amber-50 p-4 rounded-md">
-                          <div className="text-sm text-gray-500">Skipped Items</div>
-                          <div className="text-2xl font-semibold text-amber-600">
-                            {migrationSummary?.skipped || 0}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {migrationSummary?.issues && migrationSummary.issues.length > 0 && (
-                        <div className="mt-4">
-                          <h3 className="font-medium mb-2">Issues</h3>
-                          <div className="border rounded-md overflow-hidden">
-                            <table className="min-w-full divide-y divide-gray-200">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Row</th>
-                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
-                                </tr>
-                              </thead>
-                              <tbody className="bg-white divide-y divide-gray-200">
-                                {migrationSummary.issues.slice(0, 5).map((issue: any, index: number) => (
-                                  <tr key={index}>
-                                    <td className="px-3 py-2 whitespace-nowrap text-sm">{issue.row}</td>
-                                    <td className="px-3 py-2 whitespace-nowrap text-sm">{issue.reason}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                            {migrationSummary.issues.length > 5 && (
-                              <div className="px-3 py-2 text-sm text-gray-500 bg-gray-50 border-t">
-                                Showing 5 of {migrationSummary.issues.length} issues
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={resetProcess}>Start New Import</Button>
-                </div>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="history" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Migration History</CardTitle>
-                <CardDescription>
-                  View and manage your previous data migrations
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {recentMigrations.length > 0 ? (
-                  <div className="border rounded-md overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Added</th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Skipped</th>
-                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Issues</th>
-                          <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {recentMigrations.map((migration, index) => (
-                          <tr key={index}>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm">
-                              {new Date(migration.timestamp).toLocaleString()}
-                            </td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm">
-                              <Badge variant="outline">{migration.type}</Badge>
-                            </td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm">
-                              {migration.added_count}
-                            </td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm">
-                              {migration.skipped_count}
-                            </td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm">
-                              {migration.issues?.length || 0}
-                            </td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm text-right">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => handleRollback(migration)}
-                              >
-                                Rollback
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    No migration history found
+                    <button 
+                      onClick={() => setSelectedFile(null)} 
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      Remove
+                    </button>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+              
+              {selectedFile && fileHeaders.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Step 3: Map Fields</h3>
+                  <DataPreview 
+                    previewItems={previewItems}
+                    selectedFields={selectedFields}
+                    setSelectedFields={setSelectedFields}
+                    fileHeaders={fileHeaders}
+                    migrationMode={migrationMode}
+                  />
+                  
+                  <ImportControls 
+                    onStartImport={handleStartImport}
+                    previewItems={previewItems}
+                    isImporting={isImporting}
+                    selectedFields={selectedFields}
+                    migrationMode={migrationMode}
+                  />
+                </div>
+              )}
+              
+              {importResults && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Import Results</h3>
+                  <ResultSummary importResults={importResults} />
+                </div>
+              )}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="history">
+            <MigrationHistory 
+              recentMigrations={recentMigrations} 
+              onRollback={handleRollback}
+              isRollingBack={isRollingBack}
+            />
           </TabsContent>
         </Tabs>
       </CardContent>
-      
-      <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Import</AlertDialogTitle>
-            <AlertDialogDescription>
-              You're about to import {filteredPreviewItems.length} {activeTab} items.
-              This action will add the data to your database.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleExecuteImport}>
-              Confirm Import
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
-      <AlertDialog open={rollbackDialogOpen} onOpenChange={setRollbackDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Rollback</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to rollback this {selectedRollbackMigration?.type} migration?
-              This will remove all data imported during this migration.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={executeRollback}>
-              Confirm Rollback
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
-      <AlertDialog open={summaryDialog} onOpenChange={setSummaryDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Import Summary</AlertDialogTitle>
-            <AlertDialogDescription>
-              <div className="py-2">
-                <div className="flex justify-between mb-2">
-                  <span>Successfully imported:</span>
-                  <span className="font-medium text-green-600">{migrationSummary?.added || 0} items</span>
-                </div>
-                <div className="flex justify-between mb-2">
-                  <span>Skipped items:</span>
-                  <span className="font-medium text-amber-600">{migrationSummary?.skipped || 0} items</span>
-                </div>
-                {migrationSummary?.issues && migrationSummary.issues.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="font-medium mb-1">Issues:</h4>
-                    <ul className="text-sm list-disc pl-5 space-y-1">
-                      {migrationSummary.issues.slice(0, 3).map((issue: any, index: number) => (
-                        <li key={index}>Row {issue.row}: {issue.reason}</li>
-                      ))}
-                      {migrationSummary.issues.length > 3 && (
-                        <li>And {migrationSummary.issues.length - 3} more...</li>
-                      )}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction>Close</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Card>
   );
 }

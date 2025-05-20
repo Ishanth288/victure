@@ -1,3 +1,4 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/integrations/supabase/client";
 import { PreviewItem, MigrationLog } from "@/types/dataMigration";
@@ -292,24 +293,24 @@ export async function rollbackMigration(
   type: 'Inventory' | 'Patients' | 'Prescriptions'
 ): Promise<boolean> {
   try {
-    // Define the actual table name based on the type
-    let table: 'inventory' | 'patients' | 'prescriptions'; 
+    // Define the table name based on the type
+    let tableName = '';
     
     switch (type) {
       case 'Inventory':
-        table = 'inventory';
+        tableName = 'inventory';
         break;
       case 'Patients':
-        table = 'patients';
+        tableName = 'patients';
         break;
       case 'Prescriptions':
-        table = 'prescriptions';
+        tableName = 'prescriptions';
         break;
     }
     
-    // Use with correct typing
+    // Type assertion to ensure tableName is accepted by supabase
     const { error } = await supabase
-      .from(table)
+      .from(tableName as any)
       .delete()
       .eq('migration_id', migrationId);
       
@@ -331,7 +332,7 @@ export async function rollbackMigration(
 export async function getRecentMigrations(): Promise<MigrationLog[]> {
   try {
     const { data, error } = await supabase
-      .from('migration_logs')
+      .from('migration_logs' as any)
       .select('*')
       .order('timestamp', { ascending: false })
       .limit(10);
