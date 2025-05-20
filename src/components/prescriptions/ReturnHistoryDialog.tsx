@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Clock, PackageOpen, Trash2, AlertCircle } from "lucide-react";
+import { Clock, PackageOpen, Trash2, AlertCircle, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ReturnHistoryItem } from "@/types/returns";
 
@@ -39,12 +39,14 @@ export function ReturnHistoryDialog({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [returnItems, setReturnItems] = useState<ReturnItem[]>([]);
+  const [totalRefundValue, setTotalRefundValue] = useState(0);
   
   useEffect(() => {
     if (isOpen && prescriptionId) {
       fetchReturnHistory();
     } else {
       setReturnItems([]);
+      setTotalRefundValue(0);
     }
   }, [isOpen, prescriptionId]);
 
@@ -53,11 +55,29 @@ export function ReturnHistoryDialog({
     
     setLoading(true);
     try {
-      // Using direct query with type assertion to avoid TypeScript errors
-      const { data, error } = await (supabase as any)
+      // First, find all the bills associated with this prescription
+      const { data: billData, error: billError } = await supabase
+        .from('bills')
+        .select('id')
+        .eq('prescription_id', prescriptionId);
+        
+      if (billError) throw billError;
+      
+      if (!billData || billData.length === 0) {
+        setReturnItems([]);
+        setLoading(false);
+        return;
+      }
+      
+      // Extract the bill IDs
+      const billIds = billData.map(bill => bill.id);
+      
+      // Now query the return_analytics view filtering by these bill IDs
+      const { data, error } = await supabase
         .from('return_analytics')
         .select(`
           id,
+          bill_id,
           medicine_name,
           returned_quantity,
           original_quantity,
@@ -66,7 +86,7 @@ export function ReturnHistoryDialog({
           return_value,
           reason
         `)
-        .eq('prescription_id', prescriptionId)
+        .in('bill_id', billIds)
         .order('return_date', { ascending: false });
 
       if (error) throw error;
@@ -74,6 +94,10 @@ export function ReturnHistoryDialog({
       // Type assertion to avoid TypeScript errors
       const safeData = data || [];
       setReturnItems(safeData as ReturnItem[]);
+      
+      // Calculate total refund value
+      const total = safeData.reduce((acc, item) => acc + (item.return_value || 0), 0);
+      setTotalRefundValue(total);
       
       // Show success message when data is loaded
       if (safeData.length > 0) {
@@ -104,6 +128,15 @@ export function ReturnHistoryDialog({
             History of all medicine returns for this prescription
           </DialogDescription>
         </DialogHeader>
+
+        {totalRefundValue > 0 && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+            <div className="flex items-center text-green-700">
+              <DollarSign className="h-5 w-5 mr-2" />
+              <span className="font-medium">Total Refund Value: ₹{totalRefundValue.toFixed(2)}</span>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-4">
           {loading ? (
@@ -159,7 +192,7 @@ export function ReturnHistoryDialog({
                       <Clock className="w-4 h-4 mr-1" />
                       {format(new Date(item.return_date), "MMM d, yyyy - h:mm a")}
                     </div>
-                    <div className="text-sm font-medium">
+                    <div className="text-sm font-medium text-green-600">
                       Refund Value: ₹{item.return_value.toFixed(2)}
                     </div>
                   </div>

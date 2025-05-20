@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { MedicineReturn, ReturnHistoryItem } from "@/types/returns";
 import { safeQueryData } from "./safeSupabaseQueries";
@@ -30,36 +31,32 @@ export async function updateInventoryAfterReturn(
 ) {
   if (!returnToInventory) return;
 
-  // Update inventory quantity using direct update instead of RPC call
-  const { error } = await (supabase as any)
-    .from('inventory')
-    .update({
-      quantity: supabase.rpc('reset_monthly_bills_count').then(() => {
-        // This is just to satisfy TypeScript - we'll actually use a direct update
-        return 0;
-      })
-    })
-    .eq('id', inventoryItemId);
-
-  // The correct approach - manually update the inventory without using RPC
-  const { data: inventoryItem, error: fetchError } = await (supabase as any)
-    .from('inventory')
-    .select('quantity')
-    .eq('id', inventoryItemId)
-    .single();
+  try {
+    // Fetch current inventory quantity
+    const { data: inventoryItem, error: fetchError } = await supabase
+      .from('inventory')
+      .select('quantity')
+      .eq('id', inventoryItemId)
+      .single();
+      
+    if (fetchError) throw fetchError;
+      
+    const newQuantity = (inventoryItem.quantity || 0) + quantity;
     
-  if (fetchError) throw fetchError;
+    // Update the inventory quantity
+    const { error: updateError } = await supabase
+      .from('inventory')
+      .update({ quantity: newQuantity })
+      .eq('id', inventoryItemId);
+      
+    if (updateError) throw updateError;
     
-  const newQuantity = (inventoryItem.quantity || 0) + quantity;
-  
-  const { error: updateError } = await (supabase as any)
-    .from('inventory')
-    .update({ quantity: newQuantity })
-    .eq('id', inventoryItemId);
+    console.log(`Updated inventory ${inventoryItemId} with new quantity ${newQuantity}`);
     
-  if (updateError) throw updateError;
-
-  if (error) throw error;
+  } catch (error) {
+    console.error("Error updating inventory after return:", error);
+    throw error;
+  }
 }
 
 export async function getReturnAnalytics(userId: string, timeframe: 'week' | 'month' | 'year' = 'month') {
@@ -79,47 +76,61 @@ export async function getReturnAnalytics(userId: string, timeframe: 'week' | 'mo
       timeCondition = "return_date >= now() - interval '30 days'";
   }
 
-  // Use type casting to work with views
-  const { data, error } = await (supabase as any)
-    .from('return_analytics')
-    .select(`
-      id,
-      medicine_name,
-      returned_quantity,
-      status,
-      return_value,
-      return_date,
-      reason
-    `)
-    .eq('user_id', userId)
-    .filter('return_date', 'gte', `now() - interval '${timeframe === 'week' ? '7 days' : timeframe === 'month' ? '30 days' : '365 days'}'`)
-    .order('return_date', { ascending: false });
+  try {
+    // Use the return_analytics view to get return data
+    const { data, error } = await supabase
+      .from('return_analytics')
+      .select(`
+        id,
+        medicine_name,
+        returned_quantity,
+        status,
+        return_value,
+        return_date,
+        reason,
+        bill_id
+      `)
+      .eq('user_id', userId)
+      .filter('return_date', 'gte', `now() - interval '${timeframe === 'week' ? '7 days' : timeframe === 'month' ? '30 days' : '365 days'}'`)
+      .order('return_date', { ascending: false });
 
-  if (error) throw error;
-  return data || [];
+    if (error) throw error;
+    console.log("Fetched return analytics data:", data?.length || 0, "records");
+    return data || [];
+  } catch (error) {
+    console.error("Error in getReturnAnalytics:", error);
+    throw error;
+  }
 }
 
-export async function getReturnHistoryByPrescription(prescriptionId: number) {
-  // Use type casting to work with views
-  const { data, error } = await (supabase as any)
-    .from('return_analytics')
-    .select(`
-      id,
-      bill_item_id,
-      medicine_name,
-      returned_quantity,
-      original_quantity,
-      unit_price,
-      return_value,
-      return_date,
-      status,
-      reason
-    `)
-    .eq('prescription_id', prescriptionId)
-    .order('return_date', { ascending: false });
+export async function getReturnHistoryByBill(billIds: number[]) {
+  try {
+    // Direct query to the return_analytics view filtered by bill_id
+    const { data, error } = await supabase
+      .from('return_analytics')
+      .select(`
+        id,
+        bill_id,
+        bill_item_id,
+        medicine_name,
+        returned_quantity,
+        original_quantity,
+        unit_price,
+        return_value,
+        return_date,
+        status,
+        reason
+      `)
+      .in('bill_id', billIds)
+      .order('return_date', { ascending: false });
 
-  if (error) throw error;
-  return (data || []) as ReturnHistoryItem[];
+    if (error) throw error;
+    console.log("Fetched return history by bills:", data?.length || 0, "records");
+    return (data || []) as ReturnHistoryItem[];
+  } catch (error) {
+    console.error("Error in getReturnHistoryByBill:", error);
+    throw error;
+  }
 }
 
 export function calculateReturnMetrics(returnData: any[]) {

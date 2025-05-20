@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Dialog,
@@ -7,349 +8,370 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ArrowLeft, PackageOpen, Trash2, AlertCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  ArrowLeftRight, 
+  PackageCheck, 
+  Trash2, 
+  PackageOpen, 
+  AlertCircle,
+  DollarSign
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { processMedicineReturn, updateInventoryAfterReturn } from "@/utils/returnUtils";
+import { MedicineReturn } from "@/types/returns";
+import { Card } from "@/components/ui/card";
 
-interface BillItem {
+interface MedicineReturnItem {
   id: number;
-  name: string;
+  medicine_name: string;
   quantity: number;
-  return_quantity: number;
   unit_price: number;
   inventory_item_id: number;
+  returned_quantity?: number;
 }
 
 interface MedicineReturnDialogProps {
   isOpen: boolean;
   onClose: () => void;
   billId: number | null;
-  onSuccess: () => void;
+  onSuccess?: () => void;
 }
 
 export function MedicineReturnDialog({
   isOpen,
   onClose,
   billId,
-  onSuccess,
+  onSuccess
 }: MedicineReturnDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [billItems, setBillItems] = useState<BillItem[]>([]);
-  const [selectedItems, setSelectedItems] = useState<Record<number, number>>({});
-  const [returnDestination, setReturnDestination] = useState<Record<number, "inventory" | "disposed">>({});
-  const [reason, setReason] = useState("");
+  const [fetchingItems, setFetchingItems] = useState(false);
+  const [processingReturn, setProcessingReturn] = useState(false);
+  const [billItems, setBillItems] = useState<MedicineReturnItem[]>([]);
+  const [selectedItem, setSelectedItem] = useState<number | null>(null);
+  const [returnQuantity, setReturnQuantity] = useState<number>(1);
+  const [reason, setReason] = useState<string>('');
+  const [returnToInventory, setReturnToInventory] = useState<boolean>(true);
+  const [maxReturnQuantity, setMaxReturnQuantity] = useState<number>(0);
+  const [currentReturnValue, setCurrentReturnValue] = useState<number>(0);
   
   useEffect(() => {
     if (isOpen && billId) {
       fetchBillItems();
     } else {
-      setBillItems([]);
-      setSelectedItems({});
-      setReturnDestination({});
-      setReason("");
+      resetForm();
     }
   }, [isOpen, billId]);
-
+  
+  useEffect(() => {
+    if (selectedItem) {
+      const item = billItems.find(item => item.id === selectedItem);
+      if (item) {
+        const remainingQuantity = item.quantity - (item.returned_quantity || 0);
+        setMaxReturnQuantity(remainingQuantity);
+        setReturnQuantity(Math.min(1, remainingQuantity));
+        // Calculate current return value
+        updateReturnValue(item.unit_price, Math.min(1, remainingQuantity));
+      }
+    } else {
+      setMaxReturnQuantity(0);
+      setReturnQuantity(0);
+      setCurrentReturnValue(0);
+    }
+  }, [selectedItem, billItems]);
+  
+  const updateReturnValue = (unitPrice: number, quantity: number) => {
+    setCurrentReturnValue(unitPrice * quantity);
+  };
+  
   const fetchBillItems = async () => {
     if (!billId) return;
     
-    setLoading(true);
+    setFetchingItems(true);
     try {
-      const { data: items, error } = await supabase
+      const { data, error } = await supabase
         .from('bill_items')
         .select(`
-          id, 
+          id,
+          inventory_item_id,
           quantity,
           return_quantity,
           unit_price,
-          inventory_item_id,
-          inventory(name)
+          inventory:inventory_item_id (name)
         `)
         .eq('bill_id', billId);
 
       if (error) throw error;
       
-      if (items && Array.isArray(items)) {
-        const formattedItems: BillItem[] = items.map((item: any) => ({
+      if (data) {
+        const items = data.map(item => ({
           id: item.id,
-          name: item.inventory?.name || `Product #${item.inventory_item_id}`,
+          inventory_item_id: item.inventory_item_id,
           quantity: item.quantity,
-          return_quantity: item.return_quantity || 0,
           unit_price: item.unit_price,
-          inventory_item_id: item.inventory_item_id
+          returned_quantity: item.return_quantity,
+          medicine_name: item.inventory?.name || 'Unknown Item'
         }));
         
-        setBillItems(formattedItems);
+        setBillItems(items);
       }
-    } catch (error: any) {
-      console.error("Error fetching bill items:", error);
+    } catch (error) {
+      console.error('Error fetching bill items:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to load medicine items",
+        description: "Failed to load bill items",
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setFetchingItems(false);
     }
   };
 
-  const handleQuantityChange = (itemId: number, value: number) => {
-    const item = billItems.find(item => item.id === itemId);
-    if (!item) return;
-    
-    // Ensure the return quantity doesn't exceed available quantity
-    const availableQuantity = item.quantity - item.return_quantity;
-    const validValue = Math.min(Math.max(0, value), availableQuantity);
-    
-    setSelectedItems({
-      ...selectedItems,
-      [itemId]: validValue
-    });
-    
-    // Set default return destination if not already set
-    if (validValue > 0 && !returnDestination[itemId]) {
-      setReturnDestination({
-        ...returnDestination,
-        [itemId]: "inventory"
-      });
-    }
-  };
-
-  const handleDestinationChange = (itemId: number, destination: "inventory" | "disposed") => {
-    setReturnDestination({
-      ...returnDestination,
-      [itemId]: destination
-    });
-  };
-
-  const isReturnValid = () => {
-    return (
-      Object.entries(selectedItems).some(([_, quantity]) => quantity > 0) &&
-      Object.entries(selectedItems).every(([itemId, quantity]) => {
-        return quantity === 0 || returnDestination[Number(itemId)];
-      })
-    );
-  };
-
-  const handleSubmitReturn = async () => {
-    if (!isReturnValid()) return;
-    
-    const selectedItemsArray = Object.entries(selectedItems)
-      .filter(([_, quantity]) => quantity > 0)
-      .map(([itemId, quantity]) => ({
-        bill_item_id: Number(itemId),
-        quantity,
-        status: returnDestination[Number(itemId)],
-        reason: reason.trim() || "Customer return"
-      }));
-    
-    if (selectedItemsArray.length === 0) {
-      toast({
-        title: "No items selected",
-        description: "Please select at least one medicine to return",
-        variant: "destructive",
-      });
+  const handleReturnQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (isNaN(value) || value < 0) {
+      setReturnQuantity(0);
+      setCurrentReturnValue(0);
       return;
     }
     
-    setLoading(true);
+    const validValue = Math.min(value, maxReturnQuantity);
+    setReturnQuantity(validValue);
+    
+    // Update return value
+    const item = billItems.find(item => item.id === selectedItem);
+    if (item) {
+      updateReturnValue(item.unit_price, validValue);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedItem || returnQuantity <= 0) return;
+    
+    setProcessingReturn(true);
     try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not authenticated");
+      const item = billItems.find(item => item.id === selectedItem);
+      if (!item) throw new Error("Selected item not found");
       
-      // Start a transaction by wrapping operations in Promise.all
-      await Promise.all(selectedItemsArray.map(async (returnItem) => {
-        const billItem = billItems.find(item => item.id === returnItem.bill_item_id);
-        if (!billItem) return;
-        
-        // 1. Create return record with as any casting to avoid type errors
-        const { error: returnError } = await (supabase as any)
-          .from('medicine_returns')
-          .insert({
-            bill_item_id: returnItem.bill_item_id,
-            quantity: returnItem.quantity,
-            reason: returnItem.reason,
-            status: returnItem.status,
-            processed_by: user.id,
-            user_id: user.id
-          });
-          
-        if (returnError) throw returnError;
-        
-        // 2. Update bill_item return_quantity - using explicit casting
-        const { error: billItemError } = await (supabase as any)
-          .from('bill_items')
-          .update({
-            return_quantity: billItem.return_quantity + returnItem.quantity
-          })
-          .eq('id', returnItem.bill_item_id);
-          
-        if (billItemError) throw billItemError;
-        
-        // 3. Update inventory if returning to stock - using a different approach than the RPC
-        if (returnItem.status === 'inventory') {
-          // Get current quantity
-          const { data: invData, error: getError } = await supabase
-            .from('inventory')
-            .select('quantity')
-            .eq('id', billItem.inventory_item_id)
-            .single();
-            
-          if (getError) throw getError;
-          
-          // Update with new quantity
-          const { error: inventoryError } = await supabase
-            .from('inventory')
-            .update({
-              quantity: (invData?.quantity || 0) + returnItem.quantity
-            })
-            .eq('id', billItem.inventory_item_id);
-            
-          if (inventoryError) throw inventoryError;
-        }
-      }));
+      // Process the return
+      const returnData: Omit<MedicineReturn, 'id' | 'return_date' | 'processed_by' | 'user_id'> = {
+        bill_item_id: selectedItem,
+        quantity: returnQuantity,
+        reason: reason || null,
+        status: returnToInventory ? 'inventory' : 'disposed'
+      };
       
+      await processMedicineReturn(returnData);
+      
+      // Update inventory if returning to stock
+      if (returnToInventory) {
+        await updateInventoryAfterReturn(item.inventory_item_id, returnQuantity, returnToInventory);
+      }
+      
+      // Update the bill item's return quantity
+      const { error: updateError } = await supabase
+        .from('bill_items')
+        .update({ 
+          return_quantity: (item.returned_quantity || 0) + returnQuantity 
+        })
+        .eq('id', selectedItem);
+      
+      if (updateError) throw updateError;
+      
+      // Show success message with refund amount
       toast({
-        title: "Return successful",
-        description: "The medicine return has been processed successfully",
+        title: "Return Processed",
+        description: `Successfully processed return. Refund amount: ₹${currentReturnValue.toFixed(2)}`,
         variant: "default",
       });
       
-      onSuccess();
+      // Call onSuccess callback if provided
+      if (onSuccess) onSuccess();
+      
+      // Close the dialog
       onClose();
     } catch (error: any) {
       console.error("Error processing return:", error);
       toast({
-        title: "Return failed",
-        description: error.message || "Failed to process medicine return",
+        title: "Error",
+        description: error.message || "Failed to process return",
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setProcessingReturn(false);
     }
+  };
+
+  const resetForm = () => {
+    setBillItems([]);
+    setSelectedItem(null);
+    setReturnQuantity(1);
+    setReason('');
+    setReturnToInventory(true);
+    setMaxReturnQuantity(0);
+    setCurrentReturnValue(0);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center">
-            <ArrowLeft className="mr-2 h-5 w-5 text-primary" />
+            <ArrowLeftRight className="mr-2 h-5 w-5" />
             Process Medicine Return
           </DialogTitle>
           <DialogDescription>
-            Select medicines to return and specify whether they should be returned to inventory or disposed.
+            Return unused medicines from this bill
           </DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-6">
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        
+        {fetchingItems ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+          </div>
+        ) : billItems.length === 0 ? (
+          <div className="py-6 text-center">
+            <AlertCircle className="mx-auto h-12 w-12 text-gray-400" />
+            <p className="mt-2 text-sm text-gray-600">No items available for return in this bill</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="item">Select Medicine</Label>
+              <Select 
+                value={selectedItem?.toString() || ''} 
+                onValueChange={(value) => setSelectedItem(parseInt(value))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a medicine to return" />
+                </SelectTrigger>
+                <SelectContent>
+                  {billItems.map((item) => {
+                    const remainingQuantity = item.quantity - (item.returned_quantity || 0);
+                    if (remainingQuantity <= 0) return null;
+                    
+                    return (
+                      <SelectItem key={item.id} value={item.id.toString()}>
+                        {item.medicine_name} ({remainingQuantity} available)
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
-          ) : billItems.length === 0 ? (
-            <div className="py-4 text-center text-gray-500">
-              No medicines found in this bill
-            </div>
-          ) : (
-            <>
-              <div>
-                <Label>Return Reason</Label>
-                <Input 
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  placeholder="Enter reason for return (optional)"
-                  className="mt-1"
-                />
-              </div>
-              
-              <div className="space-y-4">
-                <div className="text-sm font-medium text-gray-700">Select Items to Return</div>
-                {billItems.map((item) => {
-                  const availableQuantity = item.quantity - item.return_quantity;
-                  const hasAvailableQuantity = availableQuantity > 0;
-                  
-                  if (!hasAvailableQuantity) return null;
-                  
-                  return (
-                    <div key={item.id} className="p-3 border rounded-md bg-gray-50">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="font-medium">{item.name}</div>
-                          <div className="text-sm text-gray-500">
-                            {availableQuantity} of {item.quantity} available for return
-                          </div>
-                        </div>
-                        <div className="flex items-center">
-                          <Label className="mr-2 text-sm">Qty:</Label>
-                          <Input
-                            type="number"
-                            min={0}
-                            max={availableQuantity}
-                            value={selectedItems[item.id] || 0}
-                            onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value || '0'))}
-                            className="w-16 h-8 p-1 text-center"
-                          />
-                        </div>
-                      </div>
 
-                      {(selectedItems[item.id] || 0) > 0 && (
-                        <div className="mt-3 pt-3 border-t border-gray-200">
-                          <RadioGroup 
-                            value={returnDestination[item.id] || "inventory"} 
-                            onValueChange={(value) => handleDestinationChange(item.id, value as "inventory" | "disposed")}
-                            className="flex flex-col space-y-2"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="inventory" id={`inventory-${item.id}`} />
-                              <Label htmlFor={`inventory-${item.id}`} className="cursor-pointer flex items-center">
-                                <PackageOpen className="w-4 h-4 mr-1 text-green-600" />
-                                Return to Inventory
-                              </Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="disposed" id={`disposed-${item.id}`} />
-                              <Label htmlFor={`disposed-${item.id}`} className="cursor-pointer flex items-center">
-                                <Trash2 className="w-4 h-4 mr-1 text-red-600" />
-                                Mark for Disposal
-                              </Label>
-                            </div>
-                          </RadioGroup>
-                        </div>
-                      )}
+            {selectedItem !== null && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="quantity">Return Quantity</Label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="quantity"
+                      type="number"
+                      min={1}
+                      max={maxReturnQuantity}
+                      value={returnQuantity}
+                      onChange={handleReturnQuantityChange}
+                    />
+                    <span className="text-sm text-gray-500">
+                      Max: {maxReturnQuantity}
+                    </span>
+                  </div>
+                </div>
+
+                <Card className="p-3 bg-green-50 border-green-200">
+                  <div className="flex items-center text-green-700">
+                    <DollarSign className="h-5 w-5 mr-2" />
+                    <div>
+                      <div className="font-medium">Return Value: ₹{currentReturnValue.toFixed(2)}</div>
+                      <p className="text-xs text-green-600">This amount will be refunded</p>
                     </div>
-                  );
-                })}
-                
-                {billItems.length > 0 && !billItems.some(item => (item.quantity - item.return_quantity) > 0) && (
-                  <div className="flex items-center p-4 border rounded-md bg-amber-50 text-amber-700">
-                    <AlertCircle className="h-5 w-5 mr-2" />
-                    <span>All items from this bill have already been returned.</span>
+                  </div>
+                </Card>
+
+                <div className="space-y-2">
+                  <Label htmlFor="reason">Reason for Return (Optional)</Label>
+                  <Textarea
+                    id="reason"
+                    placeholder="Why is this medicine being returned?"
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                  />
+                </div>
+
+                <div className="flex items-start space-x-2 pt-2">
+                  <Checkbox
+                    id="inventory"
+                    checked={returnToInventory}
+                    onCheckedChange={(checked) => setReturnToInventory(checked === true)}
+                  />
+                  <div className="grid gap-1.5 leading-none">
+                    <Label
+                      htmlFor="inventory"
+                      className="text-sm font-medium leading-none"
+                    >
+                      Return to Inventory
+                    </Label>
+                    <p className="text-sm text-gray-500">
+                      If unchecked, the items will be marked as disposed
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-4 flex space-x-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onClose}
+                    disabled={processingReturn}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    className="gap-1"
+                    disabled={!selectedItem || returnQuantity <= 0 || processingReturn}
+                  >
+                    {processingReturn ? (
+                      <>Processing</>
+                    ) : returnToInventory ? (
+                      <>
+                        <PackageOpen className="h-4 w-4" />
+                        Return to Stock
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="h-4 w-4" />
+                        Dispose
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {returnToInventory && (
+                  <div className="flex items-center bg-blue-50 p-2 rounded text-sm text-blue-700">
+                    <PackageCheck className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <span>Inventory will be increased by {returnQuantity} units</span>
                   </div>
                 )}
-              </div>
-            </>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={loading}>
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleSubmitReturn} 
-            disabled={loading || !isReturnValid()}
-            className="bg-primary hover:bg-primary/90"
-          >
-            {loading ? "Processing..." : "Process Return"}
-          </Button>
-        </DialogFooter>
+              </>
+            )}
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );
