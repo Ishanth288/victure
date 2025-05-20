@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { CreditCard, DollarSign, ShoppingCart, Users } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { addDays, format, subDays, subMonths } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CustomerRetentionAnalysis } from "@/components/insights/CustomerRetentionAnalysis";
 
 export default function Insights() {
   const navigate = useNavigate();
@@ -35,6 +36,8 @@ export default function Insights() {
   const [revenueData, setRevenueData] = useState<Array<{date: string, value: number}>>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [repeatCustomers, setRepeatCustomers] = useState<Array<{phone: string, visits: number, totalSpent: number}>>([]);
+  const dataFetchedRef = useRef(false);
 
   useEffect(() => {
     checkAuth();
@@ -56,7 +59,10 @@ export default function Insights() {
       }
       
       setUserId(session.user.id);
-      fetchInsightsData(session.user.id);
+      if (!dataFetchedRef.current) {
+        fetchInsightsData(session.user.id);
+        dataFetchedRef.current = true;
+      }
     } catch (err: any) {
       console.error("Authentication error:", err);
       setError("Authentication failed. Please try logging in again.");
@@ -92,7 +98,15 @@ export default function Insights() {
       // Fetch bills for current period
       const { data: currentBills, error: currentBillsError } = await supabase
         .from('bills')
-        .select('*')
+        .select(`
+          *,
+          prescription:prescriptions (
+            patient:patients (
+              name,
+              phone_number
+            )
+          )
+        `)
         .eq('user_id', userId)
         .gte('date', fromDate)
         .lte('date', toDate);
@@ -104,7 +118,15 @@ export default function Insights() {
       // Fetch bills for previous period
       const { data: prevBills, error: prevBillsError } = await supabase
         .from('bills')
-        .select('*')
+        .select(`
+          *,
+          prescription:prescriptions (
+            patient:patients (
+              name,
+              phone_number
+            )
+          )
+        `)
         .eq('user_id', userId)
         .gte('date', prevFromDate)
         .lte('date', prevToDate);
@@ -147,6 +169,57 @@ export default function Insights() {
         ? ((currentAOV - prevAOV) / prevAOV) * 100 
         : 0;
       setAovChange(Math.round(aovChangePercent));
+
+      // Process repeat customer data from both periods for a more complete picture
+      const allBills = [...(currentBills || []), ...(prevBills || [])];
+      
+      // Group customers by phone number to identify repeats
+      const customerMap = new Map();
+      
+      allBills.forEach((bill: any) => {
+        if (bill?.prescription?.patient?.phone_number) {
+          const phone = bill.prescription.patient.phone_number;
+          const amount = parseFloat(bill.total_amount) || 0;
+          
+          if (customerMap.has(phone)) {
+            const customer = customerMap.get(phone);
+            customer.visits += 1;
+            customer.totalSpent += amount;
+            customer.bills.push(bill);
+          } else {
+            customerMap.set(phone, {
+              phone,
+              visits: 1,
+              totalSpent: amount,
+              bills: [bill]
+            });
+          }
+        }
+      });
+      
+      // Convert to array for display
+      const customersArray = Array.from(customerMap.values());
+      
+      // Set repeat customers (more than 1 visit)
+      const repeats = customersArray
+        .filter(customer => customer.visits > 1)
+        .sort((a, b) => b.visits - a.visits);
+        
+      setRepeatCustomers(repeats);
+      
+      // Calculate retention rate: repeat customers / total unique customers
+      const repeatCustomerCount = repeats.length;
+      const totalUniqueCustomers = customerMap.size;
+      
+      const retentionRateValue = totalUniqueCustomers > 0 
+        ? (repeatCustomerCount / totalUniqueCustomers) * 100 
+        : 0;
+      
+      setCustomerRetentionRate(Math.round(retentionRateValue));
+      
+      // Very simple change calculation - we'll just use a fixed number for now
+      // In a real app, we'd compare to a previous period
+      setRetentionChange(5);
 
       console.log("Fetching bill items");
       // Fetch top products
@@ -237,11 +310,6 @@ export default function Insights() {
       console.log("Revenue chart data created:", revenueChartData.length);
       setRevenueData(revenueChartData);
 
-      // Calculate customer retention (simplified)
-      // In a real app, this would be more complex, comparing repeat customers
-      setCustomerRetentionRate(65); // Placeholder value
-      setRetentionChange(5); // Placeholder value
-
       setLoading(false);
     } catch (error: any) {
       console.error("Error fetching insights:", error);
@@ -273,6 +341,12 @@ export default function Insights() {
         { event: '*', schema: 'public', table: 'bills', filter: `user_id=eq.${userId}` }, 
         (payload) => {
           console.log("Bills table change detected:", payload);
+          toast({
+            title: "Insights Updated",
+            description: "New bill data has been detected",
+            variant: "info",
+            duration: 3000
+          });
           fetchInsightsData(userId);
         }
       )
@@ -283,20 +357,25 @@ export default function Insights() {
           fetchInsightsData(userId);
         }
       )
-      .subscribe();
-    
-    // Set up auto-refresh every 10 minutes
-    const refreshTimer = setInterval(() => {
-      console.log("Auto-refreshing insights data");
-      fetchInsightsData(userId);
-    }, 10 * 60 * 1000); // 10 minutes
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'patients' }, 
+        (payload) => {
+          console.log("Patients table change detected:", payload);
+          fetchInsightsData(userId);
+        }
+      )
+      .subscribe((status) => {
+        console.log("Real-time subscription status:", status);
+        if (status === "SUBSCRIBED") {
+          console.log("Successfully subscribed to real-time updates");
+        }
+      });
     
     return () => {
       console.log("Cleaning up insights subscriptions");
       supabase.removeChannel(channel);
-      clearInterval(refreshTimer);
     };
-  }, [userId, fetchInsightsData]);
+  }, [userId, fetchInsightsData, toast]);
 
   const handlePeriodChange = (newPeriod: string) => {
     setPeriod(newPeriod);
@@ -451,6 +530,11 @@ export default function Insights() {
               
               <ProductsChart data={topProducts} />
             </div>
+            
+            <CustomerRetentionAnalysis 
+              customers={repeatCustomers}
+              isLoading={loading}
+            />
           </>
         )}
       </div>
