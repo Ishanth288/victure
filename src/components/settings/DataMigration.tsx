@@ -816,7 +816,6 @@ export function DataMigration() {
           </TabsContent>
           
           <TabsContent value="patients" className="space-y-4">
-            {/* Similar structure to inventory tab */}
             {renderStepIndicator()}
             
             {step === 1 && (
@@ -860,12 +859,250 @@ export function DataMigration() {
               </div>
             )}
             
-            {/* Patient-specific mapping, preview, and confirmation steps would follow */}
-            {/* Similar to inventory but with patient-specific fields */}
+            {step === 2 && (
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Map Columns to Fields</CardTitle>
+                    <CardDescription>
+                      Drag columns from your file to map them to the correct fields
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <h3 className="font-medium">Source Columns</h3>
+                        <div className="space-y-2">
+                          {columns.map((column) => (
+                            <div
+                              key={column}
+                              className={cn(
+                                "p-2 bg-gray-100 rounded-md cursor-move flex justify-between items-center",
+                                mappings[column] && "border-l-4 border-green-500 pl-2"
+                              )}
+                              draggable
+                              onDragStart={(e) => handleDragStart(column, e)}
+                            >
+                              <span>{column}</span>
+                              {mappings[column] && (
+                                <Badge variant="outline" className="bg-green-50">
+                                  {mappings[column]}
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <h3 className="font-medium">Target Fields</h3>
+                        <div className="space-y-2">
+                          {getDataFields().map((field) => (
+                            <div
+                              key={field.key}
+                              className={cn(
+                                "p-2 bg-gray-50 border border-gray-200 rounded-md",
+                                Object.values(mappings).includes(field.key) && "bg-green-50 border-green-300"
+                              )}
+                              onDrop={(e) => handleDrop(field.key, e)}
+                              onDragOver={handleDragOver}
+                            >
+                              {field.label}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <div className="flex justify-between">
+                  <Button variant="outline" onClick={resetProcess}>Back</Button>
+                  <Button onClick={createPreviewItems} disabled={loading || Object.keys(mappings).length === 0}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing
+                      </>
+                    ) : 'Preview Data'}
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {step === 3 && (
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg">Data Preview</CardTitle>
+                      <Badge variant={hasTooManyInvalidItems(filteredPreviewItems) ? "destructive" : "default"}>
+                        {filteredPreviewItems.filter(item => item.hasWarning).length} issues
+                      </Badge>
+                    </div>
+                    <CardDescription>
+                      Review your data before importing. Click "-" to exclude items.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="border rounded-md overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Action
+                            </th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Status
+                            </th>
+                            {getDataFields().filter(field => Object.values(mappings).includes(field.key)).map((field) => (
+                              <th key={field.key} className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {field.label}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {filteredPreviewItems.slice(0, 20).map((item, index) => (
+                            <tr key={index} className={item.hasWarning ? "bg-red-50" : ""}>
+                              <td className="px-3 py-2 whitespace-nowrap">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveItem(index)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </td>
+                              <td className="px-3 py-2 whitespace-nowrap">
+                                {item.hasWarning ? (
+                                  <Badge variant="destructive">
+                                    {item.warningMessage}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="bg-green-50">
+                                    Valid
+                                  </Badge>
+                                )}
+                              </td>
+                              {getDataFields().filter(field => Object.values(mappings).includes(field.key)).map((field) => (
+                                <td key={field.key} className="px-3 py-2 whitespace-nowrap text-sm">
+                                  {String(item[field.key] || '-')}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {filteredPreviewItems.length > 20 && (
+                        <div className="px-3 py-2 text-sm text-gray-500 bg-gray-50 border-t">
+                          Showing 20 of {filteredPreviewItems.length} items
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {hasTooManyInvalidItems(filteredPreviewItems) && (
+                  <Alert variant="warning">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Too many invalid items</AlertTitle>
+                    <AlertDescription>
+                      More than 10% of items have issues. Please fix them before proceeding.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                <div className="flex justify-between">
+                  <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
+                  <Button 
+                    onClick={handleConfirmImport} 
+                    disabled={loading || filteredPreviewItems.length === 0 || hasTooManyInvalidItems(filteredPreviewItems)}
+                  >
+                    Import Data
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {step === 4 && (
+              <div className="space-y-4">
+                <Alert variant="default" className="bg-green-50 border-green-200">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <AlertTitle>Success</AlertTitle>
+                  <AlertDescription>
+                    Data migration completed successfully
+                  </AlertDescription>
+                </Alert>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Migration Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="bg-gray-50 p-4 rounded-md">
+                          <div className="text-sm text-gray-500">Total Items</div>
+                          <div className="text-2xl font-semibold">
+                            {migrationSummary?.added + migrationSummary?.skipped || 0}
+                          </div>
+                        </div>
+                        <div className="bg-green-50 p-4 rounded-md">
+                          <div className="text-sm text-gray-500">Successfully Added</div>
+                          <div className="text-2xl font-semibold text-green-600">
+                            {migrationSummary?.added || 0}
+                          </div>
+                        </div>
+                        <div className="bg-amber-50 p-4 rounded-md">
+                          <div className="text-sm text-gray-500">Skipped Items</div>
+                          <div className="text-2xl font-semibold text-amber-600">
+                            {migrationSummary?.skipped || 0}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {migrationSummary?.issues && migrationSummary.issues.length > 0 && (
+                        <div className="mt-4">
+                          <h3 className="font-medium mb-2">Issues</h3>
+                          <div className="border rounded-md overflow-hidden">
+                            <table className="min-w-full divide-y divide-gray-200">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Row</th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {migrationSummary.issues.slice(0, 5).map((issue: any, index: number) => (
+                                  <tr key={index}>
+                                    <td className="px-3 py-2 whitespace-nowrap text-sm">{issue.row}</td>
+                                    <td className="px-3 py-2 whitespace-nowrap text-sm">{issue.reason}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            {migrationSummary.issues.length > 5 && (
+                              <div className="px-3 py-2 text-sm text-gray-500 bg-gray-50 border-t">
+                                Showing 5 of {migrationSummary.issues.length} issues
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <div className="flex justify-between">
+                  <Button variant="outline" onClick={resetProcess}>Start New Import</Button>
+                </div>
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="prescriptions" className="space-y-4">
-            {/* Similar structure to inventory tab */}
             {renderStepIndicator()}
             
             {step === 1 && (
@@ -909,8 +1146,247 @@ export function DataMigration() {
               </div>
             )}
             
-            {/* Prescription-specific mapping, preview, and confirmation steps would follow */}
-            {/* Similar to inventory but with prescription-specific fields */}
+            {step === 2 && (
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Map Columns to Fields</CardTitle>
+                    <CardDescription>
+                      Drag columns from your file to map them to the correct fields
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <h3 className="font-medium">Source Columns</h3>
+                        <div className="space-y-2">
+                          {columns.map((column) => (
+                            <div
+                              key={column}
+                              className={cn(
+                                "p-2 bg-gray-100 rounded-md cursor-move flex justify-between items-center",
+                                mappings[column] && "border-l-4 border-green-500 pl-2"
+                              )}
+                              draggable
+                              onDragStart={(e) => handleDragStart(column, e)}
+                            >
+                              <span>{column}</span>
+                              {mappings[column] && (
+                                <Badge variant="outline" className="bg-green-50">
+                                  {mappings[column]}
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <h3 className="font-medium">Target Fields</h3>
+                        <div className="space-y-2">
+                          {getDataFields().map((field) => (
+                            <div
+                              key={field.key}
+                              className={cn(
+                                "p-2 bg-gray-50 border border-gray-200 rounded-md",
+                                Object.values(mappings).includes(field.key) && "bg-green-50 border-green-300"
+                              )}
+                              onDrop={(e) => handleDrop(field.key, e)}
+                              onDragOver={handleDragOver}
+                            >
+                              {field.label}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <div className="flex justify-between">
+                  <Button variant="outline" onClick={resetProcess}>Back</Button>
+                  <Button onClick={createPreviewItems} disabled={loading || Object.keys(mappings).length === 0}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing
+                      </>
+                    ) : 'Preview Data'}
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {step === 3 && (
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle className="text-lg">Data Preview</CardTitle>
+                      <Badge variant={hasTooManyInvalidItems(filteredPreviewItems) ? "destructive" : "default"}>
+                        {filteredPreviewItems.filter(item => item.hasWarning).length} issues
+                      </Badge>
+                    </div>
+                    <CardDescription>
+                      Review your data before importing. Click "-" to exclude items.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="border rounded-md overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Action
+                            </th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Status
+                            </th>
+                            {getDataFields().filter(field => Object.values(mappings).includes(field.key)).map((field) => (
+                              <th key={field.key} className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {field.label}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {filteredPreviewItems.slice(0, 20).map((item, index) => (
+                            <tr key={index} className={item.hasWarning ? "bg-red-50" : ""}>
+                              <td className="px-3 py-2 whitespace-nowrap">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveItem(index)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </td>
+                              <td className="px-3 py-2 whitespace-nowrap">
+                                {item.hasWarning ? (
+                                  <Badge variant="destructive">
+                                    {item.warningMessage}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="bg-green-50">
+                                    Valid
+                                  </Badge>
+                                )}
+                              </td>
+                              {getDataFields().filter(field => Object.values(mappings).includes(field.key)).map((field) => (
+                                <td key={field.key} className="px-3 py-2 whitespace-nowrap text-sm">
+                                  {String(item[field.key] || '-')}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {filteredPreviewItems.length > 20 && (
+                        <div className="px-3 py-2 text-sm text-gray-500 bg-gray-50 border-t">
+                          Showing 20 of {filteredPreviewItems.length} items
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                {hasTooManyInvalidItems(filteredPreviewItems) && (
+                  <Alert variant="warning">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Too many invalid items</AlertTitle>
+                    <AlertDescription>
+                      More than 10% of items have issues. Please fix them before proceeding.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                <div className="flex justify-between">
+                  <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
+                  <Button 
+                    onClick={handleConfirmImport} 
+                    disabled={loading || filteredPreviewItems.length === 0 || hasTooManyInvalidItems(filteredPreviewItems)}
+                  >
+                    Import Data
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {step === 4 && (
+              <div className="space-y-4">
+                <Alert variant="default" className="bg-green-50 border-green-200">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <AlertTitle>Success</AlertTitle>
+                  <AlertDescription>
+                    Data migration completed successfully
+                  </AlertDescription>
+                </Alert>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Migration Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="bg-gray-50 p-4 rounded-md">
+                          <div className="text-sm text-gray-500">Total Items</div>
+                          <div className="text-2xl font-semibold">
+                            {migrationSummary?.added + migrationSummary?.skipped || 0}
+                          </div>
+                        </div>
+                        <div className="bg-green-50 p-4 rounded-md">
+                          <div className="text-sm text-gray-500">Successfully Added</div>
+                          <div className="text-2xl font-semibold text-green-600">
+                            {migrationSummary?.added || 0}
+                          </div>
+                        </div>
+                        <div className="bg-amber-50 p-4 rounded-md">
+                          <div className="text-sm text-gray-500">Skipped Items</div>
+                          <div className="text-2xl font-semibold text-amber-600">
+                            {migrationSummary?.skipped || 0}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {migrationSummary?.issues && migrationSummary.issues.length > 0 && (
+                        <div className="mt-4">
+                          <h3 className="font-medium mb-2">Issues</h3>
+                          <div className="border rounded-md overflow-hidden">
+                            <table className="min-w-full divide-y divide-gray-200">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Row</th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-200">
+                                {migrationSummary.issues.slice(0, 5).map((issue: any, index: number) => (
+                                  <tr key={index}>
+                                    <td className="px-3 py-2 whitespace-nowrap text-sm">{issue.row}</td>
+                                    <td className="px-3 py-2 whitespace-nowrap text-sm">{issue.reason}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            {migrationSummary.issues.length > 5 && (
+                              <div className="px-3 py-2 text-sm text-gray-500 bg-gray-50 border-t">
+                                Showing 5 of {migrationSummary.issues.length} issues
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <div className="flex justify-between">
+                  <Button variant="outline" onClick={resetProcess}>Start New Import</Button>
+                </div>
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="history" className="space-y-4">

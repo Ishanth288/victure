@@ -5,6 +5,7 @@ import PharmacySettings from "@/components/settings/PharmacySettings";
 import NotificationSettings from "@/components/settings/NotificationSettings";
 import { DataMigration } from "@/components/settings/DataMigration";
 import DashboardLayout from "@/components/DashboardLayout";
+import { AuthProvider } from '@/hooks/useAuth';
 
 export default function Settings() {
   return (
@@ -36,7 +37,9 @@ export default function Settings() {
           </TabsContent>
           
           <TabsContent value="data-migration" className="space-y-4">
-            <DataMigration />
+            <AuthProvider>
+              <DataMigration />
+            </AuthProvider>
           </TabsContent>
           
           <TabsContent value="security" className="space-y-4">
