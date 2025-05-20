@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Save, Trash, Refresh } from "lucide-react";
+import { AlertCircle, Save, Trash, RefreshCw } from "lucide-react";
 import { stableToast } from "@/components/ui/stable-toast";
 import { 
   Dialog,
@@ -60,7 +60,18 @@ export const MappingTemplateManager: React.FC<MappingTemplateManagerProps> = ({
           variant: "destructive",
         });
       } else {
-        setTemplates(data || []);
+        // Cast data to MappingTemplate[] to ensure type compatibility
+        const typedData = (data || []).map(item => ({
+          id: item.id,
+          user_id: item.user_id,
+          name: item.name,
+          source_system: item.source_system,
+          data_type: item.data_type as 'Inventory' | 'Patients' | 'Prescriptions',
+          mappings: item.mappings as Record<string, string>,
+          created_at: item.created_at,
+          updated_at: item.updated_at
+        }));
+        setTemplates(typedData);
       }
     } catch (err) {
       console.error("Failed to load templates:", err);
@@ -91,12 +102,13 @@ export const MappingTemplateManager: React.FC<MappingTemplateManagerProps> = ({
     setIsSaving(true);
     
     try {
-      // Create the template object
-      const template: MappingTemplate = {
+      // Create the template object with correct typing
+      const template = {
         name: templateName,
         source_system: sourceSystem,
         data_type: migrationMode,
-        mappings: selectedFields
+        mappings: selectedFields,
+        user_id: (await supabase.auth.getUser()).data.user?.id
       };
       
       // Save to database
@@ -301,7 +313,7 @@ export const MappingTemplateManager: React.FC<MappingTemplateManagerProps> = ({
             onClick={loadTemplates} 
             disabled={isLoading}
           >
-            <Refresh className="w-4 h-4 mr-1" /> Refresh
+            <RefreshCw className="w-4 h-4 mr-1" /> Refresh
           </Button>
         </div>
       </div>

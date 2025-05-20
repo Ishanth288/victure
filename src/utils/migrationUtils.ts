@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/integrations/supabase/client";
 import { PreviewItem, MigrationLog, MappingTemplate } from "@/types/dataMigration";
@@ -611,9 +610,18 @@ export function autoDetectFieldMappings(headers: string[]): Record<string, strin
  */
 export async function saveMappingTemplate(template: MappingTemplate): Promise<boolean> {
   try {
+    // Cast the template to match the expected database structure
+    const dbTemplate = {
+      name: template.name,
+      source_system: template.source_system,
+      data_type: template.data_type,
+      mappings: template.mappings,
+      user_id: template.user_id || (await supabase.auth.getUser()).data.user?.id
+    };
+    
     const { error } = await supabase
       .from('mapping_templates')
-      .insert([template]);
+      .insert([dbTemplate]);
       
     if (error) {
       console.error('Failed to save mapping template:', error);
@@ -643,7 +651,17 @@ export async function getMappingTemplates(dataType: 'Inventory' | 'Patients' | '
       return [];
     }
     
-    return data as MappingTemplate[];
+    // Properly cast the data to ensure type compatibility
+    return (data || []).map(item => ({
+      id: item.id,
+      user_id: item.user_id,
+      name: item.name,
+      source_system: item.source_system,
+      data_type: item.data_type as 'Inventory' | 'Patients' | 'Prescriptions',
+      mappings: item.mappings as Record<string, string>,
+      created_at: item.created_at,
+      updated_at: item.updated_at
+    }));
   } catch (err) {
     console.error('Error fetching mapping templates:', err);
     return [];
