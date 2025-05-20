@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { stableToast } from "@/components/ui/stable-toast";
 import { MigrationHistory } from "./data-migration/MigrationHistory";
 import { ImportTabContent } from "./data-migration/ImportTabContent";
-import { getRecentMigrations, rollbackMigration } from "@/utils/migrationUtils";
+import { getRecentMigrations, rollbackMigration } from "@/utils/migration";
 
 export function DataMigration() {
   const { user } = useAuth();

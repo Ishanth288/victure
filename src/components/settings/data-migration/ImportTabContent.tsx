@@ -16,8 +16,9 @@ import {
   processInventoryItems, 
   processPatients, 
   processPrescriptions,
-  autoDetectFieldMappings
-} from "@/utils/migrationUtils";
+  autoDetectFieldMappings,
+  previewMappedData
+} from "@/utils/migration";
 import * as XLSX from 'xlsx';
 
 interface ImportTabContentProps {
