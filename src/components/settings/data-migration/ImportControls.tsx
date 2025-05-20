@@ -30,7 +30,7 @@ export const ImportControls: React.FC<ImportControlsProps> = ({
   return (
     <div className="space-y-4 mt-4">
       {!areRequiredFieldsMapped && (
-        <Alert variant="destructive" className="bg-red-50">
+        <Alert variant="error" className="bg-red-50">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Missing Required Fields</AlertTitle>
           <AlertDescription>

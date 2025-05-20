@@ -356,7 +356,7 @@ export function DataMigration() {
           
           <TabsContent value="import" className="space-y-6 overflow-visible">
             {!user && (
-              <Alert variant="destructive">
+              <Alert variant="error">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Authentication Required</AlertTitle>
                 <AlertDescription>
@@ -389,7 +389,7 @@ export function DataMigration() {
                 <FileUpload setSelectedFile={setSelectedFile} setUploadError={setUploadError} />
                 
                 {uploadError && (
-                  <Alert variant="destructive">
+                  <Alert variant="error">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Upload Error</AlertTitle>
                     <AlertDescription>{uploadError}</AlertDescription>
