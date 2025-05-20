@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import { autoDetectFieldMappings } from "@/utils/migrationUtils";
+import { autoDetectFieldMappings } from "@/utils/migration/fieldMappings";
 import {
   Select,
   SelectContent,
