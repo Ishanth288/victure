@@ -144,7 +144,7 @@ export function autoFixData(items: PreviewItem[]): PreviewItem[] {
     
     if (typeof fixed.quantity === 'string') {
       const quantityStr = String(fixed.quantity);
-      fixed.quantity = parseInt(quantityStr.replace(/[^\d]/g, ''), 10);
+      fixed.quantity = parseInt(quantityStr.replace(/[^\d]/g, '') || '0', 10);
     }
     
     // Standardize date formats (assuming Indian format DD/MM/YYYY)

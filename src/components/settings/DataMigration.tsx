@@ -561,7 +561,7 @@ export function DataMigration() {
                     )}
                     {loading && <Progress value={progress} className="mt-4 w-1/2" />}
                     {error && (
-                      <Alert variant="error" className="mt-4">
+                      <Alert variant="destructive" className="mt-4">
                         <AlertCircle className="h-4 w-4" />
                         <AlertTitle>Error</AlertTitle>
                         <AlertDescription>{error}</AlertDescription>
@@ -849,7 +849,7 @@ export function DataMigration() {
                     )}
                     {loading && <Progress value={progress} className="mt-4 w-1/2" />}
                     {error && (
-                      <Alert variant="error" className="mt-4">
+                      <Alert variant="destructive" className="mt-4">
                         <AlertCircle className="h-4 w-4" />
                         <AlertTitle>Error</AlertTitle>
                         <AlertDescription>{error}</AlertDescription>
@@ -898,7 +898,7 @@ export function DataMigration() {
                     )}
                     {loading && <Progress value={progress} className="mt-4 w-1/2" />}
                     {error && (
-                      <Alert variant="error" className="mt-4">
+                      <Alert variant="destructive" className="mt-4">
                         <AlertCircle className="h-4 w-4" />
                         <AlertTitle>Error</AlertTitle>
                         <AlertDescription>{error}</AlertDescription>

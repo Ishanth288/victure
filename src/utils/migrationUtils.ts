@@ -272,7 +272,7 @@ export async function processPrescriptions(
 async function logMigration(log: MigrationLog) {
   try {
     // Use the `from` as a string with insert to bypass type constraints
-    await supabase.from('migration_logs' as any).insert([{
+    await supabase.from('migration_logs').insert([{
       migration_id: log.migration_id,
       type: log.type,
       timestamp: log.timestamp,
@@ -306,9 +306,9 @@ export async function rollbackMigration(
         break;
     }
     
-    // Use dynamic table name to bypass type constraints
+    // Use from with tableName directly instead of as a dynamic expression
     const { error } = await supabase
-      .from(tableName as any)
+      .from(tableName)
       .delete()
       .eq('migration_id', migrationId);
       
@@ -330,7 +330,7 @@ export async function rollbackMigration(
 export async function getRecentMigrations(): Promise<MigrationLog[]> {
   try {
     const { data, error } = await supabase
-      .from('migration_logs' as any)
+      .from('migration_logs')
       .select('*')
       .order('timestamp', { ascending: false })
       .limit(10);
@@ -341,7 +341,7 @@ export async function getRecentMigrations(): Promise<MigrationLog[]> {
     }
     
     // Add explicit type assertion to handle the type mismatch
-    return (data as unknown) as MigrationLog[];
+    return data as MigrationLog[];
   } catch (err) {
     console.error('Error fetching migration logs:', err);
     return [];
