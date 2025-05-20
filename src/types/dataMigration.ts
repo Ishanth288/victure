@@ -1,0 +1,58 @@
+
+// Data migration types
+export type WarningType = "expired" | "duplicate" | "missing" | "price" | "controlled";
+
+export interface PreviewItem {
+  name: string;
+  generic_name?: string;
+  manufacturer?: string;
+  batch_number?: string;
+  expiry_date?: string;
+  quantity?: number;
+  unit_cost?: number;
+  selling_price?: number;
+  schedule?: string;
+  hsn_code?: string;
+  category?: string;
+  hasWarning?: boolean;
+  warningType?: WarningType;
+  warningMessage?: string;
+  
+  // Patient specific fields
+  phone_number?: string;
+  external_id?: string;
+  status?: string;
+  patient_type?: string;
+  visit_count?: number;
+  is_first_visit?: boolean;
+  chronic_diseases?: string[];
+  recent_prescription_count?: number;
+  
+  // Prescription specific fields
+  prescription_number?: string;
+  doctor_name?: string;
+  date?: string;
+  polytherapy?: boolean;
+  prescription_type?: string;
+  
+  // Migration tracking
+  migration_id?: string;
+}
+
+export interface MigrationLog {
+  migration_id: string;
+  type: 'Inventory' | 'Patients' | 'Prescriptions';
+  timestamp: string;
+  added_count: number;
+  skipped_count: number;
+  issues: Array<{
+    row: number;
+    reason: string;
+  }>;
+}
+
+export interface MappingTemplate {
+  name: string;
+  source: string;
+  mappings: Record<string, string>;
+}
