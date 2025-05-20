@@ -130,7 +130,7 @@ export function displayErrorMessage(error: any, context?: string): void {
   toast({
     title: `Error${context ? ` in ${context}` : ''}`,
     description: userMessage,
-    variant: "error",
+    variant: "destructive", // Changed from "error" to "destructive" to match expected type
     icon: getErrorIcon(errorType)
   });
 }
