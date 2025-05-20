@@ -2,6 +2,7 @@
 import * as Sentry from "@sentry/react";
 import { toast } from "@/hooks/use-toast";
 import { AlertCircle, WifiOff, Database, ServerCrash, UserX, AlertTriangle } from "lucide-react";
+import React from "react";
 
 /**
  * Error boundary component that catches errors and logs them
@@ -102,19 +103,21 @@ export function getUserFriendlyErrorMessage(error: any): string {
  * Get an appropriate icon based on error type
  */
 function getErrorIcon(errorType: 'connection' | 'database' | 'server' | 'auth' | 'validation' | 'unknown') {
+  const iconProps = { className: "h-4 w-4" };
+  
   switch (errorType) {
     case 'connection':
-      return <WifiOff className="h-4 w-4" />;
+      return React.createElement(WifiOff, iconProps);
     case 'database':
-      return <Database className="h-4 w-4" />;
+      return React.createElement(Database, iconProps);
     case 'server':
-      return <ServerCrash className="h-4 w-4" />;
+      return React.createElement(ServerCrash, iconProps);
     case 'auth':
-      return <UserX className="h-4 w-4" />;
+      return React.createElement(UserX, iconProps);
     case 'validation':
-      return <AlertTriangle className="h-4 w-4" />;
+      return React.createElement(AlertTriangle, iconProps);
     default:
-      return <AlertCircle className="h-4 w-4" />;
+      return React.createElement(AlertCircle, iconProps);
   }
 }
 

@@ -1,4 +1,3 @@
-
 import { toast as sonnerToast, ToastT } from "sonner";
 import { CheckCircle, AlertCircle, Info, AlertTriangle, X } from "lucide-react";
 
@@ -40,7 +39,7 @@ export function toast({
   activeToasts.add(toastId);
   
   // Get appropriate icon based on variant
-  let icon;
+  let icon = null;
   switch (variant) {
     case "destructive":
       icon = <AlertCircle className="h-4 w-4 text-red-600" />;
@@ -54,8 +53,6 @@ export function toast({
     case "info":
       icon = <Info className="h-4 w-4 text-blue-600" />;
       break;
-    default:
-      icon = null;
   }
   
   // Determine variant-specific styles
