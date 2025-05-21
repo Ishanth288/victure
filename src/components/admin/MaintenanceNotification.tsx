@@ -98,7 +98,7 @@ export function MaintenanceNotification() {
     // Add smooth exit animation
     setShowNotification(false);
     
-    // Store permanent dismissal in localStorage
+    // Store permanent dismissal in localStorage - THIS IS THE KEY FIX
     localStorage.setItem('maintenance-permanently-dismissed', 'true');
     
     // Dispatch custom event for other components to react to dismissal
