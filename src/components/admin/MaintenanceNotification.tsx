@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ export function MaintenanceNotification() {
         const dismissedKey = getDismissalKey(userId, maintenanceId);
         
         // Check local storage for dismissal status
-        const isDismissed = localStorage.getItem(dismissalKey) === 'true';
+        const isDismissed = localStorage.getItem(dismissedKey) === 'true';
         
         setPermanentlyDismissed(isDismissed);
         setShowNotification(!isDismissed);
@@ -130,8 +131,8 @@ export function MaintenanceNotification() {
       const userId = user?.id || null;
       
       // Generate dismissal key and store in localStorage
-      const dismissalKey = getDismissalKey(userId, maintenanceId);
-      localStorage.setItem(dismissalKey, 'true');
+      const dismissedKey = getDismissalKey(userId, maintenanceId);
+      localStorage.setItem(dismissedKey, 'true');
       
       // If this is a specific maintenance, also set a general flag to prevent similar notices
       if (userId && maintenanceId) {
