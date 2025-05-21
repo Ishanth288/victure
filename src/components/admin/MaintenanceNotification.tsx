@@ -16,6 +16,18 @@ export function MaintenanceNotification() {
   const [permanentlyDismissed, setPermanentlyDismissed] = useState(false);
   const [maintenanceId, setMaintenanceId] = useState<string | null>(null);
 
+  // Generate a unique persistent dismissal key
+  const getDismissalKey = (userId: string | null, notificationId: string | null) => {
+    if (userId && notificationId) {
+      return `maintenance-dismissed-${userId}-${notificationId}`;
+    } else if (userId) {
+      return `maintenance-dismissed-${userId}`;
+    } else if (notificationId) {
+      return `maintenance-dismissed-notification-${notificationId}`;
+    }
+    return 'maintenance-permanently-dismissed';
+  };
+
   useEffect(() => {
     // Check if this notification was previously permanently dismissed
     const checkDismissalStatus = async () => {
@@ -23,28 +35,14 @@ export function MaintenanceNotification() {
         // Get current user
         const { data: { user } } = await supabase.auth.getUser();
         
+        const userId = user?.id || null;
+        const dismissedKey = getDismissalKey(userId, maintenanceId);
+        
         // Check local storage for dismissal status
-        if (user) {
-          const dismissedKey = `maintenance-dismissed-${user.id}`;
-          const isDismissed = localStorage.getItem(dismissedKey) === 'true';
-          
-          // If we have a maintenance ID stored, check if this specific notification was dismissed
-          if (maintenanceId) {
-            const specificDismissalKey = `maintenance-dismissed-${user.id}-${maintenanceId}`;
-            const isSpecificDismissed = localStorage.getItem(specificDismissalKey) === 'true';
-            
-            setPermanentlyDismissed(isDismissed || isSpecificDismissed);
-            setShowNotification(!(isDismissed || isSpecificDismissed));
-          } else {
-            setPermanentlyDismissed(isDismissed);
-            setShowNotification(!isDismissed);
-          }
-        } else {
-          // For non-logged-in users, check general dismissal
-          const isDismissed = localStorage.getItem('maintenance-permanently-dismissed') === 'true';
-          setPermanentlyDismissed(isDismissed);
-          setShowNotification(!isDismissed);
-        }
+        const isDismissed = localStorage.getItem(dismissalKey) === 'true';
+        
+        setPermanentlyDismissed(isDismissed);
+        setShowNotification(!isDismissed);
       } catch (error) {
         console.error("Error checking dismissal status:", error);
       }
@@ -60,10 +58,7 @@ export function MaintenanceNotification() {
           .eq('id', 1)
           .single();
 
-        if (error) {
-          console.error("Error fetching maintenance status:", error);
-          return;
-        }
+        if (error) throw error;
 
         if (data) {
           setMaintenanceId(data.id?.toString() || null);
@@ -132,20 +127,15 @@ export function MaintenanceNotification() {
     try {
       // Get the current user
       const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || null;
       
-      if (user) {
-        // Store dismissal in localStorage
-        const dismissedKey = `maintenance-dismissed-${user.id}`;
-        localStorage.setItem(dismissedKey, 'true');
-        
-        // Store the specific maintenance ID if available
-        if (maintenanceId) {
-          const specificDismissalKey = `maintenance-dismissed-${user.id}-${maintenanceId}`;
-          localStorage.setItem(specificDismissalKey, 'true');
-        }
-      } else {
-        // For non-logged-in users
-        localStorage.setItem('maintenance-permanently-dismissed', 'true');
+      // Generate dismissal key and store in localStorage
+      const dismissalKey = getDismissalKey(userId, maintenanceId);
+      localStorage.setItem(dismissalKey, 'true');
+      
+      // If this is a specific maintenance, also set a general flag to prevent similar notices
+      if (userId && maintenanceId) {
+        localStorage.setItem(`maintenance-type-dismissed-${userId}`, 'true');
       }
     } catch (error) {
       console.error("Error handling notification dismissal:", error);

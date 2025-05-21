@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,10 @@ export function TaskManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<'all' | 'completed' | 'pending'>('all');
   const [newTaskDueDate, setNewTaskDueDate] = useState<string>('');
+
+  // Computed task lists based on filter
+  const pendingTasks = useMemo(() => tasks.filter(task => !task.completed), [tasks]);
+  const completedTasks = useMemo(() => tasks.filter(task => task.completed), [tasks]);
 
   useEffect(() => {
     // Load tasks from localStorage if available
@@ -142,16 +146,22 @@ export function TaskManagement() {
 
   // Get filtered tasks based on active tab
   const getFilteredTasks = () => {
-    let filteredTasks = [...tasks];
-    
-    if (activeFilter === 'completed') {
-      filteredTasks = filteredTasks.filter(task => task.completed);
-    } else if (activeFilter === 'pending') {
-      filteredTasks = filteredTasks.filter(task => !task.completed);
+    switch (activeFilter) {
+      case 'completed':
+        return completedTasks;
+      case 'pending':
+        return pendingTasks;
+      default:
+        return tasks;
     }
+  };
+  
+  // Sort the filtered tasks
+  const sortedFilteredTasks = useMemo(() => {
+    const filteredTasks = getFilteredTasks();
     
     // Sort tasks: incomplete first, then by priority (high to low), then by due date if exists
-    filteredTasks.sort((a, b) => {
+    return [...filteredTasks].sort((a, b) => {
       // If active filter is 'all', sort completed tasks last
       if (activeFilter === 'all') {
         if (a.completed && !b.completed) return 1;
@@ -174,9 +184,7 @@ export function TaskManagement() {
       
       return 0;
     });
-    
-    return filteredTasks;
-  };
+  }, [activeFilter, tasks, pendingTasks, completedTasks]);
 
   // Format due date to be more readable
   const formatDueDate = (dateString: string) => {
@@ -214,7 +222,7 @@ export function TaskManagement() {
   };
 
   return (
-    <Card className="h-full">
+    <Card className="h-full overflow-hidden">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 justify-between">
           <div className="flex items-center">
@@ -223,14 +231,23 @@ export function TaskManagement() {
           </div>
           <Tabs defaultValue="all" className="w-auto" value={activeFilter} onValueChange={(value) => setActiveFilter(value as any)}>
             <TabsList className="h-8">
-              <TabsTrigger value="all" className="text-xs h-6">All</TabsTrigger>
-              <TabsTrigger value="pending" className="text-xs h-6">Pending</TabsTrigger>
-              <TabsTrigger value="completed" className="text-xs h-6">Completed</TabsTrigger>
+              <TabsTrigger value="all" className="text-xs h-6">
+                All
+                <span className="ml-1.5 text-xs opacity-70">({tasks.length})</span>
+              </TabsTrigger>
+              <TabsTrigger value="pending" className="text-xs h-6">
+                Pending
+                <span className="ml-1.5 text-xs opacity-70">({pendingTasks.length})</span>
+              </TabsTrigger>
+              <TabsTrigger value="completed" className="text-xs h-6">
+                Completed
+                <span className="ml-1.5 text-xs opacity-70">({completedTasks.length})</span>
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="max-h-[460px] overflow-hidden flex flex-col">
         <div className="flex flex-col space-y-2 mb-4">
           <Input
             placeholder="Add a new task..."
@@ -241,6 +258,7 @@ export function TaskManagement() {
           />
           <div className="flex items-center space-x-2">
             <div className="flex-1 grid grid-cols-3 gap-2">
+              {/* Priority buttons with consistent styling */}
               <Button
                 type="button"
                 size="sm"
@@ -271,20 +289,26 @@ export function TaskManagement() {
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Input
-              type="date"
-              value={newTaskDueDate}
-              onChange={(e) => setNewTaskDueDate(e.target.value)}
-              className="flex-1"
-            />
+            {/* Enhanced date picker */}
+            <div className="relative flex-1">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                <Calendar className="h-4 w-4" />
+              </div>
+              <Input
+                type="date"
+                value={newTaskDueDate}
+                onChange={(e) => setNewTaskDueDate(e.target.value)}
+                className="pl-10"
+              />
+            </div>
             <Button className="flex-shrink-0" onClick={addTask}>
               <Plus className="h-4 w-4" />
             </Button>
           </div>
         </div>
         
-        <div className="space-y-2 max-h-[250px] overflow-y-auto">
-          {getFilteredTasks().map(task => (
+        <div className="space-y-2 overflow-y-auto pr-1" style={{ maxHeight: 'calc(100% - 150px)' }}>
+          {sortedFilteredTasks.map(task => (
             <div
               key={task.id}
               className={`flex items-start justify-between p-2 rounded border ${
@@ -368,7 +392,7 @@ export function TaskManagement() {
             </div>
           ))}
           
-          {getFilteredTasks().length === 0 && (
+          {sortedFilteredTasks.length === 0 && (
             <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded-md">
               <p className="mb-2">No {activeFilter !== 'all' ? activeFilter : ''} tasks</p>
               <p className="text-sm">{activeFilter === 'all' ? 'Add a task to get started' : `Switch to the "${activeFilter === 'completed' ? 'pending' : 'completed'}" tab to see tasks`}</p>

@@ -14,24 +14,40 @@ interface StatCardProps {
 }
 
 export function StatCard({ title, value, icon: Icon, trend = 0, trendType, tooltip }: StatCardProps) {
-  // Determine trend color and icon based on type or value
-  const getTrendColor = () => {
-    if (trendType === 'positive' || (trendType === undefined && trend > 0)) {
-      return 'text-green-500';
-    } else if (trendType === 'negative' || (trendType === undefined && trend < 0)) {
-      return 'text-red-500';
+  // Calculate trend display and handle invalid values
+  const calculateTrendDisplay = () => {
+    // Check if trend is a valid number
+    if (typeof trend !== 'number' || isNaN(trend)) {
+      return {
+        color: 'text-gray-500',
+        icon: <ArrowRight className="w-4 h-4" />,
+        value: '--'
+      };
     }
-    return 'text-gray-500';
-  };
-
-  const TrendIcon = () => {
+    
+    // Determine trend color and icon based on type or value
     if (trendType === 'positive' || (trendType === undefined && trend > 0)) {
-      return <ArrowUpRight className="w-4 h-4" />;
+      return {
+        color: 'text-green-500',
+        icon: <ArrowUpRight className="w-4 h-4" />,
+        value: `${Math.abs(trend).toFixed(1)}%`
+      };
     } else if (trendType === 'negative' || (trendType === undefined && trend < 0)) {
-      return <ArrowDownRight className="w-4 h-4" />;
+      return {
+        color: 'text-red-500',
+        icon: <ArrowDownRight className="w-4 h-4" />,
+        value: `${Math.abs(trend).toFixed(1)}%`
+      };
     }
-    return <ArrowRight className="w-4 h-4" />;
+    
+    return {
+      color: 'text-gray-500',
+      icon: <ArrowRight className="w-4 h-4" />,
+      value: `${Math.abs(trend).toFixed(1)}%`
+    };
   };
+  
+  const trendDisplay = calculateTrendDisplay();
 
   return (
     <Card>
@@ -42,9 +58,9 @@ export function StatCard({ title, value, icon: Icon, trend = 0, trendType, toolt
           </div>
           <div className="flex items-center">
             {trend !== 0 && (
-              <div className={`flex items-center ${getTrendColor()}`}>
-                <TrendIcon />
-                <span className="text-sm font-medium">{Math.abs(trend).toFixed(1)}%</span>
+              <div className={`flex items-center ${trendDisplay.color}`}>
+                {trendDisplay.icon}
+                <span className="text-sm font-medium">{trendDisplay.value}</span>
               </div>
             )}
             {tooltip && (
