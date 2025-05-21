@@ -12,6 +12,7 @@ import * as Sentry from "@sentry/react";
 import { initializeAppMonitoring } from "@/utils/supabaseHelpers";
 import { connectionManager } from "@/utils/connectionManager";
 import { BrowserRouter } from "react-router-dom";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 // Initialize Sentry with reduced sampling rates to improve performance
 Sentry.init({
@@ -90,10 +91,12 @@ root.render(
       <ErrorBoundary>
         <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
           <QueryClientProvider client={queryClient}>
-            <BrowserRouter>
-              <App />
-              <Toaster position="top-center" richColors closeButton />
-            </BrowserRouter>
+            <TooltipProvider>
+              <BrowserRouter>
+                <App />
+                <Toaster position="top-center" richColors closeButton />
+              </BrowserRouter>
+            </TooltipProvider>
           </QueryClientProvider>
         </ThemeProvider>
       </ErrorBoundary>

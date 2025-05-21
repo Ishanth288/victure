@@ -14,22 +14,49 @@ export function MaintenanceNotification() {
   const [timeUntilMaintenance, setTimeUntilMaintenance] = useState<string>("");
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [permanentlyDismissed, setPermanentlyDismissed] = useState(false);
+  const [maintenanceId, setMaintenanceId] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if this notification was previously permanently dismissed
-    const isDismissed = localStorage.getItem('maintenance-permanently-dismissed') === 'true';
-    setPermanentlyDismissed(isDismissed);
-    setShowNotification(!isDismissed);
+    const checkDismissalStatus = async () => {
+      try {
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        // Check local storage for dismissal status
+        if (user) {
+          const dismissedKey = `maintenance-dismissed-${user.id}`;
+          const isDismissed = localStorage.getItem(dismissedKey) === 'true';
+          
+          // If we have a maintenance ID stored, check if this specific notification was dismissed
+          if (maintenanceId) {
+            const specificDismissalKey = `maintenance-dismissed-${user.id}-${maintenanceId}`;
+            const isSpecificDismissed = localStorage.getItem(specificDismissalKey) === 'true';
+            
+            setPermanentlyDismissed(isDismissed || isSpecificDismissed);
+            setShowNotification(!(isDismissed || isSpecificDismissed));
+          } else {
+            setPermanentlyDismissed(isDismissed);
+            setShowNotification(!isDismissed);
+          }
+        } else {
+          // For non-logged-in users, check general dismissal
+          const isDismissed = localStorage.getItem('maintenance-permanently-dismissed') === 'true';
+          setPermanentlyDismissed(isDismissed);
+          setShowNotification(!isDismissed);
+        }
+      } catch (error) {
+        console.error("Error checking dismissal status:", error);
+      }
+    };
 
-    if (isDismissed) {
-      return; // Skip fetching if user has permanently dismissed notifications
-    }
+    checkDismissalStatus();
 
     const fetchMaintenanceStatus = async () => {
       try {
         const { data, error } = await supabase
           .from('system_settings')
-          .select('maintenance_mode, maintenance_message, maintenance_start_date, maintenance_end_date, maintenance_announcement')
+          .select('maintenance_mode, maintenance_message, maintenance_start_date, maintenance_end_date, maintenance_announcement, id')
           .eq('id', 1)
           .single();
 
@@ -39,6 +66,7 @@ export function MaintenanceNotification() {
         }
 
         if (data) {
+          setMaintenanceId(data.id?.toString() || null);
           const maintenanceStartDate = data.maintenance_start_date ? new Date(data.maintenance_start_date) : null;
           setStartDate(maintenanceStartDate);
 
@@ -84,7 +112,7 @@ export function MaintenanceNotification() {
     const interval = setInterval(fetchMaintenanceStatus, 60000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [maintenanceId]);
 
   // If there's no maintenance (current or upcoming), don't show anything
   if (!maintenanceMode && !isUpcoming) {
@@ -101,21 +129,23 @@ export function MaintenanceNotification() {
     setShowNotification(false);
     setPermanentlyDismissed(true);
     
-    // Store permanent dismissal in localStorage
-    localStorage.setItem('maintenance-permanently-dismissed', 'true');
-    
     try {
       // Get the current user
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        // We'll just store a flag in localStorage instead of trying to use a non-existent table
-        localStorage.setItem(`user-${user.id}-dismissed-maintenance`, 'true');
+        // Store dismissal in localStorage
+        const dismissedKey = `maintenance-dismissed-${user.id}`;
+        localStorage.setItem(dismissedKey, 'true');
         
-        // Store the specific maintenance ID if we have a startDate
-        if (startDate) {
-          localStorage.setItem(`user-${user.id}-dismissed-maintenance-${startDate.toISOString()}`, 'true');
+        // Store the specific maintenance ID if available
+        if (maintenanceId) {
+          const specificDismissalKey = `maintenance-dismissed-${user.id}-${maintenanceId}`;
+          localStorage.setItem(specificDismissalKey, 'true');
         }
+      } else {
+        // For non-logged-in users
+        localStorage.setItem('maintenance-permanently-dismissed', 'true');
       }
     } catch (error) {
       console.error("Error handling notification dismissal:", error);
