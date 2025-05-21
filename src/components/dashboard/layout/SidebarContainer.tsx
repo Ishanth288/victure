@@ -16,13 +16,21 @@ import {
 import { format, differenceInDays } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
 
+interface NotificationItem {
+  id: string;
+  type: string;
+  message: string;
+  date?: Date;
+}
+
 export function SidebarContainer() {
   const { profileData, isLoading: profileLoading } = useProfileData();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState(0);
-  const [notificationItems, setNotificationItems] = useState<{id: string, type: string, message: string, date?: Date}[]>([]);
+  const [notificationItems, setNotificationItems] = useState<NotificationItem[]>([]);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [pharmacyNameVisible, setPharmacyNameVisible] = useState(false);
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   
   // Control pharmacy name visibility with animation
   useEffect(() => {
@@ -34,18 +42,47 @@ export function SidebarContainer() {
     }
   }, [profileLoading, profileData]);
   
+  // Load dismissed notifications from localStorage and Supabase
+  useEffect(() => {
+    const loadDismissedNotifications = async () => {
+      // First get locally dismissed notifications
+      const localDismissed = localStorage.getItem('dismissed-notifications');
+      const localDismissedSet = new Set<string>(localDismissed ? JSON.parse(localDismissed) : []);
+      
+      try {
+        // Now try to get the user's dismissed notifications from database
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          // Get from database
+          const { data: dbDismissed, error } = await supabase
+            .from('notifications_dismissed')
+            .select('notification_id')
+            .eq('user_id', user.id);
+          
+          if (!error && dbDismissed) {
+            // Add DB dismissed IDs to our set
+            dbDismissed.forEach(item => localDismissedSet.add(item.notification_id));
+            
+            // Update localStorage with the combined list
+            localStorage.setItem('dismissed-notifications', JSON.stringify([...localDismissedSet]));
+          }
+        }
+      } catch (error) {
+        console.error("Error loading dismissed notifications:", error);
+      }
+      
+      // Update the state with our combined set
+      setDismissedIds(localDismissedSet);
+    };
+    
+    loadDismissedNotifications();
+  }, []);
+  
   // Check for notifications
   useEffect(() => {
     const checkNotifications = async () => {
       try {
-        // First check if all notifications have been permanently dismissed
-        const permanentlyDismissed = localStorage.getItem('maintenance-permanently-dismissed') === 'true';
-        if (permanentlyDismissed) {
-          setNotificationItems([]);
-          setNotifications(0);
-          return;
-        }
-        
         // Check for maintenance notices
         const { data, error } = await supabase
           .from('system_settings')
@@ -58,7 +95,7 @@ export function SidebarContainer() {
           return;
         }
         
-        let newNotificationItems: {id: string, type: string, message: string, date?: Date}[] = [];
+        let newNotificationItems: NotificationItem[] = [];
         
         // Check if there's upcoming maintenance
         if (data && data.maintenance_start_date) {
@@ -71,7 +108,8 @@ export function SidebarContainer() {
           // Set notification if within 7 days or if there's a new announcement
           const noticeId = `maintenance-${data.maintenance_start_date}`;
           
-          if ((diffDays <= 7 && diffDays >= 0) || data.maintenance_announcement) {
+          if (!dismissedIds.has(noticeId) && 
+              ((diffDays <= 7 && diffDays >= 0) || data.maintenance_announcement)) {
             const message = data.maintenance_announcement || 
               `Scheduled maintenance on ${format(startDate, "PPP")} at ${format(startDate, "p")}`;
             
@@ -99,6 +137,8 @@ export function SidebarContainer() {
     
     // Set up event listener for notification dismissal
     const handleNotificationDismissal = () => {
+      // Reset everything on dismiss from other components
+      setDismissedIds(new Set([...dismissedIds, 'maintenance-permanently-dismissed']));
       setNotificationItems([]);
       setNotifications(0);
     };
@@ -109,20 +149,39 @@ export function SidebarContainer() {
       clearInterval(interval);
       window.removeEventListener('maintenance-notification-dismissed', handleNotificationDismissal);
     };
-  }, []);
+  }, [dismissedIds]);
 
-  const dismissNotification = (noticeId: string) => {
-    // Permanently dismiss all notifications
-    localStorage.setItem('maintenance-permanently-dismissed', 'true');
-    
-    // Remove from current notifications
-    setNotificationItems([]);
-    
-    // Update count
-    setNotifications(0);
-    
-    // Dispatch event to also dismiss the alert banner if it's showing
-    window.dispatchEvent(new CustomEvent('maintenance-notification-dismissed'));
+  const dismissNotification = async (noticeId: string) => {
+    try {
+      // Add to locally dismissed set
+      const newDismissedIds = new Set(dismissedIds);
+      newDismissedIds.add(noticeId);
+      setDismissedIds(newDismissedIds);
+      
+      // Update localStorage
+      localStorage.setItem('dismissed-notifications', JSON.stringify([...newDismissedIds]));
+      
+      // Try to save to database for cross-device persistence
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        await supabase.from('notifications_dismissed').upsert([
+          {
+            user_id: user.id,
+            notification_id: noticeId,
+            notification_type: 'maintenance',
+            dismissed_at: new Date().toISOString()
+          }
+        ]);
+      }
+      
+      // Remove from current notifications
+      setNotificationItems(notificationItems.filter(item => item.id !== noticeId));
+      setNotifications(prev => prev - 1);
+      
+    } catch (error) {
+      console.error("Error dismissing notification:", error);
+    }
   };
   
   return (

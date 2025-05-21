@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Clock, Info, Crown, Zap } from "lucide-react";
+import { AlertCircle, Clock, Info, Crown, Zap, FileText, Package, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, differenceInDays } from 'date-fns';
 import { Link, useNavigate } from 'react-router-dom';
@@ -224,25 +224,25 @@ export function PlanBanner() {
   };
   
   // For paid plans, show a different banner
-  if (planInfo.planType !== 'Free Trial') {
+  if (planInfo?.planType !== 'Free Trial') {
     return (
-      <Card className={planLimits.bgColor + " mb-6"}>
+      <Card className={`${planLimits?.bgColor || 'bg-blue-50 border-blue-200'} mb-6 shadow-sm`}>
         <CardContent className="p-4">
           <div className="flex items-start space-x-4">
-            {planLimits.icon}
+            {planLimits?.icon}
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between">
                 <div>
                   <h3 className="font-medium text-sm">
-                    {planLimits.description}
+                    {planLimits?.description || 'Pro Plan'}
                   </h3>
                   <p className="text-xs text-neutral-600 mt-1">
-                    {planInfo.registrationDate && (
+                    {planInfo?.registrationDate && (
                       <>Started on {format(new Date(planInfo.registrationDate), 'PPP')}</>
                     )}
                   </p>
                 </div>
-                {planInfo.planType === 'PRO' && (
+                {planInfo?.planType === 'PRO' && (
                   <div className="mt-3 sm:mt-0">
                     <Button 
                       size="sm" 
@@ -259,21 +259,30 @@ export function PlanBanner() {
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div className="flex items-center space-x-1">
                   <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                  <span>
-                    <strong>{planInfo.monthlyBillsCount}</strong>/{planLimits.monthlyBillsLimit} monthly bills
-                  </span>
+                  <div className="flex items-center">
+                    <FileText className="h-3.5 w-3.5 mr-1 text-green-600" />
+                    <span>
+                      <strong>{planInfo?.monthlyBillsCount}</strong>/{planLimits?.monthlyBillsLimit} monthly bills
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center space-x-1">
                   <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                  <span>
-                    <strong>{planInfo.dailyBillsCount}</strong> bills today
-                  </span>
+                  <div className="flex items-center">
+                    <FileText className="h-3.5 w-3.5 mr-1 text-blue-600" />
+                    <span>
+                      <strong>{planInfo?.dailyBillsCount}</strong> bills today
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center space-x-1">
                   <div className="h-2 w-2 rounded-full bg-purple-500"></div>
-                  <span>
-                    <strong>{planInfo.inventoryCount}</strong>/{planLimits.inventoryLimit} inventory items
-                  </span>
+                  <div className="flex items-center">
+                    <Package className="h-3.5 w-3.5 mr-1 text-purple-600" />
+                    <span>
+                      <strong>{planInfo?.inventoryCount}</strong>/{planLimits?.inventoryLimit} inventory items
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -285,8 +294,8 @@ export function PlanBanner() {
   
   // Below code is for Free Trial plan
   // Determine banner color based on days remaining
-  const isExpiringSoon = planInfo.daysRemaining <= 5;
-  const isExpired = planInfo.daysRemaining <= 0;
+  const isExpiringSoon = planInfo?.daysRemaining <= 5;
+  const isExpired = planInfo?.daysRemaining <= 0;
   
   // Banner colors
   const bannerClasses = isExpired 
@@ -310,7 +319,7 @@ export function PlanBanner() {
       : "text-blue-500";
       
   return (
-    <Card className={`${bannerClasses} mb-6`}>
+    <Card className={`${bannerClasses} mb-6 shadow-sm`}>
       <CardContent className="p-4">
         <div className="flex items-start space-x-4">
           <IconComponent className={`h-5 w-5 ${iconColor} mt-0.5 flex-shrink-0`} />
@@ -321,15 +330,15 @@ export function PlanBanner() {
                   {isExpired 
                     ? "Your Free Trial has expired" 
                     : isExpiringSoon 
-                      ? `Your Free Trial is expiring soon (${planInfo.daysRemaining} days left)`
-                      : `Free Trial - ${planInfo.daysRemaining} days remaining`
+                      ? `Your Free Trial is expiring soon (${planInfo?.daysRemaining} days left)`
+                      : `Free Trial - ${planInfo?.daysRemaining} days remaining`
                   }
                 </h3>
                 <p className="text-xs text-neutral-600 mt-1">
-                  {planInfo.registrationDate && (
+                  {planInfo?.registrationDate && (
                     <>Started on {format(new Date(planInfo.registrationDate), 'PPP')}</>
                   )}
-                  {planInfo.trialExpirationDate && (
+                  {planInfo?.trialExpirationDate && (
                     <> · Expires on {format(new Date(planInfo.trialExpirationDate), 'PPP')}</>
                   )}
                 </p>
@@ -348,21 +357,30 @@ export function PlanBanner() {
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div className="flex items-center space-x-1">
                 <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                <span>
-                  <strong>{planInfo.monthlyBillsCount}</strong>/{planLimits.monthlyBillsLimit} monthly bills
-                </span>
+                <div className="flex items-center">
+                  <FileText className="h-3.5 w-3.5 mr-1 text-green-600" />
+                  <span>
+                    <strong>{planInfo?.monthlyBillsCount}</strong>/{planLimits?.monthlyBillsLimit} monthly bills
+                  </span>
+                </div>
               </div>
               <div className="flex items-center space-x-1">
                 <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                <span>
-                  <strong>{planInfo.dailyBillsCount}</strong>/{planLimits.dailyBillsLimit} daily bills
-                </span>
+                <div className="flex items-center">
+                  <FileText className="h-3.5 w-3.5 mr-1 text-blue-600" />
+                  <span>
+                    <strong>{planInfo?.dailyBillsCount}</strong>/{planLimits?.dailyBillsLimit} daily bills
+                  </span>
+                </div>
               </div>
               <div className="flex items-center space-x-1">
                 <div className="h-2 w-2 rounded-full bg-purple-500"></div>
-                <span>
-                  <strong>{planInfo.inventoryCount}</strong>/{planLimits.inventoryLimit} inventory items
-                </span>
+                <div className="flex items-center">
+                  <Package className="h-3.5 w-3.5 mr-1 text-purple-600" />
+                  <span>
+                    <strong>{planInfo?.inventoryCount}</strong>/{planLimits?.inventoryLimit} inventory items
+                  </span>
+                </div>
               </div>
             </div>
           </div>

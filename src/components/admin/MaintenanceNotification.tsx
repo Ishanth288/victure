@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -14,12 +13,15 @@ export function MaintenanceNotification() {
   const [isUpcoming, setIsUpcoming] = useState(false);
   const [timeUntilMaintenance, setTimeUntilMaintenance] = useState<string>("");
   const [startDate, setStartDate] = useState<Date | null>(null);
+  const [permanentlyDismissed, setPermanentlyDismissed] = useState(false);
 
   useEffect(() => {
     // Check if this notification was previously permanently dismissed
-    const permanentlyDismissed = localStorage.getItem('maintenance-permanently-dismissed') === 'true';
-    if (permanentlyDismissed) {
-      setShowNotification(false);
+    const isDismissed = localStorage.getItem('maintenance-permanently-dismissed') === 'true';
+    setPermanentlyDismissed(isDismissed);
+    setShowNotification(!isDismissed);
+
+    if (isDismissed) {
       return; // Skip fetching if user has permanently dismissed notifications
     }
 
@@ -90,16 +92,37 @@ export function MaintenanceNotification() {
   }
 
   // If the user has dismissed the notification, don't show it
-  if (!showNotification) {
+  if (permanentlyDismissed || !showNotification) {
     return null;
   }
 
-  const handleDismiss = () => {
+  const handleDismiss = async () => {
     // Add smooth exit animation
     setShowNotification(false);
+    setPermanentlyDismissed(true);
     
-    // Store permanent dismissal in localStorage - THIS IS THE KEY FIX
+    // Store permanent dismissal in localStorage
     localStorage.setItem('maintenance-permanently-dismissed', 'true');
+    
+    try {
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Store dismissal in Supabase for cross-device persistence
+        await supabase.from('notifications_dismissed').upsert([
+          {
+            user_id: user.id,
+            notification_type: 'maintenance',
+            notification_id: startDate ? `maintenance-${startDate.toISOString()}` : 'maintenance-general',
+            dismissed_at: new Date().toISOString()
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error("Error storing notification dismissal:", error);
+      // Even if the server storage fails, keep the local dismissal
+    }
     
     // Dispatch custom event for other components to react to dismissal
     window.dispatchEvent(new CustomEvent('maintenance-notification-dismissed'));

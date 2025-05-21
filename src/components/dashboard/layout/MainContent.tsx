@@ -12,7 +12,7 @@ export function MainContent({ children }: MainContentProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-6 border-b bg-white shadow-sm">
+      <header className="sticky top-0 z-10 flex items-center justify-between h-16 min-h-[56px] px-6 border-b bg-white shadow-sm py-4">
         <div className="flex-1"></div>
         <div className="text-2xl font-bold text-neutral-900 flex-1 text-center flex justify-center items-center">
           <span className="transition-opacity duration-300 whitespace-nowrap">

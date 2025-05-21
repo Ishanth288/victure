@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, ArrowUpRight, ArrowDown, ArrowUp } from "lucide-react";
+import { Sparkles, ArrowDown, ArrowUp } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -204,8 +204,22 @@ export const InventoryOptimization = () => {
   
   const getEfficiencyScore = () => {
     const total = optimizations.length;
+    if (total === 0) return 0;
     const needAction = optimizations.filter(opt => opt.saving !== 0).length;
     return Math.round(((total - needAction) / total) * 100);
+  };
+
+  const getEfficiencyColor = () => {
+    const score = getEfficiencyScore();
+    if (score < 50) return "bg-red-500";
+    if (score < 80) return "bg-amber-500";
+    return "bg-green-500";
+  };
+
+  const getAverageConfidence = () => {
+    if (optimizations.length === 0) return 'N/A';
+    const avgConfidence = Math.round(optimizations.reduce((acc, curr) => acc + curr.confidence, 0) / optimizations.length);
+    return isNaN(avgConfidence) ? 'N/A' : `${avgConfidence}%`;
   };
 
   const getSortedOptimizations = () => {
@@ -263,7 +277,7 @@ export const InventoryOptimization = () => {
                 <span className="text-sm font-medium">Inventory Efficiency</span>
                 <span className="text-sm">{getEfficiencyScore()}%</span>
               </div>
-              <Progress value={getEfficiencyScore()} className="h-2" />
+              <Progress value={getEfficiencyScore()} className={`h-2 ${getEfficiencyColor()}`} />
             </div>
             
             <div className="bg-blue-50 p-3 rounded-md mb-4">
@@ -277,7 +291,7 @@ export const InventoryOptimization = () => {
                   </p>
                 </div>
                 <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                  Prediction Confidence: {Math.round(optimizations.reduce((acc, curr) => acc + curr.confidence, 0) / optimizations.length)}%
+                  Prediction Confidence: {getAverageConfidence()}
                 </Badge>
               </div>
               {lastUpdated && (
@@ -301,7 +315,7 @@ export const InventoryOptimization = () => {
             </div>
             
             <ul className="space-y-3 max-h-[250px] overflow-y-auto">
-              {getSortedOptimizations().map(opt => (
+              {getSortedOptimizations().length > 0 ? getSortedOptimizations().map(opt => (
                 <li key={opt.id} className="p-3 bg-gray-50 border border-gray-200 rounded-md text-sm">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center">
@@ -343,7 +357,11 @@ export const InventoryOptimization = () => {
                     </span>
                   </div>
                 </li>
-              ))}
+              )) : (
+                <div className="text-center p-4 text-gray-500">
+                  <p>No inventory insights available</p>
+                </div>
+              )}
             </ul>
           </>
         )}
