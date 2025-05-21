@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { SidebarLinks } from "@/components/dashboard/SidebarLinks";
 import { cn } from "@/lib/utils";
@@ -21,7 +22,6 @@ export function SidebarContainer() {
   const [notifications, setNotifications] = useState(0);
   const [notificationItems, setNotificationItems] = useState<{id: string, type: string, message: string, date?: Date}[]>([]);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const [dismissedNotices, setDismissedNotices] = useState<string[]>([]);
   const [pharmacyNameVisible, setPharmacyNameVisible] = useState(false);
   
   // Control pharmacy name visibility with animation
@@ -38,6 +38,14 @@ export function SidebarContainer() {
   useEffect(() => {
     const checkNotifications = async () => {
       try {
+        // First check if all notifications have been permanently dismissed
+        const permanentlyDismissed = localStorage.getItem('maintenance-permanently-dismissed') === 'true';
+        if (permanentlyDismissed) {
+          setNotificationItems([]);
+          setNotifications(0);
+          return;
+        }
+        
         // Check for maintenance notices
         const { data, error } = await supabase
           .from('system_settings')
@@ -64,17 +72,15 @@ export function SidebarContainer() {
           const noticeId = `maintenance-${data.maintenance_start_date}`;
           
           if ((diffDays <= 7 && diffDays >= 0) || data.maintenance_announcement) {
-            if (!dismissedNotices.includes(noticeId)) {
-              const message = data.maintenance_announcement || 
-                `Scheduled maintenance on ${format(startDate, "PPP")} at ${format(startDate, "p")}`;
-              
-              newNotificationItems.push({
-                id: noticeId,
-                type: 'maintenance',
-                message,
-                date: startDate
-              });
-            }
+            const message = data.maintenance_announcement || 
+              `Scheduled maintenance on ${format(startDate, "PPP")} at ${format(startDate, "p")}`;
+            
+            newNotificationItems.push({
+              id: noticeId,
+              type: 'maintenance',
+              message,
+              date: startDate
+            });
           }
         }
         
@@ -91,18 +97,32 @@ export function SidebarContainer() {
     // Check every 5 minutes
     const interval = setInterval(checkNotifications, 5 * 60 * 1000);
     
-    return () => clearInterval(interval);
-  }, [dismissedNotices]);
+    // Set up event listener for notification dismissal
+    const handleNotificationDismissal = () => {
+      setNotificationItems([]);
+      setNotifications(0);
+    };
+    
+    window.addEventListener('maintenance-notification-dismissed', handleNotificationDismissal);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('maintenance-notification-dismissed', handleNotificationDismissal);
+    };
+  }, []);
 
   const dismissNotification = (noticeId: string) => {
-    // Add to dismissed notifications
-    setDismissedNotices(prev => [...prev, noticeId]);
+    // Permanently dismiss all notifications
+    localStorage.setItem('maintenance-permanently-dismissed', 'true');
     
     // Remove from current notifications
-    setNotificationItems(prev => prev.filter(item => item.id !== noticeId));
+    setNotificationItems([]);
     
     // Update count
-    setNotifications(prev => Math.max(0, prev - 1));
+    setNotifications(0);
+    
+    // Dispatch event to also dismiss the alert banner if it's showing
+    window.dispatchEvent(new CustomEvent('maintenance-notification-dismissed'));
   };
   
   return (

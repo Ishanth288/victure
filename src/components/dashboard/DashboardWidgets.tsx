@@ -4,9 +4,13 @@ import { DocumentManagement } from "@/components/document-management";
 
 export function DashboardWidgets() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-      <TaskManagement />
-      <DocumentManagement />
+    <div className="h-full">
+      <div className="mb-6">
+        <TaskManagement />
+      </div>
+      <div>
+        <DocumentManagement />
+      </div>
     </div>
   );
 }
