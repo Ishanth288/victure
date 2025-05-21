@@ -42,37 +42,33 @@ export function SidebarContainer() {
     }
   }, [profileLoading, profileData]);
   
-  // Load dismissed notifications from localStorage and Supabase
+  // Load dismissed notifications from localStorage
   useEffect(() => {
     const loadDismissedNotifications = async () => {
-      // First get locally dismissed notifications
+      // Get locally dismissed notifications
       const localDismissed = localStorage.getItem('dismissed-notifications');
       const localDismissedSet = new Set<string>(localDismissed ? JSON.parse(localDismissed) : []);
       
       try {
-        // Now try to get the user's dismissed notifications from database
+        // Get current user
         const { data: { user } } = await supabase.auth.getUser();
         
         if (user) {
-          // Get from database
-          const { data: dbDismissed, error } = await supabase
-            .from('notifications_dismissed')
-            .select('notification_id')
-            .eq('user_id', user.id);
+          // Check for user-specific dismissed notifications in localStorage
+          const userDismissedKeys = Object.keys(localStorage)
+            .filter(key => key.startsWith(`user-${user.id}-dismissed-`));
           
-          if (!error && dbDismissed) {
-            // Add DB dismissed IDs to our set
-            dbDismissed.forEach(item => localDismissedSet.add(item.notification_id));
-            
-            // Update localStorage with the combined list
-            localStorage.setItem('dismissed-notifications', JSON.stringify([...localDismissedSet]));
-          }
+          // Add these to our set
+          userDismissedKeys.forEach(key => {
+            const noticeId = key.replace(`user-${user.id}-dismissed-`, '');
+            localDismissedSet.add(noticeId);
+          });
         }
       } catch (error) {
         console.error("Error loading dismissed notifications:", error);
       }
       
-      // Update the state with our combined set
+      // Update the state with our set
       setDismissedIds(localDismissedSet);
     };
     
@@ -138,7 +134,7 @@ export function SidebarContainer() {
     // Set up event listener for notification dismissal
     const handleNotificationDismissal = () => {
       // Reset everything on dismiss from other components
-      setDismissedIds(new Set([...dismissedIds, 'maintenance-permanently-dismissed']));
+      setDismissedIds(prev => new Set([...prev, 'maintenance-permanently-dismissed']));
       setNotificationItems([]);
       setNotifications(0);
     };
@@ -161,18 +157,11 @@ export function SidebarContainer() {
       // Update localStorage
       localStorage.setItem('dismissed-notifications', JSON.stringify([...newDismissedIds]));
       
-      // Try to save to database for cross-device persistence
+      // Try to save to localStorage for cross-session persistence
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        await supabase.from('notifications_dismissed').upsert([
-          {
-            user_id: user.id,
-            notification_id: noticeId,
-            notification_type: 'maintenance',
-            dismissed_at: new Date().toISOString()
-          }
-        ]);
+        localStorage.setItem(`user-${user.id}-dismissed-${noticeId}`, 'true');
       }
       
       // Remove from current notifications

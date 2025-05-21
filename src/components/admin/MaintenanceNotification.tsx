@@ -109,19 +109,17 @@ export function MaintenanceNotification() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        // Store dismissal in Supabase for cross-device persistence
-        await supabase.from('notifications_dismissed').upsert([
-          {
-            user_id: user.id,
-            notification_type: 'maintenance',
-            notification_id: startDate ? `maintenance-${startDate.toISOString()}` : 'maintenance-general',
-            dismissed_at: new Date().toISOString()
-          }
-        ]);
+        // We'll just store a flag in localStorage instead of trying to use a non-existent table
+        localStorage.setItem(`user-${user.id}-dismissed-maintenance`, 'true');
+        
+        // Store the specific maintenance ID if we have a startDate
+        if (startDate) {
+          localStorage.setItem(`user-${user.id}-dismissed-maintenance-${startDate.toISOString()}`, 'true');
+        }
       }
     } catch (error) {
-      console.error("Error storing notification dismissal:", error);
-      // Even if the server storage fails, keep the local dismissal
+      console.error("Error handling notification dismissal:", error);
+      // Even if there's an error, keep the local dismissal
     }
     
     // Dispatch custom event for other components to react to dismissal

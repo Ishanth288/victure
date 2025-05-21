@@ -56,6 +56,7 @@ export function DashboardStats({
         value={`₹${animatedRevenue.toLocaleString('en-IN')}`}
         icon={TrendingUp}
         trend={2.5}
+        trendType="positive"
         tooltip="Total revenue generated from all sales"
       />
       <StatCard
@@ -69,6 +70,7 @@ export function DashboardStats({
         value={animatedPatients}
         icon={Users}
         trend={4.2}
+        trendType="positive"
         tooltip="Total number of registered patients"
       />
       <StatCard
