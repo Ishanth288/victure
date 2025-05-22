@@ -78,6 +78,9 @@ export default function BillingCart() {
   const handleAddToCart = (medicine: any, quantity: number) => {
     const existingItem = cartItems.find(item => item.id === medicine.id);
     
+    // Always use selling_price instead of unit_cost
+    const price = medicine.selling_price || medicine.unit_cost;
+    
     if (existingItem) {
       setCartItems(cartItems.map(item =>
         item.id === medicine.id
@@ -89,8 +92,8 @@ export default function BillingCart() {
         id: medicine.id,
         name: medicine.name,
         quantity,
-        unit_cost: medicine.unit_cost,
-        total: quantity * medicine.unit_cost,
+        unit_cost: price, // Use the price we determined above
+        total: quantity * price, // Use the price we determined above
       }]);
     }
   };

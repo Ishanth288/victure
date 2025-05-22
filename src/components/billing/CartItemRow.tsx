@@ -25,7 +25,7 @@ export function CartItemRow({
     <div className="flex items-center justify-between py-2 border-b">
       <div className="flex-1">
         <div className="font-medium">{name}</div>
-        <div className="text-sm text-neutral-500">₹{unit_cost} per unit</div>
+        <div className="text-sm text-neutral-500">₹{unit_cost.toFixed(2)} per unit</div>
       </div>
       <div className="flex items-center gap-2">
         <div className="flex items-center border rounded-md">
@@ -48,7 +48,7 @@ export function CartItemRow({
             <Plus className="h-4 w-4" />
           </Button>
         </div>
-        <div className="w-20 text-right">₹{total}</div>
+        <div className="w-20 text-right">₹{total.toFixed(2)}</div>
         <Button variant="ghost" size="icon" onClick={() => onRemoveItem(id)}>
           <X className="h-4 w-4" />
         </Button>

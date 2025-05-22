@@ -116,7 +116,7 @@ export function SearchMedicineInput({ onAddToCart }: SearchMedicineInputProps) {
                   {medicine.dosage_form && medicine.strength && (
                     <span>{`${medicine.dosage_form} • ${medicine.strength}`}</span>
                   )}
-                  <span>₹{medicine.unit_cost.toFixed(2)}</span>
+                  <span>₹{(medicine.selling_price || medicine.unit_cost).toFixed(2)}</span>
                 </div>
                 <div className="mt-1">
                   {getStockStatus(medicine)}
