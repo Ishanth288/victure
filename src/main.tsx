@@ -8,12 +8,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ConnectionErrorBoundary } from "@/components/ConnectionErrorBoundary";
-import { initializeAppMonitoring } from "@/utils/supabaseHelpers";
-import { connectionManager } from "@/utils/connectionManager";
 import { BrowserRouter } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-// Create a client with performance optimizations and connection retry
+// Create a client with performance optimizations
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -29,10 +27,6 @@ const queryClient = new QueryClient({
     }
   },
 });
-
-// Initialize application monitoring and connection management
-initializeAppMonitoring();
-connectionManager.initialize();
 
 // Health check endpoint
 if (window.location.pathname === '/health') {

@@ -1,6 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import React, { createContext, useContext, useState } from 'react';
 
 interface AuthContextType {
   user: any;
@@ -13,62 +12,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Check for active session on component mount
-    const checkSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('Error checking session:', error);
-      }
-      
-      if (data?.session) {
-        setUser(data.session.user);
-      }
-      
-      setLoading(false);
-    };
-    
-    checkSession();
-    
-    // Set up auth state change listener
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
-        setUser(session?.user || null);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-      }
-    });
-    
-    // Clean up listener on unmount
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
+  const [loading, setLoading] = useState(false);
 
   const signIn = async (email: string, password: string) => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      setUser(data.user);
-      return data;
-    } finally {
-      setLoading(false);
-    }
+    console.log('Sign in called with:', email);
+    return { user: null };
   };
   
   const signOut = async () => {
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
+    console.log('Sign out called');
+    setUser(null);
   };
   
   const value = {

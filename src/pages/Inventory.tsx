@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -56,21 +55,8 @@ function InventoryContent() {
   const itemsPerPage = 10;
 
   useEffect(() => {
-    checkAuth();
     fetchUserPlan();
   }, []);
-
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      toast({
-        title: "Authentication Required",
-        description: "Please login to view inventory",
-        variant: "destructive",
-      });
-      navigate("/auth");
-    }
-  };
 
   const fetchUserPlan = async () => {
     try {
