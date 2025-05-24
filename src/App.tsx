@@ -4,7 +4,6 @@ import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
 import NotFound from "@/pages/NotFound";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AuthWrapper } from "@/components/AuthWrapper";
 import BackButton from "@/components/BackButton";
 import Documentation from "@/pages/Documentation";
 import AcceptableUsePolicy from "@/pages/legal/AcceptableUsePolicy";
@@ -25,96 +24,44 @@ import Purchases from "@/pages/Purchases";
 import BusinessOptimization from "@/pages/BusinessOptimization";
 import Insights from "@/pages/Insights";
 import Admin from "@/pages/Admin";
-import { MaintenanceChecker } from "@/components/admin/MaintenanceChecker";
-import { AdminCheck } from "@/components/admin/AdminCheck";
 
 function App() {
   return (
     <ErrorBoundary>
-      <MaintenanceChecker>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/documentation" element={<Documentation />} />
-          
-          {/* Legal pages */}
-          <Route path="/legal/acceptable-use" element={<AcceptableUsePolicy />} />
-          <Route path="/legal/disclaimers" element={<Disclaimers />} />
-          <Route path="/legal/eula" element={<EULA />} />
-          <Route path="/legal/privacy" element={<PrivacyPolicy />} />
-          <Route path="/legal/refund" element={<RefundPolicy />} />
-          <Route path="/legal/sla" element={<SLA />} />
-          <Route path="/legal/terms" element={<TermsOfService />} />
-          
-          {/* Protected Routes - Wrap with AuthWrapper */}
-          <Route path="/dashboard" element={
-            <AuthWrapper>
-              <Dashboard />
-            </AuthWrapper>
-          } />
-          <Route path="/inventory" element={
-            <AuthWrapper>
-              <Inventory />
-            </AuthWrapper>
-          } />
-          <Route path="/settings" element={
-            <AuthWrapper>
-              <Settings />
-            </AuthWrapper>
-          } />
-          <Route path="/patients" element={
-            <AuthWrapper>
-              <Patients />
-            </AuthWrapper>
-          } />
-          <Route path="/prescriptions" element={
-            <AuthWrapper>
-              <Prescriptions />
-            </AuthWrapper>
-          } />
-          <Route path="/billing" element={
-            <AuthWrapper>
-              <Billing />
-            </AuthWrapper>
-          } />
-          <Route path="/billing/cart" element={
-            <AuthWrapper>
-              <BillingCart />
-            </AuthWrapper>
-          } />
-          <Route path="/billing/cart/:prescriptionId" element={
-            <AuthWrapper>
-              <BillingCart />
-            </AuthWrapper>
-          } />
-          <Route path="/purchases" element={
-            <AuthWrapper>
-              <Purchases />
-            </AuthWrapper>
-          } />
-          <Route path="/business-optimization" element={
-            <AuthWrapper>
-              <BusinessOptimization />
-            </AuthWrapper>
-          } />
-          <Route path="/insights" element={
-            <AuthWrapper>
-              <Insights />
-            </AuthWrapper>
-          } />
-          <Route path="/admin" element={
-            <AdminCheck>
-              <Admin />
-            </AdminCheck>
-          } />
-          
-          {/* 404 route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/documentation" element={<Documentation />} />
         
-        <BackButton />
-      </MaintenanceChecker>
+        {/* Legal pages */}
+        <Route path="/legal/acceptable-use" element={<AcceptableUsePolicy />} />
+        <Route path="/legal/disclaimers" element={<Disclaimers />} />
+        <Route path="/legal/eula" element={<EULA />} />
+        <Route path="/legal/privacy" element={<PrivacyPolicy />} />
+        <Route path="/legal/refund" element={<RefundPolicy />} />
+        <Route path="/legal/sla" element={<SLA />} />
+        <Route path="/legal/terms" element={<TermsOfService />} />
+        
+        {/* Dashboard Routes - Remove auth wrapper for now */}
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/inventory" element={<Inventory />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/patients" element={<Patients />} />
+        <Route path="/prescriptions" element={<Prescriptions />} />
+        <Route path="/billing" element={<Billing />} />
+        <Route path="/billing/cart" element={<BillingCart />} />
+        <Route path="/billing/cart/:prescriptionId" element={<BillingCart />} />
+        <Route path="/purchases" element={<Purchases />} />
+        <Route path="/business-optimization" element={<BusinessOptimization />} />
+        <Route path="/insights" element={<Insights />} />
+        <Route path="/admin" element={<Admin />} />
+        
+        {/* 404 route */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      
+      <BackButton />
     </ErrorBoundary>
   );
 }
