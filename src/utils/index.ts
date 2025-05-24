@@ -11,5 +11,7 @@ export * from './purchaseOrderUtils';
 export * from './safeSupabaseQueries';
 export * from './documentUtils';
 export * from './performanceUtils';
-export * from './migration'; // Export all migration utilities
+export * from './migration';
+export * from './connectionManager';
+export * from './supabaseHelpers';
 // Add other utility exports here as needed
