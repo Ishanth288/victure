@@ -3,19 +3,13 @@ import { Button } from "@/components/ui/button";
 import { m } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { memo, useCallback } from "react";
-import * as Sentry from "@sentry/react";
 
 const CTA = memo(() => {
   const navigate = useNavigate();
 
   // Memoize handlers to prevent recreating functions on each render
   const handleGetStartedFree = useCallback(() => {
-    // Add Sentry breadcrumb for user actions
-    Sentry.addBreadcrumb({
-      category: 'user',
-      message: 'User clicked Get Started Free',
-      level: 'info',
-    });
+    console.log('User clicked Get Started Free');
     
     navigate('/auth', { 
       state: { 
@@ -27,12 +21,7 @@ const CTA = memo(() => {
   }, [navigate]);
 
   const handleRequestDemo = useCallback(() => {
-    // Add Sentry breadcrumb for user actions
-    Sentry.addBreadcrumb({
-      category: 'user',
-      message: 'User clicked Request a Demo',
-      level: 'info',
-    });
+    console.log('User clicked Request a Demo');
     
     window.location.href = "mailto:thugs.business@gmail.com?subject=Demo Request for Victure Pharmacy Management";
   }, []);

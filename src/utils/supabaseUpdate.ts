@@ -1,7 +1,6 @@
 
 import { PostgrestError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import * as Sentry from "@sentry/react";
 
 /**
  * Safely updates data in a table
@@ -21,7 +20,6 @@ export async function safeUpdate<T>(
     return result;
   } catch (error) {
     console.error(`Error updating data in ${table}:`, error);
-    Sentry.captureException(error);
     return {
       data: null,
       error: {

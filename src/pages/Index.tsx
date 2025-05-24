@@ -1,3 +1,4 @@
+
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { HeroSection } from "@/components/sections/HeroSection";
@@ -7,7 +8,6 @@ import { ContentSection } from "@/components/sections/ContentSection";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { useEffect, memo, useRef, useState } from "react";
 import { LazyMotion, domAnimation, m } from "framer-motion";
-import * as Sentry from "@sentry/react";
 import { MainContentWrapper } from "@/components/sections/MainContentWrapper";
 import { setupPageOptimizations, deferNonCriticalResources, createVisibilityObserver } from "@/utils/performanceUtils";
 import { Fallback } from "@/components/ui/fallback";
@@ -52,7 +52,6 @@ const Index = memo(() => {
   // Simplified error handler
   const handleError = (error: Error) => {
     console.error('Component failed to load:', error);
-    Sentry.captureException(error);
     setIsError(true);
   };
 

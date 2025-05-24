@@ -1,7 +1,6 @@
 
 import { PostgrestError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import * as Sentry from "@sentry/react";
 
 /**
  * Safely deletes data from a table
@@ -20,7 +19,6 @@ export async function safeDelete(
     return result;
   } catch (error) {
     console.error(`Error deleting data from ${table}:`, error);
-    Sentry.captureException(error);
     return {
       data: null,
       error: {

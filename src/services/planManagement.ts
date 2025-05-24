@@ -1,7 +1,6 @@
 
-import { db } from "@/integrations/firebase/client";
-import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export type PlanType = "Free Trial" | "PRO" | "PRO PLUS";
 
@@ -28,64 +27,47 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
   }
 };
 
-// Get user plan
-export const getUserPlan = async (userId: string) => {
+// Get user plan from Supabase
+export const getUserPlan = async (userId: string): Promise<PlanType> => {
   try {
-    const userRef = doc(db, "profiles", userId);
-    const userSnap = await getDoc(userRef);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('plan_type')
+      .eq('id', userId)
+      .single();
     
-    if (userSnap.exists()) {
-      return userSnap.data().plan_type || "Free Trial";
+    if (error) {
+      console.error("Error getting user plan:", error);
+      return "Free Trial";
     }
     
-    return "Free Trial";
+    return (data?.plan_type as PlanType) || "Free Trial";
   } catch (error) {
     console.error("Error getting user plan:", error);
     return "Free Trial";
   }
 };
 
-// Upgrade user to a specific plan
-export const upgradeUserPlan = async (userId: string, newPlan: PlanType) => {
-  const { toast } = useToast();
-  
+// Upgrade user to a specific plan using Supabase
+export const upgradeUserPlan = async (userId: string, newPlan: PlanType): Promise<boolean> => {
   try {
-    const userRef = doc(db, "profiles", userId);
-    
-    // Update the user's plan
-    await updateDoc(userRef, {
-      plan_type: newPlan,
-      // If upgrading from trial, update the trial expiration
-      ...(newPlan !== "Free Trial" && {
-        trial_expiration_date: null
+    const { error } = await supabase
+      .from('profiles')
+      .update({ 
+        plan_type: newPlan,
+        updated_at: new Date().toISOString()
       })
-    });
+      .eq('id', userId);
     
-    // Also update in the subscriptions collection for tracking
-    const subscriptionRef = doc(db, "subscriptions", userId);
-    await setDoc(subscriptionRef, {
-      user_id: userId,
-      plan_type: newPlan,
-      updated_at: new Date().toISOString(),
-      status: "active"
-    }, { merge: true });
+    if (error) {
+      console.error("Error upgrading user plan:", error);
+      return false;
+    }
     
     console.log(`User ${userId} upgraded to ${newPlan} plan`);
-    
-    toast({
-      title: "Plan Upgraded",
-      description: `User has been upgraded to ${newPlan} plan`,
-      variant: "success"
-    });
-    
     return true;
   } catch (error) {
     console.error("Error upgrading user plan:", error);
-    toast({
-      title: "Upgrade Failed",
-      description: "Failed to upgrade the user plan. Please try again.",
-      variant: "destructive"
-    });
     return false;
   }
 };

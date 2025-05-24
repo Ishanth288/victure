@@ -5,7 +5,6 @@ import { RefreshCw, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { connectionManager } from "@/utils/connectionManager";
 import { toast } from "@/hooks/use-toast";
-import * as Sentry from "@sentry/react";
 
 interface Props {
   children: ReactNode;
@@ -59,14 +58,6 @@ export class ConnectionErrorBoundary extends Component<Props, State> {
     
     // Check if the error might be related to connection issues
     this.checkConnection();
-    
-    // Send to Sentry with additional context
-    Sentry.withScope((scope) => {
-      scope.setTag("connection_error_boundary", "true");
-      scope.setExtra("componentStack", errorInfo.componentStack);
-      scope.setExtra("connectionStatus", this.state.connectionStatus);
-      Sentry.captureException(error);
-    });
 
     // Start auto-retry if connection error
     if (this.isLikelyConnectionError(error)) {

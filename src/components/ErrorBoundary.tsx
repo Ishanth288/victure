@@ -4,7 +4,6 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logError } from "@/utils/errorHandling";
-import * as Sentry from "@sentry/react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
@@ -42,12 +41,7 @@ export class ErrorBoundary extends Component<Props, State> {
     // Check if the error might be related to connection issues
     this.checkConnections();
     
-    // Send to Sentry with additional context
-    Sentry.withScope((scope) => {
-      scope.setTag("error_boundary", "true");
-      scope.setExtra("componentStack", errorInfo.componentStack);
-      Sentry.captureException(error);
-    });
+    console.error('Error caught by boundary:', error, errorInfo);
   }
 
   private checkConnections = async () => {
@@ -136,13 +130,6 @@ export class ErrorBoundary extends Component<Props, State> {
                     size="sm"
                   >
                     Reload page
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => Sentry.showReportDialog({ eventId: Sentry.lastEventId() })}
-                    size="sm"
-                  >
-                    Report problem
                   </Button>
                 </div>
               </AlertDescription>
