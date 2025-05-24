@@ -10,6 +10,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ConnectionErrorBoundary } from "@/components/ConnectionErrorBoundary";
 import { BrowserRouter } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/hooks/useAuth";
 
 // Create a client with performance optimizations
 const queryClient = new QueryClient({
@@ -41,12 +42,14 @@ root.render(
       <ErrorBoundary>
         <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
           <QueryClientProvider client={queryClient}>
-            <TooltipProvider>
-              <BrowserRouter>
-                <App />
-                <Toaster position="top-center" richColors closeButton />
-              </BrowserRouter>
-            </TooltipProvider>
+            <AuthProvider>
+              <TooltipProvider>
+                <BrowserRouter>
+                  <App />
+                  <Toaster position="top-center" richColors closeButton />
+                </BrowserRouter>
+              </TooltipProvider>
+            </AuthProvider>
           </QueryClientProvider>
         </ThemeProvider>
       </ErrorBoundary>
