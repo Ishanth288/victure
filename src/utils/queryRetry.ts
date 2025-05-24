@@ -1,4 +1,6 @@
 
+import * as Sentry from "@sentry/react";
+
 type SupabaseResult<T> = {
   data: T;
   error: any;
@@ -54,6 +56,13 @@ export async function executeWithRetry<T>(
         await new Promise(resolve => setTimeout(resolve, retryDelay * (attempts + 1)));
         attempts++;
       } else {
+        // Capture more serious errors in Sentry
+        Sentry.captureException(error, {
+          tags: {
+            context: options?.context || 'supabase-query'
+          }
+        });
+        
         // On final attempt, return formatted error response
         return { data: null as unknown as T, error: lastError };
       }

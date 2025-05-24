@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -22,18 +21,18 @@
         align-items: center; 
         justify-content: center; 
         min-height: 100vh;
-        background-color: #f9fafb;
+        background-color: #f9fafb; /* Light gray background */
       }
       .spinner {
         width: 40px;
         height: 40px;
-        border: 3px solid rgba(0,0,0,0.1);
+        border: 3px solid rgba(0,0,0,0.1); /* Light border */
         border-radius: 50%;
-        border-top-color: #3b82f6;
-        animation: spin 1s ease-in-out infinite;
+        border-top-color: #3b82f6; /* Blue top border for spinning effect */
+        animation: spin 1s ease-in-out infinite; /* Animation definition */
       }
       @keyframes spin {
-        to { transform: rotate(360deg); }
+        to { transform: rotate(360deg); } /* Rotate 360 degrees */
       }
     </style>
   </head>
@@ -41,8 +40,7 @@
   <body>
     <div id="root">
       <div class="initial-loader">
-        <div class="spinner"></div>
-      </div>
+        <div class="spinner"></div> </div>
     </div>
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>

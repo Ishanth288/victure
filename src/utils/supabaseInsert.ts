@@ -1,6 +1,7 @@
 
 import { PostgrestError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import * as Sentry from "@sentry/react";
 
 /**
  * Safely inserts data into any table, handling type issues and error management
@@ -23,6 +24,7 @@ export async function safeInsert<T>(
     return result;
   } catch (error) {
     console.error(`Error inserting data into ${table}:`, error);
+    Sentry.captureException(error);
     return {
       data: null,
       error: {

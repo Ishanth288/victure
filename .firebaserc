@@ -1,0 +1,15 @@
+
+{
+  "projects": {
+    "default": "victure-990aa"
+  },
+  "targets": {
+    "victure-990aa": {
+      "hosting": {
+        "victurehealth": [
+          "victurehealth"
+        ]
+      }
+    }
+  }
+}

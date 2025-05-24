@@ -1,6 +1,7 @@
 
 import { PostgrestError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import * as Sentry from "@sentry/react";
 
 /**
  * Safely selects data from a table by ID, with proper error handling
@@ -22,6 +23,7 @@ export async function safeSelectById<T>(
     // Check for errors in the response
     if (result.error) {
       console.error(`Error selecting from ${table}:`, result.error);
+      Sentry.captureException(result.error);
       return result;
     }
     
@@ -42,6 +44,7 @@ export async function safeSelectById<T>(
     return { data: result.data as T, error: null };
   } catch (error) {
     console.error(`Error selecting data from ${table}:`, error);
+    Sentry.captureException(error);
     return {
       data: null,
       error: {
@@ -79,12 +82,14 @@ export async function safeSelectByField<T>(
     // Check for errors in the response
     if (result.error) {
       console.error(`Error selecting from ${table}:`, result.error);
+      Sentry.captureException(result.error);
       return result;
     }
     
     return { data: result.data as T, error: null };
   } catch (error) {
     console.error(`Error selecting data from ${table}:`, error);
+    Sentry.captureException(error);
     return {
       data: null,
       error: {

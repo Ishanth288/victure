@@ -1,6 +1,6 @@
-
 import { PostgrestError } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import * as Sentry from "@sentry/react";
 
 /**
  * Export security-enhanced version of auth state change
@@ -48,6 +48,7 @@ export async function safeInsert<T>(
     return result;
   } catch (error) {
     console.error(`Error inserting data into ${table}:`, error);
+    Sentry.captureException(error);
     return {
       data: null,
       error: {
@@ -81,6 +82,7 @@ export async function safeSelectById<T>(
     // Check for errors in the response
     if (result.error) {
       console.error(`Error selecting from ${table}:`, result.error);
+      Sentry.captureException(result.error);
       return result;
     }
     
@@ -101,6 +103,7 @@ export async function safeSelectById<T>(
     return { data: result.data as T, error: null };
   } catch (error) {
     console.error(`Error selecting data from ${table}:`, error);
+    Sentry.captureException(error);
     return {
       data: null,
       error: {
@@ -138,12 +141,14 @@ export async function safeSelectByField<T>(
     // Check for errors in the response
     if (result.error) {
       console.error(`Error selecting from ${table}:`, result.error);
+      Sentry.captureException(result.error);
       return result;
     }
     
     return { data: result.data as T, error: null };
   } catch (error) {
     console.error(`Error selecting data from ${table}:`, error);
+    Sentry.captureException(error);
     return {
       data: null,
       error: {
@@ -175,6 +180,7 @@ export async function safeUpdate<T>(
     return result;
   } catch (error) {
     console.error(`Error updating data in ${table}:`, error);
+    Sentry.captureException(error);
     return {
       data: null,
       error: {
@@ -216,6 +222,7 @@ export async function safeDelete(
     return result;
   } catch (error) {
     console.error(`Error deleting data from ${table}:`, error);
+    Sentry.captureException(error);
     return {
       data: null,
       error: {
@@ -244,6 +251,7 @@ export async function safeDeleteById(
  */
 export function logError(error: any, info?: string): void {
   console.error(`Application error ${info ? `in ${info}` : ''}:`, error);
+  Sentry.captureException(error);
 }
 
 /**
@@ -256,12 +264,17 @@ export async function checkSupabaseConnection(): Promise<boolean> {
     
     if (error) {
       console.error('Supabase connection check failed:', error);
+      Sentry.captureMessage('Supabase connection failed', {
+        level: 'error',
+        extra: { error }
+      });
       return false;
     }
     
     return true;
   } catch (error) {
     console.error('Error checking Supabase connection:', error);
+    Sentry.captureException(error);
     return false;
   }
 }

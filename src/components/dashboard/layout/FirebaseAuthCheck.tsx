@@ -10,7 +10,7 @@ interface AuthCheckProps {
   children: React.ReactNode;
 }
 
-export function AuthCheck({ children }: AuthCheckProps) {
+export function FirebaseAuthCheck({ children }: AuthCheckProps) {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -32,6 +32,7 @@ export function AuthCheck({ children }: AuthCheckProps) {
           console.log("No active session found, redirecting to auth page");
           navigate('/auth');
         } else {
+          console.log("User authenticated:", user.uid);
           setIsAuthenticated(true);
         }
         setIsLoading(false);

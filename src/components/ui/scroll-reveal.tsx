@@ -1,6 +1,7 @@
 
 import React, { useEffect, useRef, useState, memo } from 'react';
 import { m } from 'framer-motion';
+import * as Sentry from "@sentry/react";
 
 interface ScrollRevealProps {
   children: React.ReactNode;
@@ -26,6 +27,12 @@ export const ScrollReveal = memo(({
     const currentRef = ref.current;
     if (!currentRef) return;
 
+    // Create a Sentry span to track performance
+    const span = Sentry.startInactiveSpan({
+      name: "scroll-reveal-observer",
+      op: "ui.interaction",
+    });
+
     // Use more performant IntersectionObserver with better settings
     const observer = new IntersectionObserver(
       (entries) => {
@@ -35,7 +42,12 @@ export const ScrollReveal = memo(({
             requestAnimationFrame(() => {
               setIsVisible(true);
               
-              console.log(`Element became visible with animation: ${animation}`);
+              // Add breadcrumb for debugging
+              Sentry.addBreadcrumb({
+                category: 'ui.animation',
+                message: `Element became visible with animation: ${animation}`,
+                level: 'info',
+              });
             });
             observer.unobserve(entry.target);
           }
@@ -53,6 +65,8 @@ export const ScrollReveal = memo(({
       if (currentRef) {
         observer.unobserve(currentRef);
       }
+      // End the span when component unmounts
+      span.end();
     };
   }, [threshold, animation]);
 

@@ -3,20 +3,19 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PlanType, upgradeUserPlan } from "@/services/planManagement";
 import { Badge } from "@/components/ui/badge";
+import { db } from "@/integrations/firebase/client";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-
-export type PlanType = "Free Trial" | "PRO" | "PRO PLUS";
 
 interface User {
   id: string;
-  email?: string;
-  role?: string;
+  email: string;
+  role: string;
   plan_type: PlanType;
-  created_at?: string;
-  pharmacy_name?: string;
+  created_at: string;
+  pharmacy_name: string;
 }
 
 export function PlanManagement() {
@@ -24,48 +23,33 @@ export function PlanManagement() {
   const [loading, setLoading] = useState(true);
   const [selectedPlans, setSelectedPlans] = useState<Record<string, PlanType>>({});
   const [processingUsers, setProcessingUsers] = useState<string[]>([]);
-  const { toast } = useToast();
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching users:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch users",
-          variant: "destructive"
+      const usersQuery = query(collection(db, "profiles"), orderBy("created_at", "desc"));
+      const querySnapshot = await getDocs(usersQuery);
+      
+      const fetchedUsers: User[] = [];
+      querySnapshot.forEach((doc) => {
+        const userData = doc.data() as User;
+        fetchedUsers.push({
+          ...userData,
+          id: doc.id,
+          plan_type: (userData.plan_type as PlanType) || "Free Trial"
         });
-        return;
-      }
-
-      const fetchedUsers: User[] = data.map(user => ({
-        ...user,
-        plan_type: (user.plan_type as PlanType) || "Free Trial"
-      }));
+        
+        // Initialize selected plans with current values
+        setSelectedPlans(prev => ({
+          ...prev,
+          [doc.id]: (userData.plan_type as PlanType) || "Free Trial"
+        }));
+      });
       
       setUsers(fetchedUsers);
-      
-      // Initialize selected plans with current values
-      const initialPlans: Record<string, PlanType> = {};
-      fetchedUsers.forEach(user => {
-        initialPlans[user.id] = user.plan_type;
-      });
-      setSelectedPlans(initialPlans);
-      
     } catch (error) {
       console.error("Error fetching users:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch users",
-        variant: "destructive"
-      });
     } finally {
       setLoading(false);
     }
@@ -87,36 +71,16 @@ export function PlanManagement() {
     
     try {
       const newPlan = selectedPlans[userId];
+      const success = await upgradeUserPlan(userId, newPlan);
       
-      const { error } = await supabase
-        .from('profiles')
-        .update({ plan_type: newPlan })
-        .eq('id', userId);
-
-      if (error) {
-        throw error;
+      if (success) {
+        // Update local users state
+        setUsers(users.map(user => 
+          user.id === userId 
+            ? { ...user, plan_type: newPlan } 
+            : user
+        ));
       }
-
-      // Update local users state
-      setUsers(users.map(user => 
-        user.id === userId 
-          ? { ...user, plan_type: newPlan } 
-          : user
-      ));
-
-      toast({
-        title: "Plan Updated",
-        description: `User plan has been updated to ${newPlan}`,
-        variant: "success"
-      });
-      
-    } catch (error) {
-      console.error('Error updating plan:', error);
-      toast({
-        title: "Update Failed",
-        description: "Failed to update the user plan. Please try again.",
-        variant: "destructive"
-      });
     } finally {
       setProcessingUsers(prev => prev.filter(id => id !== userId));
     }
@@ -156,7 +120,7 @@ export function PlanManagement() {
                 <div className="flex justify-between">
                   <div>
                     <CardTitle className="text-base">{user.pharmacy_name || "Unnamed Pharmacy"}</CardTitle>
-                    <CardDescription>{user.email || user.id}</CardDescription>
+                    <CardDescription>{user.email}</CardDescription>
                   </div>
                   <Badge className={`
                     ${user.plan_type === "PRO" ? "bg-blue-500" : 
