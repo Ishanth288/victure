@@ -26,6 +26,38 @@ export function PatientDetailsModal({
     doctorName: "",
   });
 
+  const generateUserScopedPrescriptionNumber = async (userId: string): Promise<string> => {
+    try {
+      // Get the highest prescription number for this user
+      const { data: maxPrescription, error } = await supabase
+        .from("prescriptions")
+        .select("prescription_number")
+        .eq("user_id", userId)
+        .order("prescription_number", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+        throw error;
+      }
+
+      let nextNumber = 1;
+      if (maxPrescription?.prescription_number) {
+        // Extract number from prescription number (assuming format like "PRE-123" or just "123")
+        const numberMatch = maxPrescription.prescription_number.match(/\d+/);
+        if (numberMatch) {
+          nextNumber = parseInt(numberMatch[0]) + 1;
+        }
+      }
+
+      return `PRE-${nextNumber}`;
+    } catch (error) {
+      console.error("Error generating prescription number:", error);
+      // Fallback to timestamp-based number if query fails
+      return `PRE-${Date.now()}`;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -49,8 +81,10 @@ export function PatientDetailsModal({
 
       if (patientError) throw patientError;
 
-      // Create prescription
-      const prescriptionNumber = `PRE-${Date.now()}`;
+      // Generate user-scoped prescription number
+      const prescriptionNumber = await generateUserScopedPrescriptionNumber(user.id);
+
+      // Create prescription with user-scoped number
       const { data: prescriptionData, error: prescriptionError } = await supabase
         .from("prescriptions")
         .insert({
@@ -66,7 +100,7 @@ export function PatientDetailsModal({
 
       toast({
         title: "Success",
-        description: "Patient details saved successfully",
+        description: `Patient details saved successfully. Prescription ${prescriptionNumber} created.`,
       });
 
       onSuccess(prescriptionData.id);

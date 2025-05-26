@@ -1,155 +1,249 @@
 
-import { useState } from "react";
-import { Search } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Search, Plus, Loader2, Package } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { type InventoryItem, type InventoryItemDB } from "@/types/inventory";
+import { CartItem } from "@/types/billing";
+import { debounce } from "lodash";
 
-interface SearchMedicineInputProps {
-  onAddToCart: (medicine: InventoryItem, quantity: number) => void;
+interface Medicine {
+  id: number;
+  name: string;
+  ndc: string | null;
+  generic_name: string | null;
+  dosage_form: string | null;
+  strength: string | null;
+  unit_cost: number | null;
+  selling_price: number | null;
+  quantity: number;
+  manufacturer: string | null;
 }
 
-export function SearchMedicineInput({ onAddToCart }: SearchMedicineInputProps) {
+interface SearchMedicineInputProps {
+  onAddItem: (item: CartItem) => void;
+  cartItems: CartItem[];
+}
+
+export function SearchMedicineInput({ onAddItem, cartItems }: SearchMedicineInputProps) {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<InventoryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [searchResults, setSearchResults] = useState<Medicine[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
 
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
-    if (query.length < 1) {
-      setSearchResults([]);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // Get current user - we'll ensure data isolation here
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: "Authentication Error",
-          description: "You must be logged in to search inventory",
-          variant: "destructive",
-        });
-        setIsLoading(false);
+  const searchMedicines = useCallback(
+    debounce(async (query: string) => {
+      if (!query.trim()) {
+        setSearchResults([]);
+        setShowResults(false);
+        setIsSearching(false);
         return;
       }
 
-      // Explicitly add the user_id filter to ensure data isolation
-      // This is a belt-and-suspenders approach that works with RLS
-      const { data, error } = await supabase
-        .from("inventory")
-        .select("*")
-        .or(`name.ilike.%${query}%,generic_name.ilike.%${query}%`)
-        .eq("user_id", user.id) // Explicitly filter by user_id
-        .order("name");
+      setIsSearching(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          throw new Error("User not authenticated");
+        }
 
-      if (error) {
-        console.error("Supabase error:", error);
-        throw error;
+        const searchTerm = `%${query.toLowerCase()}%`;
+        
+        // Enhanced search including NDC field
+        const { data, error } = await supabase
+          .from("inventory")
+          .select("*")
+          .eq("user_id", user.id)
+          .or(`name.ilike.${searchTerm},generic_name.ilike.${searchTerm},ndc.ilike.${searchTerm},manufacturer.ilike.${searchTerm}`)
+          .gt("quantity", 0)
+          .order("name");
+
+        if (error) throw error;
+
+        setSearchResults(data || []);
+        setShowResults(true);
+      } catch (error) {
+        console.error("Error searching medicines:", error);
+        toast({
+          title: "Search Error",
+          description: "Failed to search medicines",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSearching(false);
       }
+    }, 300),
+    [toast]
+  );
 
-      const inventoryItems: InventoryItem[] = (data as InventoryItemDB[]).map(item => ({
-        ...item,
-        generic_name: item.generic_name || null,
-        strength: item.strength || null,
-        reorder_point: item.reorder_point || 10,
-        storage_condition: item.storage_condition || null
-      }));
+  useEffect(() => {
+    searchMedicines(searchQuery);
+  }, [searchQuery, searchMedicines]);
 
-      setSearchResults(inventoryItems);
-    } catch (error) {
-      console.error("Error searching medicines:", error);
+  const handleAddToCart = (medicine: Medicine) => {
+    if (!medicine.selling_price) {
       toast({
-        title: "Error",
-        description: "Failed to search medicines",
+        title: "No Price Set",
+        description: "This medicine doesn't have a selling price set",
         variant: "destructive",
       });
-      setSearchResults([]);
-    } finally {
-      setIsLoading(false);
+      return;
     }
+
+    const existingItem = cartItems.find(item => item.id === medicine.id);
+    if (existingItem) {
+      toast({
+        title: "Already Added",
+        description: "This medicine is already in your cart",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const cartItem: CartItem = {
+      id: medicine.id,
+      name: medicine.name,
+      ndc: medicine.ndc || "N/A",
+      unit_cost: medicine.selling_price,
+      quantity: 1,
+      total: medicine.selling_price,
+      available_quantity: medicine.quantity,
+    };
+
+    onAddItem(cartItem);
+    toast({
+      title: "Added to Cart",
+      description: `${medicine.name} added to cart`,
+    });
   };
 
-  const getStockStatus = (item: InventoryItem) => {
-    if (item.quantity === 0) {
-      return <Badge variant="destructive">Out of Stock</Badge>;
-    } else if (item.quantity < (item.reorder_point || 10)) {
-      return <Badge variant="warning">Low Stock: {item.quantity}</Badge>;
-    } else {
-      return <Badge variant="success">In Stock: {item.quantity}</Badge>;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    
+    if (!value.trim()) {
+      setShowResults(false);
+      setSearchResults([]);
     }
   };
 
   return (
-    <div className="relative">
+    <div className="space-y-4">
+      {/* Search Bar */}
       <div className="relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-neutral-400" />
-        <Input
-          placeholder="Search by medicine name or generic name..."
-          value={searchQuery}
-          onChange={(e) => handleSearch(e.target.value)}
-          className="pl-10"
-        />
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Search medicines by name, generic name, NDC, or manufacturer..."
+            value={searchQuery}
+            onChange={handleInputChange}
+            className="pl-10 pr-16"
+          />
+          {isSearching && (
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center">
+              <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+              <span className="text-xs text-gray-500 ml-2">Searching...</span>
+            </div>
+          )}
+        </div>
       </div>
 
-      {searchResults.length > 0 && (
-        <Card className="absolute z-10 w-full mt-1 p-2 max-h-80 overflow-y-auto shadow-lg">
-          {searchResults.map((medicine) => (
-            <div
-              key={medicine.id}
-              className="p-3 hover:bg-neutral-50 rounded flex items-center justify-between gap-4 cursor-pointer transition-colors"
-            >
-              <div className="flex-grow">
-                <div className="font-medium text-base">{medicine.name}</div>
-                {medicine.generic_name && (
-                  <div className="text-sm text-neutral-600">
-                    {medicine.generic_name}
-                  </div>
-                )}
-                <div className="text-sm text-neutral-500 flex items-center gap-2 mt-1">
-                  {medicine.dosage_form && medicine.strength && (
-                    <span>{`${medicine.dosage_form} • ${medicine.strength}`}</span>
-                  )}
-                  <span>₹{(medicine.selling_price || medicine.unit_cost).toFixed(2)}</span>
-                </div>
-                <div className="mt-1">
-                  {getStockStatus(medicine)}
-                </div>
+      {/* Search Results Area */}
+      {showResults && (
+        <div className="border rounded-lg bg-white">
+          <div className="p-4 border-b bg-gray-50">
+            <h3 className="text-sm font-medium text-gray-700">
+              Search Results ({searchResults.length} found)
+            </h3>
+          </div>
+          
+          <div className="max-h-96 overflow-y-auto">
+            {searchResults.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                <Package className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <p className="text-sm">No medicines found matching your search</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Try searching by medicine name, generic name, NDC, or manufacturer
+                </p>
               </div>
-              <Button
-                onClick={() => {
-                  onAddToCart(medicine, 1);
-                  setSearchQuery("");
-                  setSearchResults([]);
-                }}
-                disabled={medicine.quantity < 1}
-                variant="outline"
-                size="sm"
-                className="min-w-[80px]"
-              >
-                Add
-              </Button>
-            </div>
-          ))}
-        </Card>
-      )}
-
-      {isLoading && (
-        <Card className="absolute z-10 w-full mt-1 p-4 text-center text-neutral-500">
-          Searching...
-        </Card>
-      )}
-
-      {searchQuery && searchResults.length === 0 && !isLoading && (
-        <Card className="absolute z-10 w-full mt-1 p-4 text-center text-neutral-500">
-          No medicines found
-        </Card>
+            ) : (
+              <div className="divide-y">
+                {searchResults.map((medicine) => (
+                  <Card key={medicine.id} className="border-0 rounded-none shadow-none">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-medium text-gray-900 truncate">
+                              {medicine.name}
+                            </h4>
+                            {medicine.ndc && medicine.ndc !== "N/A" && (
+                              <Badge variant="outline" className="text-xs">
+                                NDC: {medicine.ndc}
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                            {medicine.generic_name && (
+                              <div>
+                                <span className="font-medium">Generic:</span> {medicine.generic_name}
+                              </div>
+                            )}
+                            {medicine.manufacturer && (
+                              <div>
+                                <span className="font-medium">Manufacturer:</span> {medicine.manufacturer}
+                              </div>
+                            )}
+                            {medicine.dosage_form && (
+                              <div>
+                                <span className="font-medium">Form:</span> {medicine.dosage_form}
+                              </div>
+                            )}
+                            {medicine.strength && (
+                              <div>
+                                <span className="font-medium">Strength:</span> {medicine.strength}
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-4 mt-2 text-sm">
+                            <span className="text-green-600 font-medium">
+                              ₹{medicine.selling_price?.toFixed(2) || "N/A"}
+                            </span>
+                            <Badge 
+                              variant={medicine.quantity > 10 ? "default" : "destructive"}
+                              className="text-xs"
+                            >
+                              Stock: {medicine.quantity}
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        <div className="ml-4">
+                          <Button
+                            size="sm"
+                            onClick={() => handleAddToCart(medicine)}
+                            disabled={!medicine.selling_price || medicine.quantity === 0}
+                            className="h-8 px-3"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

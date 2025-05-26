@@ -120,8 +120,18 @@ export default function Prescriptions() {
     setFilteredPrescriptions(filtered);
   };
 
-  const handleCreateBill = (prescriptionId: number) => {
-    navigate(`/billing?prescriptionId=${prescriptionId}`);
+  const handleCreateBill = (prescriptionId: number, patientData?: any) => {
+    // Pass patient data via URL params for auto-fill
+    const searchParams = new URLSearchParams({
+      prescriptionId: prescriptionId.toString()
+    });
+    
+    if (patientData) {
+      searchParams.set('patientName', patientData.name || '');
+      searchParams.set('patientPhone', patientData.phone_number || '');
+    }
+    
+    navigate(`/billing?${searchParams.toString()}`);
   };
 
   const handleToggleStatus = async (id: number, currentStatus: string) => {
@@ -438,7 +448,7 @@ export default function Prescriptions() {
                       <Button 
                         variant="ghost" 
                         className="flex-1 rounded-none py-2 text-primary border-l border-gray-100"
-                        onClick={() => handleCreateBill(prescription.id)}
+                        onClick={() => handleCreateBill(prescription.id, prescription.patient)}
                       >
                         Create Bill
                       </Button>
