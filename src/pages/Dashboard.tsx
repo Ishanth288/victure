@@ -10,6 +10,7 @@ import {
 import { OptimizedDashboardWidgets } from "@/components/dashboard/OptimizedDashboardWidgets";
 import { useToast } from "@/hooks/use-toast";
 import { MaintenanceNotification } from "@/components/admin/MaintenanceNotification";
+import { PlanBanner } from "@/components/dashboard/PlanBanner";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Dashboard() {
@@ -83,6 +84,8 @@ export default function Dashboard() {
         <WelcomeDialog isOpen={isHelpOpen} onOpenChange={setIsHelpOpen} />
         
         <MaintenanceNotification />
+        
+        <PlanBanner planType={userPlan} />
         
         <div className="space-y-6">
           <div className="flex justify-between items-center">

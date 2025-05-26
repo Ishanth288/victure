@@ -1,17 +1,18 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarLinks } from "@/components/dashboard/SidebarLinks";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
 
 export function SidebarContainer() {
   const [isOpen, setIsOpen] = useState(false);
-  const [pharmacyName, setPharmacyName] = useState("My Pharmacy");
+  const [pharmacyName, setPharmacyName] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchPharmacyName = async () => {
+      setIsLoading(true);
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -23,10 +24,17 @@ export function SidebarContainer() {
           
           if (profile?.pharmacy_name) {
             setPharmacyName(profile.pharmacy_name);
+          } else {
+            setPharmacyName("My Pharmacy");
           }
+        } else {
+          setPharmacyName("My Pharmacy");
         }
       } catch (error) {
         console.error("Error fetching pharmacy name:", error);
+        setPharmacyName("My Pharmacy");
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -66,9 +74,13 @@ export function SidebarContainer() {
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <div className="flex items-center min-w-0 flex-1">
               <div className="min-w-0 flex-1">
-                <h1 className="pharmacy-name text-lg font-semibold text-gray-900" title={pharmacyName}>
-                  {pharmacyName}
-                </h1>
+                {isLoading ? (
+                  <div className="h-6 w-32 bg-gray-200 animate-pulse rounded"></div>
+                ) : (
+                  <h1 className="pharmacy-name text-lg font-semibold text-gray-900" title={pharmacyName}>
+                    {pharmacyName}
+                  </h1>
+                )}
                 <p className="text-xs text-gray-500 mt-1">Pharmacy Management</p>
               </div>
             </div>

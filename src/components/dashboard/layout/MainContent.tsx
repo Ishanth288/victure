@@ -1,6 +1,5 @@
 
 import { useIsMobile } from "@/hooks/use-mobile";
-import { PlanBanner } from "@/components/PlanBanner";
 import { ProfileSection } from "@/components/dashboard/ProfileSection";
 
 interface MainContentProps {
@@ -25,7 +24,6 @@ export function MainContent({ children }: MainContentProps) {
       </header>
       
       <div className="flex-1">
-        <PlanBanner />
         <div className={isMobile ? "pb-16" : ""}>
           {children}
         </div>

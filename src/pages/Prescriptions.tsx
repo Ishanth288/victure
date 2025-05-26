@@ -5,14 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, User, FileText, DollarSign, Trash2, RotateCcw, History, Eye } from "lucide-react";
+import { Clock, User, FileText, DollarSign, Trash2, RotateCcw, History, Eye, Download, Printer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { MedicineReturnDialog } from "@/components/prescriptions/MedicineReturnDialog";
 import { ReturnHistoryDialog } from "@/components/prescriptions/ReturnHistoryDialog";
-import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
 import { 
   AlertDialog,
   AlertDialogAction, 
@@ -23,6 +22,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function Prescriptions() {
   const { toast } = useToast();
@@ -186,6 +191,65 @@ export default function Prescriptions() {
       toast({
         title: "Error",
         description: "Failed to load bill preview",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePrintBill = () => {
+    const printContent = document.getElementById('bill-preview-content');
+    if (printContent) {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Bill - ${previewBillData?.bill_number}</title>
+              <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .bill-header { text-align: center; margin-bottom: 30px; }
+                .patient-info { margin-bottom: 20px; }
+                .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                .items-table th { background-color: #f5f5f5; }
+                .totals { text-align: right; }
+                .total-row { font-weight: bold; font-size: 16px; }
+              </style>
+            </head>
+            <body>
+              ${printContent.innerHTML}
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+      }
+    }
+  };
+
+  const handleSaveBill = async () => {
+    try {
+      if (!previewBillData) return;
+
+      const { error } = await supabase
+        .from("bills")
+        .update({ status: "saved" })
+        .eq("id", previewBillData.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Bill Saved",
+        description: "Bill has been saved successfully",
+      });
+
+      setBillPreviewOpen(false);
+      fetchPrescriptions(); // Refresh data
+    } catch (error) {
+      console.error("Error saving bill:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save bill",
         variant: "destructive",
       });
     }
@@ -536,6 +600,102 @@ export default function Prescriptions() {
         </div>
       </div>
       
+      {/* Bill Preview Dialog */}
+      <Dialog open={isBillPreviewOpen} onOpenChange={setBillPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Bill Preview - #{previewBillData?.bill_number}</DialogTitle>
+          </DialogHeader>
+          
+          <div id="bill-preview-content" className="space-y-6">
+            {previewBillData && (
+              <>
+                {/* Bill Header */}
+                <div className="text-center border-b pb-4">
+                  <h2 className="text-2xl font-bold">PHARMACY BILL</h2>
+                  <p className="text-gray-600">Bill #: {previewBillData.bill_number}</p>
+                  <p className="text-gray-600">Date: {format(new Date(previewBillData.date), "PPP")}</p>
+                </div>
+
+                {/* Patient Information */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-semibold mb-2">Patient Details:</h3>
+                    <p>Name: {previewBillData.prescription?.patient?.name}</p>
+                    <p>Phone: {previewBillData.prescription?.patient?.phone_number}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold mb-2">Prescription Details:</h3>
+                    <p>Prescription #: {previewBillData.prescription?.prescription_number}</p>
+                    <p>Doctor: {previewBillData.prescription?.doctor_name}</p>
+                  </div>
+                </div>
+
+                {/* Items Table */}
+                <div>
+                  <h3 className="font-semibold mb-4">Items:</h3>
+                  <table className="items-table w-full border-collapse border border-gray-300">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="border border-gray-300 p-2 text-left">Item</th>
+                        <th className="border border-gray-300 p-2 text-right">Qty</th>
+                        <th className="border border-gray-300 p-2 text-right">Unit Price</th>
+                        <th className="border border-gray-300 p-2 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {previewBillItems.map((item, index) => (
+                        <tr key={index}>
+                          <td className="border border-gray-300 p-2">{item.name}</td>
+                          <td className="border border-gray-300 p-2 text-right">{item.quantity}</td>
+                          <td className="border border-gray-300 p-2 text-right">₹{item.unit_cost.toFixed(2)}</td>
+                          <td className="border border-gray-300 p-2 text-right">₹{item.total.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Totals */}
+                <div className="totals space-y-2">
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>₹{previewBillData.subtotal?.toFixed(2) || '0.00'}</span>
+                  </div>
+                  {previewBillData.discount_amount > 0 && (
+                    <div className="flex justify-between text-red-600">
+                      <span>Discount:</span>
+                      <span>-₹{previewBillData.discount_amount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span>GST ({previewBillData.gst_percentage || 0}%):</span>
+                    <span>₹{previewBillData.gst_amount?.toFixed(2) || '0.00'}</span>
+                  </div>
+                  <div className="flex justify-between total-row text-lg font-bold border-t pt-2">
+                    <span>Total Amount:</span>
+                    <span>₹{previewBillData.total_amount.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-4 pt-4 border-t">
+                  <Button variant="outline" onClick={handlePrintBill}>
+                    <Printer className="h-4 w-4 mr-2" />
+                    Print
+                  </Button>
+                  <Button onClick={handleSaveBill}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Save Bill
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Keep existing dialogs */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -581,13 +741,6 @@ export default function Prescriptions() {
         isOpen={isReturnHistoryDialogOpen}
         onClose={() => setReturnHistoryDialogOpen(false)}
         prescriptionId={selectedPrescriptionId}
-      />
-
-      <BillPreviewDialog
-        open={isBillPreviewOpen}
-        onOpenChange={setBillPreviewOpen}
-        billData={previewBillData}
-        items={previewBillItems}
       />
     </DashboardLayout>
   );
