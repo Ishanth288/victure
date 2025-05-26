@@ -31,19 +31,15 @@ export default function Dashboard() {
       localStorage.setItem('dashboard-help-seen', 'true');
     }
     
-    // Check if we should show post-login onboarding
     const showOnboarding = localStorage.getItem('show-post-login-onboarding');
     if (showOnboarding === 'true') {
       setShowPostLoginOnboarding(true);
-      // Remove the flag so it doesn't show again on refresh
       localStorage.removeItem('show-post-login-onboarding');
     }
     
-    // Check if the user just logged in by checking the URL params
     const url = new URL(window.location.href);
     const justLoggedIn = url.searchParams.get('just_logged_in');
     if (justLoggedIn === 'true') {
-      // Show login success message with new styling
       toast({
         title: "Login Successful",
         description: "Welcome to your pharmacy dashboard!",
@@ -51,7 +47,6 @@ export default function Dashboard() {
         duration: 5000,
       });
       
-      // Remove the URL param so the message doesn't show again on refresh
       url.searchParams.delete('just_logged_in');
       window.history.replaceState({}, document.title, url.toString());
     }
@@ -77,8 +72,8 @@ export default function Dashboard() {
             lowStockItems={lowStockItems}
           />
           
-          {/* Horizontal 3-column layout for the key components */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Centered 2-column layout for Task Management and Document Management */}
+          <div className="flex justify-center">
             <DashboardWidgets />
           </div>
         </div>
