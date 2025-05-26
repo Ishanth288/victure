@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -34,10 +35,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           setUserPlan("FREE");
         } else if (profile && profile.plan_type) {
           const fetchedPlan = profile.plan_type;
-          const allowedPlans = ["FREE", "PRO", "PRO PLUS"] as const;
-
-          if (allowedPlans.includes(fetchedPlan)) {
-            setUserPlan(fetchedPlan as typeof allowedPlans[number]);
+          
+          // Map old plan names to new plan names if needed
+          const planMapping: Record<string, "FREE" | "PRO" | "PRO PLUS"> = {
+            "Basic": "FREE",
+            "Free Trial": "FREE",
+            "Pro Plus": "PRO", 
+            "Premium": "PRO PLUS"
+          };
+          
+          // Check if it's already a valid plan type
+          const validPlans: ("FREE" | "PRO" | "PRO PLUS")[] = ["FREE", "PRO", "PRO PLUS"];
+          
+          if (validPlans.includes(fetchedPlan as "FREE" | "PRO" | "PRO PLUS")) {
+            setUserPlan(fetchedPlan as "FREE" | "PRO" | "PRO PLUS");
+          } else if (planMapping[fetchedPlan]) {
+            setUserPlan(planMapping[fetchedPlan]);
           } else {
             console.warn(`Unexpected plan type from profiles: "${fetchedPlan}". Defaulting to FREE.`);
             setUserPlan("FREE");
@@ -79,7 +92,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="mt-5 mx-4 p-4 text-center text-gray-500">Loading plan...</div>
             ) : (
               <PlanBanner
-                planType={["FREE", "PRO", "PRO PLUS"].includes(userPlan ?? "") ? userPlan! : "FREE"}
+                planType={userPlan || "FREE"}
               />
             )}
 
