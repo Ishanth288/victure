@@ -4,7 +4,6 @@ import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
 import NotFound from "@/pages/NotFound";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import BackButton from "@/components/BackButton";
 import Documentation from "@/pages/Documentation";
 import AcceptableUsePolicy from "@/pages/legal/AcceptableUsePolicy";
 import Disclaimers from "@/pages/legal/Disclaimers";
@@ -60,8 +59,6 @@ function App() {
         {/* 404 route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-      
-      <BackButton />
     </ErrorBoundary>
   );
 }
