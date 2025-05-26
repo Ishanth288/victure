@@ -20,7 +20,11 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
-export function SidebarLinks() {
+interface SidebarLinksProps {
+  onNavigate?: () => void;
+}
+
+export function SidebarLinks({ onNavigate }: SidebarLinksProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -143,6 +147,9 @@ export function SidebarLinks() {
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
     navigate(href);
+    if (onNavigate) {
+      onNavigate();
+    }
   };
 
   const handleSignOut = async (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -168,6 +175,9 @@ export function SidebarLinks() {
           variant: "default",
         });
         navigate('/auth');
+        if (onNavigate) {
+          onNavigate();
+        }
       }
     } catch (err: any) {
       console.error("Sign out error:", err);

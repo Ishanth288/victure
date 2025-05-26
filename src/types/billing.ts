@@ -2,9 +2,11 @@
 export interface CartItem {
   id: number;
   name: string;
+  ndc?: string;
   quantity: number;
   unit_cost: number;
   total: number;
+  available_quantity?: number;
 }
 
 export interface BillData {

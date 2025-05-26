@@ -81,7 +81,7 @@ export function SidebarContainer() {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .pharmacy-name {
           max-width: 180px;
           word-wrap: break-word;

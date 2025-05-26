@@ -153,9 +153,9 @@ export function SearchMedicineInput({ onAddItem, cartItems }: SearchMedicineInpu
         </div>
       </div>
 
-      {/* Search Results Area */}
+      {/* Search Results Area - Main Content (not dropdown) */}
       {showResults && (
-        <div className="border rounded-lg bg-white">
+        <div className="border rounded-lg bg-white min-h-[400px]">
           <div className="p-4 border-b bg-gray-50">
             <h3 className="text-sm font-medium text-gray-700">
               Search Results ({searchResults.length} found)
