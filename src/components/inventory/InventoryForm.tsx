@@ -148,15 +148,18 @@ export default function InventoryForm({
             value={formData.dosageForm}
             onValueChange={(value) => onSelectChange("dosageForm", value)}
           >
-            <SelectTrigger className="bg-white">
+            <SelectTrigger className="bg-white border border-gray-300 shadow-sm">
               <SelectValue placeholder="Select dosage form" />
             </SelectTrigger>
-            <SelectContent className="bg-white border shadow-lg">
+            <SelectContent className="bg-white border border-gray-300 shadow-lg z-50">
               <SelectItem value="tablet">Tablet</SelectItem>
               <SelectItem value="capsule">Capsule</SelectItem>
               <SelectItem value="syrup">Syrup</SelectItem>
               <SelectItem value="injection">Injection</SelectItem>
               <SelectItem value="ointment">Ointment</SelectItem>
+              <SelectItem value="spray">Spray</SelectItem>
+              <SelectItem value="drops">Drops</SelectItem>
+              <SelectItem value="sachet">Sachet</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -258,10 +261,10 @@ export default function InventoryForm({
             value={formData.storage}
             onValueChange={(value) => onSelectChange("storage", value)}
           >
-            <SelectTrigger className="bg-white">
+            <SelectTrigger className="bg-white border border-gray-300 shadow-sm">
               <SelectValue placeholder="Select storage condition" />
             </SelectTrigger>
-            <SelectContent className="bg-white border shadow-lg">
+            <SelectContent className="bg-white border border-gray-300 shadow-lg z-50">
               <SelectItem value="room">Room Temperature</SelectItem>
               <SelectItem value="refrigerated">Refrigerated</SelectItem>
               <SelectItem value="frozen">Frozen</SelectItem>
