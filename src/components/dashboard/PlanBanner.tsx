@@ -1,7 +1,6 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Crown } from "lucide-react";
 
 interface PlanBannerProps {
   planType: "Basic" | "Pro Plus" | "Premium";
@@ -44,7 +43,7 @@ export function PlanBanner({ planType, className }: PlanBannerProps) {
       bg-gradient-to-r ${config.gradient}
       shadow-lg hover:shadow-xl transition-all duration-200
       transform hover:scale-[1.01]
-      ${className}
+      ${className || ''}
     `}>
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">

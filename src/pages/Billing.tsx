@@ -73,6 +73,15 @@ export default function Billing() {
     });
   };
 
+  const handleModalClose = () => {
+    setShowPatientModal(false);
+    // Reset to show prescription search when modal is closed
+    setShowPrescriptionSearch(true);
+    setPrescriptionId(null);
+    setPatientInfo(null);
+    setCartItems([]);
+  };
+
   const handleAddItem = (item: CartItem) => {
     setCartItems(prev => {
       const existing = prev.find(cartItem => cartItem.id === item.id);
@@ -249,7 +258,7 @@ export default function Billing() {
 
         <EnhancedPatientDetailsModal
           open={showPatientModal}
-          onOpenChange={setShowPatientModal}
+          onOpenChange={handleModalClose}
           onSuccess={handlePatientSuccess}
         />
       </Suspense>

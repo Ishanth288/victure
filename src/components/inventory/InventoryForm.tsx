@@ -160,6 +160,7 @@ export default function InventoryForm({
               <SelectItem value="spray">Spray</SelectItem>
               <SelectItem value="drops">Drops</SelectItem>
               <SelectItem value="sachet">Sachet</SelectItem>
+              <SelectItem value="respule">Respule</SelectItem>
             </SelectContent>
           </Select>
         </div>
