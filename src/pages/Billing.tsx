@@ -1,20 +1,23 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
-import { PatientDetailsModal } from "@/components/billing/PatientDetailsModal";
-import { PrescriptionLookup } from "@/components/billing/PrescriptionLookup";
+import { BillingSearchInterface } from "@/components/billing/BillingSearchInterface";
+import { EnhancedPatientDetailsModal } from "@/components/billing/EnhancedPatientDetailsModal";
 import { SearchMedicineInput } from "@/components/billing/SearchMedicineInput";
 import { CartSummary } from "@/components/billing/CartSummary";
+import { BillingSkeleton } from "@/components/billing/BillingSkeleton";
 import { CartItem } from "@/types/billing";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { User, Phone, FileText, Search, Receipt } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Billing() {
   const [searchParams] = useSearchParams();
+  const { toast } = useToast();
   const [showPatientModal, setShowPatientModal] = useState(false);
-  const [showPrescriptionLookup, setShowPrescriptionLookup] = useState(true);
+  const [showPrescriptionSearch, setShowPrescriptionSearch] = useState(true);
   const [prescriptionId, setPrescriptionId] = useState<number | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [patientInfo, setPatientInfo] = useState<{
@@ -23,8 +26,14 @@ export default function Billing() {
     prescriptionNumber?: string;
     doctorName?: string;
   } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Simulate loading time for better UX
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+
     const prescriptionIdParam = searchParams.get('prescriptionId');
     const patientName = searchParams.get('patientName');
     const patientPhone = searchParams.get('patientPhone');
@@ -32,7 +41,7 @@ export default function Billing() {
     
     if (prescriptionIdParam) {
       setPrescriptionId(parseInt(prescriptionIdParam));
-      setShowPrescriptionLookup(false);
+      setShowPrescriptionSearch(false);
       
       if (patientName || patientPhone) {
         setPatientInfo({
@@ -42,6 +51,8 @@ export default function Billing() {
         });
       }
     }
+
+    return () => clearTimeout(timer);
   }, [searchParams]);
 
   const handlePrescriptionFound = (prescriptionData: any) => {
@@ -52,11 +63,16 @@ export default function Billing() {
       prescriptionNumber: prescriptionData.prescription_number,
       doctorName: prescriptionData.doctor_name,
     });
-    setShowPrescriptionLookup(false);
+    setShowPrescriptionSearch(false);
+    
+    toast({
+      title: "Prescription Loaded",
+      description: `Ready to add medicines for ${prescriptionData.patient?.name}`,
+    });
   };
 
   const handleCreateNewPrescription = () => {
-    setShowPrescriptionLookup(false);
+    setShowPrescriptionSearch(false);
     setShowPatientModal(true);
   };
 
@@ -66,6 +82,11 @@ export default function Billing() {
       setPatientInfo(patientData);
     }
     setShowPatientModal(false);
+    
+    toast({
+      title: "Prescription Created",
+      description: `Ready to add medicines for ${patientData?.name}`,
+    });
   };
 
   const handleAddItem = (item: CartItem) => {
@@ -105,15 +126,28 @@ export default function Billing() {
     setCartItems([]);
     setPatientInfo(null);
     setPrescriptionId(null);
-    setShowPrescriptionLookup(true);
+    setShowPrescriptionSearch(true);
+    
+    toast({
+      title: "Bill Generated Successfully",
+      description: "Prescription has been saved and bill created",
+    });
   };
 
-  if (showPrescriptionLookup) {
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <BillingSkeleton />
+      </DashboardLayout>
+    );
+  }
+
+  if (showPrescriptionSearch) {
     return (
       <DashboardLayout>
         <div className="container mx-auto px-4 py-6">
           <div className="flex justify-center items-center min-h-[60vh]">
-            <PrescriptionLookup
+            <BillingSearchInterface
               onPrescriptionFound={handlePrescriptionFound}
               onCreateNew={handleCreateNewPrescription}
             />
@@ -123,113 +157,102 @@ export default function Billing() {
     );
   }
 
-  if (!prescriptionId && !showPatientModal) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold mb-2">Loading...</h2>
-            <p className="text-gray-600">Setting up billing interface</p>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
   return (
     <DashboardLayout>
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Billing</h1>
-          {patientInfo?.prescriptionNumber && (
-            <Badge variant="outline" className="text-sm">
-              Prescription #{patientInfo.prescriptionNumber}
-            </Badge>
-          )}
-        </div>
-
-        {/* Patient Info Display */}
-        {patientInfo && (
-          <Card className="mb-6 border-0 shadow-lg bg-gradient-to-r from-blue-50 to-green-50">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center text-gray-800">
-                <User className="w-5 h-5 mr-2 text-blue-600" />
-                Patient Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="flex items-center bg-white/50 p-3 rounded-lg">
-                  <User className="w-4 h-4 mr-2 text-blue-500" />
-                  <span className="font-medium text-gray-700">Name:</span>
-                  <span className="ml-2 text-gray-900">{patientInfo.name}</span>
-                </div>
-                <div className="flex items-center bg-white/50 p-3 rounded-lg">
-                  <Phone className="w-4 h-4 mr-2 text-green-500" />
-                  <span className="font-medium text-gray-700">Phone:</span>
-                  <span className="ml-2 text-gray-900">{patientInfo.phone}</span>
-                </div>
-                {patientInfo.doctorName && (
-                  <div className="flex items-center bg-white/50 p-3 rounded-lg">
-                    <FileText className="w-4 h-4 mr-2 text-purple-500" />
-                    <span className="font-medium text-gray-700">Doctor:</span>
-                    <span className="ml-2 text-gray-900">{patientInfo.doctorName}</span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Search and Results Area */}
-          <div className="lg:col-span-2">
-            <Card className="h-full shadow-lg border-0">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
-                <CardTitle className="flex items-center text-lg font-semibold">
-                  <Search className="w-5 h-5 mr-2" />
-                  Search Medicines
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <SearchMedicineInput 
-                  onAddItem={handleAddItem}
-                  cartItems={cartItems}
-                />
-              </CardContent>
-            </Card>
+      <Suspense fallback={<BillingSkeleton />}>
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold">Billing</h1>
+            {patientInfo?.prescriptionNumber && (
+              <Badge variant="outline" className="text-sm">
+                Prescription #{patientInfo.prescriptionNumber}
+              </Badge>
+            )}
           </div>
 
-          {/* Cart Summary */}
-          <div className="lg:col-span-1">
-            {prescriptionId && (
+          {/* Patient Info Display */}
+          {patientInfo && (
+            <Card className="mb-6 border-0 shadow-lg bg-gradient-to-r from-blue-50 to-green-50">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center text-gray-800">
+                  <User className="w-5 h-5 mr-2 text-blue-600" />
+                  Patient Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center bg-white/50 p-3 rounded-lg">
+                    <User className="w-4 h-4 mr-2 text-blue-500" />
+                    <span className="font-medium text-gray-700">Name:</span>
+                    <span className="ml-2 text-gray-900">{patientInfo.name}</span>
+                  </div>
+                  <div className="flex items-center bg-white/50 p-3 rounded-lg">
+                    <Phone className="w-4 h-4 mr-2 text-green-500" />
+                    <span className="font-medium text-gray-700">Phone:</span>
+                    <span className="ml-2 text-gray-900">{patientInfo.phone}</span>
+                  </div>
+                  {patientInfo.doctorName && (
+                    <div className="flex items-center bg-white/50 p-3 rounded-lg">
+                      <FileText className="w-4 h-4 mr-2 text-purple-500" />
+                      <span className="font-medium text-gray-700">Doctor:</span>
+                      <span className="ml-2 text-gray-900">{patientInfo.doctorName}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Search and Results Area */}
+            <div className="lg:col-span-2">
               <Card className="h-full shadow-lg border-0">
-                <CardHeader className="bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-t-lg">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
                   <CardTitle className="flex items-center text-lg font-semibold">
-                    <Receipt className="w-5 h-5 mr-2" />
-                    Bill Summary
+                    <Search className="w-5 h-5 mr-2" />
+                    Search Medicines
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <CartSummary
-                    items={cartItems}
-                    prescriptionId={prescriptionId}
-                    onRemoveItem={handleRemoveItem}
-                    onUpdateQuantity={handleUpdateQuantity}
-                    onBillGenerated={handleBillGenerated}
+                  <SearchMedicineInput 
+                    onAddItem={handleAddItem}
+                    cartItems={cartItems}
                   />
                 </CardContent>
               </Card>
-            )}
+            </div>
+
+            {/* Cart Summary */}
+            <div className="lg:col-span-1">
+              {prescriptionId && (
+                <Card className="h-full shadow-lg border-0">
+                  <CardHeader className="bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-t-lg">
+                    <CardTitle className="flex items-center text-lg font-semibold">
+                      <Receipt className="w-5 h-5 mr-2" />
+                      Bill Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <CartSummary
+                      items={cartItems}
+                      prescriptionId={prescriptionId}
+                      onRemoveItem={handleRemoveItem}
+                      onUpdateQuantity={handleUpdateQuantity}
+                      onBillGenerated={handleBillGenerated}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      <PatientDetailsModal
-        open={showPatientModal}
-        onOpenChange={setShowPatientModal}
-        onSuccess={handlePatientSuccess}
-      />
+        <EnhancedPatientDetailsModal
+          open={showPatientModal}
+          onOpenChange={setShowPatientModal}
+          onSuccess={handlePatientSuccess}
+        />
+      </Suspense>
     </DashboardLayout>
   );
 }
