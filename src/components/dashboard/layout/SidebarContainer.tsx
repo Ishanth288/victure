@@ -81,7 +81,7 @@ export function SidebarContainer() {
                     {pharmacyName}
                   </h1>
                 )}
-                <p className="text-xs text-gray-500 mt-1">Pharmacy Management</p>
+                <p className="text-xs text-gray-500 mt-1">Victure</p>
               </div>
             </div>
           </div>
