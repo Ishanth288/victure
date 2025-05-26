@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import DashboardLayout from "@/components/dashboard/layout/DashboardLayout";
+import DashboardLayout from "../components/dashboard/DashboardLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import {
   DashboardStats,
