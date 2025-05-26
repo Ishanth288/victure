@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import DashboardLayout from "../components/dashboard/DashboardLayout";
+import DashboardLayout from "../components/DashboardLayout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import {
   DashboardStats,
@@ -9,13 +10,10 @@ import {
 import { OptimizedDashboardWidgets } from "@/components/dashboard/OptimizedDashboardWidgets";
 import { useToast } from "@/hooks/use-toast";
 import { MaintenanceNotification } from "@/components/admin/MaintenanceNotification";
-// Removed: import { PlanBanner } from "@/components/dashboard/PlanBanner";
-// Removed: import { supabase } from "@/integrations/supabase/client";
 
 export default function Dashboard() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [showPostLoginOnboarding, setShowPostLoginOnboarding] = useState(false);
-  // Removed: const [userPlan, setUserPlan] = useState<"FREE" | "PRO" | "PRO PLUS">("FREE");
   const { toast } = useToast();
 
   const {
@@ -38,8 +36,6 @@ export default function Dashboard() {
       setShowPostLoginOnboarding(true);
       localStorage.removeItem('show-post-login-onboarding');
     }
-
-    // Removed: fetchUserPlan logic - this is now handled by DashboardLayout
   }, [toast]);
 
   return (
@@ -49,8 +45,6 @@ export default function Dashboard() {
         <WelcomeDialog isOpen={isHelpOpen} onOpenChange={setIsHelpOpen} />
 
         <MaintenanceNotification />
-
-        {/* Removed: <PlanBanner planType={userPlan} /> - This was the duplicate! */}
 
         <div className="space-y-6">
           <div className="flex justify-between items-center">
