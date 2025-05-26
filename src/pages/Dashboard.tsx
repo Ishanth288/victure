@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 export default function Dashboard() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [showPostLoginOnboarding, setShowPostLoginOnboarding] = useState(false);
-  const [userPlan, setUserPlan] = useState<"Basic" | "Pro Plus" | "Premium">("Pro Plus");
+  const [userPlan, setUserPlan] = useState<"FREE" | "PRO" | "PRO PLUS">("FREE");
   const { toast } = useToast();
   
   const {
@@ -66,7 +66,17 @@ export default function Dashboard() {
             .single();
           
           if (profile?.plan_type) {
-            setUserPlan(profile.plan_type as "Basic" | "Pro Plus" | "Premium");
+            // Map old plan names to new plan names
+            const planMapping = {
+              "Basic": "FREE",
+              "Pro Plus": "PRO", 
+              "Premium": "PRO PLUS"
+            } as const;
+            
+            const mappedPlan = planMapping[profile.plan_type as keyof typeof planMapping];
+            if (mappedPlan) {
+              setUserPlan(mappedPlan);
+            }
           }
         }
       } catch (error) {
