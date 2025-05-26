@@ -1,10 +1,8 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { MainContent } from '@/components/dashboard/layout/MainContent';
 import { SidebarContainer } from '@/components/dashboard/layout/SidebarContainer';
-import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import { PlanBanner } from '@/components/dashboard/PlanBanner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -25,7 +23,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       if (user) {
         setUser(user);
 
-        // Fetch plan from the profiles table
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('plan_type')
@@ -36,9 +33,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           console.error('Error fetching user profile plan:', profileError);
           setUserPlan("FREE");
         } else if (profile && profile.plan_type) {
-          const fetchedPlan = profile.plan_type as "FREE" | "PRO" | "PRO PLUS";
-          if (["FREE", "PRO", "PRO PLUS"].includes(fetchedPlan)) {
-            setUserPlan(fetchedPlan);
+          const fetchedPlan = profile.plan_type;
+          const allowedPlans = ["FREE", "PRO", "PRO PLUS"] as const;
+
+          if (allowedPlans.includes(fetchedPlan)) {
+            setUserPlan(fetchedPlan as typeof allowedPlans[number]);
           } else {
             console.warn(`Unexpected plan type from profiles: "${fetchedPlan}". Defaulting to FREE.`);
             setUserPlan("FREE");
@@ -51,6 +50,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         setUser(null);
         setUserPlan("FREE");
       }
+
       setLoading(false);
     }
 
@@ -78,7 +78,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             {loading ? (
               <div className="mt-5 mx-4 p-4 text-center text-gray-500">Loading plan...</div>
             ) : (
-              <PlanBanner planType={userPlan || "FREE"} />
+              <PlanBanner
+                planType={["FREE", "PRO", "PRO PLUS"].includes(userPlan ?? "") ? userPlan! : "FREE"}
+              />
             )}
 
             {children}
