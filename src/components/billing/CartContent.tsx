@@ -22,6 +22,10 @@ export function CartContent({
   prescriptionId,
   onBillGenerated,
 }: CartContentProps) {
+  const handleAddItem = (item: CartItem) => {
+    onAddToCart(item, item.quantity);
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div className="md:col-span-2">
@@ -33,7 +37,10 @@ export function CartContent({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <SearchMedicineInput onAddToCart={onAddToCart} />
+            <SearchMedicineInput 
+              onAddItem={handleAddItem}
+              cartItems={items}
+            />
           </CardContent>
         </Card>
       </div>
