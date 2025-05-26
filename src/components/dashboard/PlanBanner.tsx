@@ -1,4 +1,3 @@
-
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
@@ -35,8 +34,43 @@ export function PlanBanner({ planType, className }: PlanBannerProps) {
     }
   };
 
+  // Safely get the config. If planType is not found, default to "Basic".
   const config = planConfigs[planType];
 
+  if (!config) {
+    // Log a warning if an unexpected planType is passed, indicating a potential issue upstream.
+    console.warn(`PlanBanner received an unexpected planType: "${planType}". Defaulting to "Basic" plan.`);
+    // Fallback to the "Basic" plan config
+    const defaultConfig = planConfigs["Basic"];
+    return (
+      <Card className={`
+        mt-5 mx-4 p-4 rounded-xl border-2 ${defaultConfig.borderColor}
+        bg-gradient-to-r ${defaultConfig.gradient}
+        shadow-lg hover:shadow-xl transition-all duration-200
+        transform hover:scale-[1.01]
+        ${className || ''}
+      `}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <span className="text-2xl">{defaultConfig.icon}</span>
+            <div>
+              <h3 className={`font-semibold ${defaultConfig.accentColor}`}>
+                {defaultConfig.title}
+              </h3>
+              <p className="text-sm text-gray-600">
+                You're currently on an **unknown** plan (defaulted to Basic)
+              </p>
+            </div>
+          </div>
+          <Badge className={defaultConfig.badgeColor}>
+            Active
+          </Badge>
+        </div>
+      </Card>
+    );
+  }
+
+  // If a valid config was found, proceed with rendering
   return (
     <Card className={`
       mt-5 mx-4 p-4 rounded-xl border-2 ${config.borderColor}
