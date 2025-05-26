@@ -2,7 +2,6 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
-import { BillingSearchInterface } from "@/components/billing/BillingSearchInterface";
 import { EnhancedPatientDetailsModal } from "@/components/billing/EnhancedPatientDetailsModal";
 import { SearchMedicineInput } from "@/components/billing/SearchMedicineInput";
 import { CartSummary } from "@/components/billing/CartSummary";
@@ -10,7 +9,8 @@ import { BillingSkeleton } from "@/components/billing/BillingSkeleton";
 import { CartItem } from "@/types/billing";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, Phone, FileText, Search, Receipt } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { User, Phone, FileText, Search, Receipt, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Billing() {
@@ -54,22 +54,6 @@ export default function Billing() {
 
     return () => clearTimeout(timer);
   }, [searchParams]);
-
-  const handlePrescriptionFound = (prescriptionData: any) => {
-    setPrescriptionId(prescriptionData.id);
-    setPatientInfo({
-      name: prescriptionData.patient?.name || '',
-      phone: prescriptionData.patient?.phone_number || '',
-      prescriptionNumber: prescriptionData.prescription_number,
-      doctorName: prescriptionData.doctor_name,
-    });
-    setShowPrescriptionSearch(false);
-    
-    toast({
-      title: "Prescription Loaded",
-      description: `Ready to add medicines for ${prescriptionData.patient?.name}`,
-    });
-  };
 
   const handleCreateNewPrescription = () => {
     setShowPrescriptionSearch(false);
@@ -147,10 +131,26 @@ export default function Billing() {
       <DashboardLayout>
         <div className="container mx-auto px-4 py-6">
           <div className="flex justify-center items-center min-h-[60vh]">
-            <BillingSearchInterface
-              onPrescriptionFound={handlePrescriptionFound}
-              onCreateNew={handleCreateNewPrescription}
-            />
+            <Card className="shadow-lg border-0 bg-gradient-to-br from-blue-50 to-white max-w-md w-full">
+              <CardHeader className="text-center">
+                <CardTitle className="flex items-center justify-center text-xl font-semibold text-gray-800">
+                  <FileText className="w-6 h-6 mr-2 text-blue-600" />
+                  Start Billing
+                </CardTitle>
+                <p className="text-sm text-gray-600 mt-2">
+                  Create a new prescription to begin billing
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Button 
+                  onClick={handleCreateNewPrescription}
+                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create New Prescription
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </DashboardLayout>

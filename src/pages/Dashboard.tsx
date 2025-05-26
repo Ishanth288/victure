@@ -8,7 +8,6 @@ import {
   useDashboardData
 } from "@/components/dashboard";
 import { OptimizedDashboardWidgets } from "@/components/dashboard/OptimizedDashboardWidgets";
-import { PlanBanner } from "@/components/dashboard/PlanBanner";
 import { useToast } from "@/hooks/use-toast";
 import { MaintenanceNotification } from "@/components/admin/MaintenanceNotification";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,10 +84,7 @@ export default function Dashboard() {
         
         <MaintenanceNotification />
         
-        {/* Plan Banner with proper separation */}
-        <PlanBanner planType={userPlan} />
-        
-        <div className="space-y-6 mt-6">
+        <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold">Dashboard</h1>
           </div>

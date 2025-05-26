@@ -5,13 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, User, FileText, DollarSign, Trash2, RotateCcw, History } from "lucide-react";
+import { Clock, User, FileText, DollarSign, Trash2, RotateCcw, History, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { MedicineReturnDialog } from "@/components/prescriptions/MedicineReturnDialog";
 import { ReturnHistoryDialog } from "@/components/prescriptions/ReturnHistoryDialog";
+import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
 import { 
   AlertDialog,
   AlertDialogAction, 
@@ -40,6 +41,11 @@ export default function Prescriptions() {
   const [isReturnHistoryDialogOpen, setReturnHistoryDialogOpen] = useState(false);
   const [selectedBillId, setSelectedBillId] = useState<number | null>(null);
   const [selectedPrescriptionId, setSelectedPrescriptionId] = useState<number | null>(null);
+  
+  // Bill preview state
+  const [isBillPreviewOpen, setBillPreviewOpen] = useState(false);
+  const [previewBillData, setPreviewBillData] = useState<any>(null);
+  const [previewBillItems, setPreviewBillItems] = useState<any[]>([]);
 
   useEffect(() => {
     checkAuth();
@@ -71,8 +77,8 @@ export default function Prescriptions() {
         .from("prescriptions")
         .select(`
           *,
-          patient:patients (name),
-          bills (id, total_amount, status)
+          patient:patients (name, phone_number),
+          bills (id, total_amount, status, bill_number, date, subtotal, gst_amount, gst_percentage, discount_amount)
         `)
         .eq("user_id", user.id)
         .order("date", { ascending: false });
@@ -132,6 +138,57 @@ export default function Prescriptions() {
     }
     
     navigate(`/billing?${searchParams.toString()}`);
+  };
+
+  const handlePreviewBill = async (billId: number) => {
+    try {
+      // Fetch bill data with prescription and patient info
+      const { data: billData, error: billError } = await supabase
+        .from("bills")
+        .select(`
+          *,
+          prescription:prescriptions(
+            prescription_number,
+            doctor_name,
+            patient:patients(name, phone_number)
+          )
+        `)
+        .eq("id", billId)
+        .single();
+
+      if (billError) throw billError;
+
+      // Fetch bill items
+      const { data: billItems, error: itemsError } = await supabase
+        .from("bill_items")
+        .select(`
+          *,
+          inventory_item:inventory(name)
+        `)
+        .eq("bill_id", billId);
+
+      if (itemsError) throw itemsError;
+
+      // Format items for the preview
+      const formattedItems = billItems.map(item => ({
+        id: item.id,
+        name: item.inventory_item?.name || 'Unknown Item',
+        quantity: item.quantity,
+        unit_cost: item.unit_price,
+        total: item.total_price
+      }));
+
+      setPreviewBillData(billData);
+      setPreviewBillItems(formattedItems);
+      setBillPreviewOpen(true);
+    } catch (error) {
+      console.error("Error fetching bill data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load bill preview",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleToggleStatus = async (id: number, currentStatus: string) => {
@@ -411,6 +468,15 @@ export default function Prescriptions() {
                                   variant="ghost" 
                                   size="sm"
                                   className="h-7 px-2 text-primary hover:text-primary"
+                                  title="Preview Bill"
+                                  onClick={() => handlePreviewBill(bill.id)}
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="h-7 px-2 text-primary hover:text-primary"
                                   title="Process Return"
                                   onClick={() => handleMedicineReturn(bill.id)}
                                 >
@@ -515,6 +581,13 @@ export default function Prescriptions() {
         isOpen={isReturnHistoryDialogOpen}
         onClose={() => setReturnHistoryDialogOpen(false)}
         prescriptionId={selectedPrescriptionId}
+      />
+
+      <BillPreviewDialog
+        open={isBillPreviewOpen}
+        onOpenChange={setBillPreviewOpen}
+        billData={previewBillData}
+        items={previewBillItems}
       />
     </DashboardLayout>
   );
