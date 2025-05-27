@@ -87,7 +87,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <SidebarContainer />
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <MainContent>
-          <div className="container mx-auto px-4 py-4">
+          <div className="container mx-auto px-4 py-2">
             {loading ? (
               <div className="mt-5 mx-4 p-4 text-center text-gray-500">Loading plan...</div>
             ) : (
