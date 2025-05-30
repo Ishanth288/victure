@@ -52,9 +52,9 @@ export const AISearchButton = () => {
         url: '/documentation#reordering',
         description: 'Configure your inventory to automatically place orders when stock is low'
       }
-    ].filter(item => 
-      item.title.toLowerCase().includes(query.toLowerCase()) || 
-      item.description.toLowerCase().includes(query.toLowerCase())
+    ].filter(item =>
+      item.title.toLowerCase().startsWith(query.toLowerCase()) ||
+      item.description.toLowerCase().startsWith(query.toLowerCase())
     );
     
     setResults(searchResults);

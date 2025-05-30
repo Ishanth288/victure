@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -89,14 +91,14 @@ body {
 
 /* Prevent phantom scrolling in settings pages */
 .settings-container {
-  max-height: calc(100vh - 64px); /* Account for header */
-  overflow-y: auto;
+  /* max-height: calc(100vh - 64px); */
+  /* overflow-y: auto; */
   position: relative;
 }
 
 .settings-upload-container {
-  max-height: calc(100vh - 250px); /* Adjust for header/footer heights */
-  overflow-y: auto;
+  /* max-height: calc(100vh - 250px); */
+  /* overflow-y: auto; */
 }
 
 /* Fix for dialog content overflow */

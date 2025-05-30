@@ -1,103 +1,55 @@
-
-import { useState, useEffect } from 'react';
-import { supabase } from "@/integrations/supabase/client";
-import { typecastQuery, safeQueryData } from "@/utils/safeSupabaseQueries";
+import { useEffect, useState } from 'react';
+import { useInventory } from "@/contexts/InventoryContext";
 
 interface InventoryItem {
   id: number;
   name: string;
   quantity: number;
-  unit_cost: number;
+  unit_cost?: number; // Made optional to match usage
   selling_price?: number;
   reorder_point?: number;
 }
 
 export function useInventoryData() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [inventoryData, setInventoryData] = useState<InventoryItem[]>([]);
+  const { inventory: inventoryData, isLoading, fetchInventory: refresh } = useInventory();
 
   useEffect(() => {
-    fetchInventoryData();
-    
-    // Set up real-time subscriptions for inventory
-    const setupInventorySubscriptions = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const channel = supabase
-        .channel('inventory-updates')
-        .on('postgres_changes', 
-          { event: '*', schema: 'public', table: 'inventory', filter: `user_id=eq.${user.id}` }, 
-          () => fetchInventoryData()
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    };
-
-    const cleanup = setupInventorySubscriptions();
-    
-    return () => {
-      if (cleanup) cleanup.then(unsub => unsub && unsub());
-    };
-  }, []);
-
-  async function fetchInventoryData() {
-    setIsLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
-
-      // Fetch user-specific inventory
-      const inventory = await safeQueryData(
-        typecastQuery('inventory')
-          .select('*')
-          .eq('user_id', user.id),
-        []
-      );
-      
-      setInventoryData(inventory as InventoryItem[]);
-    } catch (error) {
-      console.error('Error fetching inventory data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
+    // The inventory data is now managed by InventoryContext
+    // No need to fetch here, just ensure the context is providing data
+  }, [inventoryData]);
 
   // Calculate inventory metrics
   const totalInventoryValue = inventoryData.reduce(
-    (sum, item) => sum + (item.unit_cost * item.quantity || 0), 
+    (sum, item) => sum + ((item.unit_cost || 0) * (item.quantity || 0)),
     0
   );
-  
+  console.log('Calculated totalInventoryValue:', totalInventoryValue);
+
   const lowStockItems = inventoryData.filter(
     item => (item.quantity || 0) < (item.reorder_point || 10)
   ).length;
 
   // Calculate profit metrics
   const totalSellingValue = inventoryData.reduce(
-    (sum, item) => sum + ((item.selling_price || 0) * item.quantity || 0),
+    (sum, item) => sum + ((item.selling_price || 0) * (item.quantity || 0)),
     0
   );
 
   const totalProfit = totalSellingValue - totalInventoryValue;
-  
+
   // Calculate overall profit margin
-  const profitMargin = totalSellingValue > 0 
-    ? (totalProfit / totalSellingValue) * 100 
+  const profitMargin = totalSellingValue > 0
+    ? (totalProfit / totalSellingValue) * 100
     : 0;
 
   // Calculate profit by item
   const itemProfits = inventoryData.map(item => ({
     id: item.id,
     name: item.name,
-    profit: ((item.selling_price || 0) - item.unit_cost) * item.quantity,
-    profitMargin: item.selling_price ? ((item.selling_price - item.unit_cost) / item.selling_price) * 100 : 0
+    profit: ((item.selling_price || 0) - (item.unit_cost || 0)) * (item.quantity || 0),
+    profitMargin: item.selling_price && item.selling_price > 0
+      ? (((item.selling_price || 0) - (item.unit_cost || 0)) / item.selling_price) * 100
+      : 0
   }));
 
   return {
@@ -109,6 +61,7 @@ export function useInventoryData() {
       totalProfit,
       profitMargin,
       itemProfits
-    }
+    },
+    refresh
   };
 }

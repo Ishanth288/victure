@@ -1,6 +1,6 @@
-
 import { useState, useEffect } from 'react';
 import DashboardLayout from "../components/DashboardLayout";
+import { InventoryProvider } from "../contexts/InventoryContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import {
   DashboardStats,
@@ -22,9 +22,13 @@ export default function Dashboard() {
     totalInventoryValue,
     totalPatients,
     lowStockItems,
+    revenueData,
+    revenueDistribution,
+    refreshAllDashboardData
   } = useDashboardData();
 
   useEffect(() => {
+    refreshAllDashboardData();
     const hasSeenHelp = localStorage.getItem('dashboard-help-seen');
     if (!hasSeenHelp) {
       setIsHelpOpen(true);
@@ -39,30 +43,34 @@ export default function Dashboard() {
   }, [toast]);
 
   return (
-    <DashboardLayout>
-      <ErrorBoundary>
+    <InventoryProvider>
+      <DashboardLayout>
+        <ErrorBoundary>
         {showPostLoginOnboarding && <div className="mb-6">Welcome to your pharmacy dashboard!</div>}
         <WelcomeDialog isOpen={isHelpOpen} onOpenChange={setIsHelpOpen} />
 
         <MaintenanceNotification />
 
-        <div className="space-y-6">
+        <div className="space-y-8 p-4 md:p-8 lg:p-12 bg-gray-50 rounded-lg shadow-inner">
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Dashboard</h1>
           </div>
 
           <DashboardStats
+            isLoading={isLoading}
             totalRevenue={totalRevenue}
             totalInventoryValue={totalInventoryValue}
             totalPatients={totalPatients}
             lowStockItems={lowStockItems}
+
           />
 
           <div className="flex justify-center">
             <OptimizedDashboardWidgets />
           </div>
         </div>
-      </ErrorBoundary>
-    </DashboardLayout>
+        </ErrorBoundary>
+      </DashboardLayout>
+    </InventoryProvider>
   );
 }

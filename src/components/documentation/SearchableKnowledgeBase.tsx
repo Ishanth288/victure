@@ -118,11 +118,11 @@ export function SearchableKnowledgeBase({ initialArticles = [] }: KnowledgeBaseP
     
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      results = results.filter(article => 
-        article.title.toLowerCase().includes(query) || 
-        article.excerpt.toLowerCase().includes(query) ||
-        article.content.toLowerCase().includes(query) ||
-        article.tags.some(tag => tag.toLowerCase().includes(query))
+      results = results.filter(article =>
+        article.title.toLowerCase().startsWith(query) ||
+        article.excerpt.toLowerCase().startsWith(query) ||
+        article.content.toLowerCase().startsWith(query) ||
+        article.tags.some(tag => tag.toLowerCase().startsWith(query))
       );
     }
     

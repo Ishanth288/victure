@@ -1,5 +1,5 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 import {
   BarChart,
   Bar,
@@ -33,13 +33,21 @@ export function ProductsChart({ data }: ProductsChartProps) {
   };
 
   // Transform data to ensure it has a value property and it's a number
-  const chartData = data.map(item => ({
-    ...item,
-    name: item.name.length > 15 ? `${item.name.substring(0, 15)}...` : item.name, // Truncate long names
-    value: item.value !== undefined 
-      ? (typeof item.value === 'string' ? Number(item.value) : item.value)
-      : (item.revenue !== undefined ? Number(item.revenue) : 0)
-  }));
+  const chartData = data.map(item => {
+    let numericValue = 0;
+    
+    if (item.value !== undefined) {
+      numericValue = typeof item.value === 'string' ? parseFloat(item.value) || 0 : item.value;
+    } else if (item.revenue !== undefined) {
+      numericValue = Number(item.revenue) || 0;
+    }
+
+    return {
+      ...item,
+      name: item.name.length > 15 ? `${item.name.substring(0, 15)}...` : item.name,
+      value: numericValue
+    };
+  });
 
   return (
     <Card>
@@ -47,7 +55,7 @@ export function ProductsChart({ data }: ProductsChartProps) {
         <CardTitle>Top Products</CardTitle>
       </CardHeader>
       <CardContent className="h-[300px]">
-        {data.length === 0 ? (
+        {chartData.length === 0 || chartData.every(item => item.value === 0) ? (
           <div className="flex items-center justify-center h-full text-gray-500">
             No product data available for this period
           </div>
@@ -81,10 +89,12 @@ export function ProductsChart({ data }: ProductsChartProps) {
                 axisLine={false}
                 tickFormatter={(value) => formatCurrency(value)}
                 width={60}
-                domain={[0, 'dataMax + 500']}
+                tickCount={5}
+                domain={['auto', 'dataMax + 1000']}
+                padding={{ top: 10, bottom: 10 }}
               />
               <Tooltip
-                formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Revenue']}
+                formatter={(value: any) => [`₹${value.toLocaleString()}`, 'Revenue']}
                 contentStyle={{
                   backgroundColor: 'white',
                   border: '1px solid #e2e8f0',

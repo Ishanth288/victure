@@ -13,7 +13,17 @@ interface StatCardProps {
   tooltip?: string;
 }
 
-export function StatCard({ title, value, icon: Icon, trend = 0, trendType, tooltip }: StatCardProps) {
+interface StatCardProps {
+  title: string;
+  value: string | number;
+  icon: LucideIcon;
+  trend?: number;
+  trendType?: 'positive' | 'negative' | 'neutral';
+  tooltip?: string;
+  className?: string; // Add className prop
+}
+
+export function StatCard({ title, value, icon: Icon, trend = 0, trendType, tooltip, className }: StatCardProps) {
   // Calculate trend display and handle invalid values
   const calculateTrendDisplay = () => {
     // Check if trend is a valid number
@@ -50,7 +60,7 @@ export function StatCard({ title, value, icon: Icon, trend = 0, trendType, toolt
   const trendDisplay = calculateTrendDisplay();
 
   return (
-    <Card>
+    <Card className={className}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between space-x-4">
           <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">

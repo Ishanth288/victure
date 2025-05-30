@@ -191,28 +191,12 @@ function InventoryContent() {
 
   // Apply filters and search
   const filteredItems = inventory.filter((item) => {
-    // First filter by search query
-    const matchesSearch = 
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.generic_name && item.generic_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (item.manufacturer && item.manufacturer.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    // Then apply other filters if any
-    if (!matchesSearch) return false;
-    
-    if (filterType === "lowStock") {
-      return item.quantity < (item.reorder_point || 10);
-    } else if (filterType === "expiringSoon") {
-      if (!item.expiry_date) return false;
-      
-      const expiryDate = new Date(item.expiry_date);
-      const now = new Date();
-      const monthsDiff = (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30);
-      
-      return monthsDiff <= 3; // Items expiring within 3 months
-    }
-    
-    return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      item.name.toLowerCase().startsWith(query) ||
+      (item.generic_name && item.generic_name.toLowerCase().startsWith(query)) ||
+      (item.manufacturer && item.manufacturer.toLowerCase().startsWith(query))
+    );
   });
 
   // Update total pages when filtered items change

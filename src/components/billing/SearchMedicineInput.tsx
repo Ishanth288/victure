@@ -84,6 +84,18 @@ export function SearchMedicineInput({ onAddItem, cartItems }: SearchMedicineInpu
     searchMedicines(searchQuery);
   }, [searchQuery, searchMedicines]);
 
+  // Enforce strict prefix (alphabetical) matching for hierarchy compliance
+  const filteredResults = searchResults.filter((medicine) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      medicine.name?.toLowerCase().startsWith(q) ||
+      medicine.generic_name?.toLowerCase().startsWith(q) ||
+      medicine.ndc?.toLowerCase().startsWith(q) ||
+      medicine.manufacturer?.toLowerCase().startsWith(q)
+    );
+  });
+
   const handleAddToCart = (medicine: Medicine) => {
     if (!medicine.selling_price) {
       toast({
@@ -158,12 +170,11 @@ export function SearchMedicineInput({ onAddItem, cartItems }: SearchMedicineInpu
         <div className="border rounded-lg bg-white min-h-[400px]">
           <div className="p-4 border-b bg-gray-50">
             <h3 className="text-sm font-medium text-gray-700">
-              Search Results ({searchResults.length} found)
+              Search Results ({filteredResults.length} found)
             </h3>
           </div>
-          
           <div className="max-h-96 overflow-y-auto">
-            {searchResults.length === 0 ? (
+            {filteredResults.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
                 <Package className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                 <p className="text-sm">No medicines found matching your search</p>
@@ -173,7 +184,7 @@ export function SearchMedicineInput({ onAddItem, cartItems }: SearchMedicineInpu
               </div>
             ) : (
               <div className="divide-y">
-                {searchResults.map((medicine) => (
+                {filteredResults.map((medicine) => (
                   <Card key={medicine.id} className="border-0 rounded-none shadow-none">
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
@@ -188,7 +199,6 @@ export function SearchMedicineInput({ onAddItem, cartItems }: SearchMedicineInpu
                               </Badge>
                             )}
                           </div>
-                          
                           <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
                             {medicine.generic_name && (
                               <div>
@@ -211,7 +221,6 @@ export function SearchMedicineInput({ onAddItem, cartItems }: SearchMedicineInpu
                               </div>
                             )}
                           </div>
-                          
                           <div className="flex items-center gap-4 mt-2 text-sm">
                             <span className="text-green-600 font-medium">
                               ₹{medicine.selling_price?.toFixed(2) || "N/A"}
@@ -224,7 +233,6 @@ export function SearchMedicineInput({ onAddItem, cartItems }: SearchMedicineInpu
                             </Badge>
                           </div>
                         </div>
-                        
                         <div className="ml-4">
                           <Button
                             size="sm"

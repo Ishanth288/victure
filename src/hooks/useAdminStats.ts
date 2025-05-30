@@ -3,21 +3,22 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { checkSupabaseConnection } from "@/utils/supabaseErrorHandling";
+import { safeQueryData } from "@/utils/safeSupabaseQueries";
 
 interface AdminStats {
-  total_users: number;
-  total_products: number;
-  feedback_count: number;
-  active_users: number;
+  totalRevenue: number;
+  inventoryValue: number;
+  totalPatients: number;
+  lowStockItems: number;
 }
 
 export function useAdminStats() {
   const { toast } = useToast();
   const [stats, setStats] = useState<AdminStats>({
-    total_users: 0,
-    total_products: 0,
-    feedback_count: 0,
-    active_users: 0,
+    totalRevenue: 0,
+    inventoryValue: 0,
+    totalPatients: 0,
+    lowStockItems: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -27,30 +28,35 @@ export function useAdminStats() {
       // Ensure Supabase connection is alive
       await checkSupabaseConnection();
       
-      const { count: userCount, error: userError } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
+      // Fetch Total Revenue
+      const salesData = await safeQueryData(
+        supabase.from('sales').select('total_amount'),
+        []
+      );
+      const totalRevenue = salesData.reduce((sum, sale) => sum + sale.total_amount, 0);
 
-      const { count: productCount, error: productError } = await supabase
-        .from('inventory')
-        .select('*', { count: 'exact', head: true });
+      // Fetch Inventory Value and Low Stock Items
+      const inventoryData = await safeQueryData(
+        supabase.from('inventory').select('price, quantity'),
+        []
+      );
+      const inventoryValue = inventoryData.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const lowStockItems = inventoryData.filter(item => item.quantity < 10).length;
 
-      const { count: feedbackCount, error: feedbackError } = await supabase
-        .from('feedback')
-        .select('*', { count: 'exact', head: true });
-      
-      const activeUsers = userCount ? Math.round(userCount * 0.7) : 0;
+      // Fetch Total Patients
+      const patientResult = await safeQueryData(
+        supabase.from('patients').select('*', { count: 'exact', head: true }),
+        { data: [], count: 0 }
+      );
+
+      const totalPatients = patientResult.count || 0;
 
       setStats({
-        total_users: userCount || 0,
-        total_products: productCount || 0,
-        feedback_count: feedbackCount || 0,
-        active_users: activeUsers,
+        totalRevenue,
+        inventoryValue,
+        totalPatients,
+        lowStockItems,
       });
-
-      if (userError || productError || feedbackError) {
-        throw new Error("Error fetching admin stats");
-      }
     } catch (error) {
       console.error("Error fetching admin stats:", error);
       toast({

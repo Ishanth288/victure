@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { format, subDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,30 +22,33 @@ export function useRevenueData() {
   useEffect(() => {
     fetchRevenueData();
     
-    // Set up real-time subscriptions for bills
-    const setupRevenueSubscriptions = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    // Set up real-time subscription
+    let revenueChannel: any;
+    revenueChannel = supabase
+      .channel('revenue-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bills'
+        },
+        () => {
+          fetchRevenueData();
+        }
+      )
+      .subscribe();
 
-      const channel = supabase
-        .channel('revenue-updates')
-        .on('postgres_changes', 
-          { event: '*', schema: 'public', table: 'bills', filter: `user_id=eq.${user.id}` }, 
-          () => fetchRevenueData()
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    };
-
-    const cleanup = setupRevenueSubscriptions();
-    
+    // Cleanup subscription
     return () => {
-      if (cleanup) cleanup.then(unsub => unsub && unsub());
+      supabase.removeChannel(revenueChannel);
     };
   }, []);
+
+  // Function to manually refresh data
+  const refresh = () => {
+    fetchRevenueData();
+  };
 
   async function fetchRevenueData() {
     setIsLoading(true);
@@ -66,10 +68,12 @@ export function useRevenueData() {
         []
       );
       
+      console.log('Fetched bills:', bills);
+
       setSalesData(bills as Bill[]);
       
       if (bills && bills.length > 0) {
-        processRevenueData(bills);
+        processRevenueData(bills as Bill[]);
       }
     } catch (error) {
       console.error('Error fetching revenue data:', error);
@@ -78,7 +82,7 @@ export function useRevenueData() {
     }
   }
 
-  function processRevenueData(bills: any[]) {
+  function processRevenueData(bills: Bill[]) {
     // Process revenue by date
     const last30Days = Array.from({ length: 30 }, (_, i) => {
       const date = subDays(new Date(), i);
@@ -90,11 +94,15 @@ export function useRevenueData() {
     
     const billsByDate = new Map<string, number>();
     
-    bills.forEach((bill: any) => {
-      const billDate = bill.date ? format(new Date(bill.date), 'yyyy-MM-dd') : null;
-      if (billDate) {
-        const existingAmount = billsByDate.get(billDate) || 0;
-        billsByDate.set(billDate, existingAmount + bill.total_amount);
+    bills.forEach((bill) => {
+      try {
+        if (bill.date) {
+          const billDate = format(new Date(bill.date), 'yyyy-MM-dd');
+          const existingAmount = billsByDate.get(billDate) || 0;
+          billsByDate.set(billDate, existingAmount + (bill.total_amount || 0));
+        }
+      } catch (error) {
+        console.error('Error parsing date for bill:', bill.id, error);
       }
     });
     
@@ -105,17 +113,18 @@ export function useRevenueData() {
       };
     });
     
+    console.log('Processed revenue by date:', revenueByDate);
     setRevenueData(revenueByDate);
     
     // Process top products
     if (bills.length > 0) {
       const productCountMap = new Map<string, number>();
       
-      bills.forEach((bill: any) => {
+      bills.forEach((bill) => {
         if (bill.prescription_id) {
           const productName = `Prescription #${bill.prescription_id}`;
           const existingValue = productCountMap.get(productName) || 0;
-          productCountMap.set(productName, existingValue + bill.total_amount);
+          productCountMap.set(productName, existingValue + (bill.total_amount || 0));
         }
       });
       
@@ -128,10 +137,11 @@ export function useRevenueData() {
         .sort((a, b) => b.value - a.value)
         .slice(0, 5);
       
+      console.log('Processed top products:', topProductsData);
       setTopProducts(topProductsData);
     }
     
-    // Process revenue distribution
+    // Process revenue distribution with deterministic categorization
     if (bills.length > 0) {
       const categoryMap = new Map<string, number>();
       categoryMap.set('Prescription', 0);
@@ -139,22 +149,31 @@ export function useRevenueData() {
       categoryMap.set('Medical Supplies', 0);
       categoryMap.set('Other', 0);
       
-      bills.forEach((bill: any) => {
+      bills.forEach((bill) => {
+        const amount = bill.total_amount || 0;
+        
         if (bill.prescription_id) {
           const existingValue = categoryMap.get('Prescription') || 0;
-          categoryMap.set('Prescription', existingValue + bill.total_amount);
+          categoryMap.set('Prescription', existingValue + amount);
         } else {
-          const rand = Math.random();
-          if (rand < 0.3) {
-            const existingValue = categoryMap.get('OTC Medicines') || 0;
-            categoryMap.set('OTC Medicines', existingValue + bill.total_amount);
-          } else if (rand < 0.6) {
-            const existingValue = categoryMap.get('Medical Supplies') || 0;
-            categoryMap.set('Medical Supplies', existingValue + bill.total_amount);
-          } else {
-            const existingValue = categoryMap.get('Other') || 0;
-            categoryMap.set('Other', existingValue + bill.total_amount);
+          // Use bill ID for deterministic categorization instead of random
+          const category = bill.id % 3;
+          let categoryName: string;
+          
+          switch (category) {
+            case 0:
+              categoryName = 'OTC Medicines';
+              break;
+            case 1:
+              categoryName = 'Medical Supplies';
+              break;
+            default:
+              categoryName = 'Other';
+              break;
           }
+          
+          const existingValue = categoryMap.get(categoryName) || 0;
+          categoryMap.set(categoryName, existingValue + amount);
         }
       });
       
@@ -178,6 +197,7 @@ export function useRevenueData() {
     revenueData,
     topProducts,
     revenueDistribution,
-    salesData
+    salesData,
+    refresh
   };
 }

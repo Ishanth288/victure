@@ -121,9 +121,9 @@ export default function Prescriptions() {
 
       const matchesSearch =
         searchQuery === "" ||
-        prescription.prescription_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        prescription.doctor_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        prescription.patient?.name.toLowerCase().includes(searchQuery.toLowerCase());
+        prescription.prescription_number.toLowerCase().startsWith(searchQuery.toLowerCase()) ||
+        prescription.doctor_name.toLowerCase().startsWith(searchQuery.toLowerCase()) ||
+        prescription.patient?.name.toLowerCase().startsWith(searchQuery.toLowerCase());
 
       return matchesSearch;
     });

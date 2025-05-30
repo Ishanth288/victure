@@ -87,12 +87,13 @@ export function GrowthOpportunitiesChart({ opportunities = [] }: GrowthOpportuni
 
   // Format currency
   const formatCurrency = (value: number) => {
-    if (value >= 100000) {
-      return `₹${(value / 100000).toFixed(1)}L`;
+    if (value >= 1000000) {
+      return `₹${(value / 1000000).toFixed(1)}M`;
     } else if (value >= 1000) {
       return `₹${(value / 1000).toFixed(0)}k`;
+    } else {
+      return `₹${value}`;
     }
-    return `₹${value}`;
   };
 
   return (
@@ -128,8 +129,8 @@ export function GrowthOpportunitiesChart({ opportunities = [] }: GrowthOpportuni
                 tickFormatter={(value) => value.length > 15 ? `${value.substring(0, 15)}...` : value}
               />
               <Tooltip
-                formatter={(value: number) => [`${formatCurrency(value)}`, 'Potential Revenue']}
-                labelFormatter={(label) => label}
+                formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Potential Revenue']}
+                labelFormatter={(label: string) => label}
                 cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }}
                 contentStyle={{
                   backgroundColor: 'white',

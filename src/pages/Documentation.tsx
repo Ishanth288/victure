@@ -49,9 +49,9 @@ export default function Documentation() {
         excerpt: 'Set up your billing system with our built-in tools...',
         url: '#billing'
       }
-    ].filter(item => 
-      item.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      item.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
+    ].filter(item =>
+      item.title.toLowerCase().startsWith(searchTerm.toLowerCase()) ||
+      item.excerpt.toLowerCase().startsWith(searchTerm.toLowerCase())
     );
 
     setSearchResults(mockResults);

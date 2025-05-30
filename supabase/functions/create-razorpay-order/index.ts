@@ -73,7 +73,7 @@ serve(async (req) => {
         orderId: data.id,
         amount: data.amount / 100, // Convert back to rupees for display
         keyId: razorpayKeyId,
-        currency: data.currency,
+        currency: 'INR',
         userEmail: userData.user.email,
         userName: userData.user.user_metadata?.name || userData.user.email
       }),

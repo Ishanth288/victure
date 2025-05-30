@@ -8,6 +8,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/theme-provider";
 import { BrowserRouter } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/hooks/useAuth";
+import { InventoryProvider } from "./contexts/InventoryContext";
 
 // Create a simplified query client
 const queryClient = new QueryClient({
@@ -28,8 +30,12 @@ root.render(
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <BrowserRouter>
-            <App />
-            <Toaster position="top-center" richColors closeButton />
+            <AuthProvider>
+              <InventoryProvider>
+                <App />
+              </InventoryProvider>
+              <Toaster position="top-center" richColors closeButton />
+            </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>

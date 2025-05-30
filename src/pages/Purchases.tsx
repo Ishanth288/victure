@@ -133,9 +133,9 @@ export default function Purchases() {
     if (searchQuery !== "") {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(order => 
-        order.supplier_name.toLowerCase().includes(query) ||
-        (order.notes?.toLowerCase().includes(query) || false) ||
-        String(order.id).includes(query)
+        order.supplier_name.toLowerCase().startsWith(query) ||
+        (order.notes?.toLowerCase().startsWith(query) || false) ||
+        String(order.id).startsWith(query)
       );
     }
     

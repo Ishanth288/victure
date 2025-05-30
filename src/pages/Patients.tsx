@@ -47,8 +47,20 @@ export default function Patients() {
     if (isFilterActive) {
       applyFilters();
     } else {
-      // Show recent patients without filtering by date
-      const recents = patients
+      // Group patients by unique phone number and merge their bills
+      const patientsByPhone = new Map();
+      patients.forEach(patient => {
+        if (!patientsByPhone.has(patient.phone_number)) {
+          patientsByPhone.set(patient.phone_number, { ...patient });
+        } else {
+          // Merge bills and prescriptions for duplicate phone numbers
+          const existing = patientsByPhone.get(patient.phone_number);
+          existing.bills = [...existing.bills, ...patient.bills];
+          existing.prescriptions = [...(existing.prescriptions || []), ...(patient.prescriptions || [])];
+          existing.total_spent += patient.total_spent;
+        }
+      });
+      const uniquePatients = Array.from(patientsByPhone.values())
         .filter(patient => activeTab === "all" || patient.status === activeTab)
         .filter(patient => 
           searchQuery === "" || 
@@ -57,8 +69,7 @@ export default function Patients() {
         )
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 20); // Limit to 20 most recent patients
-      
-      setFilteredPatients(recents);
+      setFilteredPatients(uniquePatients);
     }
   }, [searchQuery, patients, activeTab, isFilterActive]);
 
@@ -150,19 +161,11 @@ export default function Patients() {
     const endTimestamp = new Date(endDate).getTime() + 86400000; // Add one day to include end date
 
     const filtered = patients.filter((patient) => {
-      if (activeTab !== "all" && patient.status !== activeTab) {
-        return false;
-      }
-
-      const matchesSearch =
-        searchQuery === "" ||
-        patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        patient.phone_number.includes(searchQuery);
-
-      const createdAt = new Date(patient.created_at).getTime();
-      const matchesDate = createdAt >= startTimestamp && createdAt <= endTimestamp;
-
-      return matchesSearch && matchesDate;
+      const query = searchQuery.toLowerCase();
+      return (
+        patient.name.toLowerCase().startsWith(query) ||
+        patient.phone_number.startsWith(searchQuery)
+      );
     });
 
     setFilteredPatients(filtered);

@@ -32,19 +32,16 @@ export function TaskManagement() {
   useEffect(() => {
     // Load tasks from localStorage if available
     const savedTasks = localStorage.getItem('pharmacy-tasks');
-    
     if (savedTasks) {
       try {
         setTasks(JSON.parse(savedTasks));
       } catch (error) {
         console.error("Error parsing saved tasks:", error);
-        setTasks(getDefaultTasks());
+        setTasks([]); // No default tasks on error
       }
     } else {
-      // Set default tasks if none saved
-      setTasks(getDefaultTasks());
+      setTasks([]); // No default tasks for new users
     }
-    
     setIsLoading(false);
   }, []);
 
@@ -56,28 +53,7 @@ export function TaskManagement() {
   }, [tasks, isLoading]);
 
   const getDefaultTasks = (): Task[] => {
-    return [
-      { 
-        id: '1', 
-        title: 'Check inventory levels', 
-        completed: false, 
-        priority: 'high',
-        dueDate: new Date().toISOString().split('T')[0]
-      },
-      { 
-        id: '2', 
-        title: 'Contact supplier for reorder', 
-        completed: false, 
-        priority: 'medium',
-        dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0]
-      },
-      { 
-        id: '3', 
-        title: 'Review daily sales report', 
-        completed: true, 
-        priority: 'medium'
-      }
-    ];
+    return [];
   };
 
   const addTask = () => {

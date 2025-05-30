@@ -7,26 +7,35 @@ import { usePatientData } from './hooks/usePatientData';
 export function useDashboardData() {
   const { toast } = useToast();
   
-  const { 
-    isLoading: isRevenueLoading, 
-    totalRevenue, 
-    revenueData, 
-    revenueDistribution 
+  const {
+    isLoading: isRevenueLoading,
+    totalRevenue,
+    revenueData,
+    revenueDistribution,
+    refresh: refreshRevenue
   } = useRevenueData();
-  
-  const { 
-    isLoading: isInventoryLoading, 
-    totalInventoryValue, 
-    lowStockItems 
+
+  const {
+    isLoading: isInventoryLoading,
+    totalInventoryValue,
+    lowStockItems,
+    refresh: refreshInventory
   } = useInventoryData();
-  
-  const { 
-    isLoading: isPatientLoading, 
-    totalPatients 
+
+  const {
+    isLoading: isPatientLoading,
+    totalPatients,
+    refresh: refreshPatients
   } = usePatientData();
   
   // Combine loading states
   const isLoading = isRevenueLoading || isInventoryLoading || isPatientLoading;
+
+  const refreshAllDashboardData = () => {
+    refreshRevenue();
+    refreshInventory();
+    refreshPatients();
+  };
 
   return {
     isLoading,
@@ -35,6 +44,7 @@ export function useDashboardData() {
     totalPatients,
     lowStockItems,
     revenueData,
-    revenueDistribution
+    revenueDistribution,
+    refreshAllDashboardData
   };
 }

@@ -78,40 +78,6 @@ export const RevenueTrendChart = memo(({ data, timeframe = 'month' }: RevenueTre
     }
   };
 
-  // Get the maximum value for setting y-axis domain
-  const maxValue = Math.max(
-    ...extendedData.map(item => Math.max(item.value || 0, item.forecast || 0))
-  ) * 1.1;
-
-  // Calculate total revenue and forecast
-  const totalRevenue = data.reduce((sum, item) => sum + item.value, 0);
-  const forecastTotal = extendedData
-    .filter(item => item.forecast !== undefined)
-    .reduce((sum, item) => sum + (item.forecast || 0), 0);
-    
-  // Helper function to generate sample data if needed
-  function generateSampleData(count: number): DataItem[] {
-    const sampleData: DataItem[] = [];
-    const baseValue = 50000;
-    const now = new Date();
-    
-    for (let i = count - 1; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(now.getDate() - i);
-      
-      // Create some random variation but with an upward trend
-      const randomFactor = 0.8 + Math.random() * 0.4;
-      const trendFactor = 1 + (count - i) * 0.015;
-      
-      sampleData.push({
-        name: `${date.getDate()}/${date.getMonth() + 1}`,
-        value: Math.round(baseValue * randomFactor * trendFactor),
-      });
-    }
-    
-    return sampleData;
-  }
-
   return (
     <Card className="shadow-sm">
       <CardHeader className="pb-2">
@@ -184,17 +150,14 @@ export const RevenueTrendChart = memo(({ data, timeframe = 'month' }: RevenueTre
               tickLine={false}
               axisLine={false}
               tickFormatter={(value) => formatCurrency(value)}
-              tick={{ fill: '#666', fontSize: 11 }}
-              tickMargin={10}
-              width={70}
-              domain={[0, maxValue]}
+              width={60} // Fixed width for Y-axis to prevent overflow
+              tickCount={5} // Limit the number of ticks to prevent crowding
+              domain={['auto', 'dataMax + 1000']} // Add some padding to the top
               padding={{ top: 10, bottom: 10 }}
             />
             <Tooltip
-              formatter={(value: any, name: string) => {
-                return [`₹${value.toLocaleString()}`, name === 'forecast' ? 'Forecast' : 'Actual Revenue'];
-              }}
-              labelFormatter={(label) => {
+              formatter={(value: any) => [`₹${value.toLocaleString()}`, 'Revenue']}
+              labelFormatter={(dateStr) => {
                 return label.startsWith('Forecast') ? `Forecast (${label.split(' ')[1]} ${selectedTimeframe === 'week' ? 'day' : selectedTimeframe === 'month' ? 'day' : 'week'})` : label;
               }}
               contentStyle={{

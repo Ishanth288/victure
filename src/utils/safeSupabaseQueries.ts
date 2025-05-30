@@ -1,5 +1,6 @@
 
 import { PostgrestSingleResponse } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Type cast a query builder to the given table type
@@ -7,8 +8,8 @@ import { PostgrestSingleResponse } from "@supabase/supabase-js";
  * @returns A typed query builder
  */
 export function typecastQuery<T = any>(table: string): any {
-  // This is a type casting function only, it doesn't change the behavior
-  return {} as any;
+  // This function now correctly returns a Supabase query builder instance.
+  return supabase.from(table) as any;
 }
 
 /**
@@ -22,10 +23,13 @@ export async function safeQueryData<T>(
   defaultValue: T
 ): Promise<T> {
   try {
-    const { data, error } = await query;
+    const { data, error, count } = await query;
     if (error) {
       console.error("Supabase query error:", error);
       return defaultValue;
+    }
+    if (count !== null) {
+      return { data, count } as T;
     }
     return data as T || defaultValue;
   } catch (err) {

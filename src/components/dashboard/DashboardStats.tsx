@@ -1,86 +1,64 @@
 
-import { StatCard } from "@/components/insights/StatCard";
-import { TrendingUp, ShoppingCart, Users, AlertCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { AnimatedCounter } from "react-animated-counter";
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface DashboardStatsProps {
-  totalRevenue: number;
-  totalInventoryValue: number;
-  totalPatients: number;
-  lowStockItems: number;
-}
+export function DashboardStats({
+  isLoading: propIsLoading,
+  totalRevenue,
+  totalInventoryValue,
+  totalPatients,
+  lowStockItems,
+}) {
+  const isLoading = propIsLoading;
 
-export function DashboardStats({ 
-  totalRevenue, 
-  totalInventoryValue, 
-  totalPatients, 
-  lowStockItems 
-}: DashboardStatsProps) {
-  const [animatedRevenue, setAnimatedRevenue] = useState(0);
-  const [animatedInventoryValue, setAnimatedInventoryValue] = useState(0);
-  const [animatedPatients, setAnimatedPatients] = useState(0);
-  const [animatedLowStock, setAnimatedLowStock] = useState(0);
-  
-  // Animate the counters on load
-  useEffect(() => {
-    const duration = 1000; // Animation duration in ms
-    const steps = 20; // Number of steps in animation
-    const interval = duration / steps;
-    let step = 0;
-    
-    const timer = setInterval(() => {
-      step++;
-      const progress = step / steps;
-      
-      setAnimatedRevenue(Math.round(totalRevenue * progress));
-      setAnimatedInventoryValue(Math.round(totalInventoryValue * progress));
-      setAnimatedPatients(Math.round(totalPatients * progress));
-      setAnimatedLowStock(Math.round(lowStockItems * progress));
-      
-      if (step >= steps) {
-        clearInterval(timer);
-        setAnimatedRevenue(totalRevenue);
-        setAnimatedInventoryValue(totalInventoryValue);
-        setAnimatedPatients(totalPatients);
-        setAnimatedLowStock(lowStockItems);
-      }
-    }, interval);
-    
-    return () => clearInterval(timer);
-  }, [totalRevenue, totalInventoryValue, totalPatients, lowStockItems]);
+  const statCards = [
+    {
+      title: "Total Revenue",
+      value: totalRevenue || 0,
+      icon: "₹",
+      className: "",
+    },
+    {
+      title: "Inventory Value",
+      value: totalInventoryValue || 0,
+      icon: "₹",
+      className: "",
+    },
+    {
+      title: "Total Patients",
+      value: Math.floor(totalPatients || 0),
+      icon: "👤",
+      className: "",
+    },
+    {
+      title: "Low Stock Items",
+      value: Math.floor(lowStockItems || 0),
+      icon: "⚠️",
+      className: "",
+    },
+  ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-      <StatCard
-        title="Total Revenue"
-        value={`₹${animatedRevenue.toLocaleString('en-IN')}`}
-        icon={TrendingUp}
-        trend={2.5}
-        trendType="positive"
-        tooltip="Total revenue generated from all sales"
-      />
-      <StatCard
-        title="Inventory Value"
-        value={`₹${animatedInventoryValue.toLocaleString('en-IN')}`}
-        icon={ShoppingCart}
-        tooltip="Current value of all inventory items"
-      />
-      <StatCard
-        title="Total Patients"
-        value={animatedPatients}
-        icon={Users}
-        trend={4.2}
-        trendType="positive"
-        tooltip="Total number of registered patients"
-      />
-      <StatCard
-        title="Low Stock Items"
-        value={animatedLowStock}
-        icon={AlertCircle}
-        trend={lowStockItems > 0 ? -1.5 : 0}
-        trendType={lowStockItems > 0 ? "negative" : "neutral"}
-        tooltip="Items that need to be reordered soon"
-      />
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 animate-in fade-in-50">
+      {statCards.map((card, index) => (
+        <Card key={index} className={cn("bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300", card.className)}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+            <span className="text-2xl">{card.icon}</span>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-9 w-3/4" />
+            ) : (
+              <div className="text-4xl font-bold text-gray-900 dark:text-white font-sans tracking-tight">
+                <AnimatedCounter value={card.value} />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
