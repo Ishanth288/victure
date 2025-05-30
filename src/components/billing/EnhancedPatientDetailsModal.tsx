@@ -74,7 +74,7 @@ export function EnhancedPatientDetailsModal({
         }
       }
 
-      return `PRE-${nextNumber}`;
+      return `PRE-${userId.substring(0, 8)}-${nextNumber}`;
     } catch (error) {
       console.error("Error generating prescription number:", error);
       return `PRE-${Date.now()}`;
@@ -96,21 +96,47 @@ export function EnhancedPatientDetailsModal({
         throw new Error("No authenticated user found");
       }
 
-      // Create patient
-      const { data: patientData, error: patientError } = await supabase
+      let patientData;
+      // Check if patient already exists
+      const { data: existingPatient, error: fetchPatientError } = await supabase
         .from("patients")
-        .insert({
-          name: formData.patientName.trim(),
-          phone_number: formData.phoneNumber.trim(),
-          user_id: user.id
-        })
-        .select()
+        .select("id")
+        .eq("phone_number", formData.phoneNumber.trim())
+        .eq("user_id", user.id)
         .single();
 
-      if (patientError) throw patientError;
+      if (fetchPatientError && fetchPatientError.code !== 'PGRST116') { // PGRST116 means no rows found
+        console.error("Error fetching existing patient:", fetchPatientError);
+        throw fetchPatientError;
+      }
+
+      if (existingPatient) {
+        patientData = existingPatient;
+        console.log("Existing patient found:", patientData);
+      } else {
+        // Create new patient if not found
+        const { data: newPatient, error: createPatientError } = await supabase
+          .from("patients")
+          .insert({
+            name: formData.patientName.trim(),
+            phone_number: formData.phoneNumber.trim(),
+            user_id: user.id
+          })
+          .select()
+          .single();
+
+        if (createPatientError) {
+          console.error("Error creating new patient:", createPatientError);
+          throw createPatientError;
+        }
+        patientData = newPatient;
+        console.log("New patient created:", patientData);
+      }
 
       // Generate or use provided prescription number
       const finalPrescriptionNumber = prescriptionNumber || await generateUserScopedPrescriptionNumber(user.id);
+      console.log("Final prescription number:", finalPrescriptionNumber);
+      console.log("Patient ID for prescription:", patientData.id);
 
       // Create prescription with user-scoped number
       const { data: prescriptionData, error: prescriptionError } = await supabase

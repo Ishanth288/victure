@@ -8,8 +8,8 @@ export const securityHeaders = {
   // Prevent XSS attacks by controlling which resources can be loaded
   'Content-Security-Policy': `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.sentry-cdn.com https://*.ingest.sentry.io https://cdn.gpteng.co;
-    connect-src 'self' https://*.supabase.co https://*.sentry.io https://*.sentry-cdn.com https://*.ingest.sentry.io https://trends.google.com https://newsapi.org https://api.whatsapp.com https://*.googleapis.com;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.sentry-cdn.com https://*.ingest.sentry.io https://cdn.gpteng.co https://www.googletagmanager.com https://cdn.gpteng.co;
+    connect-src 'self' https://*.supabase.co wss://*.supabase.co https://aysdilfgxlyuplikmmdt.supabase.co https://*.sentry.io https://*.sentry-cdn.com https://*.ingest.sentry.io https://trends.google.com https://newsapi.org https://api.whatsapp.com https://*.googleapis.com https://www.googletagmanager.com https://cdn.gpteng.co;
     img-src 'self' data: https: blob:;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' data: https://fonts.gstatic.com;
