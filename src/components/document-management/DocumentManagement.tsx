@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { generateSystemReport, downloadPDF, generatePDFFromElement } from "@/utils/documentUtils";
+import { format } from 'date-fns';
 import { DocumentList } from "./DocumentList";
 import { DocumentPreviewModal } from "./DocumentPreviewModal";
 import { initialDocuments } from "./documentData";
@@ -175,7 +176,7 @@ export function DocumentManagement() {
         case 'inventory':
           createInventoryReport(tempContainer, reportData);
           break;
-        case 'sales':
+        case 'sales_analysis':
           createSalesReport(tempContainer, reportData);
           break;
         case 'purchase_orders':

@@ -11,4 +11,6 @@ export interface SystemDocument {
   lastUpdated: Date | null;
   description: string;
   isLoading?: boolean;
+  isNew?: boolean;
+  isUpdated?: boolean;
 }

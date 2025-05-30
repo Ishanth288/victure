@@ -71,49 +71,52 @@ export const generatePDFFromElement = async (
     // Calculate dimensions
     const imgWidth = 210; // A4 width in mm
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    
-    // Add header with Victure branding and pharmacy info
-    pdf.setFillColor(0, 51, 102); // Dark blue background
-    pdf.rect(0, 0, 210, 30, 'F');
-    
-    // Add Victure branding
-    pdf.setTextColor(255, 255, 255); // White text
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(20);
-    pdf.text('VICTURE HEALTHCARE SOLUTIONS', 105, 12, { align: 'center' });
-    
-    // Add pharmacy name
-    pdf.setFontSize(14);
-    pdf.text(pharmacyProfile?.pharmacy_name || 'Pharmacy', 105, 20, { align: 'center' });
-    
-    // Add report title
-    pdf.setFontSize(12);
-    pdf.text(options.title, 105, 27, { align: 'center' });
-    
-    // Add content (shifted down to accommodate the header)
-    pdf.addImage(imgData, 'PNG', 0, 35, imgWidth, imgHeight);
-    
-    // Add footer with last updated info
-    const currentDate = options.lastUpdated ? format(options.lastUpdated, 'PPpp') : format(new Date(), 'PPpp');
-    
-    pdf.setFontSize(8);
-    pdf.setTextColor(100, 100, 100);
-    pdf.text(`Last Updated: ${currentDate}`, 105, 285, { align: 'center' });
-    
-    if (pharmacyProfile) {
-      const addressText = [
-        pharmacyProfile.address,
-        `${pharmacyProfile.city}, ${pharmacyProfile.state} - ${pharmacyProfile.pincode}`,
-        `GSTIN: ${pharmacyProfile.gstin || 'N/A'}`
-      ].filter(Boolean).join(' | ');
-      
-      pdf.text(addressText, 105, 290, { align: 'center' });
+
+    let position = 0;
+    let heightLeft = imgHeight;
+    const pageHeight = pdf.internal.pageSize.height;
+    const headerHeight = 30;
+    const footerHeight = 20;
+    const contentStart = headerHeight + 5; // Space after header
+    const contentEnd = pageHeight - footerHeight - 5; // Space before footer
+    const contentHeight = contentEnd - contentStart;
+
+    while (heightLeft > 0) {
+      pdf.addPage();
+      const currentPage = pdf.internal.getNumberOfPages();
+
+      // Header
+      pdf.setFillColor(0, 51, 102); // Dark blue background
+      pdf.rect(0, 0, 210, headerHeight, 'F');
+
+      pdf.setTextColor(255, 255, 255); // White text
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(18);
+      pdf.text('VICTURE HEALTHCARE SOLUTIONS', 105, 8, { align: 'center' });
+
+      pdf.setFontSize(10);
+      pdf.text(`Pharmacy Name: ${pharmacyProfile?.pharmacy_name || 'N/A'}`, 10, 18);
+      pdf.text(`Pharmacy Address: ${pharmacyProfile?.address || 'N/A'}, ${pharmacyProfile?.city || ''} - ${pharmacyProfile?.pincode || ''}`, 10, 23);
+      pdf.text(`Report: ${options.title}`, 10, 28);
+
+      // Content
+      const currentContentHeight = Math.min(heightLeft, contentHeight);
+      pdf.addImage(imgData, 'PNG', 0, contentStart, imgWidth, currentContentHeight, undefined, 'FAST', position, currentContentHeight);
+      heightLeft -= currentContentHeight;
+      position += currentContentHeight;
+
+      // Footer
+      const currentDate = options.lastUpdated ? format(options.lastUpdated, 'PPpp') : format(new Date(), 'PPpp');
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(`Last Updated: ${currentDate}`, 10, pageHeight - 15);
+      pdf.text(`Page ${currentPage} of ${Math.ceil(imgHeight / contentHeight)}`, 190, pageHeight - 15, { align: 'right' });
+      pdf.text('Powered by Victure Healthcare Solutions', 105, pageHeight - 10, { align: 'center' });
     }
-    
-    // Add Victure footer text
-    pdf.text("Powered by Victure Healthcare Solutions", 105, 295, { align: 'center' });
-    
-    // Generate data URL
+
+    // Remove the first blank page added by default
+    pdf.deletePage(1);
+
     return pdf.output('dataurlstring');
   } catch (error) {
     console.error('Error generating PDF:', error);
@@ -152,7 +155,7 @@ export const generateSystemReport = async (dataType: string): Promise<any> => {
           []
         );
       
-      case 'sales':
+      case 'sales_analysis':
         return safeQueryData(
           supabase.from('bills')
             .select('*, bill_items(*)')
