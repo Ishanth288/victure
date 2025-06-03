@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useMobileScanner } from "@/hooks/useMobileScanner";
-import { CameraScanner } from "./CameraScanner";
+import CameraScanner from "./CameraScanner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,54 +56,66 @@ export function MobileDashboard() {
     else if (hour < 18) setGreeting('Good afternoon');
     else setGreeting('Good evening');
 
+    console.log('MobileDashboard: useEffect triggered.');
     checkAuth();
     fetchDashboardStats();
   }, []);
 
   const checkAuth = async () => {
+    console.log('MobileDashboard: Checking authentication...');
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
+      console.log('MobileDashboard: No active session, navigating to /auth.');
       navigate('/auth');
       return;
     }
     setUser(session.user);
+    console.log('MobileDashboard: User authenticated:', session.user.email);
   };
 
   const fetchDashboardStats = async () => {
+    console.log('MobileDashboard: Fetching dashboard stats...');
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('MobileDashboard: No user found, cannot fetch stats.');
+        return;
+      }
 
       // Fetch inventory stats
-      const { data: inventory } = await supabase
+      const { data: inventory, error: inventoryError } = await supabase
         .from("inventory")
         .select("id, quantity, reorder_point")
         .eq("user_id", user.id);
+      if (inventoryError) console.error('MobileDashboard: Inventory fetch error:', inventoryError);
 
       // Fetch patients count
-      const { data: patients } = await supabase
+      const { data: patients, error: patientsError } = await supabase
         .from("patients")
         .select("id")
         .eq("user_id", user.id);
+      if (patientsError) console.error('MobileDashboard: Patients fetch error:', patientsError);
 
       // Fetch today's bills
       const today = new Date().toISOString().split('T')[0];
-      const { data: bills } = await supabase
+      const { data: bills, error: billsError } = await supabase
         .from("bills")
         .select("total_amount")
         .eq("user_id", user.id)
         .gte("date", today + "T00:00:00")
         .lte("date", today + "T23:59:59");
+      if (billsError) console.error('MobileDashboard: Bills fetch error:', billsError);
 
       // Fetch last week's bills for growth calculation
       const lastWeek = new Date();
       lastWeek.setDate(lastWeek.getDate() - 7);
-      const { data: lastWeekBills } = await supabase
+      const { data: lastWeekBills, error: lastWeekBillsError } = await supabase
         .from("bills")
         .select("total_amount")
         .eq("user_id", user.id)
         .gte("date", lastWeek.toISOString().split('T')[0] + "T00:00:00")
         .lte("date", today + "T23:59:59");
+      if (lastWeekBillsError) console.error('MobileDashboard: Last week bills fetch error:', lastWeekBillsError);
 
       const totalRevenue = bills?.reduce((sum, bill) => sum + Number(bill.total_amount), 0) || 0;
       const lastWeekRevenue = lastWeekBills?.reduce((sum, bill) => sum + Number(bill.total_amount), 0) || 0;
@@ -118,10 +130,12 @@ export function MobileDashboard() {
         lowStockItems: lowStock,
         weeklyGrowth: Math.round(weeklyGrowth)
       });
+      console.log('MobileDashboard: Dashboard stats fetched successfully.');
     } catch (error) {
-      console.error("Error fetching dashboard stats:", error);
+      console.error("MobileDashboard: Error fetching dashboard stats:", error);
     } finally {
       setIsLoading(false);
+      console.log('MobileDashboard: setIsLoading set to false.');
     }
   };
 
@@ -173,6 +187,7 @@ export function MobileDashboard() {
   ];
 
   if (isLoading) {
+    console.log('MobileDashboard: Displaying loading spinner.');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

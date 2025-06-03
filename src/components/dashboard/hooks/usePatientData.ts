@@ -12,27 +12,34 @@ export function usePatientData() {
   const [isLoading, setIsLoading] = useState(true);
   const [patientsData, setPatientsData] = useState<Patient[]>([]);
 
-
-
   useEffect(() => {
-    let patientChannel: any = null; // Declare patientChannel inside useEffect
+    let patientChannel: any;
 
-    const setupAndFetch = async () => {
-      await fetchPatientData(); // Initial fetch
-
+    const setupSubscription = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      patientChannel = supabase
-        .channel('patient-updates')
-        .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'patients', filter: `user_id=eq.${user.id}` },
-          () => fetchPatientData() // Fetch on changes
-        )
-        .subscribe();
+      // Check if the channel already exists or is active to prevent multiple subscriptions
+      const existingChannels = supabase.getChannels();
+      const channelExists = existingChannels.some(channel => channel.topic === 'realtime:patient-updates');
+
+      if (!channelExists) {
+        patientChannel = supabase
+          .channel('patient-updates')
+          .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'patients', filter: `user_id=eq.${user.id}` },
+            () => fetchPatientData() // Fetch on changes
+          )
+          .subscribe();
+      } else {
+        // If channel already exists, try to re-use it or log a warning
+        console.warn('Supabase channel \'patient-updates\' already exists. Reusing or skipping subscription.');
+        patientChannel = existingChannels.find(channel => channel.topic === 'realtime:patient-updates');
+      }
     };
 
-    setupAndFetch();
+    fetchPatientData(); // Initial fetch when component mounts
+    setupSubscription(); // Setup subscription after initial fetch
 
     // Cleanup function
     return () => {

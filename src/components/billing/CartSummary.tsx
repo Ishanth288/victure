@@ -35,24 +35,30 @@ export function CartSummary({
   const [showBillPreview, setShowBillPreview] = useState(false);
   const [generatedBill, setGeneratedBill] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // Initialize as false, as auth check is quick
   const [isGenerating, setIsGenerating] = useState(false);
   const [showEmbeddedPreview, setShowEmbeddedPreview] = useState(false);
   const [prescriptionDetails, setPrescriptionDetails] = useState<any>(null);
   const billPreviewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    checkAuth();
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const handleAuthStateChange = (_event: any, session: any) => {
       setIsAuthenticated(!!session);
-      setIsLoading(false);
-    });
+      // Only set isLoading to false if it's the initial check
+      if (isLoading) {
+        setIsLoading(false);
+      }
+    };
+
+    // Initial check
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, []); // Removed isLoading from dependency array to prevent re-runs
 
   useEffect(() => {
     if (prescriptionId) {
@@ -61,6 +67,13 @@ export function CartSummary({
   }, [prescriptionId]);
 
   const fetchPrescriptionDetails = async () => {
+    if (!prescriptionId) {
+      console.warn("fetchPrescriptionDetails: No prescriptionId provided.");
+      setPrescriptionDetails(null);
+      return;
+    }
+
+    console.log(`fetchPrescriptionDetails: Fetching details for prescription ID: ${prescriptionId}`);
     try {
       const { data, error } = await supabase
         .from("prescriptions")
@@ -74,10 +87,33 @@ export function CartSummary({
         .eq("id", prescriptionId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error(`fetchPrescriptionDetails: Error fetching prescription details for ID ${prescriptionId}:`, error);
+        toast({
+          title: "Error",
+          description: `Failed to load prescription details: ${error.message}`,
+          variant: "destructive",
+        });
+        setPrescriptionDetails(null);
+        return;
+      }
+      
+      if (!data) {
+        console.warn(`fetchPrescriptionDetails: No data found for prescription ID: ${prescriptionId}`);
+        setPrescriptionDetails(null);
+        return;
+      }
+
       setPrescriptionDetails(data);
-    } catch (error) {
-      console.error("Error fetching prescription details:", error);
+      console.log(`fetchPrescriptionDetails: Successfully fetched details for prescription ID: ${prescriptionId}`);
+    } catch (error: any) {
+      console.error("fetchPrescriptionDetails: Unexpected error:", error);
+      toast({
+        title: "Error",
+        description: `An unexpected error occurred: ${error.message}`,
+        variant: "destructive",
+      });
+      setPrescriptionDetails(null);
     }
   };
 
@@ -282,93 +318,194 @@ export function CartSummary({
     }
   };
 
-  const handleGenerateBill = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      toast({
-        title: "Error",
-        description: "You must be logged in to generate bills",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (items.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please add items to the cart",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const generateBill = async () => {
     setIsGenerating(true);
     try {
-      const { data: profileData } = await supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to generate bills",
+          variant: "destructive",
+        });
+        setIsGenerating(false);
+        return;
+      }
+
+      if (items.length === 0) {
+        toast({
+          title: "Error",
+          description: "Please add items to the cart",
+          variant: "destructive",
+        });
+        setIsGenerating(false);
+        return;
+      }
+
+      // Fetch profile data
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single();
 
+      if (profileError) throw new Error(profileError.message);
+
+      // Handle patient details: update if exists, insert if new
+      let patientId = prescriptionDetails?.patient?.id;
+      if (prescriptionDetails && prescriptionDetails.patient) {
+        if (patientId && patientId > 0) {
+          // Update existing patient
+          const { error: patientUpdateError } = await supabase
+            .from('patients')
+            .update({
+              name: prescriptionDetails.patient.name.trim(),
+              phone_number: prescriptionDetails.patient.phone_number?.trim() || null,
+              updated_at: new Date().toISOString(), // Add timestamp
+            })
+            .eq('id', patientId);
+
+          if (patientUpdateError) {
+            throw new Error(`Patient update error: ${patientUpdateError.message}`);
+          }
+        } else {
+          // Insert new patient with better validation
+          const { data: newPatientData, error: patientError } = await supabase
+            .from("patients")
+            .insert({
+              name: prescriptionDetails.patient.name.trim(),
+              phone_number: prescriptionDetails.patient.phone_number?.trim() || null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .select("id")
+            .single();
+
+          if (patientError) {
+            throw new Error(`Patient creation error: ${patientError.message}`);
+          }
+          
+          if (!newPatientData?.id) {
+            throw new Error("Failed to create patient - no ID returned");
+          }
+          
+          patientId = newPatientData.id;
+        }
+      }
+
+      // Fixed: Better bill data validation
+      const billInsertData = {
+        prescription_id: prescriptionId,
+        bill_number: `BILL-${Date.now()}`,
+        subtotal: subtotal,
+        gst_amount: gstAmount,
+        gst_percentage: validGstPercentage,
+        discount_amount: validDiscountAmount,
+        total_amount: total,
+        status: "completed",
+        user_id: session.user.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      // Validate bill data before insert
+      if (billInsertData.total_amount <= 0) {
+        throw new Error("Bill total must be greater than zero");
+      }
+
       const { data: billData, error: billError } = await supabase
         .from("bills")
-        .insert([
-          {
-            prescription_id: prescriptionId,
-            bill_number: `BILL-${Date.now()}`,
-            subtotal: Math.round(subtotal),
-            gst_amount: Math.round(gstAmount),
-            gst_percentage: gstPercentage,
-            discount_amount: Math.round(discountAmount),
-            total_amount: Math.round(total),
-            status: "completed",
-            user_id: session.user.id
-          },
-        ])
-        .select(`
+        .insert([billInsertData])
+        .select(
+          `
           *,
           prescription:prescriptions (
             *,
             patient:patients (
+              id,
               name,
               phone_number
             )
           )
-        `)
+        `
+        )
         .single();
 
-      if (billError) throw new Error(billError.message);
+      if (billError) {
+        throw new Error(`Bill creation error: ${billError.message}`);
+      }
 
-      const billItems = items.map((item) => ({
-        bill_id: billData.id,
-        inventory_item_id: item.id,
-        quantity: item.quantity,
-        unit_price: item.unit_cost,
-        total_price: item.total,
-      }));
+      if (!billData?.id) {
+        throw new Error("Failed to create bill - no ID returned");
+      }
+
+      // Fixed: Better bill items validation and creation
+      const validBillItems = items
+        .filter(item => item.id && item.quantity > 0 && item.unit_cost >= 0)
+        .map((item) => ({
+          bill_id: billData.id,
+          inventory_item_id: item.id,
+          quantity: Math.max(1, Math.floor(item.quantity)), // Ensure positive integer
+          unit_price: Math.max(0, item.unit_cost),
+          total_price: Math.max(0, item.total),
+          created_at: new Date().toISOString(),
+        }));
+
+      if (validBillItems.length === 0) {
+        throw new Error("No valid items to add to bill");
+      }
 
       const { error: billItemsError } = await supabase
         .from("bill_items")
-        .insert(billItems);
+        .insert(validBillItems);
 
-      if (billItemsError) throw new Error(billItemsError.message);
+      if (billItemsError) {
+        throw new Error(`Bill items creation error: ${billItemsError.message}`);
+      }
 
+      // Fixed: Better inventory update with transaction-like behavior
+      const inventoryUpdates = [];
       for (const item of items) {
+        if (!item.id || item.quantity <= 0) continue;
+
         const { data: inventoryData, error: fetchError } = await supabase
           .from("inventory")
-          .select("quantity")
+          .select("quantity, id")
           .eq("id", item.id)
           .single();
 
-        if (fetchError) throw new Error(fetchError.message);
+        if (fetchError) {
+          throw new Error(`Inventory fetch error for item ${item.id}: ${fetchError.message}`);
+        }
 
-        const newQuantity = (inventoryData?.quantity || 0) - item.quantity;
+        const currentQuantity = inventoryData?.quantity || 0;
+        const requestedQuantity = Math.floor(item.quantity);
+        
+        if (currentQuantity < requestedQuantity) {
+          throw new Error(`Insufficient inventory for item ${item.name || item.id}. Available: ${currentQuantity}, Requested: ${requestedQuantity}`);
+        }
+
+        const newQuantity = currentQuantity - requestedQuantity;
+        inventoryUpdates.push({
+          id: item.id,
+          newQuantity: newQuantity,
+          item: item
+        });
+      }
+
+      // Apply inventory updates
+      for (const update of inventoryUpdates) {
         const { error: inventoryError } = await supabase
           .from("inventory")
-          .update({ quantity: newQuantity })
-          .eq("id", item.id);
+          .update({ 
+            quantity: update.newQuantity,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", update.id);
 
-        if (inventoryError) throw new Error(inventoryError.message);
+        if (inventoryError) {
+          throw new Error(`Inventory update error for item ${update.item.name || update.id}: ${inventoryError.message}`);
+        }
       }
 
       setGeneratedBill({ ...billData, pharmacy_address: profileData });
@@ -377,14 +514,14 @@ export function CartSummary({
 
       toast({
         title: "Success",
-        description: "Bill generated successfully"
+        description: "Bill generated successfully",
       });
     } catch (error) {
       console.error("Error generating bill:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to generate bill",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsGenerating(false);
@@ -393,128 +530,104 @@ export function CartSummary({
 
   return (
     <div className="space-y-4">
-      <div className="space-y-4">
-        {items.map((item) => (
-          <CartItemRow
-            key={item.id}
-            {...item}
-            onRemoveItem={onRemoveItem}
-            onUpdateQuantity={onUpdateQuantity}
-          />
-        ))}
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">Cart Items</h3>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowEmbeddedPreview(!showEmbeddedPreview)}
+        >
+          {showEmbeddedPreview ? "Hide Preview" : "Show Preview"}
+        </Button>
       </div>
-
-      <div className="space-y-3 pt-4">
-        <div className="rounded-lg border p-4">
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span className="font-medium truncate">₹{subtotal.toFixed(2)}</span>
-            </div>
-
-            <div className="space-y-2">
-              <Label>GST (%)</Label>
-              <Input
-                type="number"
-                value={gstPercentage}
-                onChange={(e) => setGstPercentage(Number(e.target.value))}
-                min="0"
-                max="100"
-              />
-              <div className="flex justify-between text-sm">
-                <span>GST Amount</span>
-                <span className="truncate">₹{gstAmount.toFixed(2)}</span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Discount (₹)</Label>
-              <Input
-                type="number"
-                value={discountAmount}
-                onChange={(e) => setDiscountAmount(Number(e.target.value))}
-                min="0"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Payment Method</Label>
-              <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2"
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-              >
-                <option value="cash">Cash</option>
-                <option value="card">Credit Card</option>
-                <option value="upi">UPI</option>
-              </select>
-            </div>
-
-            <div className="flex justify-between font-bold text-lg pt-2 border-t">
-              <span>Total</span>
-              <span className="truncate">₹{total.toFixed(2)}</span>
-            </div>
-          </div>
-        </div>
-
-        {!isLoading && !isAuthenticated && (
-          <div className="flex items-center gap-2 text-sm text-yellow-600 bg-yellow-50 p-2 rounded-md">
-            <Info className="h-4 w-4" />
-            <span>Please log in to generate bills</span>
-          </div>
+      <ScrollArea className="h-[250px] w-full rounded-md border p-4">
+        {items.length === 0 ? (
+          <p className="text-center text-gray-500">No items in cart</p>
+        ) : (
+          items.map((item) => (
+            <CartItemRow
+              key={item.id}
+              item={item}
+              onRemoveItem={onRemoveItem}
+              onUpdateQuantity={onUpdateQuantity}
+            />
+          ))
         )}
+      </ScrollArea>
 
-        <div className="flex flex-col gap-2">
-          <Button
-            className="w-full"
-            variant="outline"
-            onClick={handlePreviewBill}
-            disabled={items.length === 0 || !isAuthenticated || isLoading || isGenerating}
-          >
-            <Receipt className="w-4 h-4 mr-2" />
-            Preview Bill
-          </Button>
+      <div className="space-y-2">
+        <Label htmlFor="gst">GST Percentage</Label>
+        <Input
+          id="gst"
+          type="number"
+          value={gstPercentage}
+          onChange={(e) => setGstPercentage(parseFloat(e.target.value) || 0)}
+        />
+      </div>
 
-          <Button
-            className="w-full"
-            onClick={handleGenerateBill}
-            disabled={items.length === 0 || !isAuthenticated || isLoading || isGenerating}
-          >
-            <Receipt className="w-4 h-4 mr-2" />
-            Generate Bill
-          </Button>
+      <div className="space-y-2">
+        <Label htmlFor="discount">Discount Amount</Label>
+        <Input
+          id="discount"
+          type="number"
+          value={discountAmount}
+          onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="paymentMethod">Payment Method</Label>
+        <Input
+          id="paymentMethod"
+          type="text"
+          value={paymentMethod}
+          onChange={(e) => setPaymentMethod(e.target.value)}
+        />
+      </div>
+
+      <div className="border-t pt-4 space-y-2">
+        <div className="flex justify-between">
+          <span>Subtotal:</span>
+          <span>₹{subtotal.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>GST ({gstPercentage}%):</span>
+          <span>₹{gstAmount.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Discount:</span>
+          <span>-₹{discountAmount.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between font-bold text-lg">
+          <span>Total:</span>
+          <span>₹{total.toFixed(2)}</span>
         </div>
       </div>
 
-      {showEmbeddedPreview && generatedBill && (
-        <div className="mt-6 border rounded-lg p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-lg">Bill Preview</h3>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </Button>
-              <Button variant="outline" size="sm" onClick={handlePrint}>
-                <Printer className="w-4 h-4 mr-2" />
-                Print
-              </Button>
-            </div>
-          </div>
-          <ScrollArea className="h-[500px] w-full rounded-md border" scrollHideDelay={150}>
-            <div ref={billPreviewRef} className="p-4 print-content">
-              <PrintableBill billData={generatedBill} items={items} />
-            </div>
-          </ScrollArea>
-        </div>
+      <Button
+        onClick={generateBill}
+        className="w-full"
+        disabled={isGenerating || items.length === 0}
+      >
+        {isGenerating ? "Generating..." : "Generate Bill"}
+      </Button>
+
+      {generatedBill && (
+        <BillPreviewDialog
+          showBillPreview={showBillPreview}
+          setShowBillPreview={setShowBillPreview}
+          generatedBill={generatedBill}
+          onPrint={handlePrint}
+          onExport={handleExport}
+        />
       )}
 
-      <BillPreviewDialog
-        open={showBillPreview}
-        onOpenChange={setShowBillPreview}
-        billData={generatedBill}
-        items={items}
-      />
+      {showEmbeddedPreview && generatedBill && (
+        <div className="mt-4 p-4 border rounded-md bg-gray-50">
+          <h4 className="text-md font-semibold mb-2">Bill Preview</h4>
+          <PrintableBill ref={billPreviewRef} bill={generatedBill} />
+        </div>
+      )}
     </div>
   );
 }

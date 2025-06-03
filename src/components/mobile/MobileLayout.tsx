@@ -4,6 +4,7 @@ import { Capacitor } from "@capacitor/core";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { hapticFeedback } from "@/utils/mobileUtils";
+import { BottomTabBar } from "./BottomTabBar";
 
 interface MobileLayoutProps {
   children: React.ReactNode;
@@ -87,6 +88,9 @@ export function MobileLayout({ children }: MobileLayoutProps) {
       >
         {children}
       </div>
+
+      {/* Bottom Tab Bar for mobile navigation */}
+      <BottomTabBar />
 
       {/* Native app indicator - styled professionally */}
       {isNativeApp && (

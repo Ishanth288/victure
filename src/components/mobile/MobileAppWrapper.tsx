@@ -8,6 +8,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { MobileLayout } from "./MobileLayout";
 import { MobileDashboard } from "./MobileDashboard";
+import { LoadingAnimation } from "@/components/ui/loading-animation";
 
 interface MobileAppWrapperProps {
   children: React.ReactNode;
@@ -66,44 +67,109 @@ export function MobileAppWrapper({ children }: MobileAppWrapperProps) {
         });
       }
 
-      setIsInitialized(true);
+      // setIsInitialized(true); // Moved to combined effect
+      console.log('MobileAppWrapper: App initialized. isInitialized set to true.');
     };
 
     initializeApp();
   }, []);
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const initializeAppAndAuth = async () => {
+      console.log('MobileAppWrapper: Starting app initialization and auth check...');
+      const isNative = Capacitor.isNativePlatform();
+      console.log('Platform check - isNative:', isNative, 'Platform:', Capacitor.getPlatform());
+      setIsNativeApp(isNative);
+
+      if (isNative) {
+        try {
+          // Configure status bar for teal green theme
+          await StatusBar.setStyle({ style: Style.Light });
+          await StatusBar.setBackgroundColor({ color: '#14b8a6' });
+          console.log('Native app status bar configured with teal theme');
+
+          // Prevent external navigation in native app
+          document.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            const link = target.closest('a');
+            if (link && link.href && !link.href.startsWith(window.location.origin)) {
+              e.preventDefault();
+              console.log('Prevented external navigation to:', link.href);
+            }
+          });
+
+          // Override window.open to prevent web leaks
+          const originalOpen = window.open;
+          window.open = (...args) => {
+            console.log('Prevented window.open call in native app');
+            return null;
+          };
+
+        } catch (error) {
+          console.log('Status bar configuration failed:', error);
+        }
+
+        // Handle back button on mobile
+        CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+          if (!canGoBack) {
+            CapacitorApp.exitApp();
+          } else {
+            window.history.back();
+          }
+        });
+      }
+
+      // Perform auth check
       try {
         const { data: { session } } = await supabase.auth.getSession();
         setIsAuthenticated(!!session);
+        console.log('MobileAppWrapper: Auth check complete, isAuthenticated:', !!session);
       } catch (error) {
-        console.error('Auth check failed:', error);
+        console.error('MobileAppWrapper: Auth check failed:', error);
         setIsAuthenticated(false);
       } finally {
         setIsCheckingAuth(false);
+        console.log('MobileAppWrapper: isCheckingAuth set to false in finally block.');
       }
+      setIsInitialized(true);
+      console.log('MobileAppWrapper: isInitialized set to true after all initialization and auth check.');
     };
 
-    checkAuth();
+    initializeAppAndAuth();
+
+    // Fallback to set isCheckingAuth to false after a delay, in case auth check gets stuck
+    const authCheckTimeout = setTimeout(() => {
+      if (isCheckingAuth) {
+        console.warn('MobileAppWrapper: Auth check timed out. Forcing isCheckingAuth to false.');
+        setIsCheckingAuth(false);
+        // If auth check times out, and app is not initialized, force initialization
+        if (!isInitialized) {
+          setIsInitialized(true);
+          console.warn('MobileAppWrapper: Forcing isInitialized to true due to auth check timeout.');
+        }
+      }
+    }, 10000); // 10 seconds timeout
 
     // Listen to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setIsAuthenticated(!!session);
-      setIsCheckingAuth(false);
+      setIsCheckingAuth(false); // Ensure this is false on auth state change
+      console.log('MobileAppWrapper: Auth state changed, isAuthenticated:', !!session, 'event:', event, 'isCheckingAuth set to false in auth state change.');
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(authCheckTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Don't render anything until platform detection is complete
   if (!isInitialized || isCheckingAuth) {
+    console.log(`MobileAppWrapper: Displaying loading spinner. Current state: isInitialized=${isInitialized}, isCheckingAuth=${isCheckingAuth}`);
     return (
       <div className="min-h-screen bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
         <div className="text-center text-white">
-          <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
-          <div className="text-xl font-semibold">Victure Pharmacy</div>
-          <div className="text-sm opacity-75">Loading...</div>
+          <LoadingAnimation showLogo={true} text="Loading Victure Pharmacy..." size="lg" />
         </div>
       </div>
     );
@@ -111,6 +177,7 @@ export function MobileAppWrapper({ children }: MobileAppWrapperProps) {
 
   // Show auth page for mobile apps if not authenticated
   if ((isNativeApp || isMobile) && !isAuthenticated && location.pathname !== '/auth') {
+    console.log('MobileAppWrapper: Redirecting to auth page.');
     return (
       <MobileLayout>
         <div className="min-h-screen bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center p-6">

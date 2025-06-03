@@ -11,34 +11,54 @@ export function SidebarContainer() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPharmacyName = async () => {
+    const getPharmacyName = async () => {
       setIsLoading(true);
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("pharmacy_name")
-            .eq("id", user.id)
-            .single();
-          
-          if (profile?.pharmacy_name) {
-            setPharmacyName(profile.pharmacy_name);
+      const cachedName = localStorage.getItem('pharmacyName');
+      if (cachedName) {
+        setPharmacyName(cachedName);
+        setIsLoading(false);
+      } else {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("pharmacy_name")
+              .eq("id", user.id)
+              .single();
+            
+            if (profile?.pharmacy_name) {
+              setPharmacyName(profile.pharmacy_name);
+              localStorage.setItem('pharmacyName', profile.pharmacy_name);
+            } else {
+              setPharmacyName("My Pharmacy");
+            }
           } else {
             setPharmacyName("My Pharmacy");
           }
-        } else {
+        } catch (error) {
+          console.error("Error fetching pharmacy name:", error);
           setPharmacyName("My Pharmacy");
+        } finally {
+          setIsLoading(false);
         }
-      } catch (error) {
-        console.error("Error fetching pharmacy name:", error);
-        setPharmacyName("My Pharmacy");
-      } finally {
-        setIsLoading(false);
       }
     };
 
-    fetchPharmacyName();
+    getPharmacyName();
+
+    const handlePharmacyNameUpdate = () => {
+      const updatedName = localStorage.getItem('pharmacyName');
+      if (updatedName) {
+        setPharmacyName(updatedName);
+      }
+    };
+
+    window.addEventListener('pharmacyNameUpdated', handlePharmacyNameUpdate);
+
+    return () => {
+      window.removeEventListener('pharmacyNameUpdated', handlePharmacyNameUpdate);
+    };
   }, []);
 
   return (

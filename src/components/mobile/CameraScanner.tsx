@@ -1,434 +1,397 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Camera, X, Flashlight, RotateCcw, CheckCircle, AlertCircle, Scan } from 'lucide-react';
+import Quagga from 'quagga';
+import { createWorker } from 'tesseract.js';
 
-import { useState } from "react";
-import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
-import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Camera as CameraIcon, Scan, Check, X, Loader2, Edit } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-
+// Types for medicine scanning
 interface ScannedMedicine {
+  id?: string;
   name: string;
-  genericName?: string;
   manufacturer?: string;
-  strength?: string;
-  dosageForm?: string;
-  confidence: number;
-  expiryDate?: string;
-  unitCost?: number;
-  sellingPrice?: number;
   batchNumber?: string;
+  expiryDate?: string;
+  mrp?: number;
+  composition?: string;
+  strength?: string;
+  packSize?: string;
+  barcode?: string;
+  confidence: number;
+  source: 'barcode' | 'ocr' | 'manual';
 }
 
 interface CameraScannerProps {
-  onMedicineDetected: (medicine: ScannedMedicine) => void;
   onClose: () => void;
+  onMedicineDetected: (medicine: ScannedMedicine) => void;
+  existingMedicines?: any[];
 }
 
-export function CameraScanner({ onMedicineDetected, onClose }: CameraScannerProps) {
-  const { toast } = useToast();
+const INDIAN_MANUFACTURERS = [
+  'Sun Pharma', 'Cipla', 'Dr. Reddy\'s', 'Lupin', 'Aurobindo', 'Cadila', 'Alkem',
+  'Torrent', 'Abbott', 'GSK', 'Pfizer', 'Novartis', 'Sanofi', 'Mankind',
+  'Hetero', 'Glenmark', 'Intas', 'Emcure', 'Wockhardt', 'Elder'
+];
+
+const MEDICINE_PATTERNS = {
+  batchNumber: /(?:BATCH|B\.NO|LOT|MFG)[:\s]*([A-Z0-9]+)/i,
+  expiryDate: /(?:EXP|EXPIRY)[:\s]*((?:0[1-9]|1[0-2])\/(?:20)?[0-9]{2}|(?:0[1-9]|1[0-2])-(?:20)?[0-9]{2})/i,
+  mrp: /(?:MRP|PRICE)[:\s]*(?:RS\.?|₹)\s*([0-9]+(?:\.[0-9]{2})?)/i,
+  composition: /(?:COMPOSITION|COMP)[:\s]*([A-Za-z\s]+(?:\d+(?:mg|mcg|g|ml))?)/i,
+  strength: /(\d+(?:\.\d+)?\s*(?:mg|mcg|g|ml|%))/gi
+};
+
+const CameraScanner: React.FC<CameraScannerProps> = ({
+  onClose,
+  onMedicineDetected,
+  existingMedicines = []
+}) => {
   const [isScanning, setIsScanning] = useState(false);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [flashEnabled, setFlashEnabled] = useState(false);
+  const [cameraFacing, setCameraFacing] = useState<'user' | 'environment'>('environment');
   const [detectedMedicine, setDetectedMedicine] = useState<ScannedMedicine | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState<ScannedMedicine | null>(null);
+  const [scanningMode, setScanningMode] = useState<'barcode' | 'text'>('barcode');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const takePicture = async () => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startScanning = () => {
+    if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
+
+    scanIntervalRef.current = setInterval(() => {
+      if (scanningMode === 'barcode') {
+        scanBarcode();
+      } else {
+        performOCR();
+      }
+    }, 1000);
+  };
+
+  const initializeCamera = useCallback(async () => {
     try {
-      setIsScanning(true);
-      await Haptics.impact({ style: ImpactStyle.Light });
+      setError(null);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
 
-      const image = await Camera.getPhoto({
-        quality: 90,
-        allowEditing: false,
-        resultType: CameraResultType.DataUrl,
-        source: CameraSource.Camera,
-      });
+      const constraints = {
+        video: {
+          facingMode: cameraFacing,
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          advanced: [{ focusMode: 'continuous' }] as any[]
+        }
+      };      
+      if (flashEnabled) {
+        constraints.video.advanced.push({ torch: true } as any);
+      }
 
-      if (image.dataUrl) {
-        setCapturedImage(image.dataUrl);
-        await analyzeMedicine(image.dataUrl);
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        setIsScanning(true);
+        startScanning(); // moved startScanning AFTER its definition
+      }
+    } catch (err) {
+      setError('Camera access denied. Please allow camera permissions.');
+      console.error('Camera initialization error:', err);
+    }
+  }, [cameraFacing]);
+
+  const simulateBarcodeScanning = async () => {
+    if (!videoRef.current || !canvasRef.current || isProcessing) return;
+
+    try {
+      setIsProcessing(true);
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const mockBarcodeResult = await simulateBarcodeScanning();
+
+      const barcodeResult = await mockBarcodeResult;
+      if (barcodeResult) {
+        const medicine = await lookupMedicineByBarcode(barcodeResult.code);
+        if (medicine) {
+          setDetectedMedicine(medicine);
+          stopScanning();
+        }
       }
     } catch (error) {
-      console.error('Camera error:', error);
-      toast({
-        title: "Camera Error",
-        description: "Unable to access camera. Please check permissions.",
-        variant: "destructive",
-      });
+      console.error('Barcode scanning error:', error);
     } finally {
-      setIsScanning(false);
+      setIsProcessing(false);
     }
   };
 
-  const analyzeMedicine = async (imageData: string) => {
-    setIsAnalyzing(true);
+  const performOCR = async () => {
+    if (!videoRef.current || !canvasRef.current || isProcessing) return;
+
     try {
-      // Enhanced AI analysis with more realistic medicine data
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Simulate more advanced OCR and medicine database lookup
-      const medicineTemplates = [
-        {
-          name: "Paracetamol",
-          genericName: "Acetaminophen",
-          manufacturer: "Sun Pharma",
-          strength: "500mg",
-          dosageForm: "Tablet",
-          confidence: 0.94,
-          expiryDate: "2025-12-31",
-          unitCost: 12.50,
-          sellingPrice: 15.00,
-          batchNumber: "BT2024001"
-        },
-        {
-          name: "Amoxicillin",
-          genericName: "Amoxicillin Trihydrate",
-          manufacturer: "Cipla Ltd",
-          strength: "250mg",
-          dosageForm: "Capsule",
-          confidence: 0.89,
-          expiryDate: "2025-08-15",
-          unitCost: 8.75,
-          sellingPrice: 11.20,
-          batchNumber: "AMX2024002"
-        },
-        {
-          name: "Cetirizine",
-          genericName: "Cetirizine Hydrochloride",
-          manufacturer: "Dr. Reddy's",
-          strength: "10mg",
-          dosageForm: "Tablet",
-          confidence: 0.91,
-          expiryDate: "2025-06-30",
-          unitCost: 5.25,
-          sellingPrice: 7.50,
-          batchNumber: "CTZ2024003"
+      setIsProcessing(true);
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          const text = await performTextRecognition(blob);
+          if (text) {
+            const medicine = extractMedicineInfo(text);
+            if (medicine && medicine.confidence > 0.6) {
+              setDetectedMedicine(medicine);
+              stopScanning();
+            }
+          }
         }
-      ];
-
-      const randomMedicine = medicineTemplates[Math.floor(Math.random() * medicineTemplates.length)];
-      
-      setDetectedMedicine(randomMedicine);
-      setEditForm(randomMedicine);
-      await Haptics.impact({ style: ImpactStyle.Medium });
+      }, 'image/jpeg', 0.8);
     } catch (error) {
-      console.error('Analysis error:', error);
-      toast({
-        title: "Analysis Error",
-        description: "Failed to analyze the medicine. Please try again.",
-        variant: "destructive",
-      });
+      console.error('OCR error:', error);
     } finally {
-      setIsAnalyzing(false);
+      setIsProcessing(false);
     }
   };
 
-  const confirmMedicine = async () => {
-    if (!editForm) return;
-    
+  const scanBarcode = async () => {
+    if (!videoRef.current || !canvasRef.current || isProcessing) return;
+
     try {
-      // Save to Supabase inventory
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not authenticated");
+      setIsProcessing(true);
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-      const inventoryData = {
-        user_id: user.id,
-        name: editForm.name,
-        generic_name: editForm.genericName,
-        manufacturer: editForm.manufacturer,
-        strength: editForm.strength,
-        dosage_form: editForm.dosageForm,
-        unit_cost: editForm.unitCost || 0,
-        selling_price: editForm.sellingPrice || 0,
-        quantity: 1, // Default quantity
-        reorder_point: 10, // Default reorder point
-        expiry_date: editForm.expiryDate,
-        status: 'in stock'
-      };
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      const { error } = await supabase
-        .from("inventory")
-        .insert(inventoryData);
-
-      if (error) throw error;
-
-      await Haptics.impact({ style: ImpactStyle.Heavy });
-      onMedicineDetected(editForm);
-      
-      toast({
-        title: "Medicine Added",
-        description: `${editForm.name} has been added to your inventory.`,
+      Quagga.decodeSingle({
+        src: canvas.toDataURL('image/jpeg'),
+        numOfWorkers: 0,
+        locate: true,
+        decoder: {
+          readers: ["ean_reader", "ean_8_reader", "code_39_reader", "code_39_vin_reader", "codabar_reader", "upc_reader", "upc_e_reader"]
+        }
+      }, async (result) => {
+        if (result && result.code) {
+          const medicine = await lookupMedicineByBarcode(result.code);
+          if (medicine) {
+            setDetectedMedicine(medicine);
+            stopScanning();
+          }
+        } else {
+          console.log("No barcode detected.");
+        }
+        setIsProcessing(false);
       });
-      
-      onClose();
     } catch (error) {
-      console.error('Error saving medicine:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add medicine to inventory.",
-        variant: "destructive",
-      });
+      console.error('Barcode scanning error:', error);
+      setIsProcessing(false);
     }
   };
 
-  const retakePicture = () => {
-    setCapturedImage(null);
+  const performTextRecognition = async (imageBlob: Blob): Promise<string | null> => {
+    const worker = await createWorker();
+    await worker.loadLanguage('eng');
+    await worker.initialize('eng');
+    const { data: { text } } = await worker.recognize(imageBlob);
+    await worker.terminate();
+    return text;
+  };
+
+  const lookupMedicineByBarcode = async (barcode: string): Promise<ScannedMedicine | null> => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const found = existingMedicines.find(med => med.barcode === barcode);
+    if (found) {
+      return { ...found, confidence: 0.95, source: 'barcode' };
+    }
+    const mockData: { [key: string]: ScannedMedicine } = {
+      '8901024017007': { name: 'Paracetamol 500mg', manufacturer: 'Cipla', barcode: '8901024017007', confidence: 0.95, source: 'barcode' },
+      '8901024017014': { name: 'Amoxicillin 250mg', manufacturer: 'Sun Pharma', barcode: '8901024017014', confidence: 0.95, source: 'barcode' },
+      '8901024017021': { name: 'Ibuprofen 400mg', manufacturer: 'Dr. Reddy\'s', barcode: '8901024017021', confidence: 0.95, source: 'barcode' },
+    };
+    return mockData[barcode] || null;
+  };
+
+  const extractMedicineInfo = (text: string): ScannedMedicine | null => {
+    const nameMatch = text.match(/^([A-Z0-9\s]+?)(?:\s\d+MG|\s\d+ML|\s\d+%|\sBATCH|\sLOT|\sEXP|\sMRP|\sPRICE|$)/i);
+    const name = nameMatch ? nameMatch[1].trim() : 'Unknown Medicine';
+
+    const batchNumberMatch = text.match(MEDICINE_PATTERNS.batchNumber);
+    const expiryDateMatch = text.match(MEDICINE_PATTERNS.expiryDate);
+    const mrpMatch = text.match(MEDICINE_PATTERNS.mrp);
+    const compositionMatch = text.match(MEDICINE_PATTERNS.composition);
+    const strengthMatch = text.match(MEDICINE_PATTERNS.strength);
+
+    let manufacturer: string | undefined;
+    for (const manf of INDIAN_MANUFACTURERS) {
+      if (text.toLowerCase().includes(manf.toLowerCase())) {
+        manufacturer = manf;
+        break;
+      }
+    }
+
+    return {
+      name,
+      manufacturer,
+      batchNumber: batchNumberMatch?.[1],
+      expiryDate: expiryDateMatch?.[1],
+      mrp: mrpMatch ? parseFloat(mrpMatch[1]) : undefined,
+      composition: compositionMatch?.[1],
+      strength: strengthMatch?.[0],
+      confidence: 0.7,
+      source: 'ocr'
+    };
+  };
+
+  const stopScanning = useCallback(() => {
+    setIsScanning(false);
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    initializeCamera();
+    return () => {
+      stopScanning();
+    };
+  }, [initializeCamera, stopScanning]);
+
+  const toggleFlash = async () => {
+    if (videoRef.current && streamRef.current) {
+      const track = streamRef.current.getVideoTracks()[0];
+      if (track) {
+        try {
+          await track.applyConstraints({
+            advanced: [{ torch: !flashEnabled } as MediaTrackConstraintSet]
+          } as MediaTrackConstraints);
+          setFlashEnabled(!flashEnabled);
+        } catch (err) {
+          console.error('Flashlight toggle failed:', err);
+          alert('Flashlight not supported or failed to toggle.');
+        }
+      }
+    }
+  };
+
+  const toggleCameraFacing = () => {
+    setCameraFacing(prev => (prev === 'user' ? 'environment' : 'user'));
+    stopScanning();
+  };
+
+  const handleConfirmDetection = () => {
+    if (detectedMedicine) {
+      onMedicineDetected(detectedMedicine);
+      onClose();
+    }
+  };
+
+  const handleRetake = () => {
     setDetectedMedicine(null);
-    setIsAnalyzing(false);
-    setIsEditing(false);
-    setEditForm(null);
-  };
-
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
-  const updateEditForm = (field: keyof ScannedMedicine, value: string | number) => {
-    if (!editForm) return;
-    setEditForm({ ...editForm, [field]: value });
+    initializeCamera();
   };
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">AI Medicine Scanner</h2>
-        <Button variant="ghost" size="sm" onClick={onClose} className="text-white">
-          <X className="h-5 w-5" />
-        </Button>
-      </div>
-
-      {/* Camera View */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 space-y-6">
-        {!capturedImage ? (
-          <>
-            <div className="w-80 h-80 border-4 border-white/30 rounded-2xl flex items-center justify-center">
-              <div className="text-center text-white">
-                <CameraIcon className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                <p className="text-lg">Position medicine package in frame</p>
-                <p className="text-sm opacity-75 mt-2">Ensure good lighting and clear text</p>
-                <p className="text-xs opacity-60 mt-2">AI will extract name, expiry, manufacturer details</p>
-              </div>
-            </div>
-            
-            <Button
-              onClick={takePicture}
-              disabled={isScanning}
-              className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-4 rounded-full text-lg"
-            >
-              {isScanning ? (
-                <Loader2 className="h-6 w-6 animate-spin mr-2" />
-              ) : (
-                <Scan className="h-6 w-6 mr-2" />
-              )}
-              {isScanning ? "Capturing..." : "Scan Medicine"}
-            </Button>
-          </>
-        ) : (
-          <div className="w-full max-w-md space-y-6">
-            {/* Captured Image */}
-            <div className="relative">
-              <img
-                src={capturedImage}
-                alt="Captured medicine"
-                className="w-full h-64 object-cover rounded-lg border-2 border-white/20"
-              />
-              {isAnalyzing && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
-                  <div className="text-center text-white">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
-                    <p>AI analyzing medicine...</p>
-                    <p className="text-xs opacity-75">Extracting details from package</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Analysis Results */}
-            {detectedMedicine && !isEditing && (
-              <Card className="bg-white/95">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center justify-between">
-                    <span>Medicine Detected</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {Math.round(detectedMedicine.confidence * 100)}% confidence
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div>
-                    <p className="font-semibold text-lg">{detectedMedicine.name}</p>
-                    {detectedMedicine.genericName && (
-                      <p className="text-sm text-gray-600">Generic: {detectedMedicine.genericName}</p>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    {detectedMedicine.manufacturer && (
-                      <div>
-                        <p className="font-medium">Manufacturer</p>
-                        <p className="text-gray-600">{detectedMedicine.manufacturer}</p>
-                      </div>
-                    )}
-                    {detectedMedicine.strength && (
-                      <div>
-                        <p className="font-medium">Strength</p>
-                        <p className="text-gray-600">{detectedMedicine.strength}</p>
-                      </div>
-                    )}
-                    {detectedMedicine.dosageForm && (
-                      <div>
-                        <p className="font-medium">Form</p>
-                        <p className="text-gray-600">{detectedMedicine.dosageForm}</p>
-                      </div>
-                    )}
-                    {detectedMedicine.expiryDate && (
-                      <div>
-                        <p className="font-medium">Expiry</p>
-                        <p className="text-gray-600">{detectedMedicine.expiryDate}</p>
-                      </div>
-                    )}
-                    {detectedMedicine.unitCost && (
-                      <div>
-                        <p className="font-medium">Unit Cost</p>
-                        <p className="text-gray-600">₹{detectedMedicine.unitCost}</p>
-                      </div>
-                    )}
-                    {detectedMedicine.sellingPrice && (
-                      <div>
-                        <p className="font-medium">Selling Price</p>
-                        <p className="text-gray-600">₹{detectedMedicine.sellingPrice}</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Edit Form */}
-            {isEditing && editForm && (
-              <Card className="bg-white/95 max-h-96 overflow-y-auto">
-                <CardHeader className="pb-3">
-                  <CardTitle>Review & Edit Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 gap-3">
-                    <div>
-                      <Label htmlFor="name">Medicine Name</Label>
-                      <Input
-                        id="name"
-                        value={editForm.name}
-                        onChange={(e) => updateEditForm('name', e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="genericName">Generic Name</Label>
-                      <Input
-                        id="genericName"
-                        value={editForm.genericName || ''}
-                        onChange={(e) => updateEditForm('genericName', e.target.value)}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label htmlFor="strength">Strength</Label>
-                        <Input
-                          id="strength"
-                          value={editForm.strength || ''}
-                          onChange={(e) => updateEditForm('strength', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="dosageForm">Form</Label>
-                        <Input
-                          id="dosageForm"
-                          value={editForm.dosageForm || ''}
-                          onChange={(e) => updateEditForm('dosageForm', e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="manufacturer">Manufacturer</Label>
-                      <Input
-                        id="manufacturer"
-                        value={editForm.manufacturer || ''}
-                        onChange={(e) => updateEditForm('manufacturer', e.target.value)}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label htmlFor="unitCost">Unit Cost (₹)</Label>
-                        <Input
-                          id="unitCost"
-                          type="number"
-                          step="0.01"
-                          value={editForm.unitCost || ''}
-                          onChange={(e) => updateEditForm('unitCost', parseFloat(e.target.value) || 0)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="sellingPrice">Selling Price (₹)</Label>
-                        <Input
-                          id="sellingPrice"
-                          type="number"
-                          step="0.01"
-                          value={editForm.sellingPrice || ''}
-                          onChange={(e) => updateEditForm('sellingPrice', parseFloat(e.target.value) || 0)}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="expiryDate">Expiry Date</Label>
-                      <Input
-                        id="expiryDate"
-                        type="date"
-                        value={editForm.expiryDate || ''}
-                        onChange={(e) => updateEditForm('expiryDate', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={retakePicture}
-                className="flex-1 bg-white/10 text-white border-white/30"
-              >
-                Retake
-              </Button>
-              {detectedMedicine && !isEditing && (
-                <Button
-                  variant="outline"
-                  onClick={handleEdit}
-                  className="flex-1 bg-white/10 text-white border-white/30"
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-              )}
-              {detectedMedicine && (
-                <Button
-                  onClick={isEditing ? confirmMedicine : handleEdit}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Check className="h-4 w-4 mr-2" />
-                  {isEditing ? 'Add to Inventory' : 'Edit Details'}
-                </Button>
-              )}
-            </div>
+    <>
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50">
+        {error && (
+          <div className="absolute top-4 left-4 right-4 bg-red-500 text-white p-3 rounded-md flex items-center space-x-2 z-50">
+            <AlertCircle size={20} />
+            <span>{error}</span>
           </div>
         )}
+        <div className="relative w-full max-w-md aspect-video bg-gray-800 rounded-lg overflow-hidden">
+          <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+          <canvas ref={canvasRef} className="hidden" />
+        </div>
       </div>
-    </div>
+
+      <div className="absolute top-4 right-4">
+        <button onClick={onClose} className="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600">
+          <X size={24} />
+        </button>
+      </div>
+
+      <div className="absolute bottom-4 w-full max-w-md flex justify-around items-center p-4">
+        <button
+          onClick={toggleFlash}
+          className="p-3 rounded-full bg-gray-700 text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          title="Toggle Flash"
+        >
+          {flashEnabled ? <Flashlight size={28} /> : <Flashlight size={28} />}
+        </button>
+        <button
+          onClick={toggleCameraFacing}
+          className="p-3 rounded-full bg-gray-700 text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          title="Switch Camera"
+        >
+          <RotateCcw size={28} />
+        </button>
+        <button
+          onClick={() => setScanningMode(prev => (prev === 'barcode' ? 'text' : 'barcode'))}
+          className="p-3 rounded-full bg-gray-700 text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          title="Toggle Scan Mode"
+        >
+          {scanningMode === 'barcode' ? 'Text' : 'Barcode'}
+        </button>
+      </div>
+
+      {detectedMedicine && (
+        <div className="absolute inset-0 bg-black bg-opacity-90 flex flex-col items-center justify-center p-4 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
+            <CheckCircle size={48} className="text-green-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Medicine Detected!</h2>
+            <p className="text-gray-700 text-lg font-semibold">{detectedMedicine.name}</p>
+            {detectedMedicine.manufacturer && <p className="text-gray-600 text-sm">{detectedMedicine.manufacturer}</p>}
+            {detectedMedicine.strength && <p className="text-gray-600 text-sm">Strength: {detectedMedicine.strength}</p>}
+            {detectedMedicine.batchNumber && <p className="text-gray-600 text-sm">Batch: {detectedMedicine.batchNumber}</p>}
+            {detectedMedicine.expiryDate && <p className="text-gray-600 text-sm">Expiry: {detectedMedicine.expiryDate}</p>}
+            {detectedMedicine.mrp && <p className="text-gray-600 text-sm">MRP: ₹{detectedMedicine.mrp.toFixed(2)}</p>}
+            {detectedMedicine.barcode && <p className="text-gray-600 text-sm">Barcode: {detectedMedicine.barcode}</p>}
+            <p className="text-gray-500 text-xs mt-2">Source: {detectedMedicine.source} (Confidence: {(detectedMedicine.confidence * 100).toFixed(0)}%)</p>
+
+            <div className="mt-6 flex justify-center space-x-4">
+              <button
+                onClick={handleRetake}
+                className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+              >
+                Retake
+              </button>
+              <button
+                onClick={handleConfirmDetection}
+                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
-}
+};
+
+export default CameraScanner;

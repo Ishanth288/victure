@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Phone, UserCheck, Sparkles, Loader2 } from "lucide-react";
+import { apiCallWithRetry, handleApiError, displayErrorMessage } from "@/utils/errorHandling";
 
 interface EnhancedPatientDetailsModalProps {
   open: boolean;
@@ -68,13 +69,16 @@ export function EnhancedPatientDetailsModal({
 
       let nextNumber = 1;
       if (maxPrescription?.prescription_number) {
+        console.log("Max prescription found:", maxPrescription.prescription_number);
         const numberMatch = maxPrescription.prescription_number.match(/\d+/);
         if (numberMatch) {
           nextNumber = parseInt(numberMatch[0]) + 1;
+          console.log("Next number calculated:", nextNumber);
         }
       }
 
-      return `PRE-${userId.substring(0, 8)}-${nextNumber}`;
+      console.log("Generated prescription number:", `PRE-${userId}-${nextNumber}`);
+      return `PRE-${userId}-${nextNumber}`;
     } catch (error) {
       console.error("Error generating prescription number:", error);
       return `PRE-${Date.now()}`;
@@ -133,34 +137,54 @@ export function EnhancedPatientDetailsModal({
         console.log("New patient created:", patientData);
       }
 
-      // Generate or use provided prescription number
-      const finalPrescriptionNumber = prescriptionNumber || await generateUserScopedPrescriptionNumber(user.id);
-      console.log("Final prescription number:", finalPrescriptionNumber);
-      console.log("Patient ID for prescription:", patientData.id);
+      // Add validation for patientId and prescriptionData
+      if (!patientData?.id || !formData.doctorName) {
+        throw new Error('Missing required patient or prescription data');
+      }
 
-      // Create prescription with user-scoped number
-      const { data: prescriptionData, error: prescriptionError } = await supabase
-        .from("prescriptions")
-        .insert({
-          prescription_number: finalPrescriptionNumber,
-          patient_id: patientData.id,
-          doctor_name: formData.doctorName.trim(),
-          user_id: user.id
-        })
-        .select()
-        .single();
+      // Use retry logic for prescription creation
+      const prescriptionResult = await apiCallWithRetry(async () => {
+        const currentPrescriptionNumber = prescriptionNumber || await generateUserScopedPrescriptionNumber(user.id);
+        console.log("Attempting to create prescription with number:", currentPrescriptionNumber);
 
-      if (prescriptionError) throw prescriptionError;
+        const response = await fetch('/api/prescriptions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prescription_number: currentPrescriptionNumber,
+            patient_id: patientData.id,
+            doctor_name: formData.doctorName.trim(),
+            user_id: user.id,
+            timestamp: new Date().toISOString() // Ensure timestamp is included
+          }),
+        });
+
+        const handledResponse = await handleApiError(response);
+        if (handledResponse === null) {
+          // handleApiError returned null, meaning it was a 406 and already displayed a message
+          throw new Error('API request not acceptable.'); // Throw to break retry loop if needed
+        }
+        
+        if (!handledResponse.ok) {
+          throw new Error(`HTTP error! status: ${handledResponse.status}`);
+        }
+        
+        return handledResponse.json();
+      });
+
+      const prescriptionData = prescriptionResult; // Rename to avoid conflict with outer scope
 
       toast({
         title: "Success",
-        description: `Patient details saved successfully. Prescription ${finalPrescriptionNumber} created.`,
+        description: `Patient details saved successfully. Prescription ${prescriptionData.prescription_number} created.`, 
       });
 
       onSuccess(prescriptionData.id, {
         name: formData.patientName.trim(),
         phone: formData.phoneNumber.trim(),
-        prescriptionNumber: finalPrescriptionNumber,
+        prescriptionNumber: prescriptionData.prescription_number,
         doctorName: formData.doctorName.trim()
       });
 

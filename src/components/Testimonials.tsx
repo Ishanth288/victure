@@ -48,6 +48,7 @@ export default function Testimonials() {
                   src={testimonial.image}
                   alt={testimonial.author}
                   className="w-16 h-16 rounded-full mx-auto"
+                  loading="lazy"
                 />
               </div>
               <blockquote className="text-neutral-700 text-lg mb-4">

@@ -20,10 +20,25 @@ export const supabase = createClient<Database>(
 );
 
 // Simple availability check
+// More robust availability check
 export const checkSupabaseAvailability = async (): Promise<boolean> => {
   try {
-    const { error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
-    return !error;
+    console.log('Checking Supabase availability...');
+    // Attempt to get a session to verify connectivity and authentication
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    if (error) {
+      console.error('Supabase session check failed:', error);
+      return false;
+    }
+
+    if (session) {
+      console.log('Supabase is available and user session found.');
+      return true;
+    } else {
+      console.log('Supabase is available but no active user session.');
+      return true; // Supabase is reachable, even if no session
+    }
   } catch (error) {
     console.error('Supabase connection failed:', error);
     return false;

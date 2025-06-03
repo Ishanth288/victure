@@ -97,6 +97,7 @@ export default function Demo() {
                 src={slide.image} 
                 alt={slide.title}
                 className="w-full h-full object-cover"
+                loading="lazy"
               />
               <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px] flex items-center justify-center">
                 <slide.icon className="w-16 h-16 text-white" />
