@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Victure Pharmacy</string>
+    <string name="title_activity_main">Victure Pharmacy</string>
+    <string name="package_name">app.lovable.a3c8bd8d7a934cc2959c4ea6cb151f36</string>
+    <string name="custom_url_scheme">app.lovable.a3c8bd8d7a934cc2959c4ea6cb151f36</string>
+</resources>
