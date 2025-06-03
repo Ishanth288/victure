@@ -1,9 +1,10 @@
-
 import LegalLayout from "@/components/layouts/LegalLayout";
 
 export default function AcceptableUsePolicy() {
   return (
-    <LegalLayout title="Acceptable Use Policy">
+    <>
+      <h2 className="text-3xl font-bold mt-2 mb-4">Acceptable Use Policy</h2>
+      
       <h2>1. Introduction</h2>
       <p>This Acceptable Use Policy ("Policy") outlines the acceptable uses of Victure Healthcare Solutions ("Victure," "we," "us," or "our") pharmacy management software and services (the "Service"). This Policy is designed to protect the Service, our users, and the public from harm.</p>
       
@@ -62,6 +63,6 @@ export default function AcceptableUsePolicy() {
       <p>If you have any questions about this Policy or to report any violations, please contact us at victurehealthcaresolutions@gmail.com.</p>
       
       <p>Last Updated: {new Date().toLocaleDateString()}</p>
-    </LegalLayout>
+    </>
   );
 }

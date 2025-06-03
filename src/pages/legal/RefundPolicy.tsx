@@ -1,9 +1,13 @@
-
-import LegalLayout from "@/components/layouts/LegalLayout";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 
 export default function RefundPolicy() {
   return (
-    <LegalLayout title="Refund & Cancellation Policy">
+    <>
+      <h2 className="text-3xl font-bold mt-2 mb-4">Refund & Cancellation Policy</h2>
+      
       <h2>1. Introduction</h2>
       <p>This Refund & Cancellation Policy outlines the terms and conditions for refunds and cancellations of Victure Healthcare Solutions ("Victure," "we," "us," or "our") pharmacy management software and services (the "Service").</p>
       
@@ -47,6 +51,6 @@ export default function RefundPolicy() {
       <p>If you have any questions about this Refund & Cancellation Policy, please contact us at victurehealthcaresolutions@gmail.com.</p>
       
       <p>Last Updated: {new Date().toLocaleDateString()}</p>
-    </LegalLayout>
+    </>
   );
 }

@@ -1,9 +1,10 @@
-
 import LegalLayout from "@/components/layouts/LegalLayout";
 
 export default function Disclaimers() {
   return (
-    <LegalLayout title="Disclaimers">
+    <>
+      <h2 className="text-3xl font-bold mt-2 mb-4">Disclaimers</h2>
+      
       <h2>1. General Disclaimer</h2>
       <p>THE VICTURE HEALTHCARE SOLUTIONS SOFTWARE AND SERVICES ("SERVICE") IS PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.</p>
       
@@ -42,6 +43,6 @@ export default function Disclaimers() {
       <p>If you have any questions about these disclaimers, please contact us at victurehealthcaresolutions@gmail.com.</p>
       
       <p>Last Updated: {new Date().toLocaleDateString()}</p>
-    </LegalLayout>
+    </>
   );
 }

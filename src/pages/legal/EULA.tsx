@@ -1,9 +1,10 @@
-
 import LegalLayout from "@/components/layouts/LegalLayout";
 
 export default function EULA() {
   return (
-    <LegalLayout title="End User License Agreement (EULA)">
+    <>
+      <h2 className="text-3xl font-bold mt-2 mb-4">End User License Agreement (EULA)</h2>
+      
       <h2>1. Introduction</h2>
       <p>This End User License Agreement ("EULA") is a legal agreement between you (either an individual or a single entity) and Victure Healthcare Solutions ("Victure," "we," "us," or "our") for the Victure pharmacy management software and any associated documentation (the "Software").</p>
       
@@ -53,6 +54,6 @@ export default function EULA() {
       <p>If you have any questions about this EULA, please contact us at victurehealthcaresolutions@gmail.com.</p>
       
       <p>Last Updated: {new Date().toLocaleDateString()}</p>
-    </LegalLayout>
+    </>
   );
 }

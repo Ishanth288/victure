@@ -1,9 +1,10 @@
-
 import LegalLayout from "@/components/layouts/LegalLayout";
 
 export default function TermsOfService() {
   return (
-    <LegalLayout title="Terms of Service">
+    <>
+      <h2 className="text-3xl font-bold mt-2 mb-4">Terms of Service</h2>
+      
       <h2>1. Introduction</h2>
       <p>Welcome to Victure Healthcare Solutions. These Terms of Service ("Terms") govern your access to and use of the Victure Healthcare Solutions pharmacy management software and services (the "Service"). By accessing or using the Service, you agree to be bound by these Terms.</p>
       
@@ -41,6 +42,6 @@ export default function TermsOfService() {
       <p>If you have any questions about these Terms, please contact us at victurehealthcaresolutions@gmail.com.</p>
       
       <p>Last Updated: {new Date().toLocaleDateString()}</p>
-    </LegalLayout>
+    </>
   );
 }

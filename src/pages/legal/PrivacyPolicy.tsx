@@ -1,4 +1,3 @@
-
 import LegalLayout from "@/components/layouts/LegalLayout";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,9 @@ import { Info } from "lucide-react";
 
 export default function PrivacyPolicy() {
   return (
-    <LegalLayout title="Privacy Policy">
+    <>
+      <h2 className="text-3xl font-bold mt-2 mb-4">Privacy Policy</h2>
+      
       <Alert className="mb-6 bg-green-50 text-green-800 border-green-200">
         <Info className="h-4 w-4" />
         <AlertTitle>Last Updated: {new Date().toLocaleDateString()}</AlertTitle>
@@ -119,6 +120,6 @@ export default function PrivacyPolicy() {
           </Button>
         </Link>
       </div>
-    </LegalLayout>
+    </>
   );
 }

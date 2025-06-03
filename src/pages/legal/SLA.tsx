@@ -1,9 +1,10 @@
-
 import LegalLayout from "@/components/layouts/LegalLayout";
 
 export default function SLA() {
   return (
-    <LegalLayout title="Service Level Agreement (SLA)">
+    <>
+      <h2 className="text-3xl font-bold mt-2 mb-4">Service Level Agreement (SLA)</h2>
+      
       <h2>1. Introduction</h2>
       <p>This Service Level Agreement ("SLA") is part of the agreement between Victure Healthcare Solutions ("Victure," "we," "us," or "our") and the customer ("you" or "your") for the provision of our pharmacy management software and services (the "Service").</p>
       
@@ -54,6 +55,6 @@ export default function SLA() {
       <p>If you have any questions about this SLA, please contact us at victurehealthcaresolutions@gmail.com.</p>
       
       <p>Last Updated: {new Date().toLocaleDateString()}</p>
-    </LegalLayout>
+    </>
   );
 }
