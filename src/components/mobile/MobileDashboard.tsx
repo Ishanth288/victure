@@ -1,189 +1,297 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Capacitor } from "@capacitor/core";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useMobileScanner } from "@/hooks/useMobileScanner";
+import { CameraScanner } from "./CameraScanner";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Package, 
-  Receipt, 
-  TrendingUp, 
-  Scan,
-  Users,
-  AlertTriangle,
-  Smartphone
+  Users, 
+  FileText, 
+  DollarSign, 
+  Camera,
+  Settings,
+  BarChart3,
+  ShoppingCart,
+  User,
+  LogOut,
+  Plus
 } from "lucide-react";
-import { useDashboardData } from "@/components/dashboard/useDashboardData";
-import { useMobileScanner } from "@/hooks/useMobileScanner";
-import { CameraScanner } from "./CameraScanner";
 import { hapticFeedback } from "@/utils/mobileUtils";
-import { Capacitor } from "@capacitor/core";
+
+interface DashboardStats {
+  totalInventory: number;
+  totalPatients: number;
+  todaysBills: number;
+  todaysRevenue: number;
+  lowStockItems: number;
+}
 
 export function MobileDashboard() {
-  const dashboardData = useDashboardData();
-  const { 
-    isScannerOpen, 
-    openScanner, 
-    closeScanner, 
-    processMedicine,
-    isMobileApp 
-  } = useMobileScanner();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { isScannerOpen, openScanner, closeScanner, processMedicine } = useMobileScanner();
+  const [user, setUser] = useState<any>(null);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalInventory: 0,
+    totalPatients: 0,
+    todaysBills: 0,
+    todaysRevenue: 0,
+    lowStockItems: 0
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
-  const isNativeApp = Capacitor.isNativePlatform();
+  useEffect(() => {
+    checkAuth();
+    fetchDashboardStats();
+  }, []);
 
-  const formatCurrency = (value: number) => {
-    return `₹ ${value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate('/auth');
+      return;
+    }
+    setUser(session.user);
   };
 
-  const handleQuickAction = async (action: string) => {
-    if (isNativeApp) {
-      await hapticFeedback('medium');
-    }
-    
-    if (action === 'scan') {
-      openScanner();
-    } else if (action === 'bill') {
-      // Handle quick bill action
-      console.log('Quick bill action');
+  const fetchDashboardStats = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Fetch inventory stats
+      const { data: inventory } = await supabase
+        .from("inventory")
+        .select("id, quantity, reorder_point")
+        .eq("user_id", user.id);
+
+      // Fetch patients count
+      const { data: patients } = await supabase
+        .from("patients")
+        .select("id")
+        .eq("user_id", user.id);
+
+      // Fetch today's bills
+      const today = new Date().toISOString().split('T')[0];
+      const { data: bills } = await supabase
+        .from("bills")
+        .select("total_amount")
+        .eq("user_id", user.id)
+        .gte("date", today + "T00:00:00")
+        .lte("date", today + "T23:59:59");
+
+      const totalRevenue = bills?.reduce((sum, bill) => sum + Number(bill.total_amount), 0) || 0;
+      const lowStock = inventory?.filter(item => item.quantity <= item.reorder_point).length || 0;
+
+      setStats({
+        totalInventory: inventory?.length || 0,
+        totalPatients: patients?.length || 0,
+        todaysBills: bills?.length || 0,
+        todaysRevenue: totalRevenue,
+        lowStockItems: lowStock
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const quickStats = [
+  const handleNavigation = async (path: string) => {
+    await hapticFeedback('light');
+    navigate(path);
+  };
+
+  const handleSignOut = async () => {
+    await hapticFeedback('medium');
+    await supabase.auth.signOut();
+    navigate('/auth');
+  };
+
+  const handleScannerResult = async (medicine: any) => {
+    await processMedicine(medicine);
+    await fetchDashboardStats(); // Refresh stats after adding item
+  };
+
+  const quickActions = [
     {
-      title: "Total Revenue",
-      value: formatCurrency(dashboardData?.totalRevenue || 0),
-      icon: <TrendingUp className="h-6 w-6 text-green-600" />,
-      color: "green"
+      title: "Scan Medicine",
+      subtitle: "Add to inventory",
+      icon: Camera,
+      color: "bg-blue-500",
+      action: openScanner
     },
     {
-      title: "Inventory Value",
-      value: formatCurrency(dashboardData?.totalInventoryValue || 0),
-      icon: <Package className="h-6 w-6 text-blue-600" />,
-      color: "blue"
+      title: "New Prescription",
+      subtitle: "Create billing",
+      icon: Plus,
+      color: "bg-green-500",
+      action: () => handleNavigation('/billing')
     },
     {
-      title: "Total Patients",
-      value: (dashboardData?.totalPatients || 0).toString(),
-      icon: <Users className="h-6 w-6 text-purple-600" />,
-      color: "purple"
+      title: "View Inventory",
+      subtitle: "Manage stock",
+      icon: Package,
+      color: "bg-purple-500",
+      action: () => handleNavigation('/mobile/inventory')
     },
     {
-      title: "Low Stock Items",
-      value: (dashboardData?.lowStockItems || 0).toString(),
-      icon: <AlertTriangle className="h-6 w-6 text-orange-600" />,
-      color: "orange"
+      title: "Patient Records",
+      subtitle: "View patients",
+      icon: Users,
+      color: "bg-orange-500",
+      action: () => handleNavigation('/mobile/patients')
     }
   ];
 
+  const menuItems = [
+    { title: "Inventory", icon: Package, path: "/mobile/inventory" },
+    { title: "Billing", icon: DollarSign, path: "/billing" },
+    { title: "Prescriptions", icon: FileText, path: "/prescriptions" },
+    { title: "Patients", icon: Users, path: "/mobile/patients" },
+    { title: "Analytics", icon: BarChart3, path: "/insights" },
+    { title: "Settings", icon: Settings, path: "/mobile/settings" }
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <>
-      <div className="space-y-6">
-        {/* Platform Status Banner */}
-        <Card className={`${isNativeApp ? 'bg-gradient-to-r from-green-600 to-green-700' : 'bg-gradient-to-r from-blue-600 to-blue-700'} text-white border-0`}>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <Smartphone className="h-6 w-6" />
-              <div>
-                <p className="font-semibold">
-                  {isNativeApp ? 'Native Mobile App' : 'Mobile Web Version'}
-                </p>
-                <p className="text-xs opacity-90">
-                  {isNativeApp ? 'Full native features enabled' : 'Limited mobile features'}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions - Enhanced for Mobile */}
-        <Card className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-xl">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-4">
-              <Button
-                onClick={() => handleQuickAction('scan')}
-                className="bg-white/20 hover:bg-white/30 text-white border-0 h-20 flex-col space-y-2 touch-manipulation"
-                disabled={!isMobileApp}
-                size="lg"
-              >
-                <Scan className="h-8 w-8" />
-                <span className="text-sm font-medium">Scan Medicine</span>
-                {isNativeApp && <span className="text-xs opacity-75">Tap to scan</span>}
-              </Button>
-              <Button 
-                onClick={() => handleQuickAction('bill')}
-                className="bg-white/20 hover:bg-white/30 text-white border-0 h-20 flex-col space-y-2 touch-manipulation"
-                size="lg"
-              >
-                <Receipt className="h-8 w-8" />
-                <span className="text-sm font-medium">Quick Bill</span>
-                <span className="text-xs opacity-75">Create bill</span>
-              </Button>
-            </div>
-            {!isMobileApp && (
-              <div className="text-center p-2 bg-white/10 rounded">
-                <p className="text-xs text-white/75">
-                  📱 Install the mobile app for camera scanning
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Stats Grid - Mobile Optimized */}
-        <div className="grid grid-cols-2 gap-4">
-          {quickStats.map((stat, index) => (
-            <Card key={index} className="shadow-lg hover:shadow-xl transition-shadow touch-manipulation">
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="text-xs text-gray-600 mb-2 font-medium">{stat.title}</p>
-                    <p className="text-lg font-bold text-gray-900 leading-tight">{stat.value}</p>
-                  </div>
-                  <div className="ml-3 p-2 bg-gray-50 rounded-lg">{stat.icon}</div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+    <div className="min-h-screen bg-gray-50 pb-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-b-3xl shadow-lg">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold">Good morning!</h1>
+            <p className="text-blue-100">{user?.email || 'Welcome back'}</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSignOut}
+            className="text-white hover:bg-white/10"
+          >
+            <LogOut className="h-5 w-5" />
+          </Button>
         </div>
 
-        {/* Low Stock Alert - Enhanced for Mobile */}
-        {(dashboardData?.lowStockItems || 0) > 0 && (
-          <Card className="border-orange-200 bg-orange-50 shadow-md">
-            <CardContent className="p-5">
-              <div className="flex items-center space-x-4">
-                <div className="p-2 bg-orange-100 rounded-full">
-                  <AlertTriangle className="h-6 w-6 text-orange-600" />
+        {/* Stats Overview */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-white/10 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm">Inventory Items</p>
+                <p className="text-2xl font-bold">{stats.totalInventory}</p>
+              </div>
+              <Package className="h-8 w-8 text-blue-200" />
+            </div>
+          </div>
+          <div className="bg-white/10 rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm">Today's Revenue</p>
+                <p className="text-2xl font-bold">₹{stats.todaysRevenue.toFixed(0)}</p>
+              </div>
+              <DollarSign className="h-8 w-8 text-blue-200" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="px-6 -mt-8 mb-6">
+        <Card className="shadow-lg border-0">
+          <CardHeader>
+            <CardTitle className="text-lg">Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              {quickActions.map((action, index) => (
+                <Button
+                  key={index}
+                  variant="ghost"
+                  className="h-20 flex-col space-y-2 hover:bg-gray-50"
+                  onClick={action.action}
+                >
+                  <div className={`w-10 h-10 rounded-full ${action.color} flex items-center justify-center`}>
+                    <action.icon className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-medium text-xs">{action.title}</p>
+                    <p className="text-xs text-gray-500">{action.subtitle}</p>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Status Cards */}
+      <div className="px-6 space-y-4 mb-6">
+        {stats.lowStockItems > 0 && (
+          <Card className="border-l-4 border-l-red-500 shadow-md">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-red-800">Low Stock Alert</p>
+                  <p className="text-sm text-red-600">{stats.lowStockItems} items need restocking</p>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-orange-800">
-                    Low Stock Alert
-                  </p>
-                  <p className="text-xs text-orange-600 mt-1">
-                    {dashboardData?.lowStockItems} items need immediate restocking
-                  </p>
-                </div>
-                <Badge variant="destructive" className="text-xs px-3 py-1">
-                  Urgent
-                </Badge>
+                <Badge variant="destructive">{stats.lowStockItems}</Badge>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Recent Activity - Mobile Native Style */}
-        <Card className="shadow-lg">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center space-x-2">
-              <span>Recent Activity</span>
-              {isNativeApp && <Badge variant="secondary" className="text-xs">Live</Badge>}
-            </CardTitle>
+        <Card className="shadow-md">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Today's Activity</p>
+                <p className="text-sm text-gray-600">{stats.todaysBills} bills processed</p>
+              </div>
+              <div className="text-right">
+                <p className="text-lg font-bold text-green-600">₹{stats.todaysRevenue.toFixed(2)}</p>
+                <p className="text-xs text-gray-500">Revenue</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Navigation Menu */}
+      <div className="px-6">
+        <Card className="shadow-lg border-0">
+          <CardHeader>
+            <CardTitle className="text-lg">Menu</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-center text-gray-500 py-12">
-              <Receipt className="h-16 w-16 mx-auto mb-4 opacity-20" />
-              <p className="text-sm font-medium">No recent activity</p>
-              <p className="text-xs text-gray-400 mt-1">Your transactions will appear here</p>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3">
+              {menuItems.map((item, index) => (
+                <Button
+                  key={index}
+                  variant="ghost"
+                  className="h-16 flex-col space-y-1 hover:bg-gray-50"
+                  onClick={() => handleNavigation(item.path)}
+                >
+                  <item.icon className="h-6 w-6 text-gray-600" />
+                  <span className="text-sm font-medium">{item.title}</span>
+                </Button>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -192,10 +300,10 @@ export function MobileDashboard() {
       {/* Camera Scanner Modal */}
       {isScannerOpen && (
         <CameraScanner
-          onMedicineDetected={processMedicine}
+          onMedicineDetected={handleScannerResult}
           onClose={closeScanner}
         />
       )}
-    </>
+    </div>
   );
 }

@@ -25,6 +25,9 @@ import EULA from "./pages/legal/EULA";
 import SLA from "./pages/legal/SLA";
 import AcceptableUsePolicy from "./pages/legal/AcceptableUsePolicy";
 import { MobileAppWrapper } from "./components/mobile/MobileAppWrapper";
+import { MobileInventory } from "./components/mobile/MobileInventory";
+import { MobilePatients } from "./components/mobile/MobilePatients";
+import { MobileSettings } from "./components/mobile/MobileSettings";
 import { Capacitor } from "@capacitor/core";
 
 function App() {
@@ -49,6 +52,12 @@ function App() {
         <Route path="/documentation" element={<Documentation />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin/settings" element={<SystemSettings />} />
+        
+        {/* Mobile-specific routes */}
+        <Route path="/mobile/inventory" element={<MobileInventory />} />
+        <Route path="/mobile/patients" element={<MobilePatients />} />
+        <Route path="/mobile/settings" element={<MobileSettings />} />
+        
         <Route path="/legal" element={<LegalLayout />}>
           <Route path="privacy" element={<PrivacyPolicy />} />
           <Route path="terms" element={<TermsOfService />} />
