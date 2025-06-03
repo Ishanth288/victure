@@ -28,19 +28,19 @@ export function useAdminStats() {
       // Ensure Supabase connection is alive
       await checkSupabaseConnection();
       
-      // Fetch Total Revenue
+      // Fetch Total Revenue from bills table
       const salesData = await safeQueryData(
-        supabase.from('sales').select('total_amount'),
+        supabase.from('bills').select('total_amount'),
         []
       );
       const totalRevenue = salesData.reduce((sum, sale) => sum + sale.total_amount, 0);
 
       // Fetch Inventory Value and Low Stock Items
       const inventoryData = await safeQueryData(
-        supabase.from('inventory').select('price, quantity'),
+        supabase.from('inventory').select('selling_price, quantity'),
         []
       );
-      const inventoryValue = inventoryData.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const inventoryValue = inventoryData.reduce((sum, item) => sum + ((item.selling_price || 0) * item.quantity), 0);
       const lowStockItems = inventoryData.filter(item => item.quantity < 10).length;
 
       // Fetch Total Patients

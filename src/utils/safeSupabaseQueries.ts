@@ -8,8 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
  * @returns A typed query builder
  */
 export function typecastQuery<T = any>(table: string): any {
-  // This function now correctly returns a Supabase query builder instance.
-  return supabase.from(table) as any;
+  // Use any to bypass strict type checking for table names
+  return (supabase as any).from(table);
 }
 
 /**

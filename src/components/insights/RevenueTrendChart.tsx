@@ -31,6 +31,18 @@ interface RevenueTrendChartProps {
   timeframe?: 'day' | 'week' | 'month' | 'year';
 }
 
+// Generate sample data function
+const generateSampleData = (days: number): DataItem[] => {
+  const data: DataItem[] = [];
+  for (let i = 0; i < days; i++) {
+    data.push({
+      name: `Day ${i + 1}`,
+      value: Math.floor(Math.random() * 10000) + 5000
+    });
+  }
+  return data;
+};
+
 // Using memo to prevent unnecessary re-renders
 export const RevenueTrendChart = memo(({ data, timeframe = 'month' }: RevenueTrendChartProps) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState<'week' | 'month' | 'year'>(timeframe === 'day' ? 'week' : timeframe);
@@ -40,8 +52,9 @@ export const RevenueTrendChart = memo(({ data, timeframe = 'month' }: RevenueTre
     data = generateSampleData(30); // Generate sample data if no real data
   }
   
-  // Calculate averages and projections
-  const average = data.reduce((sum, item) => sum + item.value, 0) / data.length;
+  // Calculate values
+  const totalRevenue = data.reduce((sum, item) => sum + item.value, 0);
+  const average = totalRevenue / data.length;
   const trend = data.length > 1 ? 
     (data[data.length - 1].value - data[0].value) / data.length : 0;
   
@@ -60,6 +73,11 @@ export const RevenueTrendChart = memo(({ data, timeframe = 'month' }: RevenueTre
       forecast: Math.max(0, Math.round(forecastValue)),
     });
   }
+  
+  // Calculate forecast total
+  const forecastTotal = extendedData
+    .filter(item => item.forecast)
+    .reduce((sum, item) => sum + (item.forecast || 0), 0);
   
   // Format labels based on timeframe
   const formatXAxis = (value: string) => {
@@ -150,14 +168,14 @@ export const RevenueTrendChart = memo(({ data, timeframe = 'month' }: RevenueTre
               tickLine={false}
               axisLine={false}
               tickFormatter={(value) => formatCurrency(value)}
-              width={60} // Fixed width for Y-axis to prevent overflow
-              tickCount={5} // Limit the number of ticks to prevent crowding
-              domain={['auto', 'dataMax + 1000']} // Add some padding to the top
+              width={60}
+              tickCount={5}
+              domain={['auto', 'dataMax + 1000']}
               padding={{ top: 10, bottom: 10 }}
             />
             <Tooltip
               formatter={(value: any) => [`₹${value.toLocaleString()}`, 'Revenue']}
-              labelFormatter={(dateStr) => {
+              labelFormatter={(label) => {
                 return label.startsWith('Forecast') ? `Forecast (${label.split(' ')[1]} ${selectedTimeframe === 'week' ? 'day' : selectedTimeframe === 'month' ? 'day' : 'week'})` : label;
               }}
               contentStyle={{

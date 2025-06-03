@@ -12,10 +12,11 @@ export const initialDocuments: SystemDocument[] = [
     description: 'Complete inventory status with stock levels and values'
   },
   {
-    id: 'sales_analysis',
+    id: 'sales',
+    type: 'sales',
     name: 'Sales Analysis',
     description: 'Detailed analysis of sales data, including product performance and revenue trends.',
-    icon: 'LineChart',
+    icon: <BarChart2 className="h-5 w-5 text-green-500" />,
     lastUpdated: new Date('2023-10-26T10:00:00Z'),
     isNew: false,
     isUpdated: false,

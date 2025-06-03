@@ -15,7 +15,7 @@ import { useMobileScanner } from "@/hooks/useMobileScanner";
 import { CameraScanner } from "./CameraScanner";
 
 export function MobileDashboard() {
-  const { data, isLoading } = useDashboardData();
+  const dashboardData = useDashboardData();
   const { 
     isScannerOpen, 
     openScanner, 
@@ -31,25 +31,25 @@ export function MobileDashboard() {
   const quickStats = [
     {
       title: "Total Revenue",
-      value: formatCurrency(data?.totalRevenue || 0),
+      value: formatCurrency(dashboardData?.totalRevenue || 0),
       icon: <TrendingUp className="h-5 w-5 text-green-600" />,
       color: "green"
     },
     {
       title: "Inventory Value",
-      value: formatCurrency(data?.totalInventoryValue || 0),
+      value: formatCurrency(dashboardData?.totalInventoryValue || 0),
       icon: <Package className="h-5 w-5 text-blue-600" />,
       color: "blue"
     },
     {
       title: "Total Patients",
-      value: (data?.totalPatients || 0).toString(),
+      value: (dashboardData?.totalPatients || 0).toString(),
       icon: <Users className="h-5 w-5 text-purple-600" />,
       color: "purple"
     },
     {
       title: "Low Stock Items",
-      value: (data?.lowStockItems || 0).toString(),
+      value: (dashboardData?.lowStockItems || 0).toString(),
       icon: <AlertTriangle className="h-5 w-5 text-orange-600" />,
       color: "orange"
     }
@@ -106,7 +106,7 @@ export function MobileDashboard() {
         </div>
 
         {/* Low Stock Alert */}
-        {(data?.lowStockItems || 0) > 0 && (
+        {(dashboardData?.lowStockItems || 0) > 0 && (
           <Card className="border-orange-200 bg-orange-50">
             <CardContent className="p-4">
               <div className="flex items-center space-x-3">
@@ -116,7 +116,7 @@ export function MobileDashboard() {
                     Low Stock Alert
                   </p>
                   <p className="text-xs text-orange-600">
-                    {data?.lowStockItems} items need restocking
+                    {dashboardData?.lowStockItems} items need restocking
                   </p>
                 </div>
                 <Badge variant="destructive" className="text-xs">

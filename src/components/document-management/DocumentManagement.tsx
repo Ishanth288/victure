@@ -176,7 +176,7 @@ export function DocumentManagement() {
         case 'inventory':
           createInventoryReport(tempContainer, reportData);
           break;
-        case 'sales_analysis':
+        case 'sales':
           createSalesReport(tempContainer, reportData);
           break;
         case 'purchase_orders':
