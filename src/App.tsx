@@ -16,7 +16,7 @@ import Documentation from "./pages/Documentation";
 import Admin from "./pages/Admin";
 import SystemSettings from "./pages/admin/SystemSettings";
 import NotFound from "./pages/NotFound";
-import { LegalLayout } from "./components/layouts/LegalLayout";
+import LegalLayout from "./components/layouts/LegalLayout";
 import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
 import TermsOfService from "./pages/legal/TermsOfService";
 import RefundPolicy from "./pages/legal/RefundPolicy";
