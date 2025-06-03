@@ -17,10 +17,11 @@ import {
   Camera,
   Settings,
   BarChart3,
-  ShoppingCart,
-  User,
-  LogOut,
-  Plus
+  Plus,
+  AlertTriangle,
+  TrendingUp,
+  Calendar,
+  Bell
 } from "lucide-react";
 import { hapticFeedback } from "@/utils/mobileUtils";
 
@@ -30,6 +31,7 @@ interface DashboardStats {
   todaysBills: number;
   todaysRevenue: number;
   lowStockItems: number;
+  weeklyGrowth: number;
 }
 
 export function MobileDashboard() {
@@ -42,11 +44,18 @@ export function MobileDashboard() {
     totalPatients: 0,
     todaysBills: 0,
     todaysRevenue: 0,
-    lowStockItems: 0
+    lowStockItems: 0,
+    weeklyGrowth: 0
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [greeting, setGreeting] = useState('');
 
   useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Good morning');
+    else if (hour < 18) setGreeting('Good afternoon');
+    else setGreeting('Good evening');
+
     checkAuth();
     fetchDashboardStats();
   }, []);
@@ -86,7 +95,19 @@ export function MobileDashboard() {
         .gte("date", today + "T00:00:00")
         .lte("date", today + "T23:59:59");
 
+      // Fetch last week's bills for growth calculation
+      const lastWeek = new Date();
+      lastWeek.setDate(lastWeek.getDate() - 7);
+      const { data: lastWeekBills } = await supabase
+        .from("bills")
+        .select("total_amount")
+        .eq("user_id", user.id)
+        .gte("date", lastWeek.toISOString().split('T')[0] + "T00:00:00")
+        .lte("date", today + "T23:59:59");
+
       const totalRevenue = bills?.reduce((sum, bill) => sum + Number(bill.total_amount), 0) || 0;
+      const lastWeekRevenue = lastWeekBills?.reduce((sum, bill) => sum + Number(bill.total_amount), 0) || 0;
+      const weeklyGrowth = lastWeekRevenue > 0 ? ((totalRevenue - lastWeekRevenue) / lastWeekRevenue) * 100 : 0;
       const lowStock = inventory?.filter(item => item.quantity <= item.reorder_point).length || 0;
 
       setStats({
@@ -94,7 +115,8 @@ export function MobileDashboard() {
         totalPatients: patients?.length || 0,
         todaysBills: bills?.length || 0,
         todaysRevenue: totalRevenue,
-        lowStockItems: lowStock
+        lowStockItems: lowStock,
+        weeklyGrowth: Math.round(weeklyGrowth)
       });
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
@@ -116,122 +138,143 @@ export function MobileDashboard() {
 
   const handleScannerResult = async (medicine: any) => {
     await processMedicine(medicine);
-    await fetchDashboardStats(); // Refresh stats after adding item
+    await fetchDashboardStats();
   };
 
   const quickActions = [
     {
       title: "Scan Medicine",
-      subtitle: "Add to inventory",
+      subtitle: "AI-powered detection",
       icon: Camera,
-      color: "bg-blue-500",
+      color: "bg-teal-500",
       action: openScanner
     },
     {
-      title: "New Prescription",
-      subtitle: "Create billing",
+      title: "New Bill",
+      subtitle: "Create prescription",
       icon: Plus,
-      color: "bg-green-500",
+      color: "bg-emerald-500",
       action: () => handleNavigation('/billing')
     },
     {
-      title: "View Inventory",
+      title: "Inventory",
       subtitle: "Manage stock",
       icon: Package,
-      color: "bg-purple-500",
+      color: "bg-cyan-500",
       action: () => handleNavigation('/mobile/inventory')
     },
     {
-      title: "Patient Records",
-      subtitle: "View patients",
+      title: "Patients",
+      subtitle: "View records",
       icon: Users,
-      color: "bg-orange-500",
+      color: "bg-blue-500",
       action: () => handleNavigation('/mobile/patients')
     }
   ];
 
-  const menuItems = [
-    { title: "Inventory", icon: Package, path: "/mobile/inventory" },
-    { title: "Billing", icon: DollarSign, path: "/billing" },
-    { title: "Prescriptions", icon: FileText, path: "/prescriptions" },
-    { title: "Patients", icon: Users, path: "/mobile/patients" },
-    { title: "Analytics", icon: BarChart3, path: "/insights" },
-    { title: "Settings", icon: Settings, path: "/mobile/settings" }
-  ];
-
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+          <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading your dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-b-3xl shadow-lg">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Good morning!</h1>
-            <p className="text-blue-100">{user?.email || 'Welcome back'}</p>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSignOut}
-            className="text-white hover:bg-white/10"
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Stats Overview */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white/10 rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-sm">Inventory Items</p>
-                <p className="text-2xl font-bold">{stats.totalInventory}</p>
-              </div>
-              <Package className="h-8 w-8 text-blue-200" />
+    <div className="min-h-screen bg-gray-50">
+      {/* Enhanced Header with Teal Theme */}
+      <div className="bg-gradient-to-br from-teal-500 to-teal-600 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="relative p-6 pb-8">
+          <div className="flex justify-between items-start mb-6">
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold mb-1">{greeting}!</h1>
+              <p className="text-teal-100 text-sm font-medium">
+                {user?.email?.split('@')[0] || 'Welcome back'}
+              </p>
+              <p className="text-teal-200 text-xs mt-1 flex items-center">
+                <Calendar className="h-3 w-3 mr-1" />
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/10 p-2"
+                onClick={() => handleNavigation('/mobile/settings')}
+              >
+                <Settings className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/10 p-2"
+              >
+                <Bell className="h-5 w-5" />
+              </Button>
             </div>
           </div>
-          <div className="bg-white/10 rounded-xl p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-sm">Today's Revenue</p>
-                <p className="text-2xl font-bold">₹{stats.todaysRevenue.toFixed(0)}</p>
+
+          {/* Key Metrics Cards */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-teal-100 text-xs font-medium">Today's Revenue</p>
+                  <p className="text-2xl font-bold">₹{stats.todaysRevenue.toLocaleString()}</p>
+                  <div className="flex items-center mt-1">
+                    <TrendingUp className="h-3 w-3 mr-1" />
+                    <span className="text-xs text-teal-200">+{stats.weeklyGrowth}% this week</span>
+                  </div>
+                </div>
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                  <DollarSign className="h-6 w-6" />
+                </div>
               </div>
-              <DollarSign className="h-8 w-8 text-blue-200" />
+            </div>
+            
+            <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-teal-100 text-xs font-medium">Total Items</p>
+                  <p className="text-2xl font-bold">{stats.totalInventory}</p>
+                  <div className="flex items-center mt-1">
+                    <span className="text-xs text-teal-200">{stats.todaysBills} bills today</span>
+                  </div>
+                </div>
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Package className="h-6 w-6" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="px-6 -mt-8 mb-6">
-        <Card className="shadow-lg border-0">
-          <CardHeader>
-            <CardTitle className="text-lg">Quick Actions</CardTitle>
+      {/* Quick Actions Section */}
+      <div className="px-6 -mt-4 mb-6">
+        <Card className="shadow-xl border-0 bg-white">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold text-gray-900">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               {quickActions.map((action, index) => (
                 <Button
                   key={index}
                   variant="ghost"
-                  className="h-20 flex-col space-y-2 hover:bg-gray-50"
+                  className="h-20 flex-col space-y-2 hover:bg-gray-50 border border-gray-100 rounded-xl"
                   onClick={action.action}
                 >
-                  <div className={`w-10 h-10 rounded-full ${action.color} flex items-center justify-center`}>
+                  <div className={`w-10 h-10 rounded-xl ${action.color} flex items-center justify-center`}>
                     <action.icon className="h-5 w-5 text-white" />
                   </div>
                   <div className="text-center">
-                    <p className="font-medium text-xs">{action.title}</p>
+                    <p className="font-semibold text-xs text-gray-900">{action.title}</p>
                     <p className="text-xs text-gray-500">{action.subtitle}</p>
                   </div>
                 </Button>
@@ -241,60 +284,66 @@ export function MobileDashboard() {
         </Card>
       </div>
 
-      {/* Status Cards */}
+      {/* Alerts & Status */}
       <div className="px-6 space-y-4 mb-6">
         {stats.lowStockItems > 0 && (
-          <Card className="border-l-4 border-l-red-500 shadow-md">
+          <Card className="border-l-4 border-l-amber-500 shadow-md bg-amber-50">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-red-800">Low Stock Alert</p>
-                  <p className="text-sm text-red-600">{stats.lowStockItems} items need restocking</p>
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                    <AlertTriangle className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-amber-800">Low Stock Alert</p>
+                    <p className="text-sm text-amber-700">{stats.lowStockItems} items need restocking</p>
+                  </div>
                 </div>
-                <Badge variant="destructive">{stats.lowStockItems}</Badge>
+                <Badge variant="secondary" className="bg-amber-200 text-amber-800">
+                  {stats.lowStockItems}
+                </Badge>
               </div>
             </CardContent>
           </Card>
         )}
 
-        <Card className="shadow-md">
+        {/* Daily Summary Card */}
+        <Card className="shadow-md bg-gradient-to-r from-gray-50 to-gray-100">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Today's Activity</p>
-                <p className="text-sm text-gray-600">{stats.todaysBills} bills processed</p>
+                <p className="font-semibold text-gray-900">Today's Summary</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {stats.todaysBills} prescriptions • {stats.totalPatients} total patients
+                </p>
               </div>
-              <div className="text-right">
-                <p className="text-lg font-bold text-green-600">₹{stats.todaysRevenue.toFixed(2)}</p>
-                <p className="text-xs text-gray-500">Revenue</p>
-              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleNavigation('/insights')}
+                className="text-teal-600 hover:text-teal-700 hover:bg-teal-50"
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                View Details
+              </Button>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Navigation Menu */}
-      <div className="px-6">
-        <Card className="shadow-lg border-0">
-          <CardHeader>
-            <CardTitle className="text-lg">Menu</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3">
-              {menuItems.map((item, index) => (
-                <Button
-                  key={index}
-                  variant="ghost"
-                  className="h-16 flex-col space-y-1 hover:bg-gray-50"
-                  onClick={() => handleNavigation(item.path)}
-                >
-                  <item.icon className="h-6 w-6 text-gray-600" />
-                  <span className="text-sm font-medium">{item.title}</span>
-                </Button>
-              ))}
+      {/* Bottom Navigation Hint */}
+      <div className="px-6 pb-8">
+        <div className="bg-teal-50 rounded-2xl p-4 border border-teal-100">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
+              <Camera className="h-5 w-5 text-teal-600" />
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex-1">
+              <p className="font-medium text-teal-900">Pro Tip</p>
+              <p className="text-sm text-teal-700">Use AI scanning to quickly add medicines to your inventory</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Camera Scanner Modal */}
