@@ -83,7 +83,7 @@ export const generatePDFFromElement = async (
 
     while (heightLeft > 0) {
       pdf.addPage();
-      const currentPage = pdf.internal.getNumberOfPages();
+      const currentPage = pdf.getNumberOfPages();
 
       // Header
       pdf.setFillColor(0, 51, 102); // Dark blue background
@@ -101,7 +101,7 @@ export const generatePDFFromElement = async (
 
       // Content
       const currentContentHeight = Math.min(heightLeft, contentHeight);
-      pdf.addImage(imgData, 'PNG', 0, contentStart, imgWidth, currentContentHeight, undefined, 'FAST', position, currentContentHeight);
+      pdf.addImage(imgData, 'PNG', 0, contentStart, imgWidth, currentContentHeight);
       heightLeft -= currentContentHeight;
       position += currentContentHeight;
 
