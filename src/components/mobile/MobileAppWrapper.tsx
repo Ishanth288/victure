@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { App as CapacitorApp } from "@capacitor/app";
@@ -11,12 +12,15 @@ interface MobileAppWrapperProps {
 
 export function MobileAppWrapper({ children }: MobileAppWrapperProps) {
   const [isNativeApp, setIsNativeApp] = useState(false);
-  const [currentView, setCurrentView] = useState('dashboard');
+  const [isInitialized, setIsInitialized] = useState(false);
   const isMobile = useIsMobile();
 
   useEffect(() => {
     const checkPlatform = () => {
-      setIsNativeApp(Capacitor.isNativePlatform());
+      const isNative = Capacitor.isNativePlatform();
+      console.log('Platform check - isNative:', isNative, 'Platform:', Capacitor.getPlatform());
+      setIsNativeApp(isNative);
+      setIsInitialized(true);
     };
 
     checkPlatform();
@@ -33,8 +37,18 @@ export function MobileAppWrapper({ children }: MobileAppWrapperProps) {
     }
   }, []);
 
-  // If it's a mobile app, show mobile-optimized interface
-  if (isNativeApp || isMobile) {
+  // Don't render anything until platform detection is complete
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen bg-blue-600 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  // Priority: Native app first, then mobile web, then desktop web
+  if (isNativeApp) {
+    console.log('Rendering native mobile app interface');
     return (
       <MobileLayout>
         <MobileDashboard />
@@ -42,6 +56,16 @@ export function MobileAppWrapper({ children }: MobileAppWrapperProps) {
     );
   }
 
-  // Otherwise, show regular web interface
+  if (isMobile) {
+    console.log('Rendering mobile web interface');
+    return (
+      <MobileLayout>
+        <MobileDashboard />
+      </MobileLayout>
+    );
+  }
+
+  // Desktop web interface
+  console.log('Rendering desktop web interface');
   return <>{children}</>;
 }
