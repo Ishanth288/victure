@@ -117,10 +117,6 @@ export function toast({
       pointerEvents: "auto",
     },
     // Custom animation (slide in from top)
-    animation: {
-      enter: "animate-slide-in",
-      exit: "animate-fade-out",
-    },
   });
 }
 
