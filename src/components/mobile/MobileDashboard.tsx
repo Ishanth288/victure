@@ -20,7 +20,16 @@ import {
   AlertTriangle,
   TrendingUp,
   Calendar,
-  Bell
+  Bell,
+  Zap,
+  Sparkles,
+  ChevronRight,
+  Eye,
+  Activity,
+  ShoppingCart,
+  Clock,
+  Target,
+  Star
 } from "lucide-react";
 import { hapticFeedback } from "@/utils/mobileUtils";
 
@@ -48,6 +57,7 @@ export function MobileDashboard() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [greeting, setGreeting] = useState('');
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -55,9 +65,16 @@ export function MobileDashboard() {
     else if (hour < 18) setGreeting('Good afternoon');
     else setGreeting('Good evening');
 
+    // Update time every minute
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+
     console.log('MobileDashboard: useEffect triggered.');
     checkAuth();
     fetchDashboardStats();
+
+    return () => clearInterval(timer);
   }, []);
 
   const checkAuth = async () => {
@@ -73,48 +90,25 @@ export function MobileDashboard() {
   };
 
   const fetchDashboardStats = async () => {
-    console.log('MobileDashboard: Fetching dashboard stats...');
     try {
+      console.log('MobileDashboard: Fetching dashboard stats...');
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.log('MobileDashboard: No user found, cannot fetch stats.');
-        return;
-      }
+      if (!user) return;
 
-      // Fetch inventory stats
-      const { data: inventory, error: inventoryError } = await supabase
-        .from("inventory")
-        .select("id, quantity, reorder_point")
-        .eq("user_id", user.id);
-      if (inventoryError) console.error('MobileDashboard: Inventory fetch error:', inventoryError);
-
-      // Fetch patients count
-      const { data: patients, error: patientsError } = await supabase
-        .from("patients")
-        .select("id")
-        .eq("user_id", user.id);
-      if (patientsError) console.error('MobileDashboard: Patients fetch error:', patientsError);
-
-      // Fetch today's bills
       const today = new Date().toISOString().split('T')[0];
-      const { data: bills, error: billsError } = await supabase
-        .from("bills")
-        .select("total_amount")
-        .eq("user_id", user.id)
-        .gte("date", today + "T00:00:00")
-        .lte("date", today + "T23:59:59");
-      if (billsError) console.error('MobileDashboard: Bills fetch error:', billsError);
+      const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-      // Fetch last week's bills for growth calculation
-      const lastWeek = new Date();
-      lastWeek.setDate(lastWeek.getDate() - 7);
-      const { data: lastWeekBills, error: lastWeekBillsError } = await supabase
-        .from("bills")
-        .select("total_amount")
-        .eq("user_id", user.id)
-        .gte("date", lastWeek.toISOString().split('T')[0] + "T00:00:00")
-        .lte("date", today + "T23:59:59");
-      if (lastWeekBillsError) console.error('MobileDashboard: Last week bills fetch error:', lastWeekBillsError);
+      const [inventoryRes, patientsRes, billsRes, lastWeekBillsRes] = await Promise.all([
+        supabase.from('inventory').select('id, quantity, reorder_point').eq('user_id', user.id),
+        supabase.from('patients').select('id').eq('user_id', user.id),
+        supabase.from('bills').select('id, total_amount').eq('user_id', user.id).gte('created_at', today),
+        supabase.from('bills').select('id, total_amount').eq('user_id', user.id).gte('created_at', lastWeek).lt('created_at', today)
+      ]);
+
+      const inventory = inventoryRes.data;
+      const patients = patientsRes.data;
+      const bills = billsRes.data;
+      const lastWeekBills = lastWeekBillsRes.data;
 
       const totalRevenue = bills?.reduce((sum, bill) => sum + Number(bill.total_amount), 0) || 0;
       const lastWeekRevenue = lastWeekBills?.reduce((sum, bill) => sum + Number(bill.total_amount), 0) || 0;
@@ -154,219 +148,361 @@ export function MobileDashboard() {
     await fetchDashboardStats();
   };
 
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   const quickActions = [
     {
-      title: "Scan Medicine",
-      subtitle: "AI-powered detection",
+      title: "AI Scanner",
+      subtitle: "Instant medicine detection",
       icon: Camera,
-      color: "bg-teal-500",
+      gradient: "from-blue-500 to-purple-600",
       action: openScanner
     },
     {
       title: "New Bill",
       subtitle: "Create prescription",
       icon: Plus,
-      color: "bg-emerald-500",
+      gradient: "from-emerald-500 to-green-600",
       action: () => handleNavigation('/billing')
     },
     {
       title: "Inventory",
       subtitle: "Manage stock",
       icon: Package,
-      color: "bg-cyan-500",
+      gradient: "from-cyan-500 to-blue-500",
       action: () => handleNavigation('/mobile/inventory')
     },
     {
       title: "Patients",
       subtitle: "View records",
       icon: Users,
-      color: "bg-blue-500",
+      gradient: "from-indigo-500 to-purple-500",
       action: () => handleNavigation('/mobile/patients')
+    }
+  ];
+
+  const statCards = [
+    {
+      title: "Inventory Items",
+      value: stats.totalInventory,
+      icon: Package,
+      color: "blue",
+      change: null
+    },
+    {
+      title: "Patients",
+      value: stats.totalPatients,
+      icon: Users,
+      color: "green",
+      change: null
+    },
+    {
+      title: "Today's Bills",
+      value: stats.todaysBills,
+      icon: FileText,
+      color: "purple",
+      change: null
+    },
+    {
+      title: "Today's Revenue",
+      value: formatCurrency(stats.todaysRevenue),
+      icon: DollarSign,
+      color: "emerald",
+      change: stats.weeklyGrowth > 0 ? `+${stats.weeklyGrowth}%` : null
     }
   ];
 
   if (isLoading) {
     console.log('MobileDashboard: Displaying loading spinner.');
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading your dashboard...</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center safe-area-all">
+        <div className="text-center animate-bounce-in">
+          <div className="relative mx-auto w-20 h-20 mb-6">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 animate-pulse-apple"></div>
+            <div className="relative flex items-center justify-center w-full h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
+              <Sparkles className="w-10 h-10 text-white animate-bounce" />
+            </div>
+          </div>
+          <p className="text-title-3 font-semibold text-gray-900 dark:text-white mb-2">Victure Healthcare</p>
+          <p className="text-body text-gray-600 dark:text-gray-400">Loading your dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Enhanced Header with Teal Theme */}
-      <div className="bg-gradient-to-br from-teal-500 to-teal-600 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/10"></div>
-        <div className="relative p-6 pb-8">
-          <div className="flex justify-between items-start mb-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 safe-area-all">
+      <div className="max-w-md mx-auto animate-fade-in">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+          <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h1 className="text-2xl font-bold mb-1">{greeting}!</h1>
-              <p className="text-teal-100 text-sm font-medium">
-                {user?.email?.split('@')[0] || 'Welcome back'}
-              </p>
-              <p className="text-teal-200 text-xs mt-1 flex items-center">
-                <Calendar className="h-3 w-3 mr-1" />
-                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-              </p>
+              <p className="text-footnote text-gray-600 dark:text-gray-400">{greeting}</p>
+              <h1 className="text-title-2 font-bold text-gray-900 dark:text-white truncate">
+                {user?.user_metadata?.name || user?.email?.split('@')[0] || 'Doctor'}
+              </h1>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
+              <div className="text-right">
+                <p className="text-caption-1 font-semibold text-gray-900 dark:text-white">
+                  {formatTime(currentTime)}
+                </p>
+                <p className="text-caption-2 text-gray-600 dark:text-gray-400">
+                  {currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                </p>
+              </div>
               <Button
+                onClick={() => handleNavigation('/settings')}
                 variant="ghost"
                 size="sm"
-                className="text-white hover:bg-white/10 p-2"
-                onClick={() => handleNavigation('/mobile/settings')}
+                className="btn-apple focus-ring p-2"
               >
-                <Settings className="h-5 w-5" />
+                <Settings className="w-5 h-5" />
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-white hover:bg-white/10 p-2"
-              >
-                <Bell className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Key Metrics Cards */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-teal-100 text-xs font-medium">Today's Revenue</p>
-                  <p className="text-2xl font-bold">₹{stats.todaysRevenue.toLocaleString()}</p>
-                  <div className="flex items-center mt-1">
-                    <TrendingUp className="h-3 w-3 mr-1" />
-                    <span className="text-xs text-teal-200">+{stats.weeklyGrowth}% this week</span>
-                  </div>
-                </div>
-                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                  <DollarSign className="h-6 w-6" />
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-teal-100 text-xs font-medium">Total Items</p>
-                  <p className="text-2xl font-bold">{stats.totalInventory}</p>
-                  <div className="flex items-center mt-1">
-                    <span className="text-xs text-teal-200">{stats.todaysBills} bills today</span>
-                  </div>
-                </div>
-                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Package className="h-6 w-6" />
-                </div>
-              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Quick Actions Section */}
-      <div className="px-6 -mt-4 mb-6">
-        <Card className="shadow-xl border-0 bg-white">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-semibold text-gray-900">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-3">
+        <div className="px-6 pb-32 space-y-8">
+          {/* Welcome Card */}
+          <div className="card-glass p-6 mt-6 animate-slide-down">
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center">
+                <Star className="w-8 h-8 text-white" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-title-3 font-bold text-gray-900 dark:text-white">
+                  Welcome back! 👋
+                </h2>
+                <p className="text-footnote text-gray-600 dark:text-gray-400 mt-1">
+                  Ready to manage your pharmacy efficiently
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="space-y-4 animate-slide-up">
+            <h3 className="text-title-3 font-bold text-gray-900 dark:text-white px-2">Quick Actions</h3>
+            <div className="grid grid-cols-2 gap-4">
               {quickActions.map((action, index) => (
                 <Button
-                  key={index}
-                  variant="ghost"
-                  className="h-20 flex-col space-y-2 hover:bg-gray-50 border border-gray-100 rounded-xl"
-                  onClick={action.action}
+                  key={action.title}
+                  onClick={async () => {
+                    await hapticFeedback('light');
+                    action.action();
+                  }}
+                  className={`btn-apple h-auto p-0 overflow-hidden focus-ring bg-gradient-to-br ${action.gradient} text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200`}
+                  style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  <div className={`w-10 h-10 rounded-xl ${action.color} flex items-center justify-center`}>
-                    <action.icon className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="text-center">
-                    <p className="font-semibold text-xs text-gray-900">{action.title}</p>
-                    <p className="text-xs text-gray-500">{action.subtitle}</p>
+                  <div className="w-full p-4 text-left">
+                    <div className="flex items-center justify-between mb-3">
+                      <action.icon className="w-6 h-6" />
+                      <ChevronRight className="w-4 h-4 opacity-70" />
+                    </div>
+                    <p className="text-subhead font-semibold">{action.title}</p>
+                    <p className="text-caption-2 opacity-80 mt-1">{action.subtitle}</p>
                   </div>
                 </Button>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
 
-      {/* Alerts & Status */}
-      <div className="px-6 space-y-4 mb-6">
-        {stats.lowStockItems > 0 && (
-          <Card className="border-l-4 border-l-amber-500 shadow-md bg-amber-50">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                    <AlertTriangle className="h-5 w-5 text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-amber-800">Low Stock Alert</p>
-                    <p className="text-sm text-amber-700">{stats.lowStockItems} items need restocking</p>
-                  </div>
-                </div>
-                <Badge variant="secondary" className="bg-amber-200 text-amber-800">
-                  {stats.lowStockItems}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Daily Summary Card */}
-        <Card className="shadow-md bg-gradient-to-r from-gray-50 to-gray-100">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-gray-900">Today's Summary</p>
-                <p className="text-sm text-gray-600 mt-1">
-                  {stats.todaysBills} prescriptions • {stats.totalPatients} total patients
-                </p>
-              </div>
+          {/* Stats Overview */}
+          <div className="space-y-4 animate-slide-up">
+            <div className="flex items-center justify-between px-2">
+              <h3 className="text-title-3 font-bold text-gray-900 dark:text-white">Overview</h3>
               <Button
+                onClick={() => handleNavigation('/mobile/insights')}
                 variant="ghost"
                 size="sm"
-                onClick={() => handleNavigation('/insights')}
-                className="text-teal-600 hover:text-teal-700 hover:bg-teal-50"
+                className="btn-apple focus-ring text-blue-600 dark:text-blue-400"
               >
-                <BarChart3 className="h-4 w-4 mr-2" />
-                View Details
+                <BarChart3 className="w-4 h-4 mr-1" />
+                View All
               </Button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Bottom Navigation Hint */}
-      <div className="px-6 pb-8">
-        <div className="bg-teal-50 rounded-2xl p-4 border border-teal-100">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
-              <Camera className="h-5 w-5 text-teal-600" />
+            
+            <div className="grid grid-cols-2 gap-4">
+              {statCards.map((stat, index) => (
+                <div
+                  key={stat.title}
+                  className="card-apple p-4 animate-slide-up"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      stat.color === 'blue' ? 'bg-blue-100 dark:bg-blue-900' :
+                      stat.color === 'green' ? 'bg-green-100 dark:bg-green-900' :
+                      stat.color === 'purple' ? 'bg-purple-100 dark:bg-purple-900' :
+                      'bg-emerald-100 dark:bg-emerald-900'
+                    }`}>
+                      <stat.icon className={`w-5 h-5 ${
+                        stat.color === 'blue' ? 'text-blue-600 dark:text-blue-400' :
+                        stat.color === 'green' ? 'text-green-600 dark:text-green-400' :
+                        stat.color === 'purple' ? 'text-purple-600 dark:text-purple-400' :
+                        'text-emerald-600 dark:text-emerald-400'
+                      }`} />
+                    </div>
+                    {stat.change && (
+                      <div className="badge-apple badge-green">
+                        <TrendingUp className="w-3 h-3 mr-1" />
+                        {stat.change}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-title-2 font-bold text-gray-900 dark:text-white mb-1">
+                    {stat.value}
+                  </p>
+                  <p className="text-caption-1 text-gray-600 dark:text-gray-400">
+                    {stat.title}
+                  </p>
+                </div>
+              ))}
             </div>
-            <div className="flex-1">
-              <p className="font-medium text-teal-900">Pro Tip</p>
-              <p className="text-sm text-teal-700">Use AI scanning to quickly add medicines to your inventory</p>
+          </div>
+
+          {/* Alerts */}
+          {stats.lowStockItems > 0 && (
+            <div className="card-apple border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 p-4 animate-bounce-in">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-callout font-semibold text-orange-900 dark:text-orange-100">
+                    Low Stock Alert
+                  </p>
+                  <p className="text-footnote text-orange-700 dark:text-orange-300">
+                    {stats.lowStockItems} items need restocking
+                  </p>
+                </div>
+                <Button
+                  onClick={() => handleNavigation('/mobile/inventory')}
+                  size="sm"
+                  className="btn-apple bg-orange-500 hover:bg-orange-600 text-white focus-ring"
+                >
+                  View
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Recent Activity */}
+          <div className="space-y-4 animate-slide-up">
+            <h3 className="text-title-3 font-bold text-gray-900 dark:text-white px-2">Recent Activity</h3>
+            <div className="space-y-3">
+              <div className="card-apple p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                    <ShoppingCart className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-callout font-medium text-gray-900 dark:text-white">
+                      New bill created
+                    </p>
+                    <p className="text-caption-2 text-gray-600 dark:text-gray-400">
+                      Bill #001 • 2 items • ₹150
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-caption-2 text-gray-600 dark:text-gray-400">2m ago</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card-apple p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                    <Package className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-callout font-medium text-gray-900 dark:text-white">
+                      Inventory updated
+                    </p>
+                    <p className="text-caption-2 text-gray-600 dark:text-gray-400">
+                      Paracetamol stock increased by 50 units
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-caption-2 text-gray-600 dark:text-gray-400">1h ago</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card-apple p-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
+                    <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-callout font-medium text-gray-900 dark:text-white">
+                      New patient registered
+                    </p>
+                    <p className="text-caption-2 text-gray-600 dark:text-gray-400">
+                      John Doe • Phone: +91 98765-43210
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-caption-2 text-gray-600 dark:text-gray-400">3h ago</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* AI Scanner Promotion */}
+          <div className="card-glass p-6 animate-bounce-in">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center">
+                <Zap className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-title-3 font-bold text-gray-900 dark:text-white">
+                  Try AI Scanner! ✨
+                </h3>
+                <p className="text-footnote text-gray-600 dark:text-gray-400 mt-1">
+                  Instantly scan medicine packages and auto-fill inventory details
+                </p>
+                <Button
+                  onClick={async () => {
+                    await hapticFeedback('medium');
+                    openScanner();
+                  }}
+                  className="btn-apple bg-gradient-to-r from-blue-500 to-purple-600 text-white mt-3 focus-ring"
+                  size="sm"
+                >
+                  <Camera className="w-4 h-4 mr-2" />
+                  Try Now
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Camera Scanner Modal */}
-      {isScannerOpen && (
-        <CameraScanner
-          onScanComplete={handleScannerResult}
-          onClose={closeScanner}
-        />
-      )}
+        {/* Camera Scanner Modal */}
+        {isScannerOpen && (
+          <CameraScanner
+            onScanComplete={handleScannerResult}
+            onClose={closeScanner}
+          />
+        )}
+      </div>
     </div>
   );
 }
