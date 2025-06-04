@@ -23,6 +23,7 @@ const Purchases = React.lazy(() => import("./pages/Purchases"));
 const Settings = React.lazy(() => import("./pages/Settings"));
 const Insights = React.lazy(() => import("./pages/Insights"));
 const BusinessOptimization = React.lazy(() => import("./pages/BusinessOptimization"));
+const DeletionHistory = React.lazy(() => import("./pages/DeletionHistory"));
 const Documentation = React.lazy(() => import("./pages/Documentation"));
 const Admin = React.lazy(() => import("./pages/Admin"));
 const SystemSettings = React.lazy(() => import("./pages/admin/SystemSettings"));
@@ -129,6 +130,7 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="/business-optimization" element={<BusinessOptimization />} />
+        <Route path="/deletion-history" element={<DeletionHistory />} />
         <Route path="/documentation" element={<Documentation />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin/settings" element={<SystemSettings />} />

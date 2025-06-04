@@ -1,4 +1,3 @@
-
 import { useNavigate, useLocation } from "react-router-dom";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -16,7 +15,8 @@ import {
   ShoppingBag, 
   LineChart, 
   LogOut,
-  Shield
+  Shield,
+  Trash2
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -126,6 +126,11 @@ export function SidebarLinks({ onNavigate }: SidebarLinksProps) {
       title: "Business Optimization",
       icon: <BarChart2 className="mr-2 h-4 w-4" />,
       href: "/business-optimization"
+    },
+    {
+      title: "Deletion History",
+      icon: <Trash2 className="mr-2 h-4 w-4" />,
+      href: "/deletion-history"
     },
     {
       title: "Settings",
