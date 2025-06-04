@@ -1,91 +1,69 @@
 
-import { useState, useEffect } from "react";
-import { connectionManager } from "@/utils/connectionManager";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
-export interface ConnectionStatusOptions {
-  pollingInterval?: number;
-  onReconnect?: () => void;
-  onDisconnect?: () => void;
-  autoRetry?: boolean;
-  maxRetries?: number;
-}
+export function useConnectionStatus() {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isSupabaseConnected, setIsSupabaseConnected] = useState(true);
+  const { toast } = useToast();
 
-/**
- * Hook for monitoring connection status and managing reconnection
- */
-export function useConnectionStatus(options: ConnectionStatusOptions = {}) {
-  const {
-    pollingInterval = 30000, // Check connection every 30 seconds by default
-    onReconnect,
-    onDisconnect,
-    autoRetry = true,
-    maxRetries = 5
-  } = options;
-  
-  const [isConnected, setIsConnected] = useState<boolean>(true);
-  const [isChecking, setIsChecking] = useState<boolean>(false);
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast({
+        title: "Connection Restored",
+        description: "You're back online. Data will sync automatically.",
+      });
+    };
 
-  // Function to check connection
-  const checkConnection = async () => {
-    if (isChecking) return;
-    
-    setIsChecking(true);
-    
-    try {
-      const connectionStatus = await connectionManager.checkConnection();
-      
-      // Update connection state if it changed
-      if (connectionStatus !== isConnected) {
-        setIsConnected(connectionStatus);
-        
-        if (connectionStatus) {
-          // Connection restored
-          if (onReconnect) {
-            onReconnect();
-          }
-        } else {
-          // Connection lost
-          if (onDisconnect) {
-            onDisconnect();
-          }
-          
-          // Auto retry if enabled
-          if (autoRetry) {
-            connectionManager.attemptReconnect({
-              maxRetries,
-              onReconnectSuccess: onReconnect
-            });
-          }
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast({
+        title: "Connection Lost",
+        description: "You're offline. Changes will sync when connection is restored.",
+        variant: "destructive",
+      });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Check Supabase connection periodically
+    const checkSupabaseConnection = async () => {
+      try {
+        const { error } = await supabase.auth.getSession();
+        if (error) {
+          throw error;
+        }
+        if (!isSupabaseConnected) {
+          setIsSupabaseConnected(true);
+          toast({
+            title: "Database Connected",
+            description: "Connection to database restored.",
+          });
+        }
+      } catch (error) {
+        console.error('Supabase connection check failed:', error);
+        if (isSupabaseConnected) {
+          setIsSupabaseConnected(false);
+          toast({
+            title: "Database Connection Issue",
+            description: "Having trouble connecting to database. Retrying...",
+            variant: "destructive",
+          });
         }
       }
-    } finally {
-      setIsChecking(false);
-    }
-  };
-
-  // Force a connection check
-  const forceCheck = () => {
-    checkConnection();
-  };
-
-  // Set up regular connection checking
-  useEffect(() => {
-    // Initial check
-    checkConnection();
-    
-    // Set up interval for regular checks
-    const intervalId = setInterval(() => {
-      checkConnection();
-    }, pollingInterval);
-    
-    return () => {
-      clearInterval(intervalId);
     };
-  }, [pollingInterval]);
 
-  return {
-    isConnected,
-    isChecking,
-    checkConnection: forceCheck
-  };
+    const connectionCheckInterval = setInterval(checkSupabaseConnection, 30000); // Check every 30 seconds
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      clearInterval(connectionCheckInterval);
+    };
+  }, [isSupabaseConnected, toast]);
+
+  return { isOnline, isSupabaseConnected };
 }
