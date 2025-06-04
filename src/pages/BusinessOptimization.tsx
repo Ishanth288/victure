@@ -60,7 +60,6 @@ export default function BusinessOptimization() {
             onRetry={handleRetry}
           />
         }
-        onError={(error) => handleError(error)}
       >
         {isRetrying ? (
           <div className="flex items-center justify-center h-64">
