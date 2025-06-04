@@ -10,7 +10,6 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
 import { MobileLayout } from "@/components/mobile/MobileLayout";
-import { MobileGuard } from "@/components/mobile/MobileGuard";
 import MobileDashboard from "@/components/mobile/MobileDashboard";
 import OptimizedMobileInventory from "@/components/mobile/OptimizedMobileInventory";
 import OptimizedMobilePatients from "@/components/mobile/OptimizedMobilePatients";
@@ -100,26 +99,25 @@ function App() {
   return (
     <ErrorBoundary>
       <InventoryProvider>
-        <MobileGuard>
-          {isMobile ? (
-            <MobileLayout>
-              <Routes>
-                <Route path="/" element={<MobileDashboard />} />
-                <Route path="/mobile/inventory" element={<OptimizedMobileInventory />} />
-                <Route path="/mobile/patients" element={<OptimizedMobilePatients />} />
-                <Route path="/mobile/settings" element={<MobileSettings />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </MobileLayout>
-          ) : (
+        {isMobile ? (
+          <MobileLayout>
             <Routes>
-              <Route path="/dashboard/*" element={<Dashboard />} />
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/mobile/*" element={<Navigate to="/dashboard" replace />} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/" element={<MobileDashboard />} />
+              <Route path="/mobile/inventory" element={<OptimizedMobileInventory />} />
+              <Route path="/mobile/patients" element={<OptimizedMobilePatients />} />
+              <Route path="/mobile/settings" element={<MobileSettings />} />
+              <Route path="/dashboard/*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          )}
-        </MobileGuard>
+          </MobileLayout>
+        ) : (
+          <Routes>
+            <Route path="/dashboard/*" element={<Dashboard />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/mobile/*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        )}
         <Toaster />
       </InventoryProvider>
     </ErrorBoundary>
