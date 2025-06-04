@@ -41,6 +41,8 @@ function DeletionHistoryContent() {
   const [dateRange, setDateRange] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('date_desc');
   const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   // Mobile responsiveness state
   const [isMobile, setIsMobile] = useState(false);
@@ -76,42 +78,75 @@ function DeletionHistoryContent() {
     try {
       setLoading(true);
       
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: "Authentication Error",
-          description: "You must be logged in to view deletion history",
-          variant: "destructive",
-        });
+      // Check authentication first
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        setError('Authentication required. Please log in to view deletion history.');
+        setIsAuthenticated(false);
         return;
       }
+      
+      setIsAuthenticated(true);
+      console.log('✅ User authenticated for deletion history:', user.id);
 
-      // Use generic query to avoid TypeScript issues until types are regenerated
-      const { data, error } = await (supabase as any)
+      // Build the query dynamically based on filters
+      let query = (supabase as any)
         .from('deletion_history')
         .select('*')
         .eq('deleted_by', user.id)
         .order('deleted_at', { ascending: false });
 
+      // Apply entity type filter
+      if (filterType !== 'all') {
+        query = query.eq('entity_type', filterType);
+      }
+
+      // Apply date range filter
+      if (dateRange !== 'all') {
+        const now = new Date();
+        let startDate: Date;
+        
+        switch (dateRange) {
+          case 'today':
+            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            break;
+          case 'week':
+            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case 'month':
+            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+          default:
+            startDate = new Date(0); // Beginning of time
+        }
+        
+        query = query.gte('deleted_at', startDate.toISOString());
+      }
+
+      // Execute the query
+      const { data, error } = await query;
+
       if (error) {
         console.error('Error fetching deletion history:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch deletion history",
-          variant: "destructive",
-        });
+        
+        // Handle specific error cases
+        if (error.code === '42501') {
+          setError('Permission denied. The deletion history table may not be properly configured.');
+        } else if (error.code === '42P01') {
+          setError('Deletion history table not found. Please run the database migration first.');
+        } else {
+          setError(`Failed to fetch deletion history: ${error.message}`);
+        }
         return;
       }
 
+      console.log('📊 Fetched deletion history records:', data?.length || 0);
       setDeletions(data || []);
-      
+      setError(null);
+
     } catch (error) {
-      console.error('Error:', error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
+      console.error('Unexpected error fetching deletion history:', error);
+      setError('An unexpected error occurred while fetching deletion history.');
     } finally {
       setLoading(false);
     }
@@ -337,7 +372,7 @@ function DeletionHistoryContent() {
       <td className="px-4 py-3 text-right">
         {deletion.amount_affected ? `₹${deletion.amount_affected}` : '-'}
       </td>
-      <td className="px-4 py-3 text-center">
+      <td className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
         {deletion.quantity_affected || '-'}
       </td>
     </tr>
@@ -453,66 +488,97 @@ function DeletionHistoryContent() {
         </p>
       </div>
 
-      {/* Content */}
-      {filteredDeletions.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12">
-            <Trash2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              No deletions found
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              {searchQuery || filterType !== 'all' || dateRange !== 'all'
-                ? 'Try adjusting your search or filters'
-                : 'No deletion history available yet'}
-            </p>
-          </CardContent>
-        </Card>
-      ) : isMobile ? (
-        // Mobile Cards View
-        <div className="space-y-4">
-          {filteredDeletions.map((deletion) => (
-            <MobileDeletionCard key={deletion.id} deletion={deletion} />
-          ))}
-        </div>
-      ) : (
-        // Desktop Table View
-        <Card>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-800/50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Item/Entity
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Deletion Type
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Reason
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date/Time
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Quantity
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDeletions.map((deletion) => (
-                  <DesktopTableRow key={deletion.id} deletion={deletion} />
-                ))}
-              </tbody>
-            </table>
+      {/* Error Display */}
+      {error && (
+        <div className="mb-6 p-4 border border-red-200 rounded-lg bg-red-50">
+          <div className="flex items-center text-red-800">
+            <AlertCircle className="h-5 w-5 mr-2" />
+            <div>
+              <h3 className="font-medium">Error Loading Deletion History</h3>
+              <p className="text-sm mt-1">{error}</p>
+              {error.includes('Permission denied') && (
+                <p className="text-xs mt-2 text-red-600">
+                  Please run the following SQL migration on your database to fix permissions:
+                  <br />
+                  <code className="bg-red-100 px-1 rounded text-xs">
+                    supabase/migrations/20240101000007_fix_deletion_history_rls.sql
+                  </code>
+                </p>
+              )}
+            </div>
           </div>
-        </Card>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && !error && (
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent mb-4"></div>
+          <p className="text-gray-600">Loading deletion history...</p>
+        </div>
+      )}
+
+      {/* Main Content */}
+      {!loading && !error && (
+        <>
+          {filteredDeletions.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <Trash2 className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">No deletions found</h3>
+                <p className="text-gray-500 mb-4">No deletion history available yet</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* Mobile View: Cards */}
+              {isMobile ? (
+                <div className="space-y-4">
+                  {filteredDeletions.map((deletion) => (
+                    <MobileDeletionCard key={deletion.id} deletion={deletion} />
+                  ))}
+                </div>
+              ) : (
+                /* Desktop View: Table */
+                <Card>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Type
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Item/Entity
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Reason
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Date & Time
+                            </th>
+                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Amount
+                            </th>
+                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Quantity
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {filteredDeletions.map((deletion) => (
+                            <DesktopTableRow key={deletion.id} deletion={deletion} />
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
+        </>
       )}
     </div>
   );
