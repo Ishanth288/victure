@@ -45,8 +45,6 @@ const MobileDashboard = React.lazy(() => import("./components/mobile/MobileDashb
 const MobileInventory = React.lazy(() => import("./components/mobile/MobileInventory"));
 const MobilePatients = React.lazy(() => import("./components/mobile/MobilePatients"));
 const MobileSettings = React.lazy(() => import("./components/mobile/MobileSettings"));
-const MobilePrescriptions = React.lazy(() => import("./components/mobile/MobilePrescriptions"));
-const MobileInsights = React.lazy(() => import("./components/mobile/MobileInsights"));
 
 // Apple-style mobile loading component
 function MobileLoadingFallback({ text = "Loading..." }: { text?: string }) {
@@ -146,8 +144,6 @@ function App() {
         <Route path="/mobile" element={<MobileDashboard />} />
         <Route path="/mobile/inventory" element={<MobileInventory />} />
         <Route path="/mobile/patients" element={<MobilePatients />} />
-        <Route path="/mobile/prescriptions" element={<MobilePrescriptions />} />
-        <Route path="/mobile/insights" element={<MobileInsights />} />
         <Route path="/mobile/settings" element={<MobileSettings />} />
         
         <Route path="/legal" element={<LegalLayout />}>
@@ -170,7 +166,7 @@ function App() {
         <MobileOptimizedWrapper
           loadingText="Initializing Victure..."
           enableHaptics={true}
-          showConnectionStatus={true}
+          showConnectionStatus={false}
         >
           <MobileAppWrapper>
             <div className="page-container">
@@ -186,9 +182,13 @@ function App() {
         </MobileAppWrapper>
       )}
       
-      {/* Development and Debug Tools */}
-      <PerformanceMonitor />
-      <ConnectionMonitor compact={true} />
+      {/* Development and Debug Tools - ONLY FOR DESKTOP */}
+      {!isMobileDevice() && (
+        <>
+          <PerformanceMonitor />
+          <ConnectionMonitor compact={true} />
+        </>
+      )}
     </ErrorBoundary>
   );
 }

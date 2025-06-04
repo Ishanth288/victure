@@ -29,7 +29,8 @@ import {
   ShoppingCart,
   Clock,
   Target,
-  Star
+  Star,
+  Home
 } from "lucide-react";
 import { hapticFeedback } from "@/utils/mobileUtils";
 
@@ -137,12 +138,6 @@ export function MobileDashboard() {
     navigate(path);
   };
 
-  const handleSignOut = async () => {
-    await hapticFeedback('medium');
-    await supabase.auth.signOut();
-    navigate('/auth');
-  };
-
   const handleScannerResult = async (medicine: any) => {
     await processMedicine(medicine);
     await fetchDashboardStats();
@@ -198,7 +193,7 @@ export function MobileDashboard() {
 
   const statCards = [
     {
-      title: "Inventory Items",
+      title: "Inventory",
       value: stats.totalInventory,
       icon: Package,
       color: "blue",
@@ -219,7 +214,7 @@ export function MobileDashboard() {
       change: null
     },
     {
-      title: "Today's Revenue",
+      title: "Revenue",
       value: formatCurrency(stats.todaysRevenue),
       icon: DollarSign,
       color: "emerald",
@@ -248,57 +243,62 @@ export function MobileDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 safe-area-all">
       <div className="max-w-md mx-auto animate-fade-in">
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-footnote text-gray-600 dark:text-gray-400">{greeting}</p>
-              <h1 className="text-title-2 font-bold text-gray-900 dark:text-white truncate">
-                {user?.user_metadata?.name || user?.email?.split('@')[0] || 'Doctor'}
-              </h1>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="text-right">
-                <p className="text-caption-1 font-semibold text-gray-900 dark:text-white">
-                  {formatTime(currentTime)}
-                </p>
-                <p className="text-caption-2 text-gray-600 dark:text-gray-400">
-                  {currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                </p>
+        {/* Apple-Style Status Bar */}
+        <div className="sticky top-0 z-20 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200/30 dark:border-gray-700/30 safe-area-top">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-footnote text-gray-600 dark:text-gray-400">{greeting}</p>
+                <h1 className="text-title-1 font-bold text-gray-900 dark:text-white truncate">
+                  {user?.user_metadata?.name || user?.email?.split('@')[0] || 'Doctor'}
+                </h1>
               </div>
-              <Button
-                onClick={() => handleNavigation('/settings')}
-                variant="ghost"
-                size="sm"
-                className="btn-apple focus-ring p-2"
-              >
-                <Settings className="w-5 h-5" />
-              </Button>
+              <div className="flex items-center space-x-4">
+                <div className="text-right">
+                  <p className="text-caption-1 font-semibold text-gray-900 dark:text-white">
+                    {formatTime(currentTime)}
+                  </p>
+                  <p className="text-caption-2 text-gray-600 dark:text-gray-400">
+                    {currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  </p>
+                </div>
+                <Button
+                  onClick={() => handleNavigation('/mobile/settings')}
+                  variant="ghost"
+                  size="sm"
+                  className="btn-apple focus-ring p-2 rounded-full w-10 h-10"
+                >
+                  <Settings className="w-5 h-5" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
 
         <div className="px-6 pb-32 space-y-8">
-          {/* Welcome Card */}
-          <div className="card-glass p-6 mt-6 animate-slide-down">
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center">
-                <Star className="w-8 h-8 text-white" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-title-3 font-bold text-gray-900 dark:text-white">
-                  Welcome back! 👋
-                </h2>
-                <p className="text-footnote text-gray-600 dark:text-gray-400 mt-1">
-                  Ready to manage your pharmacy efficiently
-                </p>
+          {/* Hero Section - Apple Style */}
+          <div className="space-y-6 pt-6 animate-slide-down">
+            <div className="card-glass p-6 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10"></div>
+              <div className="relative flex items-center space-x-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl">
+                  <Star className="w-8 h-8 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-title-2 font-bold text-gray-900 dark:text-white mb-1">
+                    Welcome back! 👋
+                  </h2>
+                  <p className="text-footnote text-gray-600 dark:text-gray-400">
+                    Ready to manage your pharmacy efficiently
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Quick Actions */}
+          {/* Quick Actions - Apple Card Grid */}
           <div className="space-y-4 animate-slide-up">
-            <h3 className="text-title-3 font-bold text-gray-900 dark:text-white px-2">Quick Actions</h3>
+            <h3 className="text-title-2 font-bold text-gray-900 dark:text-white px-2">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-4">
               {quickActions.map((action, index) => (
                 <Button
@@ -307,28 +307,28 @@ export function MobileDashboard() {
                     await hapticFeedback('light');
                     action.action();
                   }}
-                  className={`btn-apple h-auto p-0 overflow-hidden focus-ring bg-gradient-to-br ${action.gradient} text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200`}
+                  className={`btn-apple h-auto p-0 overflow-hidden focus-ring bg-gradient-to-br ${action.gradient} text-white shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300`}
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  <div className="w-full p-4 text-left">
+                  <div className="w-full p-5 text-left">
                     <div className="flex items-center justify-between mb-3">
-                      <action.icon className="w-6 h-6" />
+                      <action.icon className="w-7 h-7" />
                       <ChevronRight className="w-4 h-4 opacity-70" />
                     </div>
-                    <p className="text-subhead font-semibold">{action.title}</p>
-                    <p className="text-caption-2 opacity-80 mt-1">{action.subtitle}</p>
+                    <p className="text-subhead font-semibold mb-1">{action.title}</p>
+                    <p className="text-caption-2 opacity-80">{action.subtitle}</p>
                   </div>
                 </Button>
               ))}
             </div>
           </div>
 
-          {/* Stats Overview */}
+          {/* Stats Overview - Apple Style Cards */}
           <div className="space-y-4 animate-slide-up">
             <div className="flex items-center justify-between px-2">
-              <h3 className="text-title-3 font-bold text-gray-900 dark:text-white">Overview</h3>
+              <h3 className="text-title-2 font-bold text-gray-900 dark:text-white">Overview</h3>
               <Button
-                onClick={() => handleNavigation('/mobile/insights')}
+                onClick={() => handleNavigation('/insights')}
                 variant="ghost"
                 size="sm"
                 className="btn-apple focus-ring text-blue-600 dark:text-blue-400"
@@ -342,17 +342,17 @@ export function MobileDashboard() {
               {statCards.map((stat, index) => (
                 <div
                   key={stat.title}
-                  className="card-apple p-4 animate-slide-up"
+                  className="card-apple p-5 animate-slide-up shadow-lg"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
                       stat.color === 'blue' ? 'bg-blue-100 dark:bg-blue-900' :
                       stat.color === 'green' ? 'bg-green-100 dark:bg-green-900' :
                       stat.color === 'purple' ? 'bg-purple-100 dark:bg-purple-900' :
                       'bg-emerald-100 dark:bg-emerald-900'
                     }`}>
-                      <stat.icon className={`w-5 h-5 ${
+                      <stat.icon className={`w-6 h-6 ${
                         stat.color === 'blue' ? 'text-blue-600 dark:text-blue-400' :
                         stat.color === 'green' ? 'text-green-600 dark:text-green-400' :
                         stat.color === 'purple' ? 'text-purple-600 dark:text-purple-400' :
@@ -366,7 +366,7 @@ export function MobileDashboard() {
                       </div>
                     )}
                   </div>
-                  <p className="text-title-2 font-bold text-gray-900 dark:text-white mb-1">
+                  <p className="text-title-1 font-bold text-gray-900 dark:text-white mb-1">
                     {stat.value}
                   </p>
                   <p className="text-caption-1 text-gray-600 dark:text-gray-400">
@@ -377,12 +377,12 @@ export function MobileDashboard() {
             </div>
           </div>
 
-          {/* Alerts */}
+          {/* Low Stock Alert - Apple Style */}
           {stats.lowStockItems > 0 && (
-            <div className="card-apple border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 p-4 animate-bounce-in">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center">
-                  <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            <div className="card-apple border-orange-200 dark:border-orange-800 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 p-5 animate-bounce-in shadow-lg">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-2xl flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div className="flex-1">
                   <p className="text-callout font-semibold text-orange-900 dark:text-orange-100">
@@ -395,104 +395,13 @@ export function MobileDashboard() {
                 <Button
                   onClick={() => handleNavigation('/mobile/inventory')}
                   size="sm"
-                  className="btn-apple bg-orange-500 hover:bg-orange-600 text-white focus-ring"
+                  className="btn-apple bg-orange-500 hover:bg-orange-600 text-white focus-ring shadow-lg"
                 >
                   View
                 </Button>
               </div>
             </div>
           )}
-
-          {/* Recent Activity */}
-          <div className="space-y-4 animate-slide-up">
-            <h3 className="text-title-3 font-bold text-gray-900 dark:text-white px-2">Recent Activity</h3>
-            <div className="space-y-3">
-              <div className="card-apple p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-                    <ShoppingCart className="w-4 h-4 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-callout font-medium text-gray-900 dark:text-white">
-                      New bill created
-                    </p>
-                    <p className="text-caption-2 text-gray-600 dark:text-gray-400">
-                      Bill #001 • 2 items • ₹150
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-caption-2 text-gray-600 dark:text-gray-400">2m ago</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="card-apple p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                    <Package className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-callout font-medium text-gray-900 dark:text-white">
-                      Inventory updated
-                    </p>
-                    <p className="text-caption-2 text-gray-600 dark:text-gray-400">
-                      Paracetamol stock increased by 50 units
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-caption-2 text-gray-600 dark:text-gray-400">1h ago</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="card-apple p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
-                    <Users className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-callout font-medium text-gray-900 dark:text-white">
-                      New patient registered
-                    </p>
-                    <p className="text-caption-2 text-gray-600 dark:text-gray-400">
-                      John Doe • Phone: +91 98765-43210
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-caption-2 text-gray-600 dark:text-gray-400">3h ago</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* AI Scanner Promotion */}
-          <div className="card-glass p-6 animate-bounce-in">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-title-3 font-bold text-gray-900 dark:text-white">
-                  Try AI Scanner! ✨
-                </h3>
-                <p className="text-footnote text-gray-600 dark:text-gray-400 mt-1">
-                  Instantly scan medicine packages and auto-fill inventory details
-                </p>
-                <Button
-                  onClick={async () => {
-                    await hapticFeedback('medium');
-                    openScanner();
-                  }}
-                  className="btn-apple bg-gradient-to-r from-blue-500 to-purple-600 text-white mt-3 focus-ring"
-                  size="sm"
-                >
-                  <Camera className="w-4 h-4 mr-2" />
-                  Try Now
-                </Button>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Camera Scanner Modal */}
