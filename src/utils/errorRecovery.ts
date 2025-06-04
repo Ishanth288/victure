@@ -81,11 +81,11 @@ export async function robustInventoryFetch(userId: string) {
   );
 }
 
-export async function robustDataInsert<T>(
-  table: string,
+export async function robustDataInsert(
+  table: 'inventory' | 'patients' | 'bills' | 'prescriptions',
   data: any,
   selectColumns: string = '*'
-): Promise<T> {
+): Promise<any> {
   return withRetry(
     async () => {
       const { data: result, error } = await supabase
