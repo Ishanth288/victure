@@ -53,11 +53,12 @@ export async function withRetry<T>(
 export async function robustInventoryFetch(userId: string) {
   return withRetry(
     async () => {
+      // Fixed: Use id for ordering instead of non-existent created_at column
       const { data, error } = await supabase
         .from('inventory')
         .select('*')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .order('id', { ascending: false });
 
       if (error) {
         throw new Error(`Database error: ${error.message}`);

@@ -70,11 +70,19 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Use robust fetch with retry logic
-      const data = await robustInventoryFetch(user.id);
+      // Fixed: Use id for ordering instead of non-existent created_at column
+      const { data, error } = await supabase
+        .from('inventory')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('id', { ascending: false });
+      
+      if (error) {
+        throw new Error(`Database error: ${error.message}`);
+      }
       
       if (mountedRef.current) {
-        const inventoryItems: InventoryItem[] = data.map(item => ({
+        const inventoryItems: InventoryItem[] = (data || []).map(item => ({
           ...item,
           generic_name: item.generic_name || null,
           strength: item.strength || null,
