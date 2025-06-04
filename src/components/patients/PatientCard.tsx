@@ -147,14 +147,14 @@ export function PatientCard({
                           const effectiveAmount = bill.effective_amount || bill.total_amount || 0;
                           const returnValue = bill.return_value || 0;
                           
-                          return (
-                            <div
-                              key={bill.id}
-                              className="ml-4 p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl flex justify-between items-center shadow-sm"
-                            >
-                              <div>
-                                <p className="font-semibold text-blue-900">Bill #{bill.bill_number}</p>
-                                <p className="text-xs text-gray-500">{format(new Date(bill.date), "MMM dd, yyyy h:mm a")}</p>
+                        return (
+                          <div
+                            key={bill.id}
+                            className="ml-4 p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl flex justify-between items-center shadow-sm"
+                          >
+                            <div>
+                              <p className="font-semibold text-blue-900">Bill #{bill.bill_number}</p>
+                              <p className="text-xs text-gray-500">{format(new Date(bill.date), "MMM dd, yyyy h:mm a")}</p>
                                 <div className="text-xs text-gray-700">
                                   {hasReturns ? (
                                     <div className="space-y-1">
@@ -172,18 +172,18 @@ export function PatientCard({
                                     <span>Amount: ₹{effectiveAmount.toFixed(2)}</span>
                                   )}
                                 </div>
-                              </div>
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                className="rounded-full shadow-md hover:bg-blue-200"
-                                onClick={() => onViewBill(bill.id)}
-                              >
-                                <Eye className="h-4 w-4 mr-1 text-blue-700" />
-                                Preview
-                              </Button>
                             </div>
-                          );
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="rounded-full shadow-md hover:bg-blue-200"
+                              onClick={() => onViewBill(bill.id)}
+                            >
+                              <Eye className="h-4 w-4 mr-1 text-blue-700" />
+                              Preview
+                            </Button>
+                          </div>
+                        );
                         })
                       ) : (
                         <div className="text-center text-gray-400 py-2">No bills found for this prescription.</div>

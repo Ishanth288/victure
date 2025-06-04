@@ -55,7 +55,7 @@ export default function Prescriptions() {
     setRefreshing(true);
     try {
       await fetchPrescriptions();
-      toast({
+        toast({
         title: "Data Refreshed",
         description: "Latest prescriptions and bills loaded successfully",
       });
@@ -160,7 +160,7 @@ export default function Prescriptions() {
         setIsAuthenticated(false);
         return;
       }
-      
+
       setIsAuthenticated(true);
 
       // NEW WORKFLOW: Fetch bills as prescription records
@@ -173,12 +173,12 @@ export default function Prescriptions() {
           total_amount,
           prescription_id,
           prescription:prescriptions (
-            id,
-            prescription_number,
-            doctor_name,
-            patient_id,
-            date,
-            status,
+          id,
+          prescription_number,
+          doctor_name,
+          patient_id,
+          date,
+          status,
             patient:patients (
               id,
               name, 
@@ -222,7 +222,7 @@ export default function Prescriptions() {
           
           const effectiveAmount = originalAmount - totalReturnValue;
           const billDate = new Date(bill.date);
-
+          
           return {
             // Use bill ID as unique identifier
             id: bill.id,
@@ -492,13 +492,13 @@ export default function Prescriptions() {
         console.error("Bill not found in state for ID:", prescriptionToDelete);
         console.log("Available prescriptions:", prescriptions.map(p => ({ id: p.id, bill_id: p.bill_id })));
         toast({
-          title: "Error",
+          title: "Error", 
           description: "Bill record not found",
           variant: "destructive"
         });
         return;
       }
-
+      
       console.log("Found bill to delete:", {
         id: billToDelete.id,
         bill_id: billToDelete.bill_id,
@@ -587,7 +587,7 @@ export default function Prescriptions() {
         });
         return;
       }
-
+      
       // Log each deleted bill item for audit purposes
       if (billItemsToDelete) {
         for (const billItem of billItemsToDelete) {
@@ -682,7 +682,7 @@ export default function Prescriptions() {
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
           <div className="flex items-center space-x-4">
-            <h1 className="text-3xl font-bold">Prescriptions</h1>
+          <h1 className="text-3xl font-bold">Prescriptions</h1>
             {/* ENHANCED: Real-time refresh button */}
             <Button
               variant="outline"
@@ -746,11 +746,11 @@ export default function Prescriptions() {
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="text-lg font-medium">{prescription.patient?.name}</h3>
                       <div className="flex flex-col items-end space-y-1">
-                        <Badge 
-                          variant={prescription.status === 'active' ? 'default' : 'secondary'}
-                        >
-                          {prescription.status}
-                        </Badge>
+                      <Badge 
+                        variant={prescription.status === 'active' ? 'default' : 'secondary'}
+                      >
+                        {prescription.status}
+                      </Badge>
                         <div className="text-right">
                           {prescription.return_value > 0 ? (
                             <div className="space-y-1">
@@ -794,27 +794,27 @@ export default function Prescriptions() {
                         <Phone className="w-4 h-4 mr-2" />
                         <span>{prescription.patient?.phone_number}</span>
                       </div>
+                      </div>
                     </div>
-                  </div>
-
+                    
                   <div className="grid grid-cols-2 border-t border-gray-100">
-                    <Button 
-                      variant="ghost" 
+                            <Button 
+                              variant="ghost" 
                       className="rounded-none py-3 text-blue-600 hover:bg-blue-50"
                       onClick={() => handleBillPreview(prescription.bill_id)}
-                    >
+                            >
                       <Eye className="h-4 w-4 mr-2" />
                       Preview
-                    </Button>
+                            </Button>
                     
-                    <Button 
-                      variant="ghost" 
+                                <Button 
+                                  variant="ghost" 
                       className="rounded-none py-3 text-orange-600 hover:bg-orange-50 border-l border-gray-100"
                       onClick={() => handleReturn(prescription.bill_id, prescription.bill_number)}
                     >
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Return
-                    </Button>
+                                </Button>
                   </div>
 
                   <div className="grid grid-cols-2 border-t border-gray-100">
@@ -827,8 +827,8 @@ export default function Prescriptions() {
                       Replace
                     </Button>
                     
-                    <Button 
-                      variant="ghost" 
+                      <Button 
+                        variant="ghost" 
                       className="rounded-none py-3 text-destructive hover:bg-red-50 border-l border-gray-100"
                       onClick={() => handleDeletePrescription(prescription.id)}
                     >
