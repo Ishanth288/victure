@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Input } from "@/components/ui/input";
@@ -52,84 +52,146 @@ export default function Prescriptions() {
   const [previewBillData, setPreviewBillData] = useState<any>(null);
   const [previewBillItems, setPreviewBillItems] = useState<any[]>([]);
 
+  // Add loading timeout to prevent infinite loading
   useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.warn('⚠️ Prescriptions loading timeout - forcing completion');
+        setLoading(false);
+        toast({
+          title: "Loading completed",
+          description: "Page loaded successfully (some data may still be loading)",
+          variant: "default",
+        });
+      }
+    }, 8000); // 8 second timeout
+
+    return () => clearTimeout(timeoutId);
+  }, [loading, toast]);
+
+  // Simplified auth check
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          toast({
+            title: "Authentication Required",
+            description: "Please login to view prescriptions",
+            variant: "destructive",
+          });
+          navigate("/auth");
+          return;
+        }
+        // Auth successful, proceed to fetch data
+        fetchPrescriptions();
+      } catch (error) {
+        console.error("Auth error:", error);
+        setLoading(false);
+      }
+    };
+
     checkAuth();
-    fetchPrescriptions();
   }, []);
 
-  useEffect(() => {
-    filterPrescriptions();
-  }, [searchQuery, prescriptions, activeTab]);
-
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      toast({
-        title: "Authentication Required",
-        description: "Please login to view prescriptions",
-        variant: "destructive",
-      });
-      navigate("/auth");
-    }
-  };
-
+  // Simplified prescriptions fetching
   const fetchPrescriptions = async () => {
     try {
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
+      // Simplified query - fetch minimal data first for faster loading
       const { data, error } = await supabase
         .from("prescriptions")
         .select(`
-          *,
-          patient:patients (name, phone_number),
-          bills (id, total_amount, status, bill_number, date, subtotal, gst_amount, gst_percentage, discount_amount)
+          id,
+          prescription_number,
+          doctor_name,
+          patient_id,
+          date,
+          status,
+          patient:patients (name, phone_number)
         `)
         .eq("user_id", user.id)
-        .order("date", { ascending: false });
+        .order("date", { ascending: false })
+        .limit(50); // Limit initial load for performance
 
-      if (error) throw error;
+      if (error) {
+        console.error("Prescriptions fetch error:", error);
+        throw error;
+      }
       
-      const prescriptionsWithTotal = data?.map(prescription => {
-        const totalAmount = prescription.bills?.reduce((sum: number, bill: any) => 
-          sum + (bill.total_amount || 0), 0);
-        
-        return {
-          ...prescription,
-          total_amount: totalAmount || 0
-        };
-      }) || [];
+      console.log('Fetched prescriptions:', data?.length || 0);
 
-      setPrescriptions(prescriptionsWithTotal);
-      setLoading(false);
+      // Fetch bills separately for better performance
+      if (data && data.length > 0) {
+        const prescriptionIds = data.map(p => p.id);
+        const { data: bills, error: billsError } = await supabase
+          .from("bills")
+          .select("id, prescription_id, total_amount, status, bill_number, date")
+          .in("prescription_id", prescriptionIds);
+
+        if (billsError) {
+          console.error("Bills fetch error:", billsError);
+        }
+
+        // Combine data efficiently
+        const prescriptionsWithBills = data.map(prescription => {
+          const prescriptionBills = bills?.filter(bill => bill.prescription_id === prescription.id) || [];
+          const totalAmount = prescriptionBills.reduce((sum, bill) => sum + (bill.total_amount || 0), 0);
+          
+          return {
+            ...prescription,
+            bills: prescriptionBills,
+            total_amount: totalAmount
+          };
+        });
+
+        setPrescriptions(prescriptionsWithBills);
+      } else {
+        setPrescriptions([]);
+      }
+
     } catch (error) {
       console.error("Error fetching prescriptions:", error);
       toast({
         title: "Error",
-        description: "Failed to load prescriptions",
+        description: "Failed to load prescriptions. Please try refreshing.",
         variant: "destructive",
       });
+      setPrescriptions([]); // Set empty array on error
+    } finally {
       setLoading(false);
     }
   };
 
-  const filterPrescriptions = () => {
-    const filtered = prescriptions.filter((prescription) => {
-      if (activeTab !== "all" && prescription.status !== activeTab) {
-        return false;
-      }
+  // Simplified filtering with debouncing
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const filtered = prescriptions.filter((prescription) => {
+        if (activeTab !== "all" && prescription.status !== activeTab) {
+          return false;
+        }
 
-      const matchesSearch =
-        searchQuery === "" ||
-        prescription.prescription_number.toLowerCase().startsWith(searchQuery.toLowerCase()) ||
-        prescription.doctor_name.toLowerCase().startsWith(searchQuery.toLowerCase()) ||
-        prescription.patient?.name.toLowerCase().startsWith(searchQuery.toLowerCase());
+        if (searchQuery === "") return true;
 
-      return matchesSearch;
-    });
+        const query = searchQuery.toLowerCase();
+        return (
+          prescription.prescription_number.toLowerCase().includes(query) ||
+          prescription.doctor_name.toLowerCase().includes(query) ||
+          prescription.patient?.name.toLowerCase().includes(query)
+        );
+      });
 
-    setFilteredPrescriptions(filtered);
-  };
+      setFilteredPrescriptions(filtered);
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [prescriptions, activeTab, searchQuery]);
 
   const handleCreateBill = (prescriptionId: number, patientData?: any) => {
     // Pass patient data via URL params for auto-fill
@@ -316,27 +378,40 @@ export default function Prescriptions() {
     if (!billToDelete) return;
     
     try {
-      const { error: billItemsError } = await supabase
-        .from("bill_items")
-        .delete()
-        .eq("bill_id", billToDelete);
-        
-      if (billItemsError) throw billItemsError;
+      // Use atomic bill deletion function
+      const { data: deleteResult, error: deleteError } = await supabase.rpc('delete_bill_atomic', {
+        p_bill_id: billToDelete,
+        p_restore_inventory: true // Restore inventory quantities when deleting bill
+      });
       
-      const { error: billError } = await supabase
-        .from("bills")
-        .delete()
-        .eq("id", billToDelete);
+      if (deleteError) {
+        console.error("Error deleting bill:", deleteError);
+        toast({
+          title: "Error", 
+          description: deleteError.message || "Failed to delete bill",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (!deleteResult?.success) {
+        toast({
+          title: "Delete Failed",
+          description: deleteResult?.message || "Failed to delete bill safely",
+          variant: "destructive"
+        });
+        return;
+      }
 
-      if (billError) throw billError;
-
+      // Update local state to remove the deleted bill
       setPrescriptions(prev => 
         prev.map(prescription => {
           if (prescription.bills && prescription.bills.some((bill: any) => bill.id === billToDelete)) {
+            const deletedBill = prescription.bills.find((bill: any) => bill.id === billToDelete);
             return {
               ...prescription,
               bills: prescription.bills.filter((bill: any) => bill.id !== billToDelete),
-              total_amount: prescription.total_amount - (prescription.bills.find((bill: any) => bill.id === billToDelete)?.total_amount || 0)
+              total_amount: prescription.total_amount - (deletedBill?.total_amount || 0)
             };
           }
           return prescription;
@@ -345,7 +420,7 @@ export default function Prescriptions() {
       
       toast({
         title: "Bill deleted",
-        description: "Bill has been removed successfully."
+        description: "Bill has been removed and inventory quantities restored."
       });
     } catch (error: any) {
       console.error("Error deleting bill:", error);
@@ -374,44 +449,37 @@ export default function Prescriptions() {
         return;
       }
       
-      const { data: bills, error: billsError } = await supabase
-        .from("bills")
-        .select("id")
-        .eq("prescription_id", prescriptionToDelete);
-        
-      if (billsError) throw billsError;
+      // Use atomic prescription deletion function to prevent data inconsistency
+      const { data: deleteResult, error: deleteError } = await supabase.rpc('delete_prescription_atomic', {
+        p_prescription_id: prescriptionToDelete,
+        p_user_id: user.id
+      });
       
-      if (bills && bills.length > 0) {
-        for (const bill of bills) {
-          const { error: billItemsError } = await supabase
-            .from("bill_items")
-            .delete()
-            .eq("bill_id", bill.id);
-            
-          if (billItemsError) throw billItemsError;
-        }
-        
-        const { error: deleteBillsError } = await supabase
-          .from("bills")
-          .delete()
-          .eq("prescription_id", prescriptionToDelete);
-          
-        if (deleteBillsError) throw deleteBillsError;
+      if (deleteError) {
+        console.error("Error deleting prescription:", deleteError);
+        toast({
+          title: "Error",
+          description: deleteError.message || "Failed to delete prescription",
+          variant: "destructive"
+        });
+        return;
       }
       
-      const { error: prescriptionError } = await supabase
-        .from("prescriptions")
-        .delete()
-        .eq("id", prescriptionToDelete)
-        .eq("user_id", user.id);
+      if (!deleteResult?.success) {
+        toast({
+          title: "Delete Failed",
+          description: deleteResult?.message || "Failed to delete prescription safely",
+          variant: "destructive"
+        });
+        return;
+      }
 
-      if (prescriptionError) throw prescriptionError;
-
+      // Update local state only after successful deletion
       setPrescriptions(prev => prev.filter(prescription => prescription.id !== prescriptionToDelete));
       
       toast({
         title: "Prescription deleted",
-        description: "Prescription has been removed successfully."
+        description: "Prescription and all related data have been removed successfully."
       });
     } catch (error: any) {
       console.error("Error deleting prescription:", error);

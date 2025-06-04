@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -221,7 +220,7 @@ export const ImportTabContent: React.FC<ImportTabContentProps> = ({ user, loadMi
   };
 
   return (
-    <div className="space-y-6 max-h-full">
+    <div className="space-y-6">
       {!user && (
         <Alert variant="error">
           <AlertCircle className="h-4 w-4" />
@@ -246,82 +245,80 @@ export const ImportTabContent: React.FC<ImportTabContentProps> = ({ user, loadMi
         </AlertDescription>
       </Alert>
       
-      <div className="space-y-6">
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Step 1: Select Data Type</h3>
-          <ModeSelector migrationMode={migrationMode} setMigrationMode={setMigrationMode} />
-        </div>
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">Step 1: Select Data Type</h3>
+        <ModeSelector migrationMode={migrationMode} setMigrationMode={setMigrationMode} />
+      </div>
+      
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">Step 2: Upload File</h3>
+        <FileUpload setSelectedFile={setSelectedFile} setUploadError={setUploadError} />
         
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Step 2: Upload File</h3>
-          <FileUpload setSelectedFile={setSelectedFile} setUploadError={setUploadError} />
-          
-          {uploadError && (
-            <Alert variant="error">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Upload Error</AlertTitle>
-              <AlertDescription>{uploadError}</AlertDescription>
-            </Alert>
-          )}
-          
-          {selectedFile && (
-            <div className="py-2 px-3 bg-gray-50 border rounded flex items-center justify-between">
-              <div className="flex items-center">
-                <span className="text-sm font-medium">{selectedFile.name}</span>
-                <span className="text-xs text-gray-500 ml-2">
-                  ({(selectedFile.size / 1024).toFixed(2)} KB)
-                </span>
-              </div>
-              <button 
-                onClick={() => setSelectedFile(null)} 
-                className="text-gray-500 hover:text-gray-700"
-              >
-                Remove
-              </button>
-            </div>
-          )}
-        </div>
+        {uploadError && (
+          <Alert variant="error">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Upload Error</AlertTitle>
+            <AlertDescription>{uploadError}</AlertDescription>
+          </Alert>
+        )}
         
-        {selectedFile && fileHeaders.length > 0 && (
-          <>
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Step 3: Map Fields</h3>
-              
-              {user && (
-                <MappingTemplateManager
-                  selectedFields={selectedFields}
-                  fileHeaders={fileHeaders}
-                  migrationMode={migrationMode}
-                  onApplyTemplate={handleApplyTemplate}
-                />
-              )}
-              
-              <DataPreview 
-                previewItems={previewItems}
-                selectedFields={selectedFields}
-                setSelectedFields={setSelectedFields}
-                fileHeaders={fileHeaders}
-                migrationMode={migrationMode}
-              />
-              
-              <ImportControls 
-                onStartImport={handleStartImport}
-                previewItems={previewItems}
-                isImporting={isImporting}
-                selectedFields={selectedFields}
-                migrationMode={migrationMode}
-              />
+        {selectedFile && (
+          <div className="py-2 px-3 bg-gray-50 border rounded flex items-center justify-between">
+            <div className="flex items-center">
+              <span className="text-sm font-medium">{selectedFile.name}</span>
+              <span className="text-xs text-gray-500 ml-2">
+                ({(selectedFile.size / 1024).toFixed(2)} KB)
+              </span>
             </div>
-            
-            {importResults && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Import Results</h3>
-                <ResultSummary importResults={importResults} />
-              </div>
-            )}
-          </>
+            <button 
+              onClick={() => setSelectedFile(null)} 
+              className="text-gray-500 hover:text-gray-700"
+            >
+              Remove
+            </button>
+          </div>
         )}
       </div>
+      
+      {selectedFile && fileHeaders.length > 0 && (
+        <>
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Step 3: Map Fields</h3>
+            
+            {user && (
+              <MappingTemplateManager
+                selectedFields={selectedFields}
+                fileHeaders={fileHeaders}
+                migrationMode={migrationMode}
+                onApplyTemplate={handleApplyTemplate}
+              />
+            )}
+            
+            <DataPreview 
+              previewItems={previewItems}
+              selectedFields={selectedFields}
+              setSelectedFields={setSelectedFields}
+              fileHeaders={fileHeaders}
+              migrationMode={migrationMode}
+            />
+            
+            <ImportControls 
+              onStartImport={handleStartImport}
+              previewItems={previewItems}
+              isImporting={isImporting}
+              selectedFields={selectedFields}
+              migrationMode={migrationMode}
+            />
+          </div>
+          
+          {importResults && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Import Results</h3>
+              <ResultSummary importResults={importResults} />
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };

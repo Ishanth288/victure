@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { addDays, format } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Input } from "@/components/ui/input";
@@ -38,42 +38,8 @@ export default function Patients() {
   const [patientToDelete, setPatientToDelete] = useState<number | null>(null);
   const [isFilterActive, setIsFilterActive] = useState(false);
 
-  useEffect(() => {
-    checkAuth();
-    fetchPatients();
-  }, []);
-
-  useEffect(() => {
-    if (isFilterActive) {
-      applyFilters();
-    } else {
-      // Group patients by unique phone number and merge their bills
-      const patientsByPhone = new Map();
-      patients.forEach(patient => {
-        if (!patientsByPhone.has(patient.phone_number)) {
-          patientsByPhone.set(patient.phone_number, { ...patient });
-        } else {
-          // Merge bills and prescriptions for duplicate phone numbers
-          const existing = patientsByPhone.get(patient.phone_number);
-          existing.bills = [...existing.bills, ...patient.bills];
-          existing.prescriptions = [...(existing.prescriptions || []), ...(patient.prescriptions || [])];
-          existing.total_spent += patient.total_spent;
-        }
-      });
-      const uniquePatients = Array.from(patientsByPhone.values())
-        .filter(patient => activeTab === "all" || patient.status === activeTab)
-        .filter(patient => 
-          searchQuery === "" || 
-          patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          patient.phone_number.includes(searchQuery)
-        )
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 20); // Limit to 20 most recent patients
-      setFilteredPatients(uniquePatients);
-    }
-  }, [searchQuery, patients, activeTab, isFilterActive]);
-
-  const checkAuth = async () => {
+  // Use useCallback to memoize functions used in useEffect dependencies
+  const checkAuth = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       toast({
@@ -83,9 +49,9 @@ export default function Patients() {
       });
       navigate("/auth");
     }
-  };
+  }, [toast, navigate]);
 
-  const fetchPatients = async () => {
+  const fetchPatients = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -112,7 +78,7 @@ export default function Patients() {
           )
         `)
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("id", { ascending: false });
 
       if (error) throw error;
 
@@ -154,9 +120,9 @@ export default function Patients() {
       });
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     const startTimestamp = new Date(startDate).getTime();
     const endTimestamp = new Date(endDate).getTime() + 86400000; // Add one day to include end date
 
@@ -169,7 +135,42 @@ export default function Patients() {
     });
 
     setFilteredPatients(filtered);
-  };
+  }, [patients, startDate, endDate, searchQuery]);
+
+  useEffect(() => {
+    checkAuth();
+    fetchPatients();
+  }, [checkAuth, fetchPatients]);
+
+  useEffect(() => {
+    if (isFilterActive) {
+      applyFilters();
+    } else {
+      // Group patients by unique phone number and merge their bills
+      const patientsByPhone = new Map();
+      patients.forEach(patient => {
+        if (!patientsByPhone.has(patient.phone_number)) {
+          patientsByPhone.set(patient.phone_number, { ...patient });
+        } else {
+          // Merge bills and prescriptions for duplicate phone numbers
+          const existing = patientsByPhone.get(patient.phone_number);
+          existing.bills = [...existing.bills, ...patient.bills];
+          existing.prescriptions = [...(existing.prescriptions || []), ...(patient.prescriptions || [])];
+          existing.total_spent += patient.total_spent;
+        }
+      });
+      const uniquePatients = Array.from(patientsByPhone.values())
+        .filter(patient => activeTab === "all" || patient.status === activeTab)
+        .filter(patient => 
+          searchQuery === "" || 
+          patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          patient.phone_number.includes(searchQuery)
+        )
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 20); // Limit to 20 most recent patients
+      setFilteredPatients(uniquePatients);
+    }
+  }, [searchQuery, patients, activeTab, isFilterActive, applyFilters]);
 
   const toggleFilter = () => {
     if (isFilterActive) {

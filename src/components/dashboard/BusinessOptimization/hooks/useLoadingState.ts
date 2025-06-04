@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface UseLoadingStateOptions {
   isLoading: boolean;
@@ -11,14 +10,14 @@ interface UseLoadingStateOptions {
 export function useLoadingState({
   isLoading,
   locationLoading,
-  forceExitTimeout = 3000, // Reduced from 5000ms to 3000ms for faster loading
-  stabilityDelay = 50 // Reduced from 100ms to 50ms
+  forceExitTimeout = 3000,
+  stabilityDelay = 50
 }: UseLoadingStateOptions) {
   const [isStableLoading, setIsStableLoading] = useState(true);
   const stabilityTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const forceExitTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hasShownLoadingRef = useRef(false);
+  const mountedRef = useRef(true);
   
   // Track loading state changes
   const loadingStartTime = useRef<number | null>(null);
@@ -27,9 +26,30 @@ export function useLoadingState({
     count: 0
   });
 
-  // Add more logging to diagnose loading issues
+  // Cleanup function to clear all timers
+  const clearAllTimers = useCallback(() => {
+    if (stabilityTimerRef.current) {
+      clearTimeout(stabilityTimerRef.current);
+      stabilityTimerRef.current = null;
+    }
+    if (forceExitTimerRef.current) {
+      clearTimeout(forceExitTimerRef.current);
+      forceExitTimerRef.current = null;
+    }
+  }, []);
+
+  // Safely update state only if component is mounted
+  const safeSetIsStableLoading = useCallback((value: boolean) => {
+    if (mountedRef.current) {
+      setIsStableLoading(value);
+    }
+  }, []);
+
+  // Track loading metrics
   useEffect(() => {
-    if (isLoading || locationLoading) {
+    const anyLoading = isLoading || locationLoading;
+    
+    if (anyLoading) {
       if (loadingStartTime.current === null) {
         loadingStartTime.current = Date.now();
       }
@@ -46,90 +66,62 @@ export function useLoadingState({
     }
   }, [isLoading, locationLoading]);
 
-  // Add stability to the loading state to prevent flickering
+  // Main loading state management
   useEffect(() => {
-    // When loading starts, set isStableLoading to true immediately
-    if (isLoading || locationLoading) {
-      setIsStableLoading(true);
+    if (!mountedRef.current) return;
+    
+    const anyLoading = isLoading || locationLoading;
+    
+    if (anyLoading) {
+      // Clear any existing timers to prevent conflicts
+      clearAllTimers();
+      
+      // Immediately set loading state
+      safeSetIsStableLoading(true);
       hasShownLoadingRef.current = true;
       
-      // Clear any existing timers
-      if (stabilityTimerRef.current) {
-        clearTimeout(stabilityTimerRef.current);
-        stabilityTimerRef.current = null;
-      }
-      
-      if (loadingTimerRef.current) {
-        clearTimeout(loadingTimerRef.current);
-        loadingTimerRef.current = null;
-      }
-      
-      if (forceExitTimerRef.current) {
-        clearTimeout(forceExitTimerRef.current);
-      }
-      
-      // Set a timeout to force exit loading state after a maximum time
-      // This prevents infinite loading
+      // Set force exit timer as fallback
       forceExitTimerRef.current = setTimeout(() => {
-        console.log("Force exiting loading state after timeout");
-        setIsStableLoading(false);
+        if (mountedRef.current) {
+          console.log("Force exiting loading state after timeout");
+          safeSetIsStableLoading(false);
+        }
       }, forceExitTimeout);
-    } 
-    // When loading ends, wait a bit before showing content to prevent flickering
-    else if (isStableLoading && hasShownLoadingRef.current) {
-      // Clear force exit timer if it exists
-      if (forceExitTimerRef.current) {
-        clearTimeout(forceExitTimerRef.current);
-        forceExitTimerRef.current = null;
-      }
       
-      if (loadingTimerRef.current) {
-        clearTimeout(loadingTimerRef.current);
-        loadingTimerRef.current = null;
-      }
+    } else if (hasShownLoadingRef.current) {
+      // Loading has ended, transition out with stability delay
+      clearAllTimers();
       
-      // Allow a little more time for transitions
       stabilityTimerRef.current = setTimeout(() => {
-        console.log("Loading completed, transitioning to content display");
-        setIsStableLoading(false);
+        if (mountedRef.current) {
+          console.log("Loading completed, transitioning to content display");
+          safeSetIsStableLoading(false);
+        }
       }, stabilityDelay);
     }
+    
+    // No cleanup needed here since clearAllTimers handles it
+  }, [isLoading, locationLoading, forceExitTimeout, stabilityDelay, clearAllTimers, safeSetIsStableLoading]);
 
-    return () => {
-      if (stabilityTimerRef.current) {
-        clearTimeout(stabilityTimerRef.current);
-      }
-      if (loadingTimerRef.current) {
-        clearTimeout(loadingTimerRef.current);
-      }
-      if (forceExitTimerRef.current) {
-        clearTimeout(forceExitTimerRef.current);
-      }
-    };
-  }, [isLoading, locationLoading, isStableLoading, forceExitTimeout, stabilityDelay]);
-
-  const resetLoading = () => {
-    setIsStableLoading(true);
+  // Reset loading function
+  const resetLoading = useCallback(() => {
+    if (!mountedRef.current) return;
+    
+    clearAllTimers();
+    safeSetIsStableLoading(true);
     hasShownLoadingRef.current = true;
-    
-    // Clear any existing timers
-    if (stabilityTimerRef.current) {
-      clearTimeout(stabilityTimerRef.current);
-      stabilityTimerRef.current = null;
-    }
-    
-    if (loadingTimerRef.current) {
-      clearTimeout(loadingTimerRef.current);
-      loadingTimerRef.current = null;
-    }
-    
-    if (forceExitTimerRef.current) {
-      clearTimeout(forceExitTimerRef.current);
-    }
-  };
+  }, [clearAllTimers, safeSetIsStableLoading]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      clearAllTimers();
+    };
+  }, [clearAllTimers]);
 
   return { 
-    isStableLoading,
+    isStableLoading: mountedRef.current ? isStableLoading : true,
     resetLoading,
     loadingMetrics: loadingMetrics.current
   };

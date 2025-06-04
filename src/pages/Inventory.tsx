@@ -1,11 +1,9 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import InventoryHeader from "@/components/inventory/InventoryHeader";
 import InventorySearch from "@/components/inventory/InventorySearch";
 import InventoryTable from "@/components/inventory/InventoryTable";
-import InventoryPagination from "@/components/inventory/InventoryPagination";
 import InventoryModals from "@/components/inventory/InventoryModals";
 import { PlanLimitAlert } from "@/components/PlanLimitAlert";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +22,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
+import {
+  Download,
+  Upload,
+  Plus,
+  Trash2,
+} from "lucide-react";
 
 // Inner component that uses the inventory context
 function InventoryContent() {
@@ -40,20 +49,20 @@ function InventoryContent() {
     editingItem,
     setEditingItem,
     isLoading,
-    fetchInventory
+    error,
+    refreshInventory
   } = useInventory();
   
   const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [stockFilter, setStockFilter] = useState("all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [filterType, setFilterType] = useState<string | null>(null);
   const [userPlan, setUserPlan] = useState<string>("Free Trial");
   const [inventoryLimit, setInventoryLimit] = useState<number>(501);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
-
-  const itemsPerPage = 10;
 
   useEffect(() => {
     checkAuth();
@@ -122,50 +131,31 @@ function InventoryContent() {
         return;
       }
       
-      // First, check if this item is used in any bills
-      const { data: billItems, error: billCheckError } = await supabase
-        .from("bill_items")
-        .select("id")
-        .eq("inventory_item_id", itemToDelete)
-        .limit(1);
-        
-      if (billCheckError) {
-        console.error("Error checking bill items:", billCheckError);
-        throw billCheckError;
-      }
-      
-      if (billItems && billItems.length > 0) {
-        // This item is used in bills, so we can't delete it
-        toast({
-          title: "Cannot Delete Item",
-          description: "This item is used in one or more bills and cannot be deleted.",
-          variant: "destructive",
-        });
-        setShowDeleteDialog(false);
-        setItemToDelete(null);
-        return;
-      }
-      
       console.log("Attempting to delete item with ID:", itemToDelete);
       console.log("User ID for deletion:", user.id);
       
-      // Now safe to delete as the item is not referenced in bills
-      const { error } = await supabase
-        .from("inventory")
+      // Delete the inventory item directly
+      const { error: deleteError } = await supabase
+        .from('inventory')
         .delete()
-        .eq("id", itemToDelete)
-        .eq("user_id", user.id); // Add user_id filter for security
-
-      if (error) {
-        console.error("Delete error:", error);
-        throw error;
+        .eq('id', itemToDelete)
+        .eq('user_id', user.id);
+      
+      if (deleteError) {
+        console.error("Delete error:", deleteError);
+        toast({
+          title: "Error",
+          description: deleteError.message || "Failed to delete item",
+          variant: "destructive"
+        });
+        return;
       }
 
       // Remove from selected items if present
       setSelectedItems(prev => prev.filter(id => id !== itemToDelete));
       
       // Refresh inventory after deletion
-      await fetchInventory();
+      await refreshInventory();
       
       toast({
         title: "Item deleted",
@@ -184,48 +174,93 @@ function InventoryContent() {
     }
   };
 
-  const handleApplyFilter = (type: string) => {
-    setFilterType(type === filterType ? null : type);
-    setCurrentPage(1);
+  const handleSelectItem = (id: number) => {
+    setSelectedItems(prev => 
+      prev.includes(id) 
+        ? prev.filter(itemId => itemId !== id)
+        : [...prev, id]
+    );
   };
 
-  // Apply filters and search
-  const filteredItems = inventory.filter((item) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      item.name.toLowerCase().startsWith(query) ||
-      (item.generic_name && item.generic_name.toLowerCase().startsWith(query)) ||
-      (item.manufacturer && item.manufacturer.toLowerCase().startsWith(query))
-    );
-  });
-
-  // Update total pages when filtered items change
-  useEffect(() => {
-    setTotalPages(Math.max(1, Math.ceil(filteredItems.length / itemsPerPage)));
-    // Reset to page 1 if current page is out of bounds
-    if (currentPage > Math.ceil(filteredItems.length / itemsPerPage) && filteredItems.length > 0) {
-      setCurrentPage(1);
+  const handleSelectAll = (selectAll: boolean) => {
+    if (selectAll) {
+      setSelectedItems(filteredInventory.map(item => item.id));
+    } else {
+      setSelectedItems([]);
     }
-  }, [filteredItems, currentPage]);
+  };
 
-  // Get the items for the current page
-  const paginatedItems = filteredItems.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const handleBulkDelete = async () => {
+    if (selectedItems.length === 0) return;
 
-  const handleToggleSelectItem = (id: number) => {
-    setSelectedItems((prevSelected) =>
-      prevSelected.includes(id)
-        ? prevSelected.filter((itemId) => itemId !== id)
-        : [...prevSelected, id]
-    );
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to delete items",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Delete selected items
+      const { error: deleteError } = await supabase
+        .from('inventory')
+        .delete()
+        .in('id', selectedItems)
+        .eq('user_id', user.id);
+
+      if (deleteError) {
+        toast({
+          title: "Error",
+          description: deleteError.message || "Failed to delete selected items",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Clear selection
+      setSelectedItems([]);
+      
+      // Refresh inventory
+      await refreshInventory();
+      
+      toast({
+        title: "Items deleted",
+        description: `${selectedItems.length} items have been deleted successfully.`
+      });
+    } catch (error: any) {
+      console.error("Error deleting items:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete items",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleEditItem = (item: InventoryItem) => {
     setEditingItem(item);
     setIsEditModalOpen(true);
   };
+
+  // Apply filters and search
+  const filteredInventory = inventory.filter((item) => {
+    const query = searchQuery.toLowerCase();
+    const matchesSearch = (
+      item.name.toLowerCase().includes(query) ||
+      (item.generic_name && item.generic_name.toLowerCase().includes(query)) ||
+      (item.manufacturer && item.manufacturer.toLowerCase().includes(query))
+    );
+
+    const matchesStock = stockFilter === "all" || 
+      (stockFilter === "in-stock" && item.quantity > (item.reorder_point || 10)) ||
+      (stockFilter === "low-stock" && item.quantity <= (item.reorder_point || 10) && item.quantity > 0) ||
+      (stockFilter === "out-of-stock" && item.quantity === 0);
+
+    return matchesSearch && matchesStock;
+  });
 
   const handleExportInventory = async () => {
     if (!tableRef.current) return;
@@ -324,8 +359,7 @@ function InventoryContent() {
   }
 
   console.log("Rendering inventory page with", inventory.length, "items");
-  console.log("Filtered items:", filteredItems.length);
-  console.log("Paginated items:", paginatedItems.length);
+  console.log("Filtered items:", filteredInventory.length);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -337,39 +371,134 @@ function InventoryContent() {
         variant={inventory.length > inventoryLimit * 0.9 ? "warning" : "info"}
       />
 
-      <InventoryHeader 
-        onAddClick={() => setIsAddModalOpen(true)} 
-        onExportClick={handleExportInventory} 
-      />
+      <div className="p-6 space-y-6">
+        {/* Header Section with proper semantic HTML */}
+        <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Manage your pharmacy stock efficiently
+            </p>
+          </div>
+          
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => setIsExportModalOpen(true)}
+              variant="outline"
+              size="sm"
+              className="whitespace-nowrap"
+              aria-label="Export inventory data"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            <Button
+              onClick={() => setIsBulkModalOpen(true)}
+              variant="outline"
+              size="sm"
+              className="whitespace-nowrap"
+              aria-label="Import inventory in bulk"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Bulk Import
+            </Button>
+            <Button
+              onClick={() => setIsAddModalOpen(true)}
+              size="sm"
+              className="whitespace-nowrap"
+              aria-label="Add new inventory item"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Item
+            </Button>
+          </div>
+        </header>
 
-      <div className="mt-8">
-        <InventorySearch
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          totalItems={filteredItems.length}
-          onFilterChange={handleApplyFilter}
-          activeFilter={filterType}
-        />
+        {/* Search and Filters Section */}
+        <section className="bg-white rounded-lg border p-4 space-y-4" aria-label="Search and filter controls">
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Search Input */}
+            <div className="flex-1">
+              <Label htmlFor="search-inventory" className="sr-only">
+                Search inventory items
+              </Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" aria-hidden="true" />
+                <Input
+                  id="search-inventory"
+                  placeholder="Search by name, generic name, or manufacturer..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                  aria-describedby="search-help"
+                />
+              </div>
+              <div id="search-help" className="sr-only">
+                Search through inventory items by name, generic name, or manufacturer
+              </div>
+            </div>
 
-        <div className="mt-6" ref={tableRef}>
+            {/* Stock Filter */}
+            <div className="sm:w-48">
+              <Label htmlFor="stock-filter" className="sr-only">
+                Filter by stock level
+              </Label>
+              <Select value={stockFilter} onValueChange={setStockFilter}>
+                <SelectTrigger id="stock-filter" aria-label="Filter by stock level">
+                  <SelectValue placeholder="All Stock Levels" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Stock Levels</SelectItem>
+                  <SelectItem value="in-stock">In Stock</SelectItem>
+                  <SelectItem value="low-stock">Low Stock</SelectItem>
+                  <SelectItem value="out-of-stock">Out of Stock</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Bulk Actions */}
+          {selectedItems.length > 0 && (
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <span className="text-sm font-medium text-blue-900">
+                {selectedItems.length} item{selectedItems.length === 1 ? '' : 's'} selected
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  aria-label={`Delete ${selectedItems.length} selected items`}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" aria-hidden="true" />
+                  Delete Selected
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedItems([])}
+                  aria-label="Clear selection"
+                >
+                  Clear Selection
+                </Button>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Inventory Table */}
+        <section aria-label="Inventory items table">
           <InventoryTable
-            items={paginatedItems}
+            items={filteredInventory}
             selectedItems={selectedItems}
-            onToggleItem={handleToggleSelectItem}
+            onToggleItem={handleSelectItem}
             onEditItem={handleEditItem}
             onDeleteItem={handleDeleteItem}
+            isLoading={isLoading}
+            error={error}
           />
-        </div>
-
-        <div className="mt-4">
-          <InventoryPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            totalItems={filteredItems.length}
-            itemsPerPage={itemsPerPage}
-          />
-        </div>
+        </section>
       </div>
 
       <InventoryModals
@@ -381,7 +510,7 @@ function InventoryContent() {
           setIsEditModalOpen(false);
           setEditingItem(null);
         }}
-        onSuccessfulSave={fetchInventory}
+        onSuccessfulSave={refreshInventory}
       />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

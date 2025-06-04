@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,16 +42,8 @@ export default function Purchases() {
   const [orderToDelete, setOrderToDelete] = useState<number | null>(null);
   const [selectedOrderForEdit, setSelectedOrderForEdit] = useState<PurchaseOrder | null>(null);
 
-  useEffect(() => {
-    checkAuth();
-    fetchOrders();
-  }, []);
-
-  useEffect(() => {
-    filterOrders();
-  }, [searchQuery, orders, activeTab]);
-
-  const checkAuth = async () => {
+  // Use useCallback to memoize functions used in useEffect dependencies
+  const checkAuth = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       toast({
@@ -61,9 +53,9 @@ export default function Purchases() {
       });
       navigate("/auth");
     }
-  };
+  }, [toast, navigate]);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -72,7 +64,7 @@ export default function Purchases() {
         .from("purchase_orders")
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("id", { ascending: false });
 
       if (error) throw error;
 
@@ -121,9 +113,9 @@ export default function Purchases() {
       });
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const filterOrders = () => {
+  const filterOrders = useCallback(() => {
     let filtered = orders;
     
     if (activeTab !== "all") {
@@ -140,7 +132,16 @@ export default function Purchases() {
     }
     
     setFilteredOrders(filtered);
-  };
+  }, [orders, activeTab, searchQuery]);
+
+  useEffect(() => {
+    checkAuth();
+    fetchOrders();
+  }, [checkAuth, fetchOrders]);
+
+  useEffect(() => {
+    filterOrders();
+  }, [filterOrders]);
 
   const handleCreateOrder = async (formData: any) => {
     try {

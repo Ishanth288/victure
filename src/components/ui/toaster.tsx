@@ -1,21 +1,26 @@
-
 import { Toaster as SonnerToaster } from "sonner";
 
 export function Toaster() {
   return (
     <SonnerToaster 
-      position="top-center"
-      richColors={false} // We're handling custom colors ourselves
-      closeButton
-      duration={5000}
+      position="top-right"
+      richColors={false}
+      closeButton={true}
+      duration={4000}
+      visibleToasts={2}
       className="z-50"
+      gap={12}
+      expand={false}
       toastOptions={{
         style: {
-          background: 'white',
-          color: 'black',
-          borderRadius: '0.5rem',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+          background: 'transparent',
+          border: 'none',
+          boxShadow: 'none',
+          padding: 0,
+          margin: 0,
         },
+        className: 'group',
+        closeButton: true,
       }}
     />
   );

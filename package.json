@@ -68,6 +68,7 @@
     "lodash": "^4.17.21",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
+    "quagga": "^0.12.1",
     "react": "^18.3.1",
     "react-animated-counter": "^1.7.9",
     "react-day-picker": "^8.10.1",
@@ -81,12 +82,11 @@
     "stripe": "^17.7.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
+    "tesseract.js": "^5.1.0",
     "uuid": "^11.1.0",
     "vaul": "^0.9.3",
     "xlsx": "^0.18.5",
-    "zod": "^3.23.8",
-    "quagga": "^0.12.1",
-    "tesseract.js": "^5.1.0"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",

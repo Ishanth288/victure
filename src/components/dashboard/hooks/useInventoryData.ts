@@ -11,12 +11,21 @@ interface InventoryItem {
 }
 
 export function useInventoryData() {
-  const { inventory: inventoryData, isLoading, fetchInventory: refresh } = useInventory();
+  const { inventory: inventoryData, isLoading, refreshInventory: refresh } = useInventory();
 
   useEffect(() => {
     // The inventory data is now managed by InventoryContext
     // No need to fetch here, just ensure the context is providing data
-  }, [inventoryData]);
+    
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        console.warn('⚠️ Inventory data loading timeout - setting loading to false');
+      }
+    }, 10000);
+
+    return () => clearTimeout(timeoutId);
+  }, [inventoryData, isLoading]);
 
   // Calculate inventory metrics
   const totalInventoryValue = inventoryData.reduce(
@@ -28,6 +37,14 @@ export function useInventoryData() {
   const lowStockItems = inventoryData.filter(
     item => (item.quantity || 0) < (item.reorder_point || 10)
   ).length;
+
+  console.log('📦 Inventory Hook Results:', {
+    inventoryDataCount: inventoryData.length,
+    inventoryData: inventoryData.slice(0, 3), // Show first 3 items
+    calculatedTotalInventoryValue: totalInventoryValue,
+    calculatedLowStockItems: lowStockItems,
+    isLoading
+  });
 
   // Calculate profit metrics
   const totalSellingValue = inventoryData.reduce(

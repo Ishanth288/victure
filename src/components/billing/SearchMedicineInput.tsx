@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -31,70 +30,101 @@ interface SearchMedicineInputProps {
 export function SearchMedicineInput({ onAddItem, cartItems }: SearchMedicineInputProps) {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Medicine[]>([]);
+  const [allMedicines, setAllMedicines] = useState<Medicine[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
-  const [showResults, setShowResults] = useState(false);
 
-  const searchMedicines = useCallback(
-    debounce(async (query: string) => {
-      if (!query.trim()) {
-        setSearchResults([]);
-        setShowResults(false);
-        setIsSearching(false);
-        return;
+  // Load all medicines on component mount
+  const loadAllMedicines = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("User not authenticated");
       }
 
-      setIsSearching(true);
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          throw new Error("User not authenticated");
-        }
+      const { data, error } = await supabase
+        .from("inventory")
+        .select("*")
+        .eq("user_id", user.id)
+        .gt("quantity", 0)
+        .order("name");
 
-        const searchTerm = `%${query.toLowerCase()}%`;
-        
-        // Enhanced search including NDC field
-        const { data, error } = await supabase
-          .from("inventory")
-          .select("*")
-          .eq("user_id", user.id)
-          .or(`name.ilike.${searchTerm},generic_name.ilike.${searchTerm},ndc.ilike.${searchTerm},manufacturer.ilike.${searchTerm}`)
-          .gt("quantity", 0)
-          .order("name");
+      if (error) throw error;
 
-        if (error) throw error;
-
-        setSearchResults(data || []);
-        setShowResults(true);
-      } catch (error) {
-        console.error("Error searching medicines:", error);
-        toast({
-          title: "Search Error",
-          description: "Failed to search medicines",
-          variant: "destructive",
-        });
-      } finally {
-        setIsSearching(false);
-      }
-    }, 300),
-    [toast]
-  );
+      setAllMedicines(data || []);
+    } catch (error) {
+      console.error("Error loading medicines:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load medicines",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
-    searchMedicines(searchQuery);
-  }, [searchQuery, searchMedicines]);
+    loadAllMedicines();
+  }, [loadAllMedicines]);
 
-  // Enforce strict prefix (alphabetical) matching for hierarchy compliance
-  const filteredResults = searchResults.filter((medicine) => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      medicine.name?.toLowerCase().startsWith(q) ||
-      medicine.generic_name?.toLowerCase().startsWith(q) ||
-      medicine.ndc?.toLowerCase().startsWith(q) ||
-      medicine.manufacturer?.toLowerCase().startsWith(q)
-    );
-  });
+  // Filter and prioritize medicines based on search query
+  const getFilteredMedicines = useCallback(() => {
+    if (!searchQuery.trim()) {
+      // No search query - return all medicines
+      return {
+        searchResults: [],
+        otherMedicines: allMedicines
+      };
+    }
+
+    const query = searchQuery.toLowerCase();
+    const searchResults: Medicine[] = [];
+    const otherMedicines: Medicine[] = [];
+
+    allMedicines.forEach((medicine) => {
+      const matchesName = medicine.name?.toLowerCase().includes(query) || false;
+      const matchesGeneric = medicine.generic_name?.toLowerCase().includes(query) || false;
+      const matchesNdc = medicine.ndc?.toLowerCase().includes(query) || false;
+      const matchesManufacturer = medicine.manufacturer?.toLowerCase().includes(query) || false;
+
+      if (matchesName || matchesGeneric || matchesNdc || matchesManufacturer) {
+        // Calculate match priority (exact matches first, then partial matches)
+        const isExactMatch = 
+          medicine.name?.toLowerCase() === query ||
+          medicine.generic_name?.toLowerCase() === query ||
+          medicine.ndc?.toLowerCase() === query;
+        
+        const isStartsWith =
+          medicine.name?.toLowerCase().startsWith(query) ||
+          medicine.generic_name?.toLowerCase().startsWith(query) ||
+          medicine.ndc?.toLowerCase().startsWith(query);
+
+        if (isExactMatch) {
+          // Exact matches go to the top
+          searchResults.unshift(medicine);
+        } else if (isStartsWith) {
+          // Starts with matches go next
+          const exactCount = searchResults.filter(m => 
+            m.name?.toLowerCase() === query ||
+            m.generic_name?.toLowerCase() === query ||
+            m.ndc?.toLowerCase() === query
+          ).length;
+          searchResults.splice(exactCount, 0, medicine);
+        } else {
+          // Partial matches go after
+          searchResults.push(medicine);
+        }
+      } else {
+        otherMedicines.push(medicine);
+      }
+    });
+
+    return { searchResults, otherMedicines };
+  }, [allMedicines, searchQuery]);
+
+  const { searchResults, otherMedicines } = getFilteredMedicines();
 
   const handleAddToCart = (medicine: Medicine) => {
     if (!medicine.selling_price) {
@@ -111,7 +141,7 @@ export function SearchMedicineInput({ onAddItem, cartItems }: SearchMedicineInpu
       toast({
         title: "Already Added",
         description: "This medicine is already in your cart",
-        variant: "destructive",
+        variant: "warning",
       });
       return;
     }
@@ -128,7 +158,7 @@ export function SearchMedicineInput({ onAddItem, cartItems }: SearchMedicineInpu
 
     onAddItem(cartItem);
     toast({
-      title: "Added to Cart",
+      title: "Success",
       description: `${medicine.name} added to cart`,
     });
   };
@@ -136,12 +166,74 @@ export function SearchMedicineInput({ onAddItem, cartItems }: SearchMedicineInpu
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchQuery(value);
-    
-    if (!value.trim()) {
-      setShowResults(false);
-      setSearchResults([]);
-    }
+    setIsSearching(!!value.trim());
   };
+
+  const MedicineCard = ({ medicine, isSearchResult = false }: { medicine: Medicine; isSearchResult?: boolean }) => (
+    <Card key={medicine.id} className={`border-0 rounded-none shadow-none ${isSearchResult ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}`}>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2">
+              <h4 className={`font-medium truncate ${isSearchResult ? 'text-blue-900' : 'text-gray-900'}`}>
+                {medicine.name}
+                {isSearchResult && <Badge variant="secondary" className="ml-2 text-xs bg-blue-100 text-blue-800">Match</Badge>}
+              </h4>
+              {medicine.ndc && medicine.ndc !== "N/A" && (
+                <Badge variant="outline" className="text-xs">
+                  NDC: {medicine.ndc}
+                </Badge>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-1 text-xs text-gray-600 mb-2">
+              {medicine.generic_name && (
+                <div>
+                  <span className="font-medium">Generic:</span> {medicine.generic_name}
+                </div>
+              )}
+              {medicine.manufacturer && (
+                <div>
+                  <span className="font-medium">Manufacturer:</span> {medicine.manufacturer}
+                </div>
+              )}
+              {medicine.dosage_form && (
+                <div>
+                  <span className="font-medium">Form:</span> {medicine.dosage_form}
+                </div>
+              )}
+              {medicine.strength && (
+                <div>
+                  <span className="font-medium">Strength:</span> {medicine.strength}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <span className="text-green-600 font-medium">
+                ₹{medicine.selling_price?.toFixed(2) || "N/A"}
+              </span>
+              <Badge 
+                variant={medicine.quantity > 10 ? "default" : "destructive"}
+                className="text-xs"
+              >
+                Stock: {medicine.quantity}
+              </Badge>
+            </div>
+          </div>
+          
+          <Button
+            size="sm"
+            onClick={() => handleAddToCart(medicine)}
+            disabled={!medicine.selling_price || medicine.quantity === 0}
+            className="h-8 px-3 ml-3"
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            Add
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-4">
@@ -154,105 +246,106 @@ export function SearchMedicineInput({ onAddItem, cartItems }: SearchMedicineInpu
             placeholder="Search medicines by name, generic name, NDC, or manufacturer..."
             value={searchQuery}
             onChange={handleInputChange}
-            className="pl-10 pr-16"
+            className="pl-10 pr-16 h-12 text-base"
           />
-          {isSearching && (
+          {(isLoading || isSearching) && (
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center">
               <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-              <span className="text-xs text-gray-500 ml-2">Searching...</span>
+              <span className="text-xs text-gray-500 ml-2">
+                {isLoading ? "Loading..." : "Searching..."}
+              </span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Search Results Area - Main Content (not dropdown) */}
-      {showResults && (
-        <div className="border rounded-lg bg-white min-h-[400px]">
-          <div className="p-4 border-b bg-gray-50">
-            <h3 className="text-sm font-medium text-gray-700">
-              Search Results ({filteredResults.length} found)
-            </h3>
+      {/* Results Area */}
+      <div className="border-2 border-gray-200 rounded-xl bg-white">
+        {isLoading ? (
+          <div className="p-8 text-center">
+            <Loader2 className="h-12 w-12 mx-auto mb-3 text-gray-400 animate-spin" />
+            <p className="text-sm text-gray-500">Loading medicines...</p>
           </div>
-          <div className="max-h-96 overflow-y-auto">
-            {filteredResults.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <Package className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                <p className="text-sm">No medicines found matching your search</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Try searching by medicine name, generic name, NDC, or manufacturer
-                </p>
+        ) : (
+          <>
+            {/* Header */}
+            <div className="p-4 border-b bg-gradient-to-r from-gray-50 to-blue-50">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-700">
+                  {searchQuery.trim() ? (
+                    <>
+                      <span className="text-blue-600">{searchResults.length}</span> search results, 
+                      <span className="text-gray-500 ml-1">{otherMedicines.length} other medicines</span>
+                    </>
+                  ) : (
+                    `All Medicines (${allMedicines.length} available)`
+                  )}
+                </h3>
+                {searchQuery.trim() && (
+                  <Badge variant="outline" className="text-xs">
+                    Showing prioritized results
+                  </Badge>
+                )}
               </div>
-            ) : (
-              <div className="divide-y">
-                {filteredResults.map((medicine) => (
-                  <Card key={medicine.id} className="border-0 rounded-none shadow-none">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-medium text-gray-900 truncate">
-                              {medicine.name}
-                            </h4>
-                            {medicine.ndc && medicine.ndc !== "N/A" && (
-                              <Badge variant="outline" className="text-xs">
-                                NDC: {medicine.ndc}
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                            {medicine.generic_name && (
-                              <div>
-                                <span className="font-medium">Generic:</span> {medicine.generic_name}
-                              </div>
-                            )}
-                            {medicine.manufacturer && (
-                              <div>
-                                <span className="font-medium">Manufacturer:</span> {medicine.manufacturer}
-                              </div>
-                            )}
-                            {medicine.dosage_form && (
-                              <div>
-                                <span className="font-medium">Form:</span> {medicine.dosage_form}
-                              </div>
-                            )}
-                            {medicine.strength && (
-                              <div>
-                                <span className="font-medium">Strength:</span> {medicine.strength}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-4 mt-2 text-sm">
-                            <span className="text-green-600 font-medium">
-                              ₹{medicine.selling_price?.toFixed(2) || "N/A"}
-                            </span>
-                            <Badge 
-                              variant={medicine.quantity > 10 ? "default" : "destructive"}
-                              className="text-xs"
-                            >
-                              Stock: {medicine.quantity}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="ml-4">
-                          <Button
-                            size="sm"
-                            onClick={() => handleAddToCart(medicine)}
-                            disabled={!medicine.selling_price || medicine.quantity === 0}
-                            className="h-8 px-3"
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add
-                          </Button>
-                        </div>
+            </div>
+
+            <div>
+              {allMedicines.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <Package className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p className="text-sm">No medicines available in inventory</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Please add medicines to your inventory first
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {/* Search Results Section (if searching) */}
+                  {searchQuery.trim() && searchResults.length > 0 && (
+                    <>
+                      <div className="p-3 bg-blue-50 border-b-2 border-blue-200">
+                        <h4 className="text-sm font-semibold text-blue-800 flex items-center">
+                          <Search className="h-4 w-4 mr-2" />
+                          Search Results ({searchResults.length})
+                        </h4>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+                      {searchResults.map((medicine) => (
+                        <MedicineCard key={`search-${medicine.id}`} medicine={medicine} isSearchResult={true} />
+                      ))}
+                    </>
+                  )}
+
+                  {/* Other Medicines Section */}
+                  {searchQuery.trim() && otherMedicines.length > 0 && (
+                    <div className="p-3 bg-gray-50 border-b border-gray-200">
+                      <h4 className="text-sm font-semibold text-gray-600 flex items-center">
+                        <Package className="h-4 w-4 mr-2" />
+                        Other Medicines ({otherMedicines.length})
+                      </h4>
+                    </div>
+                  )}
+
+                  {/* Display other medicines or all medicines if not searching */}
+                  {(searchQuery.trim() ? otherMedicines : allMedicines).map((medicine) => (
+                    <MedicineCard key={`other-${medicine.id}`} medicine={medicine} isSearchResult={false} />
+                  ))}
+
+                  {/* No search results message */}
+                  {searchQuery.trim() && searchResults.length === 0 && otherMedicines.length === 0 && (
+                    <div className="p-8 text-center text-gray-500">
+                      <Search className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p className="text-sm">No medicines found matching "{searchQuery}"</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Try searching by medicine name, generic name, NDC, or manufacturer
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

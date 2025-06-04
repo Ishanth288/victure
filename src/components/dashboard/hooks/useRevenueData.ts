@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { format, subDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -83,24 +82,35 @@ export function useRevenueData() {
         return;
       }
 
-      // Fetch user-specific bills
+      // Fetch user-specific bills with minimal data for faster loading
       const bills = await safeQueryData(
         typecastQuery('bills')
-          .select('*')
+          .select('id, total_amount, date, prescription_id')
           .eq('user_id', user.id)
           .order('date', { ascending: false }),
         []
       );
       
-      console.log('Fetched bills for revenue:', bills);
+      console.log('Fetched bills for revenue:', bills?.length || 0, 'bills');
 
       setSalesData(bills as Bill[]);
       
+      // Process revenue data only if we have bills - simplified for speed
       if (bills && bills.length > 0) {
         processRevenueData(bills as Bill[]);
+      } else {
+        // Set empty data immediately if no bills
+        setRevenueData([]);
+        setTopProducts([]);
+        setRevenueDistribution([]);
       }
     } catch (error) {
       console.error('Error fetching revenue data:', error);
+      // Set empty data on error to prevent infinite loading
+      setSalesData([]);
+      setRevenueData([]);
+      setTopProducts([]);
+      setRevenueDistribution([]);
     } finally {
       setIsLoading(false);
     }
@@ -214,6 +224,13 @@ export function useRevenueData() {
 
   // Calculate total revenue
   const totalRevenue = salesData.reduce((sum, bill) => sum + (bill.total_amount || 0), 0);
+
+  console.log('💰 Revenue Hook Results:', {
+    salesDataCount: salesData.length,
+    salesData: salesData.slice(0, 3), // Show first 3 bills
+    calculatedTotalRevenue: totalRevenue,
+    isLoading
+  });
 
   return {
     isLoading,

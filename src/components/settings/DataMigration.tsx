@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,7 +66,7 @@ export function DataMigration() {
   };
 
   return (
-    <Card className="overflow-visible">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Data Migration</CardTitle>
         <CardDescription>
@@ -75,18 +74,18 @@ export function DataMigration() {
         </CardDescription>
       </CardHeader>
       
-      <CardContent className="flex flex-col">
+      <CardContent className="p-6">
         <Tabs defaultValue="import" className="w-full">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="import">Import Data</TabsTrigger>
             <TabsTrigger value="history">Migration History</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="import" className="space-y-6 h-auto">
+          <TabsContent value="import" className="mt-6 space-y-6">
             <ImportTabContent user={user} loadMigrationHistory={loadMigrationHistory} />
           </TabsContent>
           
-          <TabsContent value="history" className="h-auto">
+          <TabsContent value="history" className="mt-6">
             <MigrationHistory 
               recentMigrations={recentMigrations} 
               onRollback={handleRollback}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -99,7 +98,7 @@ export const InventoryOptimization = () => {
         .from('bills')
         .select('*')
         .limit(20)
-        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
         .maybeSingle();
       
       // Simulate AI-generated insights based on "bills" and "trends"

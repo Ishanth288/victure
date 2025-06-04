@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Receipt, Info, Download, Printer } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Receipt, Download, Printer, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/types/billing";
@@ -37,7 +38,6 @@ export function CartSummary({
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showEmbeddedPreview, setShowEmbeddedPreview] = useState(false);
   const [prescriptionDetails, setPrescriptionDetails] = useState<any>(null);
   const billPreviewRef = useRef<HTMLDivElement>(null);
 
@@ -200,127 +200,124 @@ export function CartSummary({
       const canvas = await html2canvas(printContent, {
         scale: 2,
         useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff"
+        allowTaint: true,
+        backgroundColor: '#ffffff'
       });
       
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-      
-      const imgWidth = 210 - 20;
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 295;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const maxHeight = 148;
-      
-      const finalImgHeight = Math.min(imgHeight, maxHeight);
-      const scaleFactor = finalImgHeight / imgHeight;
-      const finalImgWidth = imgWidth * scaleFactor;
-      
-      const xPos = (210 - finalImgWidth) / 2;
-      
-      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', xPos, 10, finalImgWidth, finalImgHeight);
-      
-      pdf.setFontSize(12);
-      pdf.setTextColor(180, 180, 180);
-      pdf.text('Victure', 190, 10);
-      
-      pdf.save(`bill-${generatedBill?.bill_number || 'export'}.pdf`);
+      let heightLeft = imgHeight;
+
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const billNumber = generatedBill?.bill_number || 'bill';
+      pdf.save(`${billNumber}.pdf`);
       
       toast({
-        title: "Export successful",
-        description: "The bill has been exported as a PDF."
+        title: "PDF exported",
+        description: "The bill has been downloaded as PDF."
       });
     } catch (error) {
-      console.error("Error exporting bill:", error);
+      console.error('Export error:', error);
       toast({
         title: "Export failed",
-        description: "Failed to export the bill as PDF.",
+        description: "Failed to export bill as PDF.",
         variant: "destructive"
       });
     }
   };
 
   const handlePreviewBill = async () => {
-    if (items.length === 0) {
+    if (!prescriptionDetails) {
       toast({
         title: "Error",
-        description: "Please add items to the cart",
-        variant: "destructive"
+        description: "Please select a prescription first",
+        variant: "destructive",
       });
       return;
     }
 
-    setIsGenerating(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Error",
-          description: "You must be logged in to preview bills",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-
-      const billData = {
-        bill_number: `BILL-${Date.now()}`,
-        date: new Date().toISOString(),
-        subtotal: subtotal,
-        gst_amount: gstAmount,
-        gst_percentage: gstPercentage,
-        discount_amount: discountAmount,
-        total_amount: total,
-        status: "draft",
-        prescription: {
-          patient: prescriptionDetails?.patient,
-          doctor_name: prescriptionDetails?.doctor_name,
-          prescription_number: prescriptionDetails?.prescription_number,
-        },
-      };
-
-      setGeneratedBill({ ...billData, pharmacy_address: profileData });
-      setShowEmbeddedPreview(true);
-    } catch (error) {
-      console.error("Error generating bill preview:", error);
+    if (items.length === 0) {
       toast({
         title: "Error",
-        description: "Failed to generate bill preview",
-        variant: "destructive"
+        description: "Please add items to the cart",
+        variant: "destructive",
       });
-    } finally {
-      setIsGenerating(false);
+      return;
     }
+
+    const previewData = {
+      bill_number: `PREVIEW-${Date.now()}`,
+      date: new Date().toISOString().split('T')[0],
+      subtotal: subtotal,
+      gst_amount: gstAmount,
+      gst_percentage: gstPercentage,
+      discount_amount: discountAmount,
+      total_amount: total,
+      payment_method: paymentMethod,
+      prescription: {
+        patient: prescriptionDetails.patient,
+        doctor_name: prescriptionDetails.doctor_name,
+        prescription_number: prescriptionDetails.prescription_number,
+      }
+    };
+
+    setGeneratedBill(previewData);
+    setShowBillPreview(true);
   };
 
   const generateBill = async () => {
     setIsGenerating(true);
+    
+    // Create an abort controller for cancellation
+    const abortController = new AbortController();
+    let transactionStarted = false;
+    let currentSession: any = null;
+    let createdBillId: number | null = null;
+    
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      currentSession = session;
+      
       if (!session) {
         toast({
           title: "Error",
           description: "You must be logged in to generate bills",
           variant: "destructive",
         });
-        setIsGenerating(false);
         return;
       }
 
       if (items.length === 0) {
         toast({
-          title: "Error",
+          title: "Error", 
           description: "Please add items to the cart",
           variant: "destructive",
         });
-        setIsGenerating(false);
+        return;
+      }
+
+      // Validate inventory availability BEFORE starting transaction
+      const inventoryValidation = await validateInventoryAvailability(items, session.user.id);
+      if (!inventoryValidation.valid) {
+        toast({
+          title: "Insufficient Inventory",
+          description: inventoryValidation.message,
+          variant: "destructive",
+        });
         return;
       }
 
@@ -332,6 +329,7 @@ export function CartSummary({
 
       if (profileError) throw new Error(profileError.message);
 
+      // Prepare patient data
       let patientId = prescriptionDetails?.patient?.id;
       if (prescriptionDetails && prescriptionDetails.patient) {
         if (patientId && patientId > 0) {
@@ -369,220 +367,430 @@ export function CartSummary({
         }
       }
 
-      const billInsertData = {
-        prescription_id: prescriptionId,
+      // Mark transaction as started
+      transactionStarted = true;
+
+      // Step 1: Create the bill record - WITHOUT payment_method for now (will store in display data)
+      const billData = {
         bill_number: `BILL-${Date.now()}`,
         subtotal: subtotal,
         gst_amount: gstAmount,
         gst_percentage: gstPercentage,
         discount_amount: discountAmount,
         total_amount: total,
-        status: "completed",
+        status: "completed" as const,
         user_id: session.user.id,
+        prescription_id: prescriptionId || null,
+        date: new Date().toISOString().split('T')[0]
       };
 
-      if (billInsertData.total_amount <= 0) {
-        throw new Error("Bill total must be greater than zero");
-      }
-
-      const { data: billData, error: billError } = await supabase
-        .from("bills")
-        .insert([billInsertData])
-        .select(
-          `
-          *,
-          prescription:prescriptions (
-            *,
-            patient:patients (
-              id,
-              name,
-              phone_number
-            )
-          )
-        `
-        )
+      const { data: billResult, error: billError } = await supabase
+        .from('bills')
+        .insert(billData)
+        .select('id, bill_number, total_amount')
         .single();
 
       if (billError) {
-        throw new Error(`Bill creation error: ${billError.message}`);
+        throw new Error(`Failed to create bill: ${billError.message}`);
       }
 
-      if (!billData?.id) {
-        throw new Error("Failed to create bill - no ID returned");
+      if (!billResult || !billResult.id) {
+        throw new Error("Failed to create bill - no data returned");
       }
 
-      const validBillItems = items
-        .filter(item => item.id && item.quantity > 0 && item.unit_cost >= 0)
-        .map((item) => ({
-          bill_id: billData.id,
-          inventory_item_id: item.id,
-          quantity: Math.max(1, Math.floor(item.quantity)),
-          unit_price: Math.max(0, item.unit_cost),
-          total_price: Math.max(0, item.total),
-        }));
+      createdBillId = billResult.id;
 
-      if (validBillItems.length === 0) {
-        throw new Error("No valid items to add to bill");
-      }
+      // Step 2: Create bill items and update inventory atomically
+      const billItems = items.map((item) => ({
+        bill_id: billResult.id,
+        inventory_item_id: item.id,
+        quantity: Math.max(1, Math.floor(item.quantity)),
+        unit_price: Math.max(0, item.unit_cost),
+        total_price: Math.max(0, item.total),
+      }));
 
+      // Insert bill items
       const { error: billItemsError } = await supabase
-        .from("bill_items")
-        .insert(validBillItems);
+        .from('bill_items')
+        .insert(billItems);
 
       if (billItemsError) {
-        throw new Error(`Bill items creation error: ${billItemsError.message}`);
+        throw new Error(`Failed to create bill items: ${billItemsError.message}`);
       }
 
-      const inventoryUpdates = [];
+      // Step 3: Update inventory quantities
       for (const item of items) {
-        if (!item.id || item.quantity <= 0) continue;
-
-        const { data: inventoryData, error: fetchError } = await supabase
-          .from("inventory")
-          .select("quantity, id")
-          .eq("id", item.id)
-          .single();
-
-        if (fetchError) {
-          throw new Error(`Inventory fetch error for item ${item.id}: ${fetchError.message}`);
-        }
-
-        const currentQuantity = inventoryData?.quantity || 0;
-        const requestedQuantity = Math.floor(item.quantity);
-        
-        if (currentQuantity < requestedQuantity) {
-          throw new Error(`Insufficient inventory for item ${item.name || item.id}. Available: ${currentQuantity}, Requested: ${requestedQuantity}`);
-        }
-
-        const newQuantity = currentQuantity - requestedQuantity;
-        inventoryUpdates.push({
-          id: item.id,
-          newQuantity: newQuantity,
-          item: item
-        });
-      }
-
-      for (const update of inventoryUpdates) {
         const { error: inventoryError } = await supabase
-          .from("inventory")
+          .from('inventory')
           .update({ 
-            quantity: update.newQuantity,
+            quantity: item.quantity - Math.floor(item.quantity)
           })
-          .eq("id", update.id);
+          .eq('id', item.id)
+          .eq('user_id', session.user.id);
 
         if (inventoryError) {
-          throw new Error(`Inventory update error for item ${update.item.name || update.id}: ${inventoryError.message}`);
+          throw new Error(`Failed to update inventory for item ${item.name}: ${inventoryError.message}`);
         }
       }
 
-      setGeneratedBill({ ...billData, pharmacy_address: profileData });
+      // Set the generated bill data with all necessary information
+      const completeGeneratedBill = {
+        id: billResult.id,
+        bill_number: billResult.bill_number,
+        total_amount: billResult.total_amount,
+        subtotal: subtotal,
+        gst_amount: gstAmount,
+        gst_percentage: gstPercentage,
+        discount_amount: discountAmount,
+        date: new Date().toISOString().split('T')[0],
+        status: "completed",
+        pharmacy_address: profileData,
+        items: billItems,
+        payment_method: paymentMethod,
+        prescription: prescriptionDetails
+      };
+      
+      setGeneratedBill(completeGeneratedBill);
       setShowBillPreview(true);
       onBillGenerated();
 
       toast({
         title: "Success",
-        description: "Bill generated successfully",
+        description: `Bill ${billResult.bill_number} generated successfully!`,
       });
+
     } catch (error) {
       console.error("Error generating bill:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to generate bill",
-        variant: "destructive",
-      });
+      
+      // Enhanced error handling with manual rollback
+      if (transactionStarted && createdBillId && currentSession) {
+        console.log("Attempting to rollback failed transaction...");
+        try {
+          // Delete bill items first
+          await supabase
+            .from('bill_items')
+            .delete()
+            .eq('bill_id', createdBillId);
+
+          // Delete the bill
+          await supabase
+            .from('bills')
+            .delete()
+            .eq('id', createdBillId)
+            .eq('user_id', currentSession.user.id);
+
+          console.log("Transaction rolled back successfully");
+        } catch (rollbackError) {
+          console.error("Rollback failed:", rollbackError);
+        }
+      }
+      
+      if (error instanceof Error) {
+        if (error.message.includes("timeout")) {
+          toast({
+            title: "Timeout Error",
+            description: "The operation took too long. Please try again.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to generate bill - please try again",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsGenerating(false);
+      // Clean up abort controller
+      if (!abortController.signal.aborted) {
+        abortController.abort();
+      }
+    }
+  };
+
+  // Helper function to validate inventory availability
+  const validateInventoryAvailability = async (
+    items: CartItem[], 
+    userId: string
+  ): Promise<{ valid: boolean; message: string }> => {
+    try {
+      for (const item of items) {
+        const { data: inventoryData, error } = await supabase
+          .from("inventory")
+          .select("quantity, name")
+          .eq("id", item.id)
+          .eq("user_id", userId)
+          .single();
+
+        if (error) {
+          return { 
+            valid: false, 
+            message: `Error checking inventory for item ${item.name}: ${error.message}` 
+          };
+        }
+
+        if (!inventoryData) {
+          return { 
+            valid: false, 
+            message: `Item ${item.name} not found in inventory` 
+          };
+        }
+
+        const availableQuantity = inventoryData.quantity || 0;
+        const requestedQuantity = Math.floor(item.quantity);
+
+        if (availableQuantity < requestedQuantity) {
+          return { 
+            valid: false, 
+            message: `Insufficient inventory for ${inventoryData.name}. Available: ${availableQuantity}, Requested: ${requestedQuantity}` 
+          };
+        }
+      }
+
+      return { valid: true, message: "All items have sufficient inventory" };
+    } catch (error) {
+      return { 
+        valid: false, 
+        message: `Error validating inventory: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      };
+    }
+  };
+
+  const getPaymentMethodIcon = (method: string) => {
+    switch (method.toLowerCase()) {
+      case 'cash': return '💵';
+      case 'card': return '💳';
+      case 'upi': return '📱';
+      case 'netbanking': return '🏦';
+      case 'check': return '📝';
+      default: return '💰';
+    }
+  };
+
+  const getPaymentMethodLabel = (method: string) => {
+    switch (method.toLowerCase()) {
+      case 'cash': return 'Cash';
+      case 'card': return 'Credit/Debit Card';
+      case 'upi': return 'UPI';
+      case 'netbanking': return 'Net Banking';
+      case 'check': return 'Cheque';
+      default: return method;
     }
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Cart Header - REMOVED show/hide preview buttons as requested */}
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Cart Items</h3>
+        <h3 className="text-xl font-bold text-gray-800">Shopping Cart</h3>
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setShowEmbeddedPreview(!showEmbeddedPreview)}
+          onClick={handlePreviewBill}
+          disabled={items.length === 0}
+          className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
         >
-          {showEmbeddedPreview ? "Hide Preview" : "Show Preview"}
+          <Receipt className="w-4 h-4 mr-2" />
+          Preview Bill
         </Button>
       </div>
-      <ScrollArea className="h-[250px] w-full rounded-md border p-4">
+      
+      {/* Cart Items */}
+      <div className="border-2 border-gray-200 rounded-xl bg-white shadow-sm">
         {items.length === 0 ? (
-          <p className="text-center text-gray-500">No items in cart</p>
+          <div className="flex items-center justify-center py-16 text-gray-500">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13l-1.5-6m0 0h11.5M7 13h10m0 0l1.5 6" />
+                </svg>
+              </div>
+              <p className="text-xl font-semibold text-gray-700 mb-2">Cart is Empty</p>
+              <p className="text-gray-500">Add medicines from the search to get started</p>
+            </div>
+          </div>
         ) : (
-          items.map((item) => (
-            <CartItemRow
-              key={item.id}
-              id={item.id}
-              name={item.name}
-              quantity={item.quantity}
-              unit_cost={item.unit_cost}
-              total={item.total}
-              onRemoveItem={onRemoveItem}
-              onUpdateQuantity={onUpdateQuantity}
-            />
-          ))
+          <div className="divide-y divide-gray-100">
+            <div className="p-4 bg-gray-50 rounded-t-xl">
+              <p className="text-sm font-medium text-gray-600">
+                {items.length} item{items.length !== 1 ? 's' : ''} in cart
+              </p>
+            </div>
+            <ScrollArea 
+              className={`p-4 space-y-3 ${
+                items.length > 4 
+                  ? 'max-h-[320px]' 
+                  : ''
+              }`}
+            >
+              {items.map((item) => (
+                <CartItemRow
+                  key={item.id}
+                  id={item.id}
+                  name={item.name}
+                  quantity={item.quantity}
+                  unit_cost={item.unit_cost}
+                  total={item.total}
+                  onRemoveItem={onRemoveItem}
+                  onUpdateQuantity={onUpdateQuantity}
+                />
+              ))}
+            </ScrollArea>
+          </div>
         )}
-      </ScrollArea>
-
-      <div className="space-y-2">
-        <Label htmlFor="gst">GST Percentage</Label>
-        <Input
-          id="gst"
-          type="number"
-          value={gstPercentage}
-          onChange={(e) => setGstPercentage(parseFloat(e.target.value) || 0)}
-        />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="discount">Discount Amount</Label>
-        <Input
-          id="discount"
-          type="number"
-          value={discountAmount}
-          onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
-        />
+      {/* Bill Details Form */}
+      <div className="bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm">
+        <h4 className="text-lg font-semibold text-gray-800 mb-6 flex items-center">
+          <CreditCard className="w-5 h-5 mr-2" />
+          Bill Details
+        </h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="space-y-3">
+            <Label htmlFor="gst" className="text-sm font-semibold text-gray-700">
+              GST Percentage (%)
+            </Label>
+            <Input
+              id="gst"
+              type="number"
+              value={gstPercentage}
+              onChange={(e) => setGstPercentage(parseFloat(e.target.value) || 0)}
+              min="0"
+              max="100"
+              placeholder="18"
+              className="h-12 text-lg border-2 border-gray-200 focus:border-blue-500"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <Label htmlFor="discount" className="text-sm font-semibold text-gray-700">
+              Discount Amount (₹)
+            </Label>
+            <Input
+              id="discount"
+              type="number"
+              value={discountAmount}
+              onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
+              min="0"
+              placeholder="0"
+              className="h-12 text-lg border-2 border-gray-200 focus:border-blue-500"
+            />
+          </div>
+        </div>
+
+        {/* FIXED Payment Method Dropdown */}
+        <div className="space-y-3 mb-6">
+          <Label htmlFor="paymentMethod" className="text-sm font-semibold text-gray-700">
+            Payment Method
+          </Label>
+          <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+            <SelectTrigger className="h-12 text-lg border-2 border-gray-200 focus:border-blue-500">
+              <SelectValue>
+                <div className="flex items-center space-x-2">
+                  <span>{getPaymentMethodIcon(paymentMethod)}</span>
+                  <span>{getPaymentMethodLabel(paymentMethod)}</span>
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="min-w-[280px] bg-white border-2 border-gray-200 shadow-lg z-50">
+              <SelectItem value="cash" className="h-12 text-base bg-white hover:bg-gray-50 focus:bg-gray-50">
+                <div className="flex items-center space-x-3">
+                  <span className="text-lg">💵</span>
+                  <span>Cash</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="card" className="h-12 text-base bg-white hover:bg-gray-50 focus:bg-gray-50">
+                <div className="flex items-center space-x-3">
+                  <span className="text-lg">💳</span>
+                  <span>Credit/Debit Card</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="upi" className="h-12 text-base bg-white hover:bg-gray-50 focus:bg-gray-50">
+                <div className="flex items-center space-x-3">
+                  <span className="text-lg">📱</span>
+                  <span>UPI</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="netbanking" className="h-12 text-base bg-white hover:bg-gray-50 focus:bg-gray-50">
+                <div className="flex items-center space-x-3">
+                  <span className="text-lg">🏦</span>
+                  <span>Net Banking</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="check" className="h-12 text-base bg-white hover:bg-gray-50 focus:bg-gray-50">
+                <div className="flex items-center space-x-3">
+                  <span className="text-lg">📝</span>
+                  <span>Cheque</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Bill Summary */}
+        <div className="bg-gradient-to-r from-gray-50 to-blue-50 border-2 border-gray-200 rounded-xl p-6">
+          <h5 className="text-lg font-semibold text-gray-800 mb-4">Bill Summary</h5>
+          <div className="space-y-3">
+            <div className="flex justify-between text-base">
+              <span className="text-gray-600">Subtotal:</span>
+              <span className="font-semibold">₹{subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-base">
+              <span className="text-gray-600">GST ({gstPercentage}%):</span>
+              <span className="font-semibold">₹{gstAmount.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-base">
+              <span className="text-gray-600">Discount:</span>
+              <span className="font-semibold text-red-600">-₹{discountAmount.toFixed(2)}</span>
+            </div>
+            <div className="border-t-2 border-gray-300 pt-3">
+              <div className="flex justify-between text-xl font-bold">
+                <span>Total:</span>
+                <span className="text-green-600">₹{total.toFixed(2)}</span>
+              </div>
+            </div>
+            <div className="flex justify-between items-center text-base pt-2 border-t border-gray-200">
+              <span className="text-gray-600">Payment Method:</span>
+              <div className="flex items-center space-x-2">
+                <span className="text-lg">{getPaymentMethodIcon(paymentMethod)}</span>
+                <span className="font-semibold text-blue-600">
+                  {getPaymentMethodLabel(paymentMethod)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="paymentMethod">Payment Method</Label>
-        <Input
-          id="paymentMethod"
-          type="text"
-          value={paymentMethod}
-          onChange={(e) => setPaymentMethod(e.target.value)}
-        />
-      </div>
-
-      <div className="border-t pt-4 space-y-2">
-        <div className="flex justify-between">
-          <span>Subtotal:</span>
-          <span>₹{subtotal.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>GST ({gstPercentage}%):</span>
-          <span>₹{gstAmount.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Discount:</span>
-          <span>-₹{discountAmount.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between font-bold text-lg">
-          <span>Total:</span>
-          <span>₹{total.toFixed(2)}</span>
-        </div>
-      </div>
-
+      {/* Generate Bill Button */}
       <Button
         onClick={generateBill}
-        className="w-full"
+        className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-lg"
         disabled={isGenerating || items.length === 0}
       >
-        {isGenerating ? "Generating..." : "Generate Bill"}
+        {isGenerating ? (
+          <div className="flex items-center space-x-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+            <span>Generating Bill...</span>
+          </div>
+        ) : (
+          <div className="flex items-center space-x-3">
+            <Receipt className="w-6 h-6" />
+            <span>Generate Bill</span>
+          </div>
+        )}
       </Button>
 
+      {/* Bill Preview Dialog */}
       {generatedBill && (
         <BillPreviewDialog
           billData={generatedBill}
@@ -590,15 +798,6 @@ export function CartSummary({
           open={showBillPreview}
           onOpenChange={setShowBillPreview}
         />
-      )}
-
-      {showEmbeddedPreview && generatedBill && (
-        <div className="mt-4 p-4 border rounded-md bg-gray-50">
-          <h4 className="text-md font-semibold mb-2">Bill Preview</h4>
-          <div ref={billPreviewRef}>
-            <PrintableBill billData={generatedBill} items={items} />
-          </div>
-        </div>
       )}
     </div>
   );

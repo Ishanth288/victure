@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -192,26 +191,28 @@ export function EditInventoryModal({ open, onOpenChange, item, onSuccess }: Edit
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[95vh] flex flex-col">
+        <DialogHeader className="shrink-0">
           <DialogTitle>Edit Item</DialogTitle>
           <DialogDescription>
             Update the item details. All changes will be saved automatically.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-[calc(90vh-8rem)] px-1">
-          <InventoryForm
-            formData={formData}
-            isEdit
-            onInputChange={handleInputChange}
-            onSelectChange={handleSelectChange}
-            onCancel={() => {
-              resetForm();
-              onOpenChange(false);
-            }}
-            onSubmit={handleUpdateItem}
-          />
-        </ScrollArea>
+        <div className="flex-1 overflow-hidden">
+          <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pr-2">
+            <InventoryForm
+              formData={formData}
+              isEdit
+              onInputChange={handleInputChange}
+              onSelectChange={handleSelectChange}
+              onCancel={() => {
+                resetForm();
+                onOpenChange(false);
+              }}
+              onSubmit={handleUpdateItem}
+            />
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );

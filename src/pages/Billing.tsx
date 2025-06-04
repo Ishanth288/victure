@@ -1,4 +1,3 @@
-
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -169,8 +168,8 @@ export default function Billing() {
   return (
     <DashboardLayout>
       <Suspense fallback={<BillingSkeleton />}>
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex justify-between items-center mb-6">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex justify-between items-center mb-4">
             <h1 className="text-3xl font-bold">Billing</h1>
             {patientInfo?.prescriptionNumber && (
               <Badge variant="outline" className="text-sm">
@@ -181,14 +180,14 @@ export default function Billing() {
 
           {/* Patient Info Display */}
           {patientInfo && (
-            <Card className="mb-6 border-0 shadow-lg bg-gradient-to-r from-blue-50 to-green-50">
-              <CardHeader>
+            <Card className="mb-4 border-0 shadow-lg bg-gradient-to-r from-blue-50 to-green-50">
+              <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center text-gray-800">
                   <User className="w-5 h-5 mr-2 text-blue-600" />
                   Patient Information
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="flex items-center bg-white/50 p-3 rounded-lg">
                     <User className="w-4 h-4 mr-2 text-blue-500" />
@@ -212,17 +211,17 @@ export default function Billing() {
             </Card>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Search and Results Area */}
             <div className="lg:col-span-2">
-              <Card className="h-full shadow-lg border-0">
-                <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
+              <Card className="shadow-lg border-0">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg py-3">
                   <CardTitle className="flex items-center text-lg font-semibold">
                     <Search className="w-5 h-5 mr-2" />
                     Search Medicines
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent className="p-4">
                   <SearchMedicineInput 
                     onAddItem={handleAddItem}
                     cartItems={cartItems}
@@ -234,14 +233,14 @@ export default function Billing() {
             {/* Cart Summary */}
             <div className="lg:col-span-1">
               {prescriptionId && (
-                <Card className="h-full shadow-lg border-0">
-                  <CardHeader className="bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-t-lg">
+                <Card className="shadow-lg border-0">
+                  <CardHeader className="bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-t-lg py-3">
                     <CardTitle className="flex items-center text-lg font-semibold">
                       <Receipt className="w-5 h-5 mr-2" />
                       Bill Summary
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-6">
+                  <CardContent className="p-4">
                     <CartSummary
                       items={cartItems}
                       prescriptionId={prescriptionId}

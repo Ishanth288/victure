@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -24,6 +23,7 @@ export function EnhancedPatientDetailsModal({
 }: EnhancedPatientDetailsModalProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitAttempts, setSubmitAttempts] = useState(0);
   const [formData, setFormData] = useState({
     patientName: "",
     phoneNumber: "",
@@ -31,21 +31,41 @@ export function EnhancedPatientDetailsModal({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Clear form when modal opens/closes to prevent stale data
+  useEffect(() => {
+    if (!open) {
+      setFormData({
+        patientName: "",
+        phoneNumber: "",
+        doctorName: "",
+      });
+      setErrors({});
+      setSubmitAttempts(0);
+    }
+  }, [open]);
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
     if (!formData.patientName.trim()) {
       newErrors.patientName = "Patient name is required";
+    } else if (formData.patientName.trim().length < 2) {
+      newErrors.patientName = "Patient name must be at least 2 characters";
     }
     
     if (!formData.phoneNumber.trim()) {
       newErrors.phoneNumber = "Phone number is required";
-    } else if (!/^\d{10}$/.test(formData.phoneNumber.replace(/\s/g, ""))) {
-      newErrors.phoneNumber = "Please enter a valid 10-digit phone number";
+    } else {
+      const cleanPhone = formData.phoneNumber.replace(/\D/g, "");
+      if (cleanPhone.length !== 10) {
+        newErrors.phoneNumber = "Please enter a valid 10-digit phone number";
+      }
     }
     
     if (!formData.doctorName.trim()) {
       newErrors.doctorName = "Doctor name is required";
+    } else if (formData.doctorName.trim().length < 2) {
+      newErrors.doctorName = "Doctor name must be at least 2 characters";
     }
     
     setErrors(newErrors);
@@ -93,6 +113,7 @@ export function EnhancedPatientDetailsModal({
     }
 
     setIsSubmitting(true);
+    setSubmitAttempts(prev => prev + 1);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -100,123 +121,190 @@ export function EnhancedPatientDetailsModal({
         throw new Error("No authenticated user found");
       }
 
+      // Clean and validate form data
+      const cleanPatientName = formData.patientName.trim();
+      const cleanPhoneNumber = formData.phoneNumber.replace(/\D/g, ""); // Remove non-digits
+      const cleanDoctorName = formData.doctorName.trim();
+
       let patientData;
-      // Check if patient already exists
+      
+      // First, try to find existing patient by phone number
       const { data: existingPatient, error: fetchPatientError } = await supabase
         .from("patients")
-        .select("id")
-        .eq("phone_number", formData.phoneNumber.trim())
+        .select("id, name, phone_number")
+        .eq("phone_number", cleanPhoneNumber)
         .eq("user_id", user.id)
         .maybeSingle();
 
       if (fetchPatientError && fetchPatientError.code !== 'PGRST116') {
         console.error("Error fetching existing patient:", fetchPatientError);
-        throw fetchPatientError;
+        throw new Error(`Failed to check existing patients: ${fetchPatientError.message}`);
       }
 
       if (existingPatient) {
-        patientData = existingPatient;
-        console.log("Existing patient found:", patientData);
-      } else {
-        // Create new patient if not found
-        const { data: newPatient, error: createPatientError } = await supabase
-          .from("patients")
-          .insert({
-            name: formData.patientName.trim(),
-            phone_number: formData.phoneNumber.trim(),
-            user_id: user.id
-          })
-          .select()
-          .single();
-
-        if (createPatientError) {
-          console.error("Error creating new patient:", createPatientError);
-          throw createPatientError;
-        }
-        patientData = newPatient;
-        console.log("New patient created:", patientData);
-      }
-
-      // Generate prescription number
-      const currentPrescriptionNumber = prescriptionNumber || await generateUserScopedPrescriptionNumber(user.id);
-      
-      // Create prescription using Supabase directly instead of the edge function
-      const { data: prescriptionData, error: prescriptionError } = await supabase
-        .from("prescriptions")
-        .insert({
-          prescription_number: currentPrescriptionNumber,
-          patient_id: patientData.id,
-          doctor_name: formData.doctorName.trim(),
-          user_id: user.id,
-          date: new Date().toISOString(),
-          status: 'active'
-        })
-        .select()
-        .single();
-
-      if (prescriptionError) {
-        // If it's a unique constraint violation, try to fetch the existing record
-        if (prescriptionError.code === '23505') {
-          const { data: existing, error: fetchError } = await supabase
-            .from("prescriptions")
-            .select("*")
-            .eq("prescription_number", currentPrescriptionNumber)
-            .eq("user_id", user.id)
-            .single();
+        // Update existing patient name if different
+        if (existingPatient.name !== cleanPatientName) {
+          const { error: updateError } = await supabase
+            .from("patients")
+            .update({ name: cleanPatientName })
+            .eq("id", existingPatient.id);
           
-          if (!fetchError && existing) {
-            console.log("Using existing prescription:", existing);
-            toast({
-              title: "Success",
-              description: `Prescription ${existing.prescription_number} loaded successfully.`,
-            });
-
-            onSuccess(existing.id, {
-              name: formData.patientName.trim(),
-              phone: formData.phoneNumber.trim(),
-              prescriptionNumber: existing.prescription_number,
-              doctorName: formData.doctorName.trim()
-            });
-
-            // Reset form
-            setFormData({
-              patientName: "",
-              phoneNumber: "",
-              doctorName: "",
-            });
-            setErrors({});
-            return;
+          if (updateError) {
+            console.warn("Failed to update patient name:", updateError);
+            // Continue with existing data rather than failing
           }
         }
         
-        console.error("Error creating prescription:", prescriptionError);
-        throw prescriptionError;
+        patientData = { ...existingPatient, name: cleanPatientName };
+        console.log("Using existing patient (updated):", patientData);
+      } else {
+        // Create new patient with retry logic
+        let createAttempts = 0;
+        const maxCreateAttempts = 3;
+        
+        while (createAttempts < maxCreateAttempts) {
+          try {
+            const { data: newPatient, error: createPatientError } = await supabase
+              .from("patients")
+              .insert({
+                name: cleanPatientName,
+                phone_number: cleanPhoneNumber,
+                user_id: user.id,
+                status: 'active'
+              })
+              .select("id, name, phone_number")
+              .single();
+
+            if (createPatientError) {
+              throw createPatientError;
+            }
+            
+            patientData = newPatient;
+            console.log("New patient created successfully:", patientData);
+            break;
+          } catch (createError: any) {
+            createAttempts++;
+            console.error(`Patient creation attempt ${createAttempts} failed:`, createError);
+            
+            if (createAttempts >= maxCreateAttempts) {
+              throw new Error(`Failed to create patient after ${maxCreateAttempts} attempts: ${createError.message}`);
+            }
+            
+            // Wait a bit before retry
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
       }
 
+      if (!patientData || !patientData.id) {
+        throw new Error("Failed to create or retrieve patient data");
+      }
+
+      // Generate prescription number with user scope
+      const currentPrescriptionNumber = prescriptionNumber || await generateUserScopedPrescriptionNumber(user.id);
+      
+      // Create prescription with retry logic
+      let prescriptionData;
+      let createPrescriptionAttempts = 0;
+      const maxPrescriptionAttempts = 3;
+      
+      while (createPrescriptionAttempts < maxPrescriptionAttempts) {
+        try {
+          const { data: newPrescription, error: prescriptionError } = await supabase
+            .from("prescriptions")
+            .insert({
+              prescription_number: currentPrescriptionNumber,
+              patient_id: patientData.id,
+              doctor_name: cleanDoctorName,
+              user_id: user.id,
+              date: new Date().toISOString(),
+              status: 'active'
+            })
+            .select("*")
+            .single();
+
+          if (prescriptionError) {
+            // Handle unique constraint violation for prescription number
+            if (prescriptionError.code === '23505') {
+              const { data: existing, error: fetchError } = await supabase
+                .from("prescriptions")
+                .select("*")
+                .eq("prescription_number", currentPrescriptionNumber)
+                .eq("user_id", user.id)
+                .single();
+              
+              if (!fetchError && existing) {
+                console.log("Using existing prescription:", existing);
+                prescriptionData = existing;
+                break;
+              }
+            }
+            
+            throw prescriptionError;
+          }
+          
+          prescriptionData = newPrescription;
+          console.log("New prescription created successfully:", prescriptionData);
+          break;
+        } catch (prescriptionError: any) {
+          createPrescriptionAttempts++;
+          console.error(`Prescription creation attempt ${createPrescriptionAttempts} failed:`, prescriptionError);
+          
+          if (createPrescriptionAttempts >= maxPrescriptionAttempts) {
+            throw new Error(`Failed to create prescription after ${maxPrescriptionAttempts} attempts: ${prescriptionError.message}`);
+          }
+          
+          // Wait a bit before retry
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
+      if (!prescriptionData) {
+        throw new Error("Failed to create or retrieve prescription data");
+      }
+
+      // Success feedback
       toast({
-        title: "Success",
-        description: `Patient details saved successfully. Prescription ${prescriptionData.prescription_number} created.`,
+        title: "Success!",
+        description: `Patient details saved and prescription ${prescriptionData.prescription_number} created successfully.`,
+        variant: "default",
       });
 
+      // Pass complete patient data to parent
       onSuccess(prescriptionData.id, {
-        name: formData.patientName.trim(),
-        phone: formData.phoneNumber.trim(),
+        id: patientData.id,
+        name: cleanPatientName,
+        phone: cleanPhoneNumber,
         prescriptionNumber: prescriptionData.prescription_number,
-        doctorName: formData.doctorName.trim()
+        doctorName: cleanDoctorName
       });
 
-      // Reset form
+      // Reset form on success
       setFormData({
         patientName: "",
         phoneNumber: "",
         doctorName: "",
       });
       setErrors({});
-    } catch (error) {
-      console.error("Error saving patient details:", error);
+      setSubmitAttempts(0);
+
+    } catch (error: any) {
+      console.error("Error in patient details submission:", error);
+      
+      // Provide specific error messages based on attempt count
+      let errorMessage = "Failed to save patient details. Please try again.";
+      
+      if (submitAttempts >= 3) {
+        errorMessage = "Multiple attempts failed. Please check your connection and try again later.";
+      } else if (error.message.includes("network") || error.message.includes("connection")) {
+        errorMessage = "Connection issue detected. Please check your internet and try again.";
+      } else if (error.message.includes("constraint")) {
+        errorMessage = "Data validation error. Please check your inputs and try again.";
+      }
+
       toast({
         title: "Error",
-        description: "Failed to save patient details. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
