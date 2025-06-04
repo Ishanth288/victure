@@ -1,78 +1,57 @@
-
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { useMobileScanner } from "@/hooks/useMobileScanner";
-import { CameraScanner } from "./CameraScanner";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Search, 
-  Camera, 
-  Package, 
-  AlertTriangle,
-  ArrowLeft,
-  Filter,
-  MoreVertical,
-  TrendingUp,
-  TrendingDown
-} from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { hapticFeedback } from "@/utils/mobileUtils";
+import { Camera, Package, Plus, Search, Filter, Edit2, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import CameraScanner from "./CameraScanner";
 
 interface InventoryItem {
   id: number;
   name: string;
   generic_name?: string;
+  batch_number?: string;
+  expiry_date?: string;
   quantity: number;
   unit_cost: number;
-  selling_price?: number;
-  reorder_point: number;
-  expiry_date?: string;
+  selling_price: number;
   manufacturer?: string;
-  strength?: string;
   category?: string;
+  strength?: string;
 }
 
-export function MobileInventory() {
-  const navigate = useNavigate();
+const MobileInventory = () => {
   const { toast } = useToast();
-  const { isScannerOpen, openScanner, closeScanner, processMedicine } = useMobileScanner();
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [filteredInventory, setFilteredInventory] = useState<InventoryItem[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [filterType, setFilterType] = useState<'all' | 'low-stock' | 'expired'>('all');
+  const [showScanner, setShowScanner] = useState(false);
 
   useEffect(() => {
     fetchInventory();
   }, []);
 
-  useEffect(() => {
-    filterInventory();
-  }, [searchQuery, inventory, filterType]);
-
   const fetchInventory = async () => {
     try {
+      setIsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data, error } = await supabase
-        .from("inventory")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("name");
+        .from('inventory')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-
       setInventory(data || []);
     } catch (error) {
-      console.error("Error fetching inventory:", error);
+      console.error('Error fetching inventory:', error);
       toast({
         title: "Error",
-        description: "Failed to load inventory",
+        description: "Failed to fetch inventory items",
         variant: "destructive",
       });
     } finally {
@@ -80,267 +59,185 @@ export function MobileInventory() {
     }
   };
 
-  const filterInventory = () => {
-    let filtered = inventory;
+  const handleScanComplete = async (scannedData: any) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    // Apply text search
-    if (searchQuery) {
-      filtered = filtered.filter(item =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.generic_name && item.generic_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (item.manufacturer && item.manufacturer.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
+      const { data, error } = await supabase
+        .from('inventory')
+        .insert({
+          ...scannedData,
+          user_id: user.id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setInventory(prev => [data, ...prev]);
+      setShowScanner(false);
+      
+      toast({
+        title: "Success",
+        description: "Item added to inventory successfully",
+      });
+    } catch (error) {
+      console.error('Error adding item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add item to inventory",
+        variant: "destructive",
+      });
     }
-
-    // Apply type filter
-    if (filterType === 'low-stock') {
-      filtered = filtered.filter(item => item.quantity <= item.reorder_point);
-    } else if (filterType === 'expired') {
-      const today = new Date();
-      filtered = filtered.filter(item => 
-        item.expiry_date && new Date(item.expiry_date) < today
-      );
-    }
-
-    setFilteredInventory(filtered);
   };
 
-  const handleScannerResult = async (medicine: any) => {
-    await processMedicine(medicine);
-    await fetchInventory();
-  };
+  const filteredInventory = inventory.filter(item =>
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.generic_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.manufacturer?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const getStockStatus = (item: InventoryItem) => {
-    if (item.quantity === 0) return { 
-      status: "Out of Stock", 
-      color: "bg-red-500", 
-      textColor: "text-red-700",
-      bgColor: "bg-red-50",
-      icon: TrendingDown
-    };
-    if (item.quantity <= item.reorder_point) return { 
-      status: "Low Stock", 
-      color: "bg-amber-500",
-      textColor: "text-amber-700",
-      bgColor: "bg-amber-50",
-      icon: AlertTriangle
-    };
-    return { 
-      status: "In Stock", 
-      color: "bg-teal-500",
-      textColor: "text-teal-700",
-      bgColor: "bg-teal-50",
-      icon: TrendingUp
-    };
-  };
-
-  const isExpiringSoon = (expiryDate?: string) => {
-    if (!expiryDate) return false;
-    const expiry = new Date(expiryDate);
-    const today = new Date();
-    const diffTime = expiry.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 30 && diffDays > 0;
-  };
-
-  const handleBack = async () => {
-    await hapticFeedback('light');
-    navigate(-1);
-  };
-
-  const filterButtons = [
-    { key: 'all', label: 'All Items', count: inventory.length },
-    { key: 'low-stock', label: 'Low Stock', count: inventory.filter(i => i.quantity <= i.reorder_point).length },
-    { key: 'expired', label: 'Expired', count: inventory.filter(i => i.expiry_date && new Date(i.expiry_date) < new Date()).length }
-  ];
-
-  if (isLoading) {
+  if (showScanner) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading inventory...</p>
-        </div>
-      </div>
+      <CameraScanner
+        onScanComplete={handleScanComplete}
+        onClose={() => setShowScanner(false)}
+      />
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-teal-500 to-teal-600 text-white">
-        <div className="p-6 pb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBack}
-                className="text-white hover:bg-white/10 p-2"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold">Inventory</h1>
-                <p className="text-teal-100 text-sm">{inventory.length} total items</p>
-              </div>
-            </div>
-            <Button
-              onClick={openScanner}
-              className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm"
-            >
-              <Camera className="h-4 w-4 mr-2" />
-              Scan
-            </Button>
-          </div>
-
-          {/* Search Bar */}
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/70" />
-            <Input
-              placeholder="Search medicines, manufacturers..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/70 rounded-xl"
-            />
-          </div>
-
-          {/* Filter Buttons */}
-          <div className="flex space-x-2 overflow-x-auto pb-2">
-            {filterButtons.map((filter) => (
-              <Button
-                key={filter.key}
-                variant={filterType === filter.key ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => setFilterType(filter.key as any)}
-                className={`flex-shrink-0 ${
-                  filterType === filter.key 
-                    ? "bg-white text-teal-600" 
-                    : "text-white hover:bg-white/10"
-                }`}
-              >
-                {filter.label} {filter.count > 0 && `(${filter.count})`}
-              </Button>
-            ))}
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-green-50 p-4">
+      <div className="max-w-md mx-auto space-y-6">
+        {/* Header */}
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-teal-800 mb-2">Inventory</h1>
+          <p className="text-teal-600">Manage your stock efficiently</p>
         </div>
-      </div>
 
-      {/* Inventory List */}
-      <div className="px-6 -mt-4 space-y-4 pb-6">
-        {filteredInventory.length === 0 ? (
-          <Card className="text-center py-12 shadow-lg border-0">
-            <CardContent>
-              <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {searchQuery ? "No items found" : "No inventory items"}
-              </h3>
-              <p className="text-gray-500 mb-6">
-                {searchQuery 
-                  ? "Try adjusting your search terms" 
-                  : "Start by scanning or adding your first medicine"
-                }
-              </p>
-              {!searchQuery && (
-                <Button onClick={openScanner} className="bg-teal-500 hover:bg-teal-600">
-                  <Camera className="h-4 w-4 mr-2" />
-                  Scan Medicine
-                </Button>
-              )}
+        {/* Action Buttons */}
+        <div className="grid grid-cols-2 gap-3">
+          <Button 
+            onClick={() => setShowScanner(true)}
+            className="bg-gradient-to-r from-teal-600 to-green-600 hover:from-teal-700 hover:to-green-700 text-white font-medium py-3 rounded-xl shadow-lg"
+          >
+            <Camera className="w-5 h-5 mr-2" />
+            Scan Item
+          </Button>
+          <Button 
+            variant="outline"
+            className="border-teal-200 text-teal-700 hover:bg-teal-50 font-medium py-3 rounded-xl"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Add Manual
+          </Button>
+        </div>
+
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Input
+            placeholder="Search inventory..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 py-3 rounded-xl border-gray-200 focus:border-teal-500"
+          />
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3">
+          <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
+            <CardContent className="p-4 text-center">
+              <Package className="w-6 h-6 text-teal-600 mx-auto mb-2" />
+              <div className="text-lg font-bold text-teal-800">{inventory.length}</div>
+              <div className="text-xs text-gray-600">Total Items</div>
             </CardContent>
           </Card>
-        ) : (
-          filteredInventory.map((item) => {
-            const stockStatus = getStockStatus(item);
-            const expiringSoon = isExpiringSoon(item.expiry_date);
-            
-            return (
-              <Card key={item.id} className="shadow-md hover:shadow-lg transition-all border-0">
-                <CardContent className="p-5">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-lg text-gray-900 mb-1 truncate">{item.name}</h3>
+          <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
+            <CardContent className="p-4 text-center">
+              <div className="text-lg font-bold text-orange-600">{inventory.filter(item => item.quantity <= 10).length}</div>
+              <div className="text-xs text-gray-600">Low Stock</div>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
+            <CardContent className="p-4 text-center">
+              <div className="text-lg font-bold text-red-600">{inventory.filter(item => item.expiry_date && new Date(item.expiry_date) < new Date()).length}</div>
+              <div className="text-xs text-gray-600">Expired</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Inventory List */}
+        <div className="space-y-3">
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto"></div>
+              <p className="text-gray-600 mt-2">Loading inventory...</p>
+            </div>
+          ) : filteredInventory.length === 0 ? (
+            <div className="text-center py-8">
+              <Package className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-600">No items found</p>
+            </div>
+          ) : (
+            filteredInventory.map((item) => (
+              <Card key={item.id} className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-800 text-sm">{item.name}</h3>
                       {item.generic_name && (
-                        <p className="text-sm text-gray-600 mb-1">{item.generic_name}</p>
+                        <p className="text-xs text-gray-600">{item.generic_name}</p>
                       )}
-                      {item.strength && (
-                        <p className="text-sm font-medium text-gray-700">{item.strength}</p>
+                      {item.manufacturer && (
+                        <p className="text-xs text-gray-500">{item.manufacturer}</p>
                       )}
                     </div>
-                    <div className="flex items-center space-x-2 ml-3">
-                      <Badge className={`${stockStatus.color} text-white text-xs px-2 py-1`}>
-                        {stockStatus.status}
-                      </Badge>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="h-4 w-4" />
+                    <div className="flex space-x-2">
+                      <Button size="sm" variant="ghost" className="p-2">
+                        <Edit2 className="w-4 h-4 text-gray-600" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="p-2">
+                        <Trash2 className="w-4 h-4 text-red-500" />
                       </Button>
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className={`p-3 rounded-xl ${stockStatus.bgColor}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Quantity</p>
-                          <p className={`text-xl font-bold ${stockStatus.textColor}`}>{item.quantity}</p>
-                        </div>
-                        <stockStatus.icon className={`h-5 w-5 ${stockStatus.textColor}`} />
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-xl bg-gray-50">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Unit Cost</p>
-                      <p className="text-xl font-bold text-gray-900">₹{item.unit_cost}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                  
+                  <div className="grid grid-cols-2 gap-3 text-xs">
                     <div>
-                      <p className="text-gray-500 font-medium">Selling Price</p>
-                      <p className="font-bold text-gray-900">₹{item.selling_price || 'N/A'}</p>
+                      <span className="text-gray-500">Quantity:</span>
+                      <Badge variant={item.quantity <= 10 ? "destructive" : "secondary"} className="ml-1">
+                        {item.quantity}
+                      </Badge>
                     </div>
                     <div>
-                      <p className="text-gray-500 font-medium">Reorder Point</p>
-                      <p className="font-bold text-gray-900">{item.reorder_point}</p>
+                      <span className="text-gray-500">Price:</span>
+                      <span className="ml-1 font-medium">₹{item.selling_price}</span>
                     </div>
-                  </div>
-
-                  {item.manufacturer && (
-                    <div className="mb-3">
-                      <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Manufacturer</p>
-                      <p className="text-sm font-medium text-gray-700">{item.manufacturer}</p>
-                    </div>
-                  )}
-
-                  {/* Alerts Section */}
-                  <div className="space-y-2">
-                    {item.quantity <= item.reorder_point && (
-                      <div className="flex items-center space-x-2 text-amber-700 bg-amber-50 p-2 rounded-lg">
-                        <AlertTriangle className="h-4 w-4" />
-                        <span className="text-sm font-medium">Reorder required</span>
+                    {item.batch_number && (
+                      <div>
+                        <span className="text-gray-500">Batch:</span>
+                        <span className="ml-1">{item.batch_number}</span>
                       </div>
                     )}
-                    
-                    {expiringSoon && (
-                      <div className="flex items-center space-x-2 text-orange-700 bg-orange-50 p-2 rounded-lg">
-                        <AlertTriangle className="h-4 w-4" />
-                        <span className="text-sm font-medium">Expires soon</span>
+                    {item.expiry_date && (
+                      <div>
+                        <span className="text-gray-500">Expiry:</span>
+                        <span className={`ml-1 ${new Date(item.expiry_date) < new Date() ? 'text-red-600 font-medium' : ''}`}>
+                          {new Date(item.expiry_date).toLocaleDateString()}
+                        </span>
                       </div>
                     )}
                   </div>
                 </CardContent>
               </Card>
-            );
-          })
-        )}
+            ))
+          )}
+        </div>
       </div>
-
-      {/* Camera Scanner Modal */}
-      {isScannerOpen && (
-        <CameraScanner
-          onMedicineDetected={handleScannerResult}
-          onClose={closeScanner}
-        />
-      )}
     </div>
   );
-}
+};
+
+export default MobileInventory;

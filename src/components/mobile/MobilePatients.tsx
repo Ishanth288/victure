@@ -1,87 +1,53 @@
-
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Search, 
-  Users, 
-  Phone,
-  FileText,
-  DollarSign,
-  ArrowLeft,
-  Plus
-} from "lucide-react";
-import { hapticFeedback } from "@/utils/mobileUtils";
+import { Users, Search, Plus, Phone, Calendar, User } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Patient {
   id: number;
   name: string;
   phone_number: string;
-  status: string;
+  patient_type?: string;
   created_at: string;
-  total_spent: number;
-  prescription_count: number;
+  prescriptions?: any[];
 }
 
-export function MobilePatients() {
-  const navigate = useNavigate();
+const MobilePatients = () => {
   const { toast } = useToast();
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchPatients();
   }, []);
 
-  useEffect(() => {
-    filterPatients();
-  }, [searchQuery, patients]);
-
   const fetchPatients = async () => {
     try {
+      setIsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data, error } = await supabase
-        .from("patients")
+        .from('patients')
         .select(`
           *,
-          prescriptions:prescriptions (
-            id,
-            bills:bills (
-              total_amount
-            )
-          )
+          prescriptions(count)
         `)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-
-      const processedPatients = (data || []).map(patient => {
-        const allBills = patient.prescriptions?.flatMap(p => p.bills || []) || [];
-        const totalSpent = allBills.reduce((sum, bill) => sum + Number(bill.total_amount), 0);
-        
-        return {
-          ...patient,
-          total_spent: totalSpent,
-          prescription_count: patient.prescriptions?.length || 0
-        };
-      });
-
-      setPatients(processedPatients);
+      setPatients(data || []);
     } catch (error) {
-      console.error("Error fetching patients:", error);
+      console.error('Error fetching patients:', error);
       toast({
         title: "Error",
-        description: "Failed to load patients",
+        description: "Failed to fetch patients",
         variant: "destructive",
       });
     } finally {
@@ -89,162 +55,109 @@ export function MobilePatients() {
     }
   };
 
-  const filterPatients = () => {
-    if (!searchQuery) {
-      setFilteredPatients(patients);
-      return;
-    }
-
-    const filtered = patients.filter(patient =>
-      patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      patient.phone_number.includes(searchQuery)
-    );
-
-    setFilteredPatients(filtered);
-  };
-
-  const handleBack = async () => {
-    await hapticFeedback('light');
-    navigate(-1);
-  };
-
-  const handleCreatePrescription = async (patientId: number) => {
-    await hapticFeedback('medium');
-    navigate(`/billing?patientId=${patientId}`);
-  };
+  const filteredPatients = patients.filter(patient =>
+    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    patient.phone_number.includes(searchTerm)
+  );
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading patients...</p>
-        </div>
+      <div className="text-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto"></div>
+        <p className="text-gray-600 mt-2">Loading patients...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-b-3xl shadow-lg">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBack}
-              className="text-white hover:bg-white/10 p-2"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Patients</h1>
-              <p className="text-blue-100">{patients.length} total patients</p>
-            </div>
-          </div>
-          <Button
-            onClick={() => navigate('/billing')}
-            className="bg-white/20 hover:bg-white/30 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            New
-          </Button>
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-green-50 p-4">
+      <div className="max-w-md mx-auto space-y-6">
+        {/* Header */}
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-teal-800 mb-2">Patients</h1>
+          <p className="text-teal-600">Manage patient records</p>
         </div>
 
-        {/* Search Bar */}
+        {/* Add Patient Button */}
+        <Button 
+          className="w-full bg-gradient-to-r from-teal-600 to-green-600 hover:from-teal-700 hover:to-green-700 text-white font-medium py-3 rounded-xl shadow-lg"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Add New Patient
+        </Button>
+
+        {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <Input
-            placeholder="Search by name or phone..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/70"
+            placeholder="Search patients..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 py-3 rounded-xl border-gray-200 focus:border-teal-500"
           />
         </div>
-      </div>
 
-      {/* Patients List */}
-      <div className="p-6 space-y-4">
-        {filteredPatients.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {searchQuery ? "No patients found" : "No patients yet"}
-              </h3>
-              <p className="text-gray-500 mb-4">
-                {searchQuery 
-                  ? "Try searching with different keywords" 
-                  : "Create your first prescription to add a patient"
-                }
-              </p>
-              {!searchQuery && (
-                <Button onClick={() => navigate('/billing')} className="mt-4">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Prescription
-                </Button>
-              )}
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
+            <CardContent className="p-4 text-center">
+              <Users className="w-6 h-6 text-teal-600 mx-auto mb-2" />
+              <div className="text-lg font-bold text-teal-800">{patients.length}</div>
+              <div className="text-xs text-gray-600">Total Patients</div>
             </CardContent>
           </Card>
-        ) : (
-          filteredPatients.map((patient) => (
-            <Card key={patient.id} className="shadow-md hover:shadow-lg transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg text-gray-900">{patient.name}</h3>
-                    <div className="flex items-center space-x-1 text-gray-600 mt-1">
-                      <Phone className="h-4 w-4" />
-                      <span className="text-sm">{patient.phone_number}</span>
-                    </div>
-                  </div>
-                  <Badge variant={patient.status === 'active' ? 'default' : 'secondary'}>
-                    {patient.status}
-                  </Badge>
-                </div>
+          <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
+            <CardContent className="p-4 text-center">
+              <Calendar className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+              <div className="text-lg font-bold text-blue-800">{patients.filter(p => new Date(p.created_at) > new Date(Date.now() - 30*24*60*60*1000)).length}</div>
+              <div className="text-xs text-gray-600">This Month</div>
+            </CardContent>
+          </Card>
+        </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="flex items-center space-x-2">
-                    <FileText className="h-4 w-4 text-blue-500" />
-                    <div>
-                      <p className="text-sm text-gray-500">Prescriptions</p>
-                      <p className="font-semibold">{patient.prescription_count}</p>
+        {/* Patients List */}
+        <div className="space-y-3">
+          {filteredPatients.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-600">No patients found</p>
+            </div>
+          ) : (
+            filteredPatients.map((patient) => (
+              <Card key={patient.id} className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-green-500 rounded-full flex items-center justify-center">
+                        <User className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-800">{patient.name}</h3>
+                        <div className="flex items-center text-xs text-gray-600 mt-1">
+                          <Phone className="w-3 h-3 mr-1" />
+                          {patient.phone_number}
+                        </div>
+                      </div>
                     </div>
+                    {patient.patient_type && (
+                      <Badge variant="secondary" className="text-xs">
+                        {patient.patient_type}
+                      </Badge>
+                    )}
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <DollarSign className="h-4 w-4 text-green-500" />
-                    <div>
-                      <p className="text-sm text-gray-500">Total Spent</p>
-                      <p className="font-semibold">₹{patient.total_spent.toFixed(2)}</p>
-                    </div>
+                  
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span>Registered: {new Date(patient.created_at).toLocaleDateString()}</span>
+                    <span>{patient.prescriptions?.length || 0} prescriptions</span>
                   </div>
-                </div>
-
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => navigate(`/prescriptions?patient=${patient.id}`)}
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    View History
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => handleCreatePrescription(patient.id)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Prescription
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
-}
+};
+
+export default MobilePatients;

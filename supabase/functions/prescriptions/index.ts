@@ -1,6 +1,6 @@
 
-import { serve } from "@supabase/functions";
-import { createClient } from "@supabase/supabase-js";
+import { serve } from "https://deno.land/x/functions@v2.0.0/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

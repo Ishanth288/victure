@@ -1,52 +1,45 @@
-
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { 
-  ArrowLeft,
-  User,
-  Building,
-  MapPin,
-  Phone,
-  CreditCard,
+  Settings, 
+  User, 
+  Store, 
+  Bell, 
+  Shield, 
+  LogOut, 
   Save,
-  LogOut
+  Phone,
+  Mail,
+  MapPin
 } from "lucide-react";
-import { hapticFeedback } from "@/utils/mobileUtils";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
-interface Profile {
-  pharmacy_name: string;
-  owner_name: string;
-  address: string;
-  city: string;
-  state: string;
-  pincode: string;
-  phone: string;
-  gstin: string;
-  plan_type: string;
-}
-
-export function MobileSettings() {
-  const navigate = useNavigate();
+const MobileSettings = () => {
   const { toast } = useToast();
-  const [profile, setProfile] = useState<Profile>({
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [profile, setProfile] = useState({
     pharmacy_name: '',
     owner_name: '',
     address: '',
     city: '',
     state: '',
     pincode: '',
-    phone: '',
     gstin: '',
-    plan_type: 'Free Trial'
+    phone: '',
+    email: ''
   });
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+  const [notifications, setNotifications] = useState({
+    lowStock: true,
+    expiry: true,
+    newOrders: false
+  });
 
   useEffect(() => {
     fetchProfile();
@@ -58,21 +51,62 @@ export function MobileSettings() {
       if (!user) return;
 
       const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
         .single();
 
       if (error) throw error;
-
+      
       if (data) {
-        setProfile(data);
+        setProfile({
+          pharmacy_name: data.pharmacy_name || '',
+          owner_name: data.owner_name || '',
+          address: data.address || '',
+          city: data.city || '',
+          state: data.state || '',
+          pincode: data.pincode || '',
+          gstin: data.gstin || '',
+          phone: data.phone || '',
+          email: user.email || ''
+        });
       }
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      setIsLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          pharmacy_name: profile.pharmacy_name,
+          owner_name: profile.owner_name,
+          address: profile.address,
+          city: profile.city,
+          state: profile.state,
+          pincode: profile.pincode,
+          gstin: profile.gstin,
+          phone: profile.phone
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
       toast({
         title: "Error",
-        description: "Failed to load profile",
+        description: "Failed to update profile",
         variant: "destructive",
       });
     } finally {
@@ -80,225 +114,167 @@ export function MobileSettings() {
     }
   };
 
-  const handleSave = async () => {
-    setIsSaving(true);
+  const handleLogout = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { error } = await supabase
-        .from("profiles")
-        .update(profile)
-        .eq("id", user.id);
-
-      if (error) throw error;
-
-      await hapticFeedback('medium');
-      toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      });
+      await supabase.auth.signOut();
+      navigate('/auth');
     } catch (error) {
-      console.error("Error updating profile:", error);
+      console.error('Error logging out:', error);
       toast({
         title: "Error",
-        description: "Failed to update profile",
+        description: "Failed to log out",
         variant: "destructive",
       });
-    } finally {
-      setIsSaving(false);
     }
   };
 
-  const handleSignOut = async () => {
-    await hapticFeedback('medium');
-    await supabase.auth.signOut();
-    navigate('/auth');
-  };
-
-  const handleBack = async () => {
-    await hapticFeedback('light');
-    navigate(-1);
-  };
-
-  const updateProfile = (field: keyof Profile, value: string) => {
-    setProfile(prev => ({ ...prev, [field]: value }));
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading settings...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 pb-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-b-3xl shadow-lg">
-        <div className="flex items-center space-x-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleBack}
-            className="text-white hover:bg-white/10 p-2"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Settings</h1>
-            <p className="text-blue-100">Manage your profile</p>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-green-50 p-4">
+      <div className="max-w-md mx-auto space-y-6">
+        {/* Header */}
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-teal-800 mb-2">Settings</h1>
+          <p className="text-teal-600">Manage your preferences</p>
         </div>
-      </div>
 
-      <div className="p-6 space-y-6">
-        {/* Pharmacy Information */}
-        <Card className="shadow-md">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Building className="h-5 w-5" />
-              <span>Pharmacy Information</span>
+        {/* Profile Section */}
+        <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center text-lg text-teal-800">
+              <Store className="w-5 h-5 mr-2" />
+              Pharmacy Information
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="pharmacy_name">Pharmacy Name</Label>
+              <Label htmlFor="pharmacy_name" className="text-sm font-medium">Pharmacy Name</Label>
               <Input
                 id="pharmacy_name"
                 value={profile.pharmacy_name}
-                onChange={(e) => updateProfile('pharmacy_name', e.target.value)}
-                placeholder="Enter pharmacy name"
+                onChange={(e) => setProfile({...profile, pharmacy_name: e.target.value})}
+                className="rounded-lg"
               />
             </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="owner_name">Owner Name</Label>
+              <Label htmlFor="owner_name" className="text-sm font-medium">Owner Name</Label>
               <Input
                 id="owner_name"
                 value={profile.owner_name}
-                onChange={(e) => updateProfile('owner_name', e.target.value)}
-                placeholder="Enter owner name"
+                onChange={(e) => setProfile({...profile, owner_name: e.target.value})}
+                className="rounded-lg"
               />
             </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="gstin">GSTIN</Label>
-              <Input
-                id="gstin"
-                value={profile.gstin}
-                onChange={(e) => updateProfile('gstin', e.target.value)}
-                placeholder="Enter GSTIN number"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Contact Information */}
-        <Card className="shadow-md">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Phone className="h-5 w-5" />
-              <span>Contact Information</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                value={profile.phone}
-                onChange={(e) => updateProfile('phone', e.target.value)}
-                placeholder="Enter phone number"
-                type="tel"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="address" className="text-sm font-medium">Address</Label>
               <Input
                 id="address"
                 value={profile.address}
-                onChange={(e) => updateProfile('address', e.target.value)}
-                placeholder="Enter address"
+                onChange={(e) => setProfile({...profile, address: e.target.value})}
+                className="rounded-lg"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
+                <Label htmlFor="city" className="text-sm font-medium">City</Label>
                 <Input
                   id="city"
                   value={profile.city}
-                  onChange={(e) => updateProfile('city', e.target.value)}
-                  placeholder="Enter city"
+                  onChange={(e) => setProfile({...profile, city: e.target.value})}
+                  className="rounded-lg"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="state">State</Label>
+                <Label htmlFor="pincode" className="text-sm font-medium">Pincode</Label>
                 <Input
-                  id="state"
-                  value={profile.state}
-                  onChange={(e) => updateProfile('state', e.target.value)}
-                  placeholder="Enter state"
+                  id="pincode"
+                  value={profile.pincode}
+                  onChange={(e) => setProfile({...profile, pincode: e.target.value})}
+                  className="rounded-lg"
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="pincode">Pincode</Label>
-              <Input
-                id="pincode"
-                value={profile.pincode}
-                onChange={(e) => updateProfile('pincode', e.target.value)}
-                placeholder="Enter pincode"
+            
+            <Button 
+              onClick={handleSaveProfile}
+              disabled={isLoading}
+              className="w-full bg-gradient-to-r from-teal-600 to-green-600 hover:from-teal-700 hover:to-green-700 text-white rounded-lg"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {isLoading ? 'Saving...' : 'Save Profile'}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Notifications Section */}
+        <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center text-lg text-teal-800">
+              <Bell className="w-5 h-5 mr-2" />
+              Notifications
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="lowStock" className="text-sm font-medium">Low Stock Alerts</Label>
+              <Switch
+                id="lowStock"
+                checked={notifications.lowStock}
+                onCheckedChange={(checked) => setNotifications({...notifications, lowStock: checked})}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <Label htmlFor="expiry" className="text-sm font-medium">Expiry Notifications</Label>
+              <Switch
+                id="expiry"
+                checked={notifications.expiry}
+                onCheckedChange={(checked) => setNotifications({...notifications, expiry: checked})}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <Label htmlFor="newOrders" className="text-sm font-medium">New Order Alerts</Label>
+              <Switch
+                id="newOrders"
+                checked={notifications.newOrders}
+                onCheckedChange={(checked) => setNotifications({...notifications, newOrders: checked})}
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* Plan Information */}
-        <Card className="shadow-md">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <CreditCard className="h-5 w-5" />
-              <span>Plan Information</span>
+        {/* Account Section */}
+        <Card className="border-0 shadow-md bg-white/80 backdrop-blur-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center text-lg text-teal-800">
+              <User className="w-5 h-5 mr-2" />
+              Account
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="font-medium text-blue-900">Current Plan</p>
-              <p className="text-2xl font-bold text-blue-600">{profile.plan_type}</p>
-              <p className="text-sm text-blue-700 mt-1">
-                {profile.plan_type === 'Free Trial' 
-                  ? 'Upgrade to unlock more features'
-                  : 'Thank you for your subscription'
-                }
-              </p>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <Mail className="w-4 h-4 text-gray-600" />
+                <span className="text-sm text-gray-700">{profile.email}</span>
+              </div>
             </div>
+            
+            <Button 
+              onClick={handleLogout}
+              variant="destructive"
+              className="w-full rounded-lg"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
           </CardContent>
         </Card>
-
-        {/* Action Buttons */}
-        <div className="space-y-3">
-          <Button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="w-full h-12"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            {isSaving ? "Saving..." : "Save Changes"}
-          </Button>
-
-          <Button
-            variant="destructive"
-            onClick={handleSignOut}
-            className="w-full h-12"
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
-        </div>
       </div>
     </div>
   );
-}
+};
+
+export default MobileSettings;
