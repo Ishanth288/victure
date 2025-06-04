@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { App as CapacitorApp } from "@capacitor/app";
@@ -24,57 +23,6 @@ export function MobileAppWrapper({ children }: MobileAppWrapperProps) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const initializeApp = async () => {
-      const isNative = Capacitor.isNativePlatform();
-      console.log('Platform check - isNative:', isNative, 'Platform:', Capacitor.getPlatform());
-      setIsNativeApp(isNative);
-
-      if (isNative) {
-        try {
-          // Configure status bar for teal green theme
-          await StatusBar.setStyle({ style: Style.Light });
-          await StatusBar.setBackgroundColor({ color: '#14b8a6' });
-          console.log('Native app status bar configured with teal theme');
-
-          // Prevent external navigation in native app
-          document.addEventListener('click', (e) => {
-            const target = e.target as HTMLElement;
-            const link = target.closest('a');
-            if (link && link.href && !link.href.startsWith(window.location.origin)) {
-              e.preventDefault();
-              console.log('Prevented external navigation to:', link.href);
-            }
-          });
-
-          // Override window.open to prevent web leaks
-          const originalOpen = window.open;
-          window.open = (...args) => {
-            console.log('Prevented window.open call in native app');
-            return null;
-          };
-
-        } catch (error) {
-          console.log('Status bar configuration failed:', error);
-        }
-
-        // Handle back button on mobile
-        CapacitorApp.addListener('backButton', ({ canGoBack }) => {
-          if (!canGoBack) {
-            CapacitorApp.exitApp();
-          } else {
-            window.history.back();
-          }
-        });
-      }
-
-      // setIsInitialized(true); // Moved to combined effect
-      console.log('MobileAppWrapper: App initialized. isInitialized set to true.');
-    };
-
-    initializeApp();
-  }, []);
-
-  useEffect(() => {
     const initializeAppAndAuth = async () => {
       console.log('MobileAppWrapper: Starting app initialization and auth check...');
       const isNative = Capacitor.isNativePlatform();
@@ -83,10 +31,10 @@ export function MobileAppWrapper({ children }: MobileAppWrapperProps) {
 
       if (isNative) {
         try {
-          // Configure status bar for teal green theme
+          // Configure status bar with Apple-style blue theme
           await StatusBar.setStyle({ style: Style.Light });
-          await StatusBar.setBackgroundColor({ color: '#14b8a6' });
-          console.log('Native app status bar configured with teal theme');
+          await StatusBar.setBackgroundColor({ color: '#007AFF' });
+          console.log('Native app status bar configured with Apple blue theme');
 
           // Prevent external navigation in native app
           document.addEventListener('click', (e) => {
@@ -124,6 +72,12 @@ export function MobileAppWrapper({ children }: MobileAppWrapperProps) {
         const { data: { session } } = await supabase.auth.getSession();
         setIsAuthenticated(!!session);
         console.log('MobileAppWrapper: Auth check complete, isAuthenticated:', !!session);
+        
+        // Redirect authenticated mobile users to mobile dashboard
+        if (session && (isNative || isMobile) && location.pathname === '/') {
+          console.log('MobileAppWrapper: Redirecting authenticated mobile user to dashboard');
+          navigate('/mobile');
+        }
       } catch (error) {
         console.error('MobileAppWrapper: Auth check failed:', error);
         setIsAuthenticated(false);
@@ -155,84 +109,74 @@ export function MobileAppWrapper({ children }: MobileAppWrapperProps) {
       setIsAuthenticated(!!session);
       setIsCheckingAuth(false); // Ensure this is false on auth state change
       console.log('MobileAppWrapper: Auth state changed, isAuthenticated:', !!session, 'event:', event, 'isCheckingAuth set to false in auth state change.');
+      
+      // Handle auth redirects for mobile
+      if (session && (isNativeApp || isMobile)) {
+        if (location.pathname === '/' || location.pathname === '/auth') {
+          navigate('/mobile');
+        }
+      } else if (!session && location.pathname.startsWith('/mobile')) {
+        navigate('/auth');
+      }
     });
 
     return () => {
       clearTimeout(authCheckTimeout);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [isNativeApp, isMobile, location.pathname, navigate, isInitialized, isCheckingAuth]);
 
   // Don't render anything until platform detection is complete
   if (!isInitialized || isCheckingAuth) {
     console.log(`MobileAppWrapper: Displaying loading spinner. Current state: isInitialized=${isInitialized}, isCheckingAuth=${isCheckingAuth}`);
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
-        <div className="text-center text-white">
-          <LoadingAnimation showLogo={true} text="Loading Victure Pharmacy..." size="lg" />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center safe-area-all">
+        <div className="text-center animate-bounce-in">
+          <div className="relative mx-auto w-20 h-20 mb-6">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 animate-pulse-apple"></div>
+            <div className="relative flex items-center justify-center w-full h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
+              <span className="text-2xl font-bold text-white">V</span>
+            </div>
+          </div>
+          <p className="text-title-3 font-semibold text-gray-900 dark:text-white mb-2">Victure Healthcare</p>
+          <p className="text-body text-gray-600 dark:text-gray-400">Loading your experience...</p>
         </div>
       </div>
     );
   }
 
+  // For mobile devices, wrap with MobileLayout if authenticated
+  if ((isNativeApp || isMobile) && isAuthenticated) {
+    return <MobileLayout>{children}</MobileLayout>;
+  }
+
   // Show auth page for mobile apps if not authenticated
-  if ((isNativeApp || isMobile) && !isAuthenticated && location.pathname !== '/auth') {
-    console.log('MobileAppWrapper: Redirecting to auth page.');
+  if ((isNativeApp || isMobile) && !isAuthenticated && !location.pathname.includes('/auth')) {
+    console.log('MobileAppWrapper: Showing auth screen for mobile.');
     return (
-      <MobileLayout>
-        <div className="min-h-screen bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center p-6">
-          <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-teal-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-3xl font-bold text-white">V</span>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-6 safe-area-all">
+        <div className="card-glass p-8 w-full max-w-md shadow-2xl animate-bounce-in">
+          <div className="text-center mb-8">
+            <div className="relative mx-auto w-20 h-20 mb-6">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 opacity-20 animate-pulse-apple"></div>
+              <div className="relative flex items-center justify-center w-full h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
+                <span className="text-2xl font-bold text-white">V</span>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Victure Pharmacy</h1>
-              <p className="text-gray-600">Your trusted pharmacy companion</p>
             </div>
-            <button
-              onClick={() => navigate('/auth')}
-              className="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold py-4 px-6 rounded-xl transition-colors shadow-lg"
-            >
-              Sign In to Continue
-            </button>
+            <h1 className="text-headline font-bold text-gray-900 dark:text-white mb-2">Victure Healthcare</h1>
+            <p className="text-body text-gray-600 dark:text-gray-400">Your trusted pharmacy companion</p>
           </div>
+          <button
+            onClick={() => navigate('/auth')}
+            className="w-full btn-apple bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-4 px-6 focus-ring shadow-2xl"
+          >
+            Sign In to Continue
+          </button>
         </div>
-      </MobileLayout>
+      </div>
     );
   }
 
-  // Priority: Native app first, then mobile web, then desktop web
-  if (isNativeApp || isMobile) {
-    console.log(`Rendering ${isNativeApp ? 'native' : 'mobile web'} interface`);
-    
-    // Special handling for mobile dashboard (root path)
-    if (location.pathname === '/' && isAuthenticated) {
-      return (
-        <MobileLayout>
-          <MobileDashboard />
-        </MobileLayout>
-      );
-    }
-
-    // For other mobile routes, wrap in mobile layout
-    if (location.pathname.startsWith('/mobile/') || 
-        ['/auth', '/billing', '/prescriptions', '/insights'].includes(location.pathname)) {
-      return (
-        <MobileLayout>
-          {children}
-        </MobileLayout>
-      );
-    }
-
-    // Default mobile dashboard for root
-    return (
-      <MobileLayout>
-        <MobileDashboard />
-      </MobileLayout>
-    );
-  }
-
-  // Desktop web interface
-  console.log('Rendering desktop web interface');
+  // For desktop or non-mobile authenticated users, render normally
   return <>{children}</>;
 }

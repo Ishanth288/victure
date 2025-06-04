@@ -41,21 +41,27 @@ const SLA = React.lazy(() => import("./pages/legal/SLA"));
 const AcceptableUsePolicy = React.lazy(() => import("./pages/legal/AcceptableUsePolicy"));
 
 // Lazy load mobile-specific pages
+const MobileDashboard = React.lazy(() => import("./components/mobile/MobileDashboard"));
 const MobileInventory = React.lazy(() => import("./components/mobile/MobileInventory"));
 const MobilePatients = React.lazy(() => import("./components/mobile/MobilePatients"));
 const MobileSettings = React.lazy(() => import("./components/mobile/MobileSettings"));
+const MobilePrescriptions = React.lazy(() => import("./components/mobile/MobilePrescriptions"));
+const MobileInsights = React.lazy(() => import("./components/mobile/MobileInsights"));
 
-// Mobile-optimized loading component
-function MobileLoadingFallback({ text = "Loading page..." }: { text?: string }) {
+// Apple-style mobile loading component
+function MobileLoadingFallback({ text = "Loading..." }: { text?: string }) {
   if (isMobileDevice()) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-teal-50 to-green-50">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-green-500 rounded-2xl flex items-center justify-center mx-auto mb-6 animate-pulse">
-            <span className="text-white text-2xl font-bold">V</span>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center safe-area-all">
+        <div className="text-center animate-bounce-in">
+          <div className="relative mx-auto w-20 h-20 mb-6">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 animate-pulse-apple"></div>
+            <div className="relative flex items-center justify-center w-full h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
+              <span className="text-2xl font-bold text-white">V</span>
+            </div>
           </div>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-teal-800 font-medium">{text}</p>
+          <p className="text-title-3 font-semibold text-gray-900 dark:text-white mb-2">Victure Healthcare</p>
+          <p className="text-body text-gray-600 dark:text-gray-400">{text}</p>
         </div>
       </div>
     );
@@ -136,9 +142,12 @@ function App() {
         <Route path="/admin/settings" element={<SystemSettings />} />
         <Route path="/system-test" element={<SystemTest />} />
         
-        {/* Mobile-specific routes */}
+        {/* Mobile-specific routes with Apple-quality design */}
+        <Route path="/mobile" element={<MobileDashboard />} />
         <Route path="/mobile/inventory" element={<MobileInventory />} />
         <Route path="/mobile/patients" element={<MobilePatients />} />
+        <Route path="/mobile/prescriptions" element={<MobilePrescriptions />} />
+        <Route path="/mobile/insights" element={<MobileInsights />} />
         <Route path="/mobile/settings" element={<MobileSettings />} />
         
         <Route path="/legal" element={<LegalLayout />}>
