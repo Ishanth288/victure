@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { format } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, User, FileText, DollarSign, Trash2, Loader2, RefreshCw, Calendar, Phone, Eye } from "lucide-react";
+import { Clock, User, FileText, DollarSign, Trash2, Loader2, RefreshCw, Calendar, Phone, Eye, Search, Plus, ArrowLeftRight, Filter, Download, Stethoscope, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +23,7 @@ import {
 import { MedicineReturnDialog } from "@/components/prescriptions/MedicineReturnDialog";
 import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
 import { MedicineReplacementDialog } from "@/components/prescriptions/MedicineReplacementDialog";
+import { logBillItemDeletion } from "@/utils/deletionTracker";
 
 export default function Prescriptions() {
   const { toast } = useToast();
@@ -561,6 +562,17 @@ export default function Prescriptions() {
 
       // Step 2: Delete bill items first (foreign key constraint)
       console.log("Deleting bill items for bill_id:", billToDelete.bill_id);
+      
+      // First get the bill items that will be deleted for logging
+      const { data: billItemsToDelete, error: fetchBillItemsError } = await supabase
+        .from('bill_items')
+        .select('*')
+        .eq('bill_id', billToDelete.bill_id);
+
+      if (fetchBillItemsError) {
+        console.error("Error fetching bill items for logging:", fetchBillItemsError);
+      }
+
       const { error: deleteItemsError } = await supabase
         .from('bill_items')
         .delete()
@@ -575,6 +587,18 @@ export default function Prescriptions() {
         });
         return;
       }
+
+      // Log each deleted bill item for audit purposes
+      if (billItemsToDelete) {
+        for (const billItem of billItemsToDelete) {
+          await logBillItemDeletion(
+            billItem,
+            "Manual bill deletion from prescriptions page",
+            `Bill #${billToDelete.bill_number} deleted by user - inventory quantities restored`
+          );
+        }
+      }
+      
       console.log("✓ Bill items deleted successfully");
 
       // Step 3: Delete the bill itself

@@ -11,6 +11,7 @@ import { CartItemRow } from "./CartItemRow";
 import { BillPreviewDialog } from "./BillPreviewDialog";
 import { PrintableBill } from "./PrintableBill";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { logBillItemDeletion } from "@/utils/deletionTracker";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
@@ -593,11 +594,28 @@ export function CartSummary({
       if (transactionStarted && createdBillId && currentSession) {
         console.log("Attempting to rollback failed transaction...");
         try {
+          // First get the bill items that will be deleted for logging
+          const { data: billItemsToDelete } = await supabase
+            .from('bill_items')
+            .select('*')
+            .eq('bill_id', createdBillId);
+
           // Delete bill items first
           await supabase
             .from('bill_items')
             .delete()
             .eq('bill_id', createdBillId);
+
+          // Log each deleted bill item for audit purposes
+          if (billItemsToDelete) {
+            for (const billItem of billItemsToDelete) {
+              await logBillItemDeletion(
+                billItem,
+                "Transaction rollback - bill generation failed",
+                `Rollback operation during failed bill generation for bill ${createdBillId}`
+              );
+            }
+          }
 
           // Delete the bill
           await supabase

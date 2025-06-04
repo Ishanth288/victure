@@ -120,17 +120,34 @@ export function MedicineReturnDialog({
         // Get unique inventory item IDs
         const inventoryIds = [...new Set(billItemsData.map(item => item.inventory_item_id))];
         
-        // Fetch inventory items to get medicine names
-        const { data: inventoryData, error: inventoryError } = await supabase
-          .from('inventory')
-          .select('id, medicine_name')
-          .in('id', inventoryIds);
+        // Try to fetch inventory items - handle both column name variations
+        let inventoryData: any[] = [];
+        try {
+          // First try with 'medicine_name' column
+          const { data, error } = await supabase
+            .from('inventory')
+            .select('id, medicine_name')
+            .in('id', inventoryIds);
+          
+          if (!error && data) {
+            inventoryData = data;
+          } else {
+            throw error;
+          }
+        } catch (error) {
+          // If that fails, try with 'name' column
+          const { data, error: fallbackError } = await supabase
+            .from('inventory')
+            .select('id, name')
+            .in('id', inventoryIds);
+          
+          if (fallbackError) throw fallbackError;
+          inventoryData = data || [];
+        }
 
-        if (inventoryError) throw inventoryError;
-
-        // Create lookup map for medicine names
+        // Create lookup map for medicine names (handle both column variations)
         const inventoryMap = new Map(
-          inventoryData?.map(inv => [inv.id, inv.medicine_name]) || []
+          inventoryData?.map(inv => [inv.id, inv.medicine_name || inv.name || 'Unknown Item']) || []
         );
 
         const items = billItemsData.map(item => ({

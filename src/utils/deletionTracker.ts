@@ -71,11 +71,11 @@ export async function logInventoryDeletion(
   notes?: string
 ): Promise<void> {
   await logDeletion({
-    entity_type: 'bill_item',
+    entity_type: 'inventory_adjustment',
     entity_id: item.id,
     entity_data: {
-      medicine_name: item.medicine_name,
-      quantity: item.quantity_in_stock,
+      medicine_name: item.medicine_name || item.name,
+      quantity: item.quantity_in_stock || item.quantity,
       price: item.price,
       manufacturer: item.manufacturer,
       batch_number: item.batch_number,
@@ -83,11 +83,39 @@ export async function logInventoryDeletion(
     },
     deletion_reason: reason,
     deletion_type: 'manual',
-    medicine_name: item.medicine_name,
-    amount_affected: item.price * item.quantity_in_stock,
-    quantity_affected: item.quantity_in_stock,
+    medicine_name: item.medicine_name || item.name,
+    amount_affected: item.price * (item.quantity_in_stock || item.quantity),
+    quantity_affected: item.quantity_in_stock || item.quantity,
     notes: notes,
     is_reversible: false
+  });
+}
+
+export async function logBillItemDeletion(
+  billItem: any,
+  reason?: string,
+  notes?: string
+): Promise<void> {
+  await logDeletion({
+    entity_type: 'bill_item',
+    entity_id: billItem.id,
+    entity_data: {
+      bill_id: billItem.bill_id,
+      inventory_item_id: billItem.inventory_item_id,
+      quantity: billItem.quantity,
+      unit_price: billItem.unit_price,
+      total_price: billItem.total_price,
+      medicine_name: billItem.medicine_name
+    },
+    deletion_reason: reason || 'Bill item deletion',
+    deletion_type: 'manual',
+    bill_id: billItem.bill_id,
+    medicine_name: billItem.medicine_name,
+    amount_affected: billItem.total_price || (billItem.unit_price * billItem.quantity),
+    quantity_affected: billItem.quantity,
+    notes: notes,
+    is_reversible: true,
+    reversal_deadline: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
   });
 }
 

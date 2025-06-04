@@ -21,6 +21,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { logPatientDeletion, logPrescriptionDeletion } from "@/utils/deletionTracker";
 
 export default function Patients() {
   const navigate = useNavigate();
@@ -548,6 +552,14 @@ export default function Patients() {
           return;
         }
         
+        // Log prescription deletions for audit purposes
+        for (const prescription of prescriptions) {
+          await logPrescriptionDeletion(
+            prescription,
+            `Patient deletion - prescription deleted as part of patient cleanup`
+          );
+        }
+        
         // Delete prescriptions first
         const { error: deletePresError } = await supabase
           .from("prescriptions")
@@ -564,6 +576,9 @@ export default function Patients() {
           return;
         }
       }
+      
+      // Get patient data before deletion for logging
+      const patientToDeleteData = patients.find(p => p.id === patientToDelete);
       
       // Finally delete the patient
       const { error: patientError } = await supabase
@@ -582,6 +597,14 @@ export default function Patients() {
         return;
       }
 
+      // Log patient deletion for audit purposes
+      if (patientToDeleteData) {
+        await logPatientDeletion(
+          patientToDeleteData,
+          "Manual patient deletion from patients page"
+        );
+      }
+      
       // ENHANCED: Real-time local state update
       setPatients(prev => prev.filter(patient => patient.id !== patientToDelete));
       
