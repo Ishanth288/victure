@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ interface InventoryItem {
   strength?: string;
 }
 
-const MobileInventory = () => {
+const MobileInventory: React.FC = () => {
   const { toast } = useToast();
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -215,14 +216,8 @@ const MobileInventory = () => {
                       <span className="text-gray-500">Price:</span>
                       <span className="ml-1 font-medium">₹{item.selling_price}</span>
                     </div>
-                    {item.batch_number && (
-                      <div>
-                        <span className="text-gray-500">Batch:</span>
-                        <span className="ml-1">{item.batch_number}</span>
-                      </div>
-                    )}
                     {item.expiry_date && (
-                      <div>
+                      <div className="col-span-2">
                         <span className="text-gray-500">Expiry:</span>
                         <span className={`ml-1 ${new Date(item.expiry_date) < new Date() ? 'text-red-600 font-medium' : ''}`}>
                           {new Date(item.expiry_date).toLocaleDateString()}

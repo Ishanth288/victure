@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -35,7 +36,7 @@ export function CartSummary({
   const [showBillPreview, setShowBillPreview] = useState(false);
   const [generatedBill, setGeneratedBill] = useState<any>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // Initialize as false, as auth check is quick
+  const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showEmbeddedPreview, setShowEmbeddedPreview] = useState(false);
   const [prescriptionDetails, setPrescriptionDetails] = useState<any>(null);
@@ -44,13 +45,11 @@ export function CartSummary({
   useEffect(() => {
     const handleAuthStateChange = (_event: any, session: any) => {
       setIsAuthenticated(!!session);
-      // Only set isLoading to false if it's the initial check
       if (isLoading) {
         setIsLoading(false);
       }
     };
 
-    // Initial check
     checkAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthStateChange);
@@ -58,7 +57,7 @@ export function CartSummary({
     return () => {
       subscription.unsubscribe();
     };
-  }, []); // Removed isLoading from dependency array to prevent re-runs
+  }, []);
 
   useEffect(() => {
     if (prescriptionId) {
@@ -130,7 +129,6 @@ export function CartSummary({
   const handlePrint = () => {
     if (!billPreviewRef.current) return;
     
-    // Create a style element for print that only uses upper half of the page
     const style = document.createElement('style');
     style.innerHTML = `
       @media print {
@@ -144,23 +142,20 @@ export function CartSummary({
           padding: 0 !important;
         }
         
-        /* Hide all other elements */
         body > *:not(.print-container) {
           display: none !important;
         }
         
-        /* Container for print content */
         .print-container {
           display: block !important;
           position: relative;
           width: 100%;
-          height: 148mm !important; /* Upper half of A4 */
+          height: 148mm !important;
           overflow: hidden !important;
           page-break-after: avoid;
           page-break-inside: avoid;
         }
         
-        /* Reset any previous print styling */
         .print-content {
           visibility: visible !important;
           position: absolute;
@@ -171,7 +166,6 @@ export function CartSummary({
           overflow: hidden !important;
         }
         
-        /* Prevent any additional pages */
         .avoid-page-break {
           page-break-inside: avoid;
           page-break-after: avoid;
@@ -180,7 +174,6 @@ export function CartSummary({
     `;
     document.head.appendChild(style);
     
-    // Create temporary container for printing
     const printContainer = document.createElement('div');
     printContainer.className = 'print-container';
     const printContentClone = billPreviewRef.current.cloneNode(true) as HTMLElement;
@@ -188,10 +181,8 @@ export function CartSummary({
     printContainer.appendChild(printContentClone);
     document.body.appendChild(printContainer);
     
-    // Print
     window.print();
     
-    // Cleanup
     document.body.removeChild(printContainer);
     document.head.removeChild(style);
     
@@ -207,43 +198,35 @@ export function CartSummary({
     try {
       const printContent = billPreviewRef.current;
       
-      // Create canvas from the content
       const canvas = await html2canvas(printContent, {
-        scale: 2, // Higher scale for better quality
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff"
       });
       
-      // Create PDF (A4 size)
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4'
       });
       
-      // Calculate dimensions to fit content in upper half of the page
-      const imgWidth = 210 - 20; // A4 width minus margins
+      const imgWidth = 210 - 20;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const maxHeight = 148; // Upper half of A4 (297/2)
+      const maxHeight = 148;
       
-      // Scale down if needed to fit in upper half
       const finalImgHeight = Math.min(imgHeight, maxHeight);
       const scaleFactor = finalImgHeight / imgHeight;
       const finalImgWidth = imgWidth * scaleFactor;
       
-      // Center the image horizontally
       const xPos = (210 - finalImgWidth) / 2;
       
-      // Add image to PDF
       pdf.addImage(canvas.toDataURL('image/png'), 'PNG', xPos, 10, finalImgWidth, finalImgHeight);
       
-      // Add watermark
       pdf.setFontSize(12);
       pdf.setTextColor(180, 180, 180);
       pdf.text('Victure', 190, 10);
       
-      // Save PDF
       pdf.save(`bill-${generatedBill?.bill_number || 'export'}.pdf`);
       
       toast({
@@ -342,7 +325,6 @@ export function CartSummary({
         return;
       }
 
-      // Fetch profile data
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -351,17 +333,14 @@ export function CartSummary({
 
       if (profileError) throw new Error(profileError.message);
 
-      // Handle patient details: update if exists, insert if new
       let patientId = prescriptionDetails?.patient?.id;
       if (prescriptionDetails && prescriptionDetails.patient) {
         if (patientId && patientId > 0) {
-          // Update existing patient
           const { error: patientUpdateError } = await supabase
             .from('patients')
             .update({
               name: prescriptionDetails.patient.name.trim(),
               phone_number: prescriptionDetails.patient.phone_number?.trim() || null,
-              updated_at: new Date().toISOString(), // Add timestamp
             })
             .eq('id', patientId);
 
@@ -369,14 +348,12 @@ export function CartSummary({
             throw new Error(`Patient update error: ${patientUpdateError.message}`);
           }
         } else {
-          // Insert new patient with better validation
           const { data: newPatientData, error: patientError } = await supabase
             .from("patients")
             .insert({
               name: prescriptionDetails.patient.name.trim(),
               phone_number: prescriptionDetails.patient.phone_number?.trim() || null,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
+              user_id: session.user.id,
             })
             .select("id")
             .single();
@@ -393,22 +370,18 @@ export function CartSummary({
         }
       }
 
-      // Fixed: Better bill data validation
       const billInsertData = {
         prescription_id: prescriptionId,
         bill_number: `BILL-${Date.now()}`,
         subtotal: subtotal,
         gst_amount: gstAmount,
-        gst_percentage: validGstPercentage,
-        discount_amount: validDiscountAmount,
+        gst_percentage: gstPercentage,
+        discount_amount: discountAmount,
         total_amount: total,
         status: "completed",
         user_id: session.user.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       };
 
-      // Validate bill data before insert
       if (billInsertData.total_amount <= 0) {
         throw new Error("Bill total must be greater than zero");
       }
@@ -439,16 +412,14 @@ export function CartSummary({
         throw new Error("Failed to create bill - no ID returned");
       }
 
-      // Fixed: Better bill items validation and creation
       const validBillItems = items
         .filter(item => item.id && item.quantity > 0 && item.unit_cost >= 0)
         .map((item) => ({
           bill_id: billData.id,
           inventory_item_id: item.id,
-          quantity: Math.max(1, Math.floor(item.quantity)), // Ensure positive integer
+          quantity: Math.max(1, Math.floor(item.quantity)),
           unit_price: Math.max(0, item.unit_cost),
           total_price: Math.max(0, item.total),
-          created_at: new Date().toISOString(),
         }));
 
       if (validBillItems.length === 0) {
@@ -463,7 +434,6 @@ export function CartSummary({
         throw new Error(`Bill items creation error: ${billItemsError.message}`);
       }
 
-      // Fixed: Better inventory update with transaction-like behavior
       const inventoryUpdates = [];
       for (const item of items) {
         if (!item.id || item.quantity <= 0) continue;
@@ -493,13 +463,11 @@ export function CartSummary({
         });
       }
 
-      // Apply inventory updates
       for (const update of inventoryUpdates) {
         const { error: inventoryError } = await supabase
           .from("inventory")
           .update({ 
             quantity: update.newQuantity,
-            updated_at: new Date().toISOString()
           })
           .eq("id", update.id);
 
@@ -547,7 +515,7 @@ export function CartSummary({
           items.map((item) => (
             <CartItemRow
               key={item.id}
-              item={item}
+              {...item}
               onRemoveItem={onRemoveItem}
               onUpdateQuantity={onUpdateQuantity}
             />
@@ -614,9 +582,9 @@ export function CartSummary({
 
       {generatedBill && (
         <BillPreviewDialog
-          showBillPreview={showBillPreview}
-          setShowBillPreview={setShowBillPreview}
-          generatedBill={generatedBill}
+          bill={generatedBill}
+          isOpen={showBillPreview}
+          onClose={() => setShowBillPreview(false)}
           onPrint={handlePrint}
           onExport={handleExport}
         />
@@ -625,7 +593,9 @@ export function CartSummary({
       {showEmbeddedPreview && generatedBill && (
         <div className="mt-4 p-4 border rounded-md bg-gray-50">
           <h4 className="text-md font-semibold mb-2">Bill Preview</h4>
-          <PrintableBill ref={billPreviewRef} bill={generatedBill} />
+          <div ref={billPreviewRef}>
+            <PrintableBill bill={generatedBill} />
+          </div>
         </div>
       )}
     </div>

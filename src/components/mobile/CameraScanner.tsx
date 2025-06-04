@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Capacitor } from '@capacitor/core';
-import { CameraPlugin } from '@capacitor/camera';
+import { Camera as CapacitorCamera } from '@capacitor/camera';
 
 interface ScannedData {
   name: string;
@@ -51,7 +51,7 @@ const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete, onClose }
       
       if (Capacitor.isNativePlatform()) {
         // Use native camera on mobile
-        const image = await CameraPlugin.getPhoto({
+        const image = await CapacitorCamera.getPhoto({
           quality: 90,
           allowEditing: false,
           resultType: 'base64',
