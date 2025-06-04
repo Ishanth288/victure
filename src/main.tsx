@@ -8,7 +8,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/components/theme-provider";
 import { BrowserRouter } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { supabase } from "@/integrations/supabase/client";
+import { AuthProvider } from "@/hooks/useAuth";
+import { InventoryProvider } from "./contexts/InventoryContext";
+import { checkSupabaseAvailability } from "./integrations/supabase/client";
 
 // Create a simplified query client
 const queryClient = new QueryClient({
@@ -27,16 +29,9 @@ function Root() {
 
   useEffect(() => {
     const checkAvailability = async () => {
-      try {
-        // Simple connection test
-        const { error } = await supabase.auth.getSession();
-        setIsSupabaseAvailable(!error);
-      } catch (error) {
-        console.error("Supabase connection failed:", error);
-        setIsSupabaseAvailable(false);
-      } finally {
-        setLoadingSupabase(false);
-      }
+      const available = await checkSupabaseAvailability();
+      setIsSupabaseAvailable(available);
+      setLoadingSupabase(false);
     };
     checkAvailability();
   }, []);
@@ -60,8 +55,12 @@ function Root() {
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <BrowserRouter>
-              <App />
-              <Toaster position="top-center" richColors closeButton />
+              <AuthProvider>
+                <InventoryProvider>
+                  <App />
+                </InventoryProvider>
+                <Toaster position="top-center" richColors closeButton />
+              </AuthProvider>
             </BrowserRouter>
           </TooltipProvider>
         </QueryClientProvider>
@@ -73,12 +72,15 @@ function Root() {
 // Add global error handlers
 window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', event.reason);
-  event.preventDefault();
+  event.preventDefault(); // Prevent the default handling of the rejection
 });
 
 window.addEventListener('error', (event) => {
   console.error('Global error:', event.error);
+  // You might want to prevent default if you're handling all errors centrally
+  // event.preventDefault();
 });
 
+// Simple root render without complex initialization
 const root = ReactDOM.createRoot(document.getElementById("root")!); 
 root.render(<Root />);

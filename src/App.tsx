@@ -1,125 +1,87 @@
 
-import { useEffect, useState } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import { Toaster } from "@/components/ui/toaster";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useConnectionStatus } from "@/hooks/useConnectionStatus";
-import { supabase } from "@/integrations/supabase/client";
-import { InventoryProvider } from "@/contexts/InventoryContext";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import Auth from "@/pages/Auth";
-import Dashboard from "@/pages/Dashboard";
-import { MobileLayout } from "@/components/mobile/MobileLayout";
-import MobileDashboard from "@/components/mobile/MobileDashboard";
-import OptimizedMobileInventory from "@/components/mobile/OptimizedMobileInventory";
-import OptimizedMobilePatients from "@/components/mobile/OptimizedMobilePatients";
-import MobileSettings from "@/components/mobile/MobileSettings";
+import React, { Suspense } from "react";
+import { Routes, Route } from "react-router-dom";
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import { MobileAppWrapper } from "./components/mobile/MobileAppWrapper";
+import { Capacitor } from "@capacitor/core";
+import { LoadingAnimation } from "./components/ui/loading-animation";
+import { ErrorBoundary } from "./components/ErrorBoundary"; // Import ErrorBoundary
+
+// Lazy load main application pages
+const Dashboard = React.lazy(() => import("./pages/Dashboard"));
+const Inventory = React.lazy(() => import("./pages/Inventory"));
+const Billing = React.lazy(() => import("./pages/Billing"));
+const BillingCart = React.lazy(() => import("./pages/BillingCart"));
+const Patients = React.lazy(() => import("./pages/Patients"));
+const Prescriptions = React.lazy(() => import("./pages/Prescriptions"));
+const Purchases = React.lazy(() => import("./pages/Purchases"));
+const Settings = React.lazy(() => import("./pages/Settings"));
+const Insights = React.lazy(() => import("./pages/Insights"));
+const BusinessOptimization = React.lazy(() => import("./pages/BusinessOptimization"));
+const Documentation = React.lazy(() => import("./pages/Documentation"));
+const Admin = React.lazy(() => import("./pages/Admin"));
+const SystemSettings = React.lazy(() => import("./pages/admin/SystemSettings"));
+const NotFound = React.lazy(() => import("./pages/NotFound"));
+
+// Lazy load legal pages
+const LegalLayout = React.lazy(() => import("./components/layouts/LegalLayout"));
+const PrivacyPolicy = React.lazy(() => import("./pages/legal/PrivacyPolicy"));
+const TermsOfService = React.lazy(() => import("./pages/legal/TermsOfService"));
+const RefundPolicy = React.lazy(() => import("./pages/legal/RefundPolicy"));
+const Disclaimers = React.lazy(() => import("./pages/legal/Disclaimers"));
+const EULA = React.lazy(() => import("./pages/legal/EULA"));
+const SLA = React.lazy(() => import("./pages/legal/SLA"));
+const AcceptableUsePolicy = React.lazy(() => import("./pages/legal/AcceptableUsePolicy"));
+
+// Lazy load mobile-specific pages
+const MobileInventory = React.lazy(() => import("./components/mobile/MobileInventory"));
+const MobilePatients = React.lazy(() => import("./components/mobile/MobilePatients"));
+const MobileSettings = React.lazy(() => import("./components/mobile/MobileSettings"));
 
 function App() {
-  const isMobile = useIsMobile();
-  const { isOnline, isSupabaseConnected } = useConnectionStatus();
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Get initial session with error handling
-    const initializeAuth = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error("Error getting session:", error);
-        }
-        setSession(session);
-      } catch (error) {
-        console.error("Failed to initialize auth:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeAuth();
-
-    // Listen for auth changes with error handling
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return (
-      <ErrorBoundary>
-        <Auth />
-        <Toaster />
-      </ErrorBoundary>
-    );
-  }
-
-  // Show connection status for business-critical scenarios
-  if (!isOnline || !isSupabaseConnected) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
-          <div className="animate-pulse">
-            <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <div className="w-8 h-8 bg-yellow-500 rounded-full"></div>
-            </div>
-          </div>
-          <h2 className="text-xl font-semibold mb-2">
-            {!isOnline ? "You're Offline" : "Connecting to Database..."}
-          </h2>
-          <p className="text-gray-600 mb-4">
-            {!isOnline 
-              ? "Please check your internet connection to continue using the app."
-              : "We're working to restore your connection. Your data is safe."
-            }
-          </p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700"
-          >
-            Retry Connection
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  // Log platform information for debugging
+  console.log('App starting - Platform:', Capacitor.getPlatform(), 'isNative:', Capacitor.isNativePlatform());
+  
   return (
     <ErrorBoundary>
-      <InventoryProvider>
-        {isMobile ? (
-          <MobileLayout>
-            <Routes>
-              <Route path="/" element={<MobileDashboard />} />
-              <Route path="/mobile/inventory" element={<OptimizedMobileInventory />} />
-              <Route path="/mobile/patients" element={<OptimizedMobilePatients />} />
-              <Route path="/mobile/settings" element={<MobileSettings />} />
-              <Route path="/dashboard/*" element={<Navigate to="/" replace />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </MobileLayout>
-        ) : (
+      <MobileAppWrapper>
+        <Suspense fallback={<LoadingAnimation showLogo={true} text="Loading page..." size="lg" />}>
           <Routes>
-            <Route path="/dashboard/*" element={<Dashboard />} />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/mobile/*" element={<Navigate to="/dashboard" replace />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/inventory" element={<Inventory />} />
+            <Route path="/billing" element={<Billing />} />
+            <Route path="/cart" element={<BillingCart />} />
+            <Route path="/patients" element={<Patients />} />
+            <Route path="/prescriptions" element={<Prescriptions />} />
+            <Route path="/purchases" element={<Purchases />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/insights" element={<Insights />} />
+            <Route path="/business-optimization" element={<BusinessOptimization />} />
+            <Route path="/documentation" element={<Documentation />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/admin/settings" element={<SystemSettings />} />
+            
+            {/* Mobile-specific routes */}
+            <Route path="/mobile/inventory" element={<MobileInventory />} />
+            <Route path="/mobile/patients" element={<MobilePatients />} />
+            <Route path="/mobile/settings" element={<MobileSettings />} />
+            
+            <Route path="/legal" element={<LegalLayout />}>
+              <Route path="privacy" element={<PrivacyPolicy />} />
+              <Route path="terms" element={<TermsOfService />} />
+              <Route path="refund" element={<RefundPolicy />} />
+              <Route path="disclaimers" element={<Disclaimers />} />
+              <Route path="eula" element={<EULA />} />
+              <Route path="sla" element={<SLA />} />
+              <Route path="acceptable-use" element={<AcceptableUsePolicy />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
           </Routes>
-        )}
-        <Toaster />
-      </InventoryProvider>
+        </Suspense>
+      </MobileAppWrapper>
     </ErrorBoundary>
   );
 }

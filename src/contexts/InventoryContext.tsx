@@ -4,7 +4,6 @@ import { RealtimeChannel } from "@supabase/supabase-js";
 import { type InventoryItem, type InventoryItemFormData, type InventoryItemDB } from "@/types/inventory";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { robustInventoryFetch, handleBusinessCriticalError } from "@/utils/errorRecovery";
 
 interface InventoryContextType {
   inventory: InventoryItem[];
@@ -41,7 +40,7 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
     strength: "",
     unitSize: "",
     unitCost: "",
-    sellingPrice: "",
+    sellingPrice: "", // Added the missing sellingPrice property
     quantity: "",
     reorderPoint: "10",
     expiryDate: "",
@@ -50,39 +49,47 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
   });
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
 
-  // Use refs to track subscription state and prevent multiple subscriptions
-  const subscriptionRef = useRef<RealtimeChannel | null>(null);
-  const isSubscribedRef = useRef(false);
-  const mountedRef = useRef(true);
-
   const fetchInventory = useCallback(async () => {
-    if (!mountedRef.current) return;
-    
     setIsLoading(true);
-    console.log("fetchInventory: Starting robust data fetch.");
-    
+    console.log("fetchInventory: Starting data fetch.");
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
-      if (userError || !user) {
-        console.warn("fetchInventory: No authenticated user found.");
+      if (userError) {
+        console.error("fetchInventory: Error getting user:", userError);
         setInventory([]);
+        setIsLoading(false);
         return;
       }
 
-      // Fixed: Use id for ordering instead of non-existent created_at column
-      const { data, error } = await supabase
-        .from('inventory')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('id', { ascending: false });
-      
-      if (error) {
-        throw new Error(`Database error: ${error.message}`);
+      if (!user) {
+        console.warn("fetchInventory: No authenticated user found. Skipping inventory fetch.");
+        setInventory([]);
+        setIsLoading(false);
+        return;
       }
       
-      if (mountedRef.current) {
-        const inventoryItems: InventoryItem[] = (data || []).map(item => ({
+      const { data, error: fetchError } = await supabase
+        .from("inventory")
+        .select("*") // Include bill_items to check for references
+        .eq("user_id", user.id)
+        .order("name");
+
+      if (fetchError) {
+        console.error("fetchInventory: Supabase error fetching inventory data:", fetchError.message);
+        toast({
+          title: "Error",
+          description: `Failed to load inventory data: ${fetchError.message}`,
+          variant: "destructive",
+        });
+        setInventory([]);
+        return; // Exit early on error
+      }
+
+      console.log("fetchInventory: Fetched inventory items count:", data?.length || 0);
+      
+      if (data && Array.isArray(data)) {
+        const inventoryItems: InventoryItem[] = data.map(item => ({
           ...item,
           generic_name: item.generic_name || null,
           strength: item.strength || null,
@@ -91,105 +98,136 @@ export function InventoryProvider({ children }: { children: ReactNode }) {
         }));
 
         setInventory(inventoryItems);
-        console.log("fetchInventory: Updated inventory state successfully.");
-      }
-    } catch (error) {
-      console.error("fetchInventory: Critical error:", error);
-      if (mountedRef.current) {
-        handleBusinessCriticalError(error, 'Inventory Data Fetch');
+        console.log("fetchInventory: Updated inventory state with items.");
+      } else {
+        console.warn("fetchInventory: No inventory data returned or data is not an array. Setting inventory to empty.");
         setInventory([]);
       }
+    } catch (error) {
+      console.error("fetchInventory: Caught error during inventory fetch:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch inventory items",
+        variant: "destructive",
+      });
+      setInventory([]);
     } finally {
-      if (mountedRef.current) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
+      console.log("fetchInventory: Finished data fetch. isLoading set to false.");
     }
-  }, []);
+  }, [supabase, setInventory, toast]);
 
-  // Setup subscription with proper cleanup
+  const inventoryChannelRef = useRef<RealtimeChannel | null>(null);
+
+  // Initial data fetch and realtime subscription setup
   useEffect(() => {
+    let currentChannel: RealtimeChannel | null = null; // Use a local variable for the current effect run
+
     const setupSubscription = async () => {
-      // Cleanup any existing subscription first
-      if (subscriptionRef.current) {
-        console.log("Cleaning up existing subscription before creating new one");
-        await supabase.removeChannel(subscriptionRef.current);
-        subscriptionRef.current = null;
-        isSubscribedRef.current = false;
-      }
+      setIsLoading(true);
+      console.log("InventoryContext useEffect: Starting inventory setup.");
 
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        console.warn("No authenticated user found for subscription setup.");
+
+      if (userError) {
+        console.error("InventoryContext useEffect: Error getting user:", userError);
+        setInventory([]);
+        setIsLoading(false);
         return;
       }
 
-      // Only create subscription if we don't already have one
-      if (!isSubscribedRef.current && mountedRef.current) {
-        try {
-          const channel = supabase.channel(`inventory-changes-${user.id}-${Date.now()}`);
-          subscriptionRef.current = channel;
+      if (!user) {
+        console.warn("InventoryContext useEffect: No authenticated user found. Skipping inventory fetch and subscription.");
+        setInventory([]);
+        setIsLoading(false);
+        return;
+      }
 
-          console.log(`Creating new subscription channel: ${channel.topic}`);
+      console.log("InventoryContext useEffect: Authenticated user found:", user.id);
 
-          channel
-            .on(
-              'postgres_changes',
-              {
-                event: '*',
-                schema: 'public',
-                table: 'inventory',
-                filter: `user_id=eq.${user.id}`
-              },
-              (payload) => {
-                console.log('Inventory change received!', payload);
-                if (mountedRef.current) {
-                  fetchInventory();
-                }
-              }
-            )
-            .subscribe((status) => {
-              if (status === 'SUBSCRIBED') {
-                console.log('Successfully subscribed to inventory changes');
-                isSubscribedRef.current = true;
-              } else if (status === 'CHANNEL_ERROR') {
-                console.error('Error subscribing to inventory changes');
-                isSubscribedRef.current = false;
-              }
-            });
+      try {
+        // Fetch inventory data
+        const { data, error } = await supabase
+          .from("inventory")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("name");
 
-        } catch (error) {
-          console.error("Error setting up inventory subscription:", error);
-          handleBusinessCriticalError(error, 'Real-time Subscription Setup');
+        if (error) {
+          console.error("InventoryContext useEffect: Error fetching inventory data:", error);
+          throw error;
         }
+
+        if (data && Array.isArray(data)) {
+          const inventoryItems: InventoryItem[] = data.map(item => ({
+            ...item,
+            generic_name: item.generic_name || null,
+            strength: item.strength || null,
+            reorder_point: item.reorder_point || 10,
+            storage_condition: item.storage_condition || null
+          }));
+          setInventory(inventoryItems);
+          console.log("InventoryContext useEffect: Updated inventory state with items.");
+        } else {
+          console.warn("InventoryContext useEffect: No inventory data returned or data is not an array.");
+          setInventory([]);
+        }
+
+        // Realtime subscription logic
+        // Ensure previous channel is removed before creating a new one
+        if (inventoryChannelRef.current) {
+          console.log(`InventoryContext useEffect: Removing existing channel ${inventoryChannelRef.current.topic}.`);
+          supabase.removeChannel(inventoryChannelRef.current);
+          inventoryChannelRef.current = null;
+        }
+
+        const newChannel = supabase.channel(`inventory-changes-${user.id}`);
+        currentChannel = newChannel; // Assign to local variable for cleanup
+        inventoryChannelRef.current = newChannel; // Also update ref for persistence
+
+        console.log(`InventoryContext useEffect: Created new channel 'inventory-changes-${user.id}'.`);
+
+        newChannel
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'inventory',
+              filter: `user_id=eq.${user.id}`
+            },
+            (payload) => {
+              console.log('Inventory change received!', payload);
+              fetchInventory();
+            }
+          )
+          .subscribe();
+
+      } catch (error) {
+        console.error("InventoryContext useEffect: Caught error during inventory setup:", error);
+        toast({
+          title: "Error",
+          description: "Failed to setup inventory subscription",
+          variant: "destructive",
+        });
+        setInventory([]);
+      } finally {
+        setIsLoading(false);
+        console.log("InventoryContext useEffect: Finished inventory setup. isLoading set to false.");
       }
     };
 
-    // Initial data fetch
-    fetchInventory();
-    
-    // Setup subscription
     setupSubscription();
 
-    // Cleanup function
+    // Cleanup function for useEffect
     return () => {
-      mountedRef.current = false;
-      if (subscriptionRef.current) {
-        console.log("Cleaning up inventory subscription on unmount");
-        supabase.removeChannel(subscriptionRef.current);
-        subscriptionRef.current = null;
-        isSubscribedRef.current = false;
+      if (currentChannel) { // Use the local variable for cleanup
+        console.log(`InventoryContext useEffect cleanup: Removing channel ${currentChannel.topic}.`);
+        supabase.removeChannel(currentChannel);
+        inventoryChannelRef.current = null; // Clear the ref as well
       }
     };
-  }, []); // Empty dependency array to run only once
-
-  // Reset mounted ref when component mounts
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+  }, [supabase, fetchInventory, toast, setInventory]); // Added toast and setInventory to dependencies
 
   return (
     <InventoryContext.Provider

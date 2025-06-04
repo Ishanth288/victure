@@ -2,7 +2,7 @@
 import { useState, useCallback } from "react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { BusinessOptimizationPage } from "@/components/dashboard/BusinessOptimization";
-import { ErrorFallback } from "@/components/ui/fallback";
+import { Fallback, ErrorFallback } from "@/components/ui/fallback";
 import { stableToast } from "@/components/ui/stable-toast";
 import { displayErrorMessage } from "@/utils/errorHandling";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -60,6 +60,7 @@ export default function BusinessOptimization() {
             onRetry={handleRetry}
           />
         }
+        onError={(error) => handleError(error)}
       >
         {isRetrying ? (
           <div className="flex items-center justify-center h-64">
