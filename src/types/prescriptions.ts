@@ -1,9 +1,8 @@
-
 export interface Prescription {
   id: number;
   prescription_number: string;
   patient_id: number;
-  doctor_name: string;
+  doctor_name?: string | null;
   date: string;
   status: 'active' | 'inactive';
   user_id: string;

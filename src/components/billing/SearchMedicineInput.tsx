@@ -40,8 +40,11 @@ export function SearchMedicineInput({ onAddItem, cartItems }: SearchMedicineInpu
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
+        console.error("User not authenticated for loading medicines");
         throw new Error("User not authenticated");
       }
+
+      console.log("Loading medicines for user:", user.id);
 
       const { data, error } = await supabase
         .from("inventory")
@@ -50,16 +53,22 @@ export function SearchMedicineInput({ onAddItem, cartItems }: SearchMedicineInpu
         .gt("quantity", 0)
         .order("name");
 
-      if (error) throw error;
+      if (error) {
+        console.error("Database error loading medicines:", error);
+        throw error;
+      }
 
+      console.log("Loaded medicines:", data?.length || 0, "items");
       setAllMedicines(data || []);
     } catch (error) {
       console.error("Error loading medicines:", error);
       toast({
         title: "Error",
-        description: "Failed to load medicines",
+        description: "Failed to load medicines. Please check your internet connection and try again.",
         variant: "destructive",
       });
+      // Set empty array on error to prevent infinite loading
+      setAllMedicines([]);
     } finally {
       setIsLoading(false);
     }

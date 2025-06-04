@@ -1,4 +1,3 @@
-
 import { PreviewItem } from "@/types/dataMigration";
 
 /**
@@ -90,9 +89,7 @@ export function validatePrescriptionData(prescription: PreviewItem): {
     warnings.push({ type: "missing", message: "Prescription number is required" });
   }
 
-  if (!prescription.doctor_name) {
-    warnings.push({ type: "missing", message: "Doctor name is required" });
-  }
+  // Doctor name is now optional - no validation required
 
   if (!prescription.date) {
     warnings.push({ type: "missing", message: "Prescription date is required" });

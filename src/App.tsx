@@ -26,6 +26,7 @@ const BusinessOptimization = React.lazy(() => import("./pages/BusinessOptimizati
 const Documentation = React.lazy(() => import("./pages/Documentation"));
 const Admin = React.lazy(() => import("./pages/Admin"));
 const SystemSettings = React.lazy(() => import("./pages/admin/SystemSettings"));
+const SystemTest = React.lazy(() => import("./pages/SystemTest"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 
 // Lazy load legal pages
@@ -131,6 +132,7 @@ function App() {
         <Route path="/documentation" element={<Documentation />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin/settings" element={<SystemSettings />} />
+        <Route path="/system-test" element={<SystemTest />} />
         
         {/* Mobile-specific routes */}
         <Route path="/mobile/inventory" element={<MobileInventory />} />

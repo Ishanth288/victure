@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
@@ -130,7 +129,7 @@ export function PatientCard({
                           <p className="text-xs text-gray-500">Dr. {prescription.doctor_name}</p>
                           <p className="text-xs text-gray-500">{format(new Date(prescription.date), "MMM dd, yyyy")}</p>
                         </div>
-                        {prescription.status === 'active' && prescription.bills.length === 0 && onCreateBill && (
+                        {prescription.status === 'active' && prescription.bills?.length === 0 && onCreateBill && (
                           <Button 
                             variant="outline" 
                             size="sm"
@@ -141,36 +140,54 @@ export function PatientCard({
                           </Button>
                         )}
                       </div>
-                      {prescription.bills.map((bill: any) => {
-                        const returnInfo = returnHistory.filter(r => r.bill_id === bill.id);
-                        const totalReturned = returnInfo.reduce((sum: number, r: any) => sum + (r.return_value || 0), 0);
-                        return (
-                          <div
-                            key={bill.id}
-                            className="ml-4 p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl flex justify-between items-center shadow-sm"
-                          >
-                            <div>
-                              <p className="font-semibold text-blue-900">Bill #{bill.bill_number}</p>
-                              <p className="text-xs text-gray-500">{format(new Date(bill.date), "MMM dd, yyyy h:mm a")}</p>
-                              <p className="text-xs text-gray-700">
-                                Cost: ₹{bill.total_amount.toFixed(2)}
-                                {totalReturned > 0 && (
-                                  <span className="text-orange-600 ml-2">(₹{totalReturned.toFixed(2)} returned)</span>
-                                )}
-                              </p>
-                            </div>
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              className="rounded-full shadow-md hover:bg-blue-200"
-                              onClick={() => onViewBill(bill.id)}
+                      {prescription.bills && prescription.bills.length > 0 ? (
+                        prescription.bills.map((bill: any) => {
+                          const hasReturns = bill.return_value > 0;
+                          const originalAmount = bill.original_amount || bill.total_amount || 0;
+                          const effectiveAmount = bill.effective_amount || bill.total_amount || 0;
+                          const returnValue = bill.return_value || 0;
+                          
+                          return (
+                            <div
+                              key={bill.id}
+                              className="ml-4 p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl flex justify-between items-center shadow-sm"
                             >
-                              <Eye className="h-4 w-4 mr-1 text-blue-700" />
-                              Preview
-                            </Button>
-                          </div>
-                        );
-                      })}
+                              <div>
+                                <p className="font-semibold text-blue-900">Bill #{bill.bill_number}</p>
+                                <p className="text-xs text-gray-500">{format(new Date(bill.date), "MMM dd, yyyy h:mm a")}</p>
+                                <div className="text-xs text-gray-700">
+                                  {hasReturns ? (
+                                    <div className="space-y-1">
+                                      <div className="line-through text-gray-400">
+                                        Original: ₹{originalAmount.toFixed(2)}
+                                      </div>
+                                      <div className="font-medium text-green-700">
+                                        Effective: ₹{effectiveAmount.toFixed(2)}
+                                      </div>
+                                      <div className="text-orange-600">
+                                        (₹{returnValue.toFixed(2)} returned)
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <span>Amount: ₹{effectiveAmount.toFixed(2)}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                className="rounded-full shadow-md hover:bg-blue-200"
+                                onClick={() => onViewBill(bill.id)}
+                              >
+                                <Eye className="h-4 w-4 mr-1 text-blue-700" />
+                                Preview
+                              </Button>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="text-center text-gray-400 py-2">No bills found for this prescription.</div>
+                      )}
                     </div>
                   ))
                 ) : (

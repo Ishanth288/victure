@@ -34,21 +34,13 @@ export default function Billing() {
     }, 500);
 
     const prescriptionIdParam = searchParams.get('prescriptionId');
-    const patientName = searchParams.get('patientName');
-    const patientPhone = searchParams.get('patientPhone');
     const prescriptionNumber = searchParams.get('prescriptionNumber');
+    
+    console.log("🔄 Billing page - URL params check:", { prescriptionIdParam, prescriptionNumber });
     
     if (prescriptionIdParam) {
       setPrescriptionId(parseInt(prescriptionIdParam));
       setShowPrescriptionSearch(false);
-      
-      if (patientName || patientPhone) {
-        setPatientInfo({
-          name: patientName || '',
-          phone: patientPhone || '',
-          prescriptionNumber: prescriptionNumber || undefined,
-        });
-      }
     }
 
     return () => clearTimeout(timer);
@@ -177,39 +169,6 @@ export default function Billing() {
               </Badge>
             )}
           </div>
-
-          {/* Patient Info Display */}
-          {patientInfo && (
-            <Card className="mb-4 border-0 shadow-lg bg-gradient-to-r from-blue-50 to-green-50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center text-gray-800">
-                  <User className="w-5 h-5 mr-2 text-blue-600" />
-                  Patient Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="flex items-center bg-white/50 p-3 rounded-lg">
-                    <User className="w-4 h-4 mr-2 text-blue-500" />
-                    <span className="font-medium text-gray-700">Name:</span>
-                    <span className="ml-2 text-gray-900">{patientInfo.name}</span>
-                  </div>
-                  <div className="flex items-center bg-white/50 p-3 rounded-lg">
-                    <Phone className="w-4 h-4 mr-2 text-green-500" />
-                    <span className="font-medium text-gray-700">Phone:</span>
-                    <span className="ml-2 text-gray-900">{patientInfo.phone}</span>
-                  </div>
-                  {patientInfo.doctorName && (
-                    <div className="flex items-center bg-white/50 p-3 rounded-lg">
-                      <FileText className="w-4 h-4 mr-2 text-purple-500" />
-                      <span className="font-medium text-gray-700">Doctor:</span>
-                      <span className="ml-2 text-gray-900">{patientInfo.doctorName}</span>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Search and Results Area */}

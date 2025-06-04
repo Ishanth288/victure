@@ -48,27 +48,42 @@ export type Database = {
           id: number
           inventory_item_id: number
           quantity: number
-          return_quantity: number
+          return_quantity: number | null
           total_price: number
           unit_price: number
+          replacement_item_id: number | null
+          replacement_quantity: number | null
+          replacement_reason: string | null
+          is_replacement: boolean | null
+          replaced_item_id: number | null
         }
         Insert: {
           bill_id: number
           id?: number
           inventory_item_id: number
           quantity: number
-          return_quantity?: number
+          return_quantity?: number | null
           total_price: number
           unit_price: number
+          replacement_item_id?: number | null
+          replacement_quantity?: number | null
+          replacement_reason?: string | null
+          is_replacement?: boolean | null
+          replaced_item_id?: number | null
         }
         Update: {
           bill_id?: number
           id?: number
           inventory_item_id?: number
           quantity?: number
-          return_quantity?: number
+          return_quantity?: number | null
           total_price?: number
           unit_price?: number
+          replacement_item_id?: number | null
+          replacement_quantity?: number | null
+          replacement_reason?: string | null
+          is_replacement?: boolean | null
+          replaced_item_id?: number | null
         }
         Relationships: [
           {
@@ -83,6 +98,20 @@ export type Database = {
             columns: ["inventory_item_id"]
             isOneToOne: false
             referencedRelation: "inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bill_items_replacement_item_id_fkey"
+            columns: ["replacement_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bill_items_replaced_item_id_fkey"
+            columns: ["replaced_item_id"]
+            isOneToOne: false
+            referencedRelation: "bill_items"
             referencedColumns: ["id"]
           },
         ]
@@ -391,7 +420,7 @@ export type Database = {
       prescriptions: {
         Row: {
           date: string
-          doctor_name: string
+          doctor_name: string | null
           id: number
           migration_id: string | null
           patient_id: number
@@ -403,7 +432,7 @@ export type Database = {
         }
         Insert: {
           date?: string
-          doctor_name: string
+          doctor_name?: string | null
           id?: number
           migration_id?: string | null
           patient_id: number
@@ -415,7 +444,7 @@ export type Database = {
         }
         Update: {
           date?: string
-          doctor_name?: string
+          doctor_name?: string | null
           id?: number
           migration_id?: string | null
           patient_id?: number

@@ -31,9 +31,21 @@ export function EnhancedPatientDetailsModal({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Clear form when modal opens/closes to prevent stale data
+  // CRITICAL FIX: Force clear form data completely when modal opens
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      // COMPLETELY RESET form data - no cached values
+      console.log("🔄 Modal opened - resetting form to completely empty state");
+      setFormData({
+        patientName: "",
+        phoneNumber: "",
+        doctorName: "",
+      });
+      setErrors({});
+      setSubmitAttempts(0);
+    } else if (!open) {
+      // Also clear when modal closes to prevent any persistence
+      console.log("🔄 Modal closed - clearing form data");
       setFormData({
         patientName: "",
         phoneNumber: "",
@@ -43,6 +55,23 @@ export function EnhancedPatientDetailsModal({
       setSubmitAttempts(0);
     }
   }, [open]);
+
+  // ADDITIONAL: Force reset on component mount to prevent any persistence
+  useEffect(() => {
+    console.log("🔄 Component mounted - ensuring clean form state");
+    
+    // CRITICAL: Clear any localStorage that might persist form data
+    localStorage.removeItem('billingFormData');
+    localStorage.removeItem('patientFormData');
+    localStorage.removeItem('prescriptionFormData');
+    
+    setFormData({
+      patientName: "",
+      phoneNumber: "",
+      doctorName: "",
+    });
+    setErrors({});
+  }, []);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -57,16 +86,32 @@ export function EnhancedPatientDetailsModal({
       newErrors.phoneNumber = "Phone number is required";
     } else {
       const cleanPhone = formData.phoneNumber.replace(/\D/g, "");
-      if (cleanPhone.length !== 10) {
+      if (cleanPhone.length < 10) {
         newErrors.phoneNumber = "Please enter a valid 10-digit phone number";
+      } else if (cleanPhone.length === 11 && cleanPhone.startsWith('0')) {
+        setFormData(prev => ({
+          ...prev,
+          phoneNumber: cleanPhone.substring(1)
+        }));
+      } else if (cleanPhone.length === 12 && cleanPhone.startsWith('91')) {
+        setFormData(prev => ({
+          ...prev,
+          phoneNumber: cleanPhone.substring(2)
+        }));
+      } else if (cleanPhone.length === 13 && cleanPhone.startsWith('+91')) {
+        setFormData(prev => ({
+          ...prev,
+          phoneNumber: cleanPhone.substring(3)
+        }));
+      } else if (cleanPhone.length !== 10) {
+        newErrors.phoneNumber = "Please enter a valid 10-digit Indian mobile number";
+      } else if (!cleanPhone.match(/^[6-9]/)) {
+        newErrors.phoneNumber = "Indian mobile numbers start with 6, 7, 8, or 9";
       }
     }
     
-    if (!formData.doctorName.trim()) {
-      newErrors.doctorName = "Doctor name is required";
-    } else if (formData.doctorName.trim().length < 2) {
-      newErrors.doctorName = "Doctor name must be at least 2 characters";
-    }
+    // REMOVED: Doctor name validation (now optional)
+    // Doctor name is now optional, no validation required
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -109,6 +154,11 @@ export function EnhancedPatientDetailsModal({
     e.preventDefault();
     
     if (!validateForm()) {
+      toast({
+        title: "Validation Error",
+        description: "Please check all required fields and try again.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -118,20 +168,30 @@ export function EnhancedPatientDetailsModal({
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        throw new Error("No authenticated user found");
+        throw new Error("No authenticated user found. Please refresh the page and try again.");
       }
 
-      // Clean and validate form data
-      const cleanPatientName = formData.patientName.trim();
-      const cleanPhoneNumber = formData.phoneNumber.replace(/\D/g, ""); // Remove non-digits
-      const cleanDoctorName = formData.doctorName.trim();
+      // Clean and validate form data with better sanitization
+      const cleanPatientName = formData.patientName.trim().replace(/\s+/g, ' ');
+      const cleanPhoneNumber = formData.phoneNumber.replace(/\D/g, "");
+      const cleanDoctorName = formData.doctorName.trim().replace(/\s+/g, ' ') || 'Not Specified';
+
+      // Additional validation
+      if (cleanPatientName.length < 2) {
+        throw new Error("Patient name must be at least 2 characters long.");
+      }
+      if (cleanPhoneNumber.length < 10) {
+        throw new Error("Phone number must be at least 10 digits long.");
+      }
+      // REMOVED: Doctor name validation (now optional)
+      // Doctor name is optional, no validation required
 
       let patientData;
       
-      // First, try to find existing patient by phone number
+      // First, try to find existing patient by phone number with better error handling
       const { data: existingPatient, error: fetchPatientError } = await supabase
         .from("patients")
-        .select("id, name, phone_number")
+        .select("id, name, phone_number, status")
         .eq("phone_number", cleanPhoneNumber)
         .eq("user_id", user.id)
         .maybeSingle();
@@ -142,23 +202,33 @@ export function EnhancedPatientDetailsModal({
       }
 
       if (existingPatient) {
-        // Update existing patient name if different
-        if (existingPatient.name !== cleanPatientName) {
-          const { error: updateError } = await supabase
-            .from("patients")
-            .update({ name: cleanPatientName })
-            .eq("id", existingPatient.id);
-          
-          if (updateError) {
-            console.warn("Failed to update patient name:", updateError);
-            // Continue with existing data rather than failing
-          }
+        // Update existing patient with comprehensive data
+        const { error: updateError } = await supabase
+          .from("patients")
+          .update({ 
+            name: cleanPatientName,
+            status: 'active'
+          })
+          .eq("id", existingPatient.id);
+        
+        if (updateError) {
+          console.warn("Failed to update patient details:", updateError);
+          // Continue with existing data rather than failing
         }
         
-        patientData = { ...existingPatient, name: cleanPatientName };
-        console.log("Using existing patient (updated):", patientData);
+        patientData = { 
+          ...existingPatient, 
+          name: cleanPatientName,
+          status: 'active'
+        };
+        console.log("Updated existing patient:", patientData);
+        
+        toast({
+          title: "Patient Found",
+          description: `Updated details for existing patient: ${cleanPatientName}`,
+        });
       } else {
-        // Create new patient with retry logic
+        // Create new patient with retry logic and better error handling
         let createAttempts = 0;
         const maxCreateAttempts = 3;
         
@@ -172,15 +242,39 @@ export function EnhancedPatientDetailsModal({
                 user_id: user.id,
                 status: 'active'
               })
-              .select("id, name, phone_number")
+              .select("id, name, phone_number, status")
               .single();
 
             if (createPatientError) {
+              // Handle duplicate phone number error
+              if (createPatientError.code === '23505') {
+                console.log("Duplicate phone number detected, fetching existing patient...");
+                const { data: duplicatePatient } = await supabase
+                  .from("patients")
+                  .select("id, name, phone_number, status")
+                  .eq("phone_number", cleanPhoneNumber)
+                  .eq("user_id", user.id)
+                  .single();
+                
+                if (duplicatePatient) {
+                  patientData = duplicatePatient;
+                  break;
+                }
+              }
               throw createPatientError;
+            }
+            
+            if (!newPatient || !newPatient.id) {
+              throw new Error("Patient creation returned no data");
             }
             
             patientData = newPatient;
             console.log("New patient created successfully:", patientData);
+            
+            toast({
+              title: "Patient Created",
+              description: `New patient ${cleanPatientName} created successfully`,
+            });
             break;
           } catch (createError: any) {
             createAttempts++;
@@ -190,8 +284,8 @@ export function EnhancedPatientDetailsModal({
               throw new Error(`Failed to create patient after ${maxCreateAttempts} attempts: ${createError.message}`);
             }
             
-            // Wait a bit before retry
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Wait before retry with exponential backoff
+            await new Promise(resolve => setTimeout(resolve, 1000 * createAttempts));
           }
         }
       }
@@ -200,10 +294,10 @@ export function EnhancedPatientDetailsModal({
         throw new Error("Failed to create or retrieve patient data");
       }
 
-      // Generate prescription number with user scope
+      // Generate prescription number with user scope and better error handling
       const currentPrescriptionNumber = prescriptionNumber || await generateUserScopedPrescriptionNumber(user.id);
       
-      // Create prescription with retry logic
+      // Create prescription with retry logic and improved error handling
       let prescriptionData;
       let createPrescriptionAttempts = 0;
       const maxPrescriptionAttempts = 3;
@@ -237,10 +331,18 @@ export function EnhancedPatientDetailsModal({
                 console.log("Using existing prescription:", existing);
                 prescriptionData = existing;
                 break;
+              } else {
+                // Generate new prescription number and retry
+                const newPrescriptionNumber = await generateUserScopedPrescriptionNumber(user.id);
+                continue;
               }
             }
             
             throw prescriptionError;
+          }
+          
+          if (!newPrescription || !newPrescription.id) {
+            throw new Error("Prescription creation returned no data");
           }
           
           prescriptionData = newPrescription;
@@ -254,8 +356,8 @@ export function EnhancedPatientDetailsModal({
             throw new Error(`Failed to create prescription after ${maxPrescriptionAttempts} attempts: ${prescriptionError.message}`);
           }
           
-          // Wait a bit before retry
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Wait before retry with exponential backoff
+          await new Promise(resolve => setTimeout(resolve, 1000 * createPrescriptionAttempts));
         }
       }
 
@@ -263,20 +365,21 @@ export function EnhancedPatientDetailsModal({
         throw new Error("Failed to create or retrieve prescription data");
       }
 
-      // Success feedback
+      // Success feedback with detailed information
       toast({
         title: "Success!",
-        description: `Patient details saved and prescription ${prescriptionData.prescription_number} created successfully.`,
+        description: `Patient ${cleanPatientName} and prescription ${prescriptionData.prescription_number} created successfully.`,
         variant: "default",
       });
 
-      // Pass complete patient data to parent
+      // Pass complete patient data to parent with all required fields
       onSuccess(prescriptionData.id, {
         id: patientData.id,
         name: cleanPatientName,
-        phone: cleanPhoneNumber,
+        phone_number: cleanPhoneNumber,
         prescriptionNumber: prescriptionData.prescription_number,
-        doctorName: cleanDoctorName
+        doctorName: cleanDoctorName,
+        status: 'active'
       });
 
       // Reset form on success
@@ -291,24 +394,60 @@ export function EnhancedPatientDetailsModal({
     } catch (error: any) {
       console.error("Error in patient details submission:", error);
       
-      // Provide specific error messages based on attempt count
+      // Provide specific error messages based on error type and attempt count
       let errorMessage = "Failed to save patient details. Please try again.";
+      let errorTitle = "Error";
       
       if (submitAttempts >= 3) {
-        errorMessage = "Multiple attempts failed. Please check your connection and try again later.";
+        errorTitle = "Multiple Failures";
+        errorMessage = "Multiple attempts failed. Please check your internet connection and try again later.";
       } else if (error.message.includes("network") || error.message.includes("connection")) {
-        errorMessage = "Connection issue detected. Please check your internet and try again.";
-      } else if (error.message.includes("constraint")) {
-        errorMessage = "Data validation error. Please check your inputs and try again.";
+        errorTitle = "Network Error";
+        errorMessage = "Network connection issue. Please check your internet and try again.";
+      } else if (error.message.includes("duplicate") || error.message.includes("unique")) {
+        errorTitle = "Duplicate Data";
+        errorMessage = "Patient with this phone number already exists. Please check and try again.";
+      } else if (error.message.includes("validation") || error.message.includes("invalid")) {
+        errorTitle = "Validation Error";
+        errorMessage = error.message || "Please check your input data and try again.";
+      } else {
+        errorMessage = error.message || errorMessage;
       }
-
+      
       toast({
-        title: "Error",
+        title: errorTitle,
         description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // ENHANCED: Handle phone number input with better formatting
+  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    
+    // Remove all non-digits
+    const cleanValue = value.replace(/\D/g, "");
+    
+    // Handle different input formats
+    if (cleanValue.length <= 10) {
+      setFormData(prev => ({ ...prev, phoneNumber: cleanValue }));
+    } else if (cleanValue.length === 11 && cleanValue.startsWith('0')) {
+      // Remove leading 0 from numbers like 09876543210
+      setFormData(prev => ({ ...prev, phoneNumber: cleanValue.substring(1) }));
+    } else if (cleanValue.length === 12 && cleanValue.startsWith('91')) {
+      // Remove country code from numbers like 919876543210
+      setFormData(prev => ({ ...prev, phoneNumber: cleanValue.substring(2) }));
+    } else if (cleanValue.length === 13 && value.startsWith('+91')) {
+      // Remove country code from numbers like +919876543210
+      setFormData(prev => ({ ...prev, phoneNumber: cleanValue.substring(3) }));
+    }
+    
+    // Clear phone number error when user starts typing
+    if (errors.phoneNumber) {
+      setErrors(prev => ({ ...prev, phoneNumber: "" }));
     }
   };
 
@@ -327,7 +466,7 @@ export function EnhancedPatientDetailsModal({
           </DialogHeader>
           
           <CardContent className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
               <div className="space-y-2">
                 <Label htmlFor="patientName" className="text-sm font-semibold text-gray-700 flex items-center">
                   <User className="w-4 h-4 mr-2 text-blue-600" />
@@ -335,8 +474,14 @@ export function EnhancedPatientDetailsModal({
                 </Label>
                 <Input
                   id="patientName"
+                  name="patientName"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
                   value={formData.patientName}
                   onChange={(e) => {
+                    console.log("📝 Patient name input:", e.target.value);
                     setFormData({ ...formData, patientName: e.target.value });
                     if (errors.patientName) setErrors({ ...errors, patientName: "" });
                   }}
@@ -359,11 +504,16 @@ export function EnhancedPatientDetailsModal({
                 </Label>
                 <Input
                   id="phoneNumber"
+                  name="phoneNumber"
                   type="tel"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
                   value={formData.phoneNumber}
                   onChange={(e) => {
-                    setFormData({ ...formData, phoneNumber: e.target.value });
-                    if (errors.phoneNumber) setErrors({ ...errors, phoneNumber: "" });
+                    console.log("📝 Phone number input:", e.target.value);
+                    handlePhoneNumberChange(e);
                   }}
                   className={`h-12 border-2 rounded-xl px-4 transition-all duration-200 ${
                     errors.phoneNumber 
@@ -380,12 +530,18 @@ export function EnhancedPatientDetailsModal({
               <div className="space-y-2">
                 <Label htmlFor="doctorName" className="text-sm font-semibold text-gray-700 flex items-center">
                   <UserCheck className="w-4 h-4 mr-2 text-purple-600" />
-                  Doctor Name *
+                  Doctor Name (Optional)
                 </Label>
                 <Input
                   id="doctorName"
+                  name="doctorName"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
                   value={formData.doctorName}
                   onChange={(e) => {
+                    console.log("📝 Doctor name input:", e.target.value);
                     setFormData({ ...formData, doctorName: e.target.value });
                     if (errors.doctorName) setErrors({ ...errors, doctorName: "" });
                   }}
@@ -394,7 +550,7 @@ export function EnhancedPatientDetailsModal({
                       ? "border-red-300 focus:border-red-500 bg-red-50/50" 
                       : "border-gray-200 focus:border-purple-500 bg-white/70"
                   }`}
-                  placeholder="Enter prescribing doctor's name"
+                  placeholder="Enter prescribing doctor's name (optional)"
                 />
                 {errors.doctorName && (
                   <p className="text-red-500 text-xs mt-1">{errors.doctorName}</p>

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Receipt, Download, Printer, CreditCard } from "lucide-react";
+import { Receipt, Download, Printer, CreditCard, User, Phone, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/types/billing";
@@ -71,7 +71,7 @@ export function CartSummary({
       return;
     }
 
-    console.log(`fetchPrescriptionDetails: Fetching details for prescription ID: ${prescriptionId}`);
+    console.log(`🔍 DEBUGGING: Fetching prescription details for ID: ${prescriptionId}`);
     try {
       const { data, error } = await supabase
         .from("prescriptions")
@@ -86,7 +86,7 @@ export function CartSummary({
         .single();
 
       if (error) {
-        console.error(`fetchPrescriptionDetails: Error fetching prescription details for ID ${prescriptionId}:`, error);
+        console.error(`❌ ERROR fetching prescription ${prescriptionId}:`, error);
         toast({
           title: "Error",
           description: `Failed to load prescription details: ${error.message}`,
@@ -97,15 +97,38 @@ export function CartSummary({
       }
       
       if (!data) {
-        console.warn(`fetchPrescriptionDetails: No data found for prescription ID: ${prescriptionId}`);
+        console.warn(`⚠️ NO DATA found for prescription ID: ${prescriptionId}`);
         setPrescriptionDetails(null);
         return;
       }
 
+      // 🚨 DEBUG: Log the actual data being retrieved
+      console.log("📊 RETRIEVED PRESCRIPTION DATA:", {
+        prescriptionId: data.id,
+        prescriptionNumber: data.prescription_number,
+        doctorName: data.doctor_name,
+        patientName: data.patient?.name,
+        patientPhone: data.patient?.phone_number,
+        fullData: data
+      });
+
+      // 🚨 CRITICAL CHECK: Detect hardcoded values
+      if (data.patient?.name === 'raju' || data.patient?.name === 'Raju' || 
+          data.patient?.phone_number === '7982121456' || 
+          data.doctor_name === 'Dr. Tim George') {
+        console.error("🚨 CRITICAL: HARDCODED VALUES DETECTED IN DATABASE!");
+        console.error("This prescription contains contaminated data:", data);
+        toast({
+          title: "⚠️ Database Contamination Detected",
+          description: "This prescription contains old hardcoded values. Please delete it from database and create a new one.",
+          variant: "destructive",
+        });
+      }
+
       setPrescriptionDetails(data);
-      console.log(`fetchPrescriptionDetails: Successfully fetched details for prescription ID: ${prescriptionId}`);
+      console.log(`✅ Successfully loaded prescription ID: ${prescriptionId}`);
     } catch (error: any) {
-      console.error("fetchPrescriptionDetails: Unexpected error:", error);
+      console.error("💥 Unexpected error fetching prescription:", error);
       toast({
         title: "Error",
         description: `An unexpected error occurred: ${error.message}`,
@@ -294,8 +317,8 @@ export function CartSummary({
       
       if (!session) {
         toast({
-          title: "Error",
-          description: "You must be logged in to generate bills",
+          title: "Authentication Error",
+          description: "You must be logged in to generate bills. Please refresh the page and try again.",
           variant: "destructive",
         });
         return;
@@ -303,8 +326,34 @@ export function CartSummary({
 
       if (items.length === 0) {
         toast({
-          title: "Error", 
-          description: "Please add items to the cart",
+          title: "Empty Cart", 
+          description: "Please add items to the cart before generating a bill.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!prescriptionId) {
+        toast({
+          title: "Missing Prescription",
+          description: "No prescription selected. Please select or create a prescription first.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate prescription exists and belongs to user
+      const { data: prescriptionCheck, error: prescriptionError } = await supabase
+        .from('prescriptions')
+        .select('id, status, user_id')
+        .eq('id', prescriptionId)
+        .eq('user_id', session.user.id)
+        .single();
+      
+      if (prescriptionError || !prescriptionCheck) {
+        toast({
+          title: "Invalid Prescription",
+          description: "The selected prescription is not valid or doesn't exist.",
           variant: "destructive",
         });
         return;
@@ -327,9 +376,16 @@ export function CartSummary({
         .eq('id', session.user.id)
         .single();
 
-      if (profileError) throw new Error(profileError.message);
+      if (profileError) {
+        toast({
+          title: "Profile Error",
+          description: "Failed to load pharmacy profile. Please contact support.",
+          variant: "destructive",
+        });
+        throw new Error(profileError.message);
+      }
 
-      // Prepare patient data
+      // Prepare patient data with better error handling
       let patientId = prescriptionDetails?.patient?.id;
       if (prescriptionDetails && prescriptionDetails.patient) {
         if (patientId && patientId > 0) {
@@ -337,12 +393,12 @@ export function CartSummary({
             .from('patients')
             .update({
               name: prescriptionDetails.patient.name.trim(),
-              phone_number: prescriptionDetails.patient.phone_number?.trim() || null,
+              phone_number: prescriptionDetails.patient.phone_number?.trim() || null
             })
             .eq('id', patientId);
 
           if (patientUpdateError) {
-            throw new Error(`Patient update error: ${patientUpdateError.message}`);
+            console.warn("Patient update failed, continuing with existing data:", patientUpdateError);
           }
         } else {
           const { data: newPatientData, error: patientError } = await supabase
@@ -351,6 +407,7 @@ export function CartSummary({
               name: prescriptionDetails.patient.name.trim(),
               phone_number: prescriptionDetails.patient.phone_number?.trim() || null,
               user_id: session.user.id,
+              status: 'active'
             })
             .select("id")
             .single();
@@ -418,12 +475,29 @@ export function CartSummary({
         throw new Error(`Failed to create bill items: ${billItemsError.message}`);
       }
 
-      // Step 3: Update inventory quantities
+      // Step 3: Update inventory quantities - FIXED CRITICAL BUG
       for (const item of items) {
+        const requestedQuantity = Math.floor(item.quantity);
+        
+        // First get current inventory to calculate new quantity
+        const { data: currentInventory, error: fetchError } = await supabase
+          .from('inventory')
+          .select('quantity')
+          .eq('id', item.id)
+          .eq('user_id', session.user.id)
+          .single();
+        
+        if (fetchError) {
+          throw new Error(`Failed to fetch current inventory for ${item.name}: ${fetchError.message}`);
+        }
+        
+        const currentQuantity = currentInventory?.quantity || 0;
+        const newQuantity = Math.max(0, currentQuantity - requestedQuantity);
+        
         const { error: inventoryError } = await supabase
           .from('inventory')
           .update({ 
-            quantity: item.quantity - Math.floor(item.quantity)
+            quantity: newQuantity
           })
           .eq('id', item.id)
           .eq('user_id', session.user.id);
@@ -431,6 +505,8 @@ export function CartSummary({
         if (inventoryError) {
           throw new Error(`Failed to update inventory for item ${item.name}: ${inventoryError.message}`);
         }
+        
+        console.log(`Updated inventory for ${item.name}: ${currentQuantity} -> ${newQuantity} (sold: ${requestedQuantity})`);
       }
 
       // Set the generated bill data with all necessary information
@@ -453,6 +529,57 @@ export function CartSummary({
       setGeneratedBill(completeGeneratedBill);
       setShowBillPreview(true);
       onBillGenerated();
+
+      // ENHANCED: Emit custom event for real-time updates on other pages - IMMEDIATE
+      console.log('📢 Dispatching immediate bill generation events...');
+      
+      // Primary event - immediate dispatch
+      window.dispatchEvent(new CustomEvent('billGenerated', {
+        detail: {
+          billId: billResult.id,
+          billNumber: billResult.bill_number,
+          prescriptionId: prescriptionId,
+          totalAmount: billResult.total_amount,
+          timestamp: Date.now()
+        }
+      }));
+
+      // Secondary event with minimal delay for any async listeners
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('dataRefreshNeeded', {
+          detail: {
+            type: 'bill_generated',
+            timestamp: Date.now(),
+            data: {
+              billId: billResult.id,
+              prescriptionId: prescriptionId
+            }
+          }
+        }));
+      }, 50); // Reduced delay from 100ms to 50ms
+
+      // Storage event for cross-tab communication - immediate
+      localStorage.setItem('lastBillGenerated', JSON.stringify({
+        billId: billResult.id,
+        billNumber: billResult.bill_number,
+        prescriptionId: prescriptionId,
+        timestamp: Date.now()
+      }));
+
+      // Force storage event for same-tab listeners
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'lastBillGenerated',
+        newValue: JSON.stringify({
+          billId: billResult.id,
+          billNumber: billResult.bill_number,
+          prescriptionId: prescriptionId,
+          timestamp: Date.now()
+        }),
+        oldValue: null,
+        storageArea: localStorage
+      }));
+
+      console.log('✅ All real-time events dispatched for bill:', billResult.bill_number);
 
       toast({
         title: "Success",
@@ -602,6 +729,50 @@ export function CartSummary({
         </Button>
       </div>
       
+      {/* ENHANCED: Patient Information Display */}
+      {prescriptionDetails && prescriptionDetails.patient && (
+        <div className="bg-white border-2 border-blue-200 rounded-xl p-6 shadow-sm">
+          <h4 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+            <User className="w-5 h-5 mr-2" />
+            Patient Information
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-3">
+                <User className="w-4 h-4 text-gray-500" />
+                <div>
+                  <p className="text-sm text-gray-500">Patient Name</p>
+                  <p className="font-semibold text-gray-800">{prescriptionDetails.patient.name}</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Phone className="w-4 h-4 text-gray-500" />
+                <div>
+                  <p className="text-sm text-gray-500">Phone Number</p>
+                  <p className="font-semibold text-gray-800">{prescriptionDetails.patient.phone_number || 'Not provided'}</p>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-3">
+                <FileText className="w-4 h-4 text-gray-500" />
+                <div>
+                  <p className="text-sm text-gray-500">Doctor Name</p>
+                  <p className="font-semibold text-gray-800">Dr. {prescriptionDetails.doctor_name}</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Receipt className="w-4 h-4 text-gray-500" />
+                <div>
+                  <p className="text-sm text-gray-500">Prescription Number</p>
+                  <p className="font-semibold text-gray-800">{prescriptionDetails.prescription_number}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Cart Items */}
       <div className="border-2 border-gray-200 rounded-xl bg-white shadow-sm">
         {items.length === 0 ? (

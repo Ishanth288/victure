@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -192,6 +191,25 @@ export function MedicineReturnDialog({
       
       if (updateError) throw updateError;
       
+      // NEW: Update the bill's total amount to reflect the return
+      const { data: currentBill, error: billFetchError } = await supabase
+        .from('bills')
+        .select('total_amount')
+        .eq('id', billId)
+        .single();
+      
+      if (billFetchError) {
+        console.error("Error fetching current bill:", billFetchError);
+      } else if (currentBill) {
+        const newBillAmount = currentBill.total_amount - currentReturnValue;
+        
+        // Don't update the stored total_amount in bills table as it should remain original
+        // The effective amount calculation will be done in the frontend
+        
+        // Instead, we could store a separate field for returns if needed, but for now
+        // we'll calculate the effective amount from bill_items return_quantity
+      }
+      
       // Show success message with refund amount
       toast({
         title: "Return Processed",
@@ -259,13 +277,17 @@ export function MedicineReturnDialog({
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a medicine to return" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border border-gray-200 shadow-lg max-h-60 overflow-y-auto">
                   {billItems.map((item) => {
                     const remainingQuantity = item.quantity - (item.returned_quantity || 0);
                     if (remainingQuantity <= 0) return null;
                     
                     return (
-                      <SelectItem key={item.id} value={item.id.toString()}>
+                      <SelectItem 
+                        key={item.id} 
+                        value={item.id.toString()}
+                        className="cursor-pointer hover:bg-gray-50 focus:bg-gray-50"
+                      >
                         {item.medicine_name} ({remainingQuantity} available)
                       </SelectItem>
                     );
