@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, X, Check, Edit3, RotateCcw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Capacitor } from '@capacitor/core';
-import { Camera as CapacitorCamera } from '@capacitor/camera';
+import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 
 interface ScannedData {
   name: string;
@@ -54,8 +53,8 @@ const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete, onClose }
         const image = await CapacitorCamera.getPhoto({
           quality: 90,
           allowEditing: false,
-          resultType: 'base64',
-          source: 'camera'
+          resultType: CameraResultType.Base64,
+          source: CameraSource.Camera
         });
         
         if (image.base64String) {

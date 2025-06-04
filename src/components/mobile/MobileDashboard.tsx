@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 import { useNavigate } from "react-router-dom";
@@ -364,10 +363,12 @@ export function MobileDashboard() {
       {/* Camera Scanner Modal */}
       {isScannerOpen && (
         <CameraScanner
-          onMedicineDetected={handleScannerResult}
+          onScanComplete={handleScannerResult}
           onClose={closeScanner}
         />
       )}
     </div>
   );
 }
+
+export default MobileDashboard;

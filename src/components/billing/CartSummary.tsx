@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -582,11 +581,10 @@ export function CartSummary({
 
       {generatedBill && (
         <BillPreviewDialog
-          bill={generatedBill}
-          isOpen={showBillPreview}
-          onClose={() => setShowBillPreview(false)}
-          onPrint={handlePrint}
-          onExport={handleExport}
+          billData={generatedBill}
+          items={items}
+          open={showBillPreview}
+          onOpenChange={setShowBillPreview}
         />
       )}
 
@@ -594,7 +592,7 @@ export function CartSummary({
         <div className="mt-4 p-4 border rounded-md bg-gray-50">
           <h4 className="text-md font-semibold mb-2">Bill Preview</h4>
           <div ref={billPreviewRef}>
-            <PrintableBill bill={generatedBill} />
+            <PrintableBill billData={generatedBill} items={items} />
           </div>
         </div>
       )}
