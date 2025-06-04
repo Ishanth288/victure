@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { InventoryItem } from "@/types/inventory";
 import { useToast } from "@/components/ui/use-toast";
 import { InventoryProvider, useInventory } from "@/contexts/InventoryContext";
+import { logInventoryDeletion } from "@/utils/deletionTracker";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import {
@@ -134,6 +135,9 @@ function InventoryContent() {
       console.log("Attempting to delete item with ID:", itemToDelete);
       console.log("User ID for deletion:", user.id);
       
+      // Get the item data before deletion for logging
+      const itemToDeleteData = inventory.find(item => item.id === itemToDelete);
+      
       // Delete the inventory item directly
       const { error: deleteError } = await supabase
         .from('inventory')
@@ -149,6 +153,15 @@ function InventoryContent() {
           variant: "destructive"
         });
         return;
+      }
+
+      // Log the deletion for audit purposes
+      if (itemToDeleteData) {
+        await logInventoryDeletion(
+          itemToDeleteData,
+          "Manual deletion from inventory",
+          `Deleted by user via inventory management`
+        );
       }
 
       // Remove from selected items if present
@@ -204,6 +217,9 @@ function InventoryContent() {
         return;
       }
 
+      // Get the items data before deletion for logging
+      const itemsToDelete = inventory.filter(item => selectedItems.includes(item.id));
+
       // Delete selected items
       const { error: deleteError } = await supabase
         .from('inventory')
@@ -218,6 +234,15 @@ function InventoryContent() {
           variant: "destructive"
         });
         return;
+      }
+
+      // Log each deletion for audit purposes
+      for (const item of itemsToDelete) {
+        await logInventoryDeletion(
+          item,
+          "Bulk deletion from inventory",
+          `Bulk deleted by user via inventory management (${itemsToDelete.length} items)`
+        );
       }
 
       // Clear selection

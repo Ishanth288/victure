@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from "react-router-dom";
+import DashboardLayout from "@/components/DashboardLayout";
 import { Calendar, Search, Filter, Download, RefreshCw, Trash2, Package, User, FileText, AlertCircle, Clock, DollarSign } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfDay, endOfDay, subDays, subWeeks, subMonths } from 'date-fns';
+import { supabase } from "@/integrations/supabase/client";
+import { format, startOfDay, subWeeks, subMonths } from 'date-fns';
 
-// Temporary interface until database migration is applied
+// Temporary interface until Supabase types are regenerated
 interface DeletionRecord {
   id: number;
   entity_type: string;
@@ -30,7 +32,8 @@ interface DeletionRecord {
   reversal_deadline?: string | null;
 }
 
-const DeletionHistory = () => {
+function DeletionHistoryContent() {
+  const navigate = useNavigate();
   const [deletions, setDeletions] = useState<DeletionRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,82 +56,54 @@ const DeletionHistory = () => {
   }, []);
 
   useEffect(() => {
+    checkAuth();
     fetchDeletionHistory();
   }, []);
+
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        title: "Authentication Required",
+        description: "Please login to view deletion history",
+        variant: "destructive",
+      });
+      navigate("/auth");
+    }
+  };
 
   const fetchDeletionHistory = async () => {
     try {
       setLoading(true);
       
-      // Mock data for demonstration until database migration is applied
-      const mockData: DeletionRecord[] = [
-        {
-          id: 1,
-          entity_type: 'bill_item',
-          entity_id: 123,
-          entity_data: { name: 'Paracetamol 500mg' },
-          deletion_reason: 'Customer returned - expired medicine',
-          deletion_type: 'return',
-          patient_id: 45,
-          prescription_id: 67,
-          bill_id: 89,
-          medicine_name: 'Paracetamol 500mg',
-          deleted_by: 'user-123',
-          deleted_at: new Date().toISOString(),
-          amount_affected: 125.50,
-          quantity_affected: 5,
-          notes: 'Customer complained about expired product',
-          is_reversible: true,
-          reversal_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: 2,
-          entity_type: 'prescription',
-          entity_id: 456,
-          entity_data: { prescription_number: 'RX-2024-001' },
-          deletion_reason: 'Duplicate prescription entry',
-          deletion_type: 'manual',
-          patient_id: 78,
-          prescription_id: 456,
-          medicine_name: null,
-          deleted_by: 'user-123',
-          deleted_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          amount_affected: 0,
-          quantity_affected: null,
-          notes: 'Duplicate created by mistake',
-          is_reversible: false,
-          reversal_deadline: null
-        },
-        {
-          id: 3,
-          entity_type: 'medicine_return',
-          entity_id: 789,
-          entity_data: { return_id: 789 },
-          deletion_reason: 'Wrong return entry',
-          deletion_type: 'cleanup',
-          patient_id: 90,
-          bill_id: 112,
-          medicine_name: 'Amoxicillin 250mg',
-          deleted_by: 'user-456',
-          deleted_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          amount_affected: 89.75,
-          quantity_affected: 3,
-          notes: 'Incorrect return quantity recorded',
-          is_reversible: true,
-          reversal_deadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString()
-        }
-      ];
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to view deletion history",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setDeletions(mockData);
-      
-      toast({
-        title: "Demo Mode",
-        description: "Showing sample deletion history. Database migration needed for live data.",
-        variant: "default",
-      });
+      // Use generic query to avoid TypeScript issues until types are regenerated
+      const { data, error } = await (supabase as any)
+        .from('deletion_history')
+        .select('*')
+        .eq('deleted_by', user.id)
+        .order('deleted_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching deletion history:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch deletion history",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setDeletions(data || []);
       
     } catch (error) {
       console.error('Error:', error);
@@ -153,7 +128,7 @@ const DeletionHistory = () => {
         deletion.medicine_name?.toLowerCase().includes(query) ||
         deletion.deletion_reason?.toLowerCase().includes(query) ||
         deletion.notes?.toLowerCase().includes(query) ||
-        deletion.entity_data?.name?.toLowerCase().includes(query)
+        (deletion.entity_data as any)?.name?.toLowerCase().includes(query)
       );
     }
 
@@ -289,7 +264,7 @@ const DeletionHistory = () => {
           </Badge>
         </div>
         <CardTitle className="text-sm font-medium">
-          {deletion.medicine_name || deletion.entity_data?.name || `${deletion.entity_type} #${deletion.entity_id}`}
+          {deletion.medicine_name || (deletion.entity_data as any)?.name || `${deletion.entity_type} #${deletion.entity_id}`}
         </CardTitle>
         <CardDescription className="text-xs">
           <div className="flex items-center space-x-1">
@@ -346,7 +321,7 @@ const DeletionHistory = () => {
         </div>
       </td>
       <td className="px-4 py-3 font-medium">
-        {deletion.medicine_name || deletion.entity_data?.name || `#${deletion.entity_id}`}
+        {deletion.medicine_name || (deletion.entity_data as any)?.name || `#${deletion.entity_id}`}
       </td>
       <td className="px-4 py-3">
         <Badge className={getDeletionTypeColor(deletion.deletion_type)}>
@@ -362,7 +337,7 @@ const DeletionHistory = () => {
       <td className="px-4 py-3 text-right">
         {deletion.amount_affected ? `₹${deletion.amount_affected}` : '-'}
       </td>
-      <td className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <td className="px-4 py-3 text-center">
         {deletion.quantity_affected || '-'}
       </td>
     </tr>
@@ -380,19 +355,39 @@ const DeletionHistory = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-7xl">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Deletion History
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Track and audit all deletions and returns in your pharmacy system
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Deletion History
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Track and audit all deletions and returns in your pharmacy system
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            onClick={exportToCSV}
+            disabled={filteredDeletions.length === 0}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            onClick={fetchDeletionHistory}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filters */}
-      <Card className="mb-6">
+      <Card>
         <CardContent className="p-4">
           <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-4'}`}>
             {/* Search */}
@@ -435,36 +430,24 @@ const DeletionHistory = () => {
               </SelectContent>
             </Select>
 
-            {/* Sort and Export */}
-            <div className="flex space-x-2">
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="date_desc">Newest First</SelectItem>
-                  <SelectItem value="date_asc">Oldest First</SelectItem>
-                  <SelectItem value="amount_desc">Highest Amount</SelectItem>
-                  <SelectItem value="amount_asc">Lowest Amount</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={exportToCSV}
-                className="whitespace-nowrap"
-              >
-                <Download className="h-4 w-4 mr-1" />
-                {isMobile ? '' : 'Export'}
-              </Button>
-            </div>
+            {/* Sort */}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date_desc">Newest First</SelectItem>
+                <SelectItem value="date_asc">Oldest First</SelectItem>
+                <SelectItem value="amount_desc">Highest Amount</SelectItem>
+                <SelectItem value="amount_asc">Lowest Amount</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
 
       {/* Results Summary */}
-      <div className="mb-4">
+      <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           Showing {filteredDeletions.length} of {deletions.length} deletion records
         </p>
@@ -531,21 +514,14 @@ const DeletionHistory = () => {
           </div>
         </Card>
       )}
-
-      {/* Refresh Button */}
-      <div className="mt-6 text-center">
-        <Button
-          variant="outline"
-          onClick={fetchDeletionHistory}
-          disabled={loading}
-          className="w-full md:w-auto"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Refresh History
-        </Button>
-      </div>
     </div>
   );
-};
+}
 
-export default DeletionHistory; 
+export default function DeletionHistory() {
+  return (
+    <DashboardLayout>
+      <DeletionHistoryContent />
+    </DashboardLayout>
+  );
+} 

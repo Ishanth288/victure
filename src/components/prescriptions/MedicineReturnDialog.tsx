@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { processMedicineReturn, updateInventoryAfterReturn } from "@/utils/returnUtils";
+import { logMedicineReturn } from "@/utils/deletionTracker";
 import { MedicineReturn } from "@/types/returns";
 import { Card } from "@/components/ui/card";
 
@@ -101,28 +102,44 @@ export function MedicineReturnDialog({
     
     setFetchingItems(true);
     try {
-      const { data, error } = await supabase
+      // First get bill items
+      const { data: billItemsData, error: billItemsError } = await supabase
         .from('bill_items')
         .select(`
           id,
           inventory_item_id,
           quantity,
           return_quantity,
-          unit_price,
-          inventory:inventory_item_id (name)
+          unit_price
         `)
         .eq('bill_id', billId);
 
-      if (error) throw error;
+      if (billItemsError) throw billItemsError;
       
-      if (data) {
-        const items = data.map(item => ({
+      if (billItemsData) {
+        // Get unique inventory item IDs
+        const inventoryIds = [...new Set(billItemsData.map(item => item.inventory_item_id))];
+        
+        // Fetch inventory items to get medicine names
+        const { data: inventoryData, error: inventoryError } = await supabase
+          .from('inventory')
+          .select('id, medicine_name')
+          .in('id', inventoryIds);
+
+        if (inventoryError) throw inventoryError;
+
+        // Create lookup map for medicine names
+        const inventoryMap = new Map(
+          inventoryData?.map(inv => [inv.id, inv.medicine_name]) || []
+        );
+
+        const items = billItemsData.map(item => ({
           id: item.id,
           inventory_item_id: item.inventory_item_id,
           quantity: item.quantity,
           unit_price: item.unit_price,
           returned_quantity: item.return_quantity,
-          medicine_name: item.inventory?.name || 'Unknown Item'
+          medicine_name: inventoryMap.get(item.inventory_item_id) || 'Unknown Item'
         }));
         
         setBillItems(items);
@@ -174,7 +191,7 @@ export function MedicineReturnDialog({
         status: returnToInventory ? 'inventory' : 'disposed'
       };
       
-      await processMedicineReturn(returnData);
+      const processedReturn = await processMedicineReturn(returnData);
       
       // Update inventory if returning to stock
       if (returnToInventory) {
@@ -190,6 +207,20 @@ export function MedicineReturnDialog({
         .eq('id', selectedItem);
       
       if (updateError) throw updateError;
+      
+      // Log the medicine return for audit purposes
+      if (processedReturn) {
+        await logMedicineReturn(
+          item,
+          {
+            id: processedReturn.id,
+            quantity_returned: returnQuantity,
+            refund_amount: currentReturnValue,
+            reason: reason || 'Medicine return'
+          },
+          reason || 'Customer returned medicine'
+        );
+      }
       
       // NEW: Update the bill's total amount to reflect the return
       const { data: currentBill, error: billFetchError } = await supabase
