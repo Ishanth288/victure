@@ -514,7 +514,13 @@ export function CartSummary({
           items.map((item) => (
             <CartItemRow
               key={item.id}
-              {...item}
+              id={item.id}
+              name={item.name}
+              ndc={item.ndc}
+              quantity={item.quantity}
+              unit_cost={item.unit_cost}
+              total={item.total}
+              available_quantity={item.available_quantity}
               onRemoveItem={onRemoveItem}
               onUpdateQuantity={onUpdateQuantity}
             />
