@@ -8,7 +8,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Phone, UserCheck, Sparkles, Loader2 } from "lucide-react";
-import { apiCallWithRetry, handleApiError, displayErrorMessage } from "@/utils/errorHandling";
 
 interface EnhancedPatientDetailsModalProps {
   open: boolean;
@@ -77,8 +76,9 @@ export function EnhancedPatientDetailsModal({
         }
       }
 
-      console.log("Generated prescription number:", `PRE-${userId}-${nextNumber}`);
-      return `PRE-${userId}-${nextNumber}`;
+      const newPrescriptionNumber = `PRE-${userId.slice(-8)}-${nextNumber}`;
+      console.log("Generated prescription number:", newPrescriptionNumber);
+      return newPrescriptionNumber;
     } catch (error) {
       console.error("Error generating prescription number:", error);
       return `PRE-${Date.now()}`;
@@ -107,9 +107,9 @@ export function EnhancedPatientDetailsModal({
         .select("id")
         .eq("phone_number", formData.phoneNumber.trim())
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (fetchPatientError && fetchPatientError.code !== 'PGRST116') { // PGRST116 means no rows found
+      if (fetchPatientError && fetchPatientError.code !== 'PGRST116') {
         console.error("Error fetching existing patient:", fetchPatientError);
         throw fetchPatientError;
       }
@@ -137,48 +137,65 @@ export function EnhancedPatientDetailsModal({
         console.log("New patient created:", patientData);
       }
 
-      // Add validation for patientId and prescriptionData
-      if (!patientData?.id || !formData.doctorName) {
-        throw new Error('Missing required patient or prescription data');
+      // Generate prescription number
+      const currentPrescriptionNumber = prescriptionNumber || await generateUserScopedPrescriptionNumber(user.id);
+      
+      // Create prescription using Supabase directly instead of the edge function
+      const { data: prescriptionData, error: prescriptionError } = await supabase
+        .from("prescriptions")
+        .insert({
+          prescription_number: currentPrescriptionNumber,
+          patient_id: patientData.id,
+          doctor_name: formData.doctorName.trim(),
+          user_id: user.id,
+          date: new Date().toISOString(),
+          status: 'active'
+        })
+        .select()
+        .single();
+
+      if (prescriptionError) {
+        // If it's a unique constraint violation, try to fetch the existing record
+        if (prescriptionError.code === '23505') {
+          const { data: existing, error: fetchError } = await supabase
+            .from("prescriptions")
+            .select("*")
+            .eq("prescription_number", currentPrescriptionNumber)
+            .eq("user_id", user.id)
+            .single();
+          
+          if (!fetchError && existing) {
+            console.log("Using existing prescription:", existing);
+            toast({
+              title: "Success",
+              description: `Prescription ${existing.prescription_number} loaded successfully.`,
+            });
+
+            onSuccess(existing.id, {
+              name: formData.patientName.trim(),
+              phone: formData.phoneNumber.trim(),
+              prescriptionNumber: existing.prescription_number,
+              doctorName: formData.doctorName.trim()
+            });
+
+            // Reset form
+            setFormData({
+              patientName: "",
+              phoneNumber: "",
+              doctorName: "",
+            });
+            setErrors({});
+            return;
+          }
+        }
+        
+        console.error("Error creating prescription:", prescriptionError);
+        throw prescriptionError;
       }
-
-      // Use retry logic for prescription creation
-      const prescriptionResult = await apiCallWithRetry(async () => {
-        const currentPrescriptionNumber = prescriptionNumber || await generateUserScopedPrescriptionNumber(user.id);
-        console.log("Attempting to create prescription with number:", currentPrescriptionNumber);
-
-        const response = await fetch('/api/prescriptions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            prescription_number: currentPrescriptionNumber,
-            patient_id: patientData.id,
-            doctor_name: formData.doctorName.trim(),
-            user_id: user.id,
-            timestamp: new Date().toISOString() // Ensure timestamp is included
-          }),
-        });
-
-        const handledResponse = await handleApiError(response);
-        if (handledResponse === null) {
-          // handleApiError returned null, meaning it was a 406 and already displayed a message
-          throw new Error('API request not acceptable.'); // Throw to break retry loop if needed
-        }
-        
-        if (!handledResponse.ok) {
-          throw new Error(`HTTP error! status: ${handledResponse.status}`);
-        }
-        
-        return handledResponse.json();
-      });
-
-      const prescriptionData = prescriptionResult; // Rename to avoid conflict with outer scope
 
       toast({
         title: "Success",
-        description: `Patient details saved successfully. Prescription ${prescriptionData.prescription_number} created.`, 
+        description: `Patient details saved successfully. Prescription ${prescriptionData.prescription_number} created.`,
       });
 
       onSuccess(prescriptionData.id, {
@@ -199,7 +216,7 @@ export function EnhancedPatientDetailsModal({
       console.error("Error saving patient details:", error);
       toast({
         title: "Error",
-        description: "Failed to save patient details",
+        description: "Failed to save patient details. Please try again.",
         variant: "destructive",
       });
     } finally {

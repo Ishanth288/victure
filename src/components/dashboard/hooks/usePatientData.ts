@@ -14,35 +14,75 @@ export function usePatientData() {
 
   useEffect(() => {
     let patientChannel: any;
+    let mounted = true;
 
     const setupSubscription = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || !mounted) return;
 
-      // Check if the channel already exists or is active to prevent multiple subscriptions
-      const existingChannels = supabase.getChannels();
-      const channelExists = existingChannels.some(channel => channel.topic === 'realtime:patient-updates');
+        // Check if the channel already exists or is active to prevent multiple subscriptions
+        const existingChannels = supabase.getChannels();
+        const channelExists = existingChannels.some(channel => channel.topic === 'realtime:patient-updates');
 
-      if (!channelExists) {
-        patientChannel = supabase
-          .channel('patient-updates')
-          .on('postgres_changes',
-            { event: '*', schema: 'public', table: 'patients', filter: `user_id=eq.${user.id}` },
-            () => fetchPatientData() // Fetch on changes
-          )
-          .subscribe();
-      } else {
-        // If channel already exists, try to re-use it or log a warning
-        console.warn('Supabase channel \'patient-updates\' already exists. Reusing or skipping subscription.');
-        patientChannel = existingChannels.find(channel => channel.topic === 'realtime:patient-updates');
+        if (!channelExists) {
+          patientChannel = supabase
+            .channel('patient-updates')
+            .on('postgres_changes',
+              { event: '*', schema: 'public', table: 'patients', filter: `user_id=eq.${user.id}` },
+              () => {
+                if (mounted) {
+                  fetchPatientData();
+                }
+              }
+            )
+            .subscribe();
+        }
+      } catch (error) {
+        console.error('Error setting up patient subscription:', error);
       }
     };
 
-    fetchPatientData(); // Initial fetch when component mounts
-    setupSubscription(); // Setup subscription after initial fetch
+    const fetchPatientData = async () => {
+      if (!mounted) return;
+      
+      setIsLoading(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.warn('No authenticated user found during patient data fetch');
+          setIsLoading(false);
+          return;
+        }
+
+        // Fetch user-specific patients
+        const patients = await safeQueryData(
+          typecastQuery('patients')
+            .select('*')
+            .eq('user_id', user.id),
+          []
+        );
+        
+        console.log('Fetched patients:', patients);
+
+        if (mounted) {
+          setPatientsData(patients as Patient[]);
+        }
+      } catch (error) {
+        console.error('Error fetching patient data:', error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchPatientData();
+    setupSubscription();
 
     // Cleanup function
     return () => {
+      mounted = false;
       if (patientChannel) {
         supabase.removeChannel(patientChannel);
       }
@@ -59,6 +99,7 @@ export function usePatientData() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
+        console.warn('No authenticated user found during patient data fetch');
         setIsLoading(false);
         return;
       }
@@ -71,7 +112,7 @@ export function usePatientData() {
         []
       );
       
-      console.log('Fetched patients:', patients); // Log fetched patients
+      console.log('Fetched patients:', patients);
 
       setPatientsData(patients as Patient[]);
     } catch (error) {

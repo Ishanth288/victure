@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { format, subDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,28 +21,50 @@ export function useRevenueData() {
   const [revenueDistribution, setRevenueDistribution] = useState<{name: string, value: number}[]>([]);
 
   useEffect(() => {
-    fetchRevenueData();
+    let mounted = true;
     
-    // Set up real-time subscription
-    let revenueChannel: any;
-    revenueChannel = supabase
-      .channel('revenue-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'bills'
-        },
-        () => {
-          fetchRevenueData();
-        }
-      )
-      .subscribe();
+    const fetchAndSetup = async () => {
+      await fetchRevenueData();
+      
+      // Set up real-time subscription only if user is authenticated
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || !mounted) return;
 
-    // Cleanup subscription
+        let revenueChannel: any;
+        revenueChannel = supabase
+          .channel('revenue-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'bills',
+              filter: `user_id=eq.${user.id}`
+            },
+            () => {
+              if (mounted) {
+                fetchRevenueData();
+              }
+            }
+          )
+          .subscribe();
+
+        // Cleanup subscription
+        return () => {
+          if (revenueChannel) {
+            supabase.removeChannel(revenueChannel);
+          }
+        };
+      } catch (error) {
+        console.error('Error setting up revenue subscription:', error);
+      }
+    };
+
+    fetchAndSetup();
+
     return () => {
-      supabase.removeChannel(revenueChannel);
+      mounted = false;
     };
   }, []);
 
@@ -55,6 +78,7 @@ export function useRevenueData() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
+        console.warn('No authenticated user found during revenue data fetch');
         setIsLoading(false);
         return;
       }
@@ -68,7 +92,7 @@ export function useRevenueData() {
         []
       );
       
-      console.log('Fetched bills:', bills);
+      console.log('Fetched bills for revenue:', bills);
 
       setSalesData(bills as Bill[]);
       

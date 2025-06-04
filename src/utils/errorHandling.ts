@@ -72,8 +72,21 @@ export const handleApiError = async (response: Response): Promise<Response | nul
 
   if (response.status === 409) {
     // Conflict - resource already exists or version mismatch
-    console.warn('Resource conflict detected, potentially retrying:', response.url);
-    throw new Error('CONFLICT'); // Throw a specific error to trigger retry logic
+    console.warn('Resource conflict detected, will handle gracefully:', response.url);
+    // Don't throw error for conflicts, let the caller handle it
+    return response;
+  }
+
+  if (response.status === 401) {
+    console.warn('Authentication error:', response.url);
+    displayErrorMessage(new Error('Please log in to continue'), 'Authentication Error');
+    return null;
+  }
+
+  if (!response.ok) {
+    console.error('API error:', response.status, response.statusText, response.url);
+    displayErrorMessage(new Error(`API error: ${response.status} ${response.statusText}`), 'API Error');
+    return null;
   }
 
   return response;
@@ -82,18 +95,18 @@ export const handleApiError = async (response: Response): Promise<Response | nul
 /**
  * Retries an asynchronous API call a specified number of times, especially for 'CONFLICT' errors.
  * @param apiCall The asynchronous function to call.
- * @param maxRetries The maximum number of retries (default: 3).
+ * @param maxRetries The maximum number of retries (default: 2).
  * @returns The result of the successful API call.
  * @throws The original error if retries are exhausted or a non-retryable error occurs.
  */
-export const apiCallWithRetry = async <T>(apiCall: () => Promise<T>, maxRetries = 3): Promise<T> => {
+export const apiCallWithRetry = async <T>(apiCall: () => Promise<T>, maxRetries = 2): Promise<T> => {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await apiCall();
     } catch (error: any) {
-      if (error.message === 'CONFLICT' && i < maxRetries - 1) {
+      if ((error.message === 'CONFLICT' || error?.status === 409) && i < maxRetries - 1) {
         console.warn(`Retry attempt ${i + 1}/${maxRetries} after conflict.`);
-        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1))); // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, 500 * (i + 1))); // Shorter backoff
         continue;
       }
       throw error; // Re-throw if not a conflict or max retries reached
