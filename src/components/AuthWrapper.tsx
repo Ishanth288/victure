@@ -2,8 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
-import { checkSupabaseConnection, handleSupabaseError } from "@/utils/supabaseErrorHandling";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 interface AuthWrapperProps {
   children: React.ReactNode;
@@ -14,34 +13,25 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
 
   useEffect(() => {
     let mounted = true;
 
     const initializeAuth = async () => {
       try {
-        // Check connection first
-        const isConnected = await checkSupabaseConnection();
-        if (!isConnected && mounted) {
-          console.warn('Supabase connection failed, but continuing...');
-        }
-
-        // Get current session with timeout
-        const sessionPromise = supabase.auth.getSession();
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Auth timeout')), 10000)
-        );
-        
-        const { data: { session }, error } = await Promise.race([
-          sessionPromise,
-          timeoutPromise
-        ]) as any;
+        // Get current session with extended timeout
+        const { data: { session }, error } = await supabase.auth.getSession();
 
         if (!mounted) return;
 
         if (error) {
           console.error('Auth session error:', error);
-          await handleSupabaseError(error, 'AuthWrapper session check');
+          toast({
+            title: "Authentication Error",
+            description: "Failed to verify session. Please try again.",
+            variant: "destructive",
+          });
           
           if (mounted) {
             setIsAuthenticated(false);
@@ -75,7 +65,11 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
         console.error('Auth initialization error:', error);
         
         if (mounted) {
-          await handleSupabaseError(error, 'AuthWrapper initialization');
+          toast({
+            title: "Connection Error",
+            description: "Failed to initialize authentication. Please refresh the page.",
+            variant: "destructive",
+          });
           setIsAuthenticated(false);
           setIsLoading(false);
           
@@ -113,7 +107,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
         }
       } catch (error) {
         console.error('Auth state change error:', error);
-        await handleSupabaseError(error, 'AuthWrapper state change');
+        // Just log the error, don't show toast for state changes
       }
     });
 

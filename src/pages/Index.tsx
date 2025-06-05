@@ -18,6 +18,7 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Flower, Heart, Shield, Activity, Sparkles, Star, ArrowRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 // Simplified memo wrapper to reduce re-renders
 const IndexComponent = () => {
@@ -33,6 +34,23 @@ const IndexComponent = () => {
   } = useOnboarding();
   
   useEffect(() => {
+    // Check authentication first
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          // User is logged in, redirect to dashboard
+          navigate('/dashboard');
+          return;
+        }
+      } catch (error) {
+        console.error('Auth check error:', error);
+        // Continue to show landing page if auth check fails
+      }
+    };
+    
+    checkAuth();
+    
     // Check if mobile
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);

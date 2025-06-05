@@ -45,27 +45,21 @@ export default function Insights() {
 
   const checkAuth = async () => {
     try {
-      const result = await safeSupabaseQuery(
-        () => supabase.auth.getSession(),
-        'Insights auth check'
-      );
+      const { data: { session }, error } = await supabase.auth.getSession();
       
-      if (result.error) {
-        console.error("Authentication error:", result.error);
+      if (error) {
+        console.error("Authentication error:", error);
         setError("Authentication failed. Please try logging in again.");
         toast({
           title: "Authentication Error",
-          description: result.error.message || "Failed to verify authentication",
+          description: error.message || "Failed to verify authentication",
           variant: "destructive",
         });
         navigate("/auth");
         return;
       }
       
-      // Type the session data properly
-      const sessionData = result.data as { session: any } | null;
-      
-      if (!sessionData?.session) {
+      if (!session) {
         toast({
           title: "Authentication Required",
           description: "Please login to view insights",
@@ -75,15 +69,14 @@ export default function Insights() {
         return;
       }
       
-      setUserId(sessionData.session.user.id);
+      setUserId(session.user.id);
       if (!dataFetchedRef.current) {
-        fetchInsightsData(sessionData.session.user.id);
+        fetchInsightsData(session.user.id);
         dataFetchedRef.current = true;
       }
     } catch (err: any) {
       console.error("Authentication error:", err);
       setError("Authentication failed. Please try logging in again.");
-      await handleSupabaseError(err, 'Insights checkAuth');
       toast({
         title: "Authentication Error",
         description: err.message || "Failed to verify authentication",
@@ -115,56 +108,56 @@ export default function Insights() {
 
       console.log("Fetching current bills:", { userId, fromDate, toDate });
       
-      // Fetch bills for current period with error handling
-      const currentBillsResult = await safeSupabaseQuery(
-        () => supabase
-          .from('bills')
-          .select(`
-            *,
-            prescriptions!inner (
-              patients!inner (
-                name,
-                phone_number
-              )
+      // Fetch bills for current period - simplified to avoid relationship ambiguity
+      const { data: currentBills, error: currentBillsError } = await supabase
+        .from('bills')
+        .select(`
+          *,
+          prescriptions (
+            id,
+            prescription_number,
+            doctor_name,
+            patient_id,
+            patients (
+              name,
+              phone_number
             )
-          `)
-          .eq('user_id', userId)
-          .gte('date', fromDate)
-          .lte('date', toDate),
-        'Current bills fetch'
-      );
+          )
+        `)
+        .eq('user_id', userId)
+        .gte('date', fromDate)
+        .lte('date', toDate);
 
-      if (currentBillsResult.error) {
-        throw currentBillsResult.error;
+      if (currentBillsError) {
+        console.error('Error fetching current bills:', currentBillsError);
+        throw currentBillsError;
       }
-
-      const currentBills = currentBillsResult.data as any[] || [];
       console.log("Fetched current bills:", currentBills.length);
 
-      // Fetch bills for previous period
-      const prevBillsResult = await safeSupabaseQuery(
-        () => supabase
-          .from('bills')
-          .select(`
-            *,
-            prescriptions!inner (
-              patients!inner (
-                name,
-                phone_number
-              )
+      // Fetch bills for previous period - simplified
+      const { data: prevBills, error: prevBillsError } = await supabase
+        .from('bills')
+        .select(`
+          *,
+          prescriptions (
+            id,
+            prescription_number,
+            doctor_name,
+            patient_id,
+            patients (
+              name,
+              phone_number
             )
-          `)
-          .eq('user_id', userId)
-          .gte('date', prevFromDate)
-          .lte('date', prevToDate),
-        'Previous bills fetch'
-      );
+          )
+        `)
+        .eq('user_id', userId)
+        .gte('date', prevFromDate)
+        .lte('date', prevToDate);
 
-      if (prevBillsResult.error) {
-        throw prevBillsResult.error;
+      if (prevBillsError) {
+        console.error('Error fetching previous bills:', prevBillsError);
+        throw prevBillsError;
       }
-
-      const prevBills = prevBillsResult.data as any[] || [];
       console.log("Fetched previous bills:", prevBills.length);
 
       // Calculate total sales (number of bills)
@@ -209,8 +202,12 @@ export default function Insights() {
       const customerMap = new Map();
       
       allBills.forEach((bill: any) => {
-        if (bill?.prescriptions?.patients?.phone_number) {
-          const phone = bill.prescriptions.patients.phone_number;
+        // Handle both array and single object format for prescriptions
+        const prescription = Array.isArray(bill?.prescriptions) ? bill.prescriptions[0] : bill?.prescriptions;
+        const patients = Array.isArray(prescription?.patients) ? prescription.patients[0] : prescription?.patients;
+        
+        if (patients?.phone_number) {
+          const phone = patients.phone_number;
           const amount = parseFloat(bill.total_amount) || 0;
           
           if (customerMap.has(phone)) {
@@ -253,61 +250,53 @@ export default function Insights() {
       setRetentionChange(5);
 
       console.log("Fetching bill items");
-      // Fetch top products - avoiding relationship ambiguity
+      // Fetch top products - avoiding relationship ambiguity (simplified without safeSupabaseQuery)
       // Step 1: Get bill IDs for the date range
-      const billsInRangeResult = await safeSupabaseQuery(
-        () => supabase
-          .from('bills')
-          .select('id')
-          .eq('user_id', userId)
-          .gte('date', fromDate)
-          .lte('date', toDate),
-        'Bills in range fetch'
-      );
+      const { data: billsInRange, error: billsError } = await supabase
+        .from('bills')
+        .select('id')
+        .eq('user_id', userId)
+        .gte('date', fromDate)
+        .lte('date', toDate);
 
-      if (billsInRangeResult.error) {
-        throw billsInRangeResult.error;
+      if (billsError) {
+        console.error('Error fetching bills in range:', billsError);
+        throw billsError;
       }
 
-      const billsInRange = billsInRangeResult.data as any[] || [];
-      const billIds = billsInRange.map(bill => bill.id);
+      const billIds = billsInRange?.map(bill => bill.id) || [];
       
       // Step 2: Fetch bill items for these bills
-      const billItemsResult = await safeSupabaseQuery(
-        () => supabase
-          .from('bill_items')
-          .select(`
-            id,
-            inventory_item_id,
-            quantity,
-            unit_price,
-            total_price,
-            bill_id
-          `)
-          .in('bill_id', billIds),
-        'Bill items fetch'
-      );
+      const { data: billItems, error: billItemsError } = await supabase
+        .from('bill_items')
+        .select(`
+          id,
+          inventory_item_id,
+          quantity,
+          unit_price,
+          total_price,
+          bill_id
+        `)
+        .in('bill_id', billIds);
 
-      if (billItemsResult.error) {
-        throw billItemsResult.error;
+      if (billItemsError) {
+        console.error('Error fetching bill items:', billItemsError);
+        throw billItemsError;
       }
-
-      const billItems = billItemsResult.data as any[] || [];
 
       // Step 3: Fetch inventory names for the items
       let inventoryData: any[] = [];
       if (billItems && billItems.length > 0) {
         const inventoryIds = [...new Set(billItems.map((item: any) => item.inventory_item_id))];
-        const inventoryResult = await safeSupabaseQuery(
-          () => supabase
-            .from('inventory')
-            .select('id, name')
-            .in('id', inventoryIds),
-          'Inventory fetch'
-        );
+        const { data: inventory, error: inventoryError } = await supabase
+          .from('inventory')
+          .select('id, name')
+          .in('id', inventoryIds);
         
-        if (!inventoryResult.error) {
-          inventoryData = inventoryResult.data as any[] || [];
+        if (inventoryError) {
+          console.error('Error fetching inventory:', inventoryError);
+        } else {
+          inventoryData = inventory || [];
         }
       }
 
