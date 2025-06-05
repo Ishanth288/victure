@@ -18,44 +18,72 @@ export function useProductData(userId: string | null, dateRange: { from: Date, t
       const fromDate = format(dateRange.from, "yyyy-MM-dd");
       const toDate = format(dateRange.to, "yyyy-MM-dd");
       
-      // Fetch bill items with inventory data
-      const { data: billItems, error } = await supabase
-        .from('bill_items')
-        .select(`
-          id,
-          inventory_item_id,
-          quantity,
-          unit_price,
-          total_price,
-          bill_id,
-          bills!inner(date, user_id),
-          inventory!inner(name)
-        `)
-        .eq('bills.user_id', userId)
-        .gte('bills.date', fromDate)
-        .lte('bills.date', toDate);
+      // Step 1: Get bills for the date range
+      const { data: bills, error: billsError } = await supabase
+        .from('bills')
+        .select('id')
+        .eq('user_id', userId)
+        .gte('date', fromDate)
+        .lte('date', toDate);
         
-      if (error) throw error;
+      if (billsError) throw billsError;
+      
+      if (!bills || bills.length === 0) {
+        setTopProducts([]);
+        setIsLoading(false);
+        return;
+      }
+      
+      const billIds = bills.map(bill => bill.id);
+      
+      // Step 2: Get bill items for these bills
+      const { data: billItems, error: billItemsError } = await supabase
+        .from('bill_items')
+        .select('inventory_item_id, quantity, total_price')
+        .in('bill_id', billIds);
+        
+      if (billItemsError) throw billItemsError;
+      
+      if (!billItems || billItems.length === 0) {
+        setTopProducts([]);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Step 3: Get inventory names
+      const inventoryIds = [...new Set(billItems.map(item => item.inventory_item_id))];
+      const { data: inventory, error: inventoryError } = await supabase
+        .from('inventory')
+        .select('id, name')
+        .in('id', inventoryIds);
+        
+      if (inventoryError) throw inventoryError;
+      
+      // Create inventory lookup map
+      const inventoryMap = new Map();
+      if (inventory) {
+        inventory.forEach(item => {
+          inventoryMap.set(item.id, item.name || `Product ${item.id}`);
+        });
+      }
       
       // Process top products by revenue
       const productMap = new Map();
       
-      billItems?.forEach((item) => {
-        if (item.inventory && item.inventory.name) {
-          const productName = item.inventory.name || `Product ${item.inventory_item_id}`;
-          const revenue = parseFloat(String(item.total_price)) || 0;
-          
-          if (productMap.has(productName)) {
-            const product = productMap.get(productName);
-            product.revenue += revenue;
-            product.quantity += parseInt(String(item.quantity)) || 0;
-          } else {
-            productMap.set(productName, {
-              name: productName,
-              revenue,
-              quantity: parseInt(String(item.quantity)) || 0,
-            });
-          }
+      billItems.forEach((item) => {
+        const productName = inventoryMap.get(item.inventory_item_id) || `Product ${item.inventory_item_id}`;
+        const revenue = parseFloat(String(item.total_price)) || 0;
+        
+        if (productMap.has(productName)) {
+          const product = productMap.get(productName);
+          product.revenue += revenue;
+          product.quantity += parseInt(String(item.quantity)) || 0;
+        } else {
+          productMap.set(productName, {
+            name: productName,
+            revenue,
+            quantity: parseInt(String(item.quantity)) || 0,
+          });
         }
       });
       

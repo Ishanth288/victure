@@ -81,13 +81,13 @@ const MobileInsights: React.FC = () => {
           break;
       }
 
-      // Fetch basic metrics
+      // Fetch basic metrics using the correct column names
       const [billsRes, patientsRes, inventoryRes] = await Promise.all([
         supabase
           .from('bills')
-          .select('total_amount, created_at')
+          .select('total_amount, date')
           .eq('user_id', user.id)
-          .gte('created_at', startDate.toISOString()),
+          .gte('date', startDate.toISOString()),
         supabase
           .from('patients')
           .select('id')
@@ -103,7 +103,7 @@ const MobileInsights: React.FC = () => {
       const inventory = inventoryRes.data || [];
 
       // Calculate metrics
-      const totalRevenue = bills.reduce((sum, bill) => sum + Number(bill.total_amount), 0);
+      const totalRevenue = bills.reduce((sum, bill) => sum + Number(bill.total_amount || 0), 0);
       const totalOrders = bills.length;
       
       // Generate mock data for demonstration
@@ -406,4 +406,4 @@ const MobileInsights: React.FC = () => {
   );
 };
 
-export default MobileInsights; 
+export default MobileInsights;

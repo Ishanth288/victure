@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { CreditCard, DollarSign, ShoppingCart, Users } from "lucide-react";
@@ -118,8 +119,8 @@ export default function Insights() {
           .from('bills')
           .select(`
             *,
-            prescription:prescriptions (
-              patient:patients (
+            prescriptions!inner (
+              patients!inner (
                 name,
                 phone_number
               )
@@ -143,8 +144,8 @@ export default function Insights() {
           .from('bills')
           .select(`
             *,
-            prescription:prescriptions (
-              patient:patients (
+            prescriptions!inner (
+              patients!inner (
                 name,
                 phone_number
               )
@@ -204,8 +205,8 @@ export default function Insights() {
       const customerMap = new Map();
       
       allBills.forEach((bill: any) => {
-        if (bill?.prescription?.patient?.phone_number) {
-          const phone = bill.prescription.patient.phone_number;
+        if (bill?.prescriptions?.patients?.phone_number) {
+          const phone = bill.prescriptions.patients.phone_number;
           const amount = parseFloat(bill.total_amount) || 0;
           
           if (customerMap.has(phone)) {

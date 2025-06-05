@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,12 +25,13 @@ import { hapticFeedback } from "@/utils/mobileUtils";
 
 interface Prescription {
   id: string;
-  patient_name: string;
-  diagnosis: string;
-  created_at: string;
-  total_amount: number;
-  status: 'pending' | 'completed' | 'cancelled';
-  item_count: number;
+  prescription_number: string;
+  doctor_name: string;
+  date: string;
+  status: 'active' | 'completed' | 'cancelled';
+  patient?: {
+    name: string;
+  };
 }
 
 const MobilePrescriptions: React.FC = () => {
@@ -53,21 +55,24 @@ const MobilePrescriptions: React.FC = () => {
         .from('prescriptions')
         .select(`
           id,
-          patient_name,
-          diagnosis,
-          created_at,
-          total_amount,
+          prescription_number,
+          doctor_name,
+          date,
           status,
-          prescription_items(count)
+          patients!inner(name)
         `)
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('date', { ascending: false });
 
       if (error) throw error;
 
       const formattedData = data?.map(item => ({
-        ...item,
-        item_count: item.prescription_items?.[0]?.count || 0
+        id: item.id,
+        prescription_number: item.prescription_number,
+        doctor_name: item.doctor_name || 'Not Specified',
+        date: item.date,
+        status: item.status as 'active' | 'completed' | 'cancelled',
+        patient: item.patients ? { name: item.patients.name } : undefined
       })) || [];
 
       setPrescriptions(formattedData);
@@ -84,8 +89,9 @@ const MobilePrescriptions: React.FC = () => {
   };
 
   const filteredPrescriptions = prescriptions.filter(prescription => {
-    const matchesSearch = prescription.patient_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         prescription.diagnosis.toLowerCase().includes(searchQuery.toLowerCase());
+    const patientName = prescription.patient?.name || '';
+    const matchesSearch = patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         prescription.prescription_number.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = filterStatus === 'all' || prescription.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -100,15 +106,6 @@ const MobilePrescriptions: React.FC = () => {
     navigate(`/prescriptions?id=${id}`);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -120,7 +117,7 @@ const MobilePrescriptions: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'badge-green';
-      case 'pending': return 'badge-yellow';
+      case 'active': return 'badge-yellow';
       case 'cancelled': return 'badge-red';
       default: return 'badge-gray';
     }
@@ -184,7 +181,7 @@ const MobilePrescriptions: React.FC = () => {
             </div>
 
             <div className="flex space-x-3 overflow-x-auto pb-2">
-              {['all', 'pending', 'completed', 'cancelled'].map((status) => (
+              {['all', 'active', 'completed', 'cancelled'].map((status) => (
                 <Button
                   key={status}
                   onClick={async () => {
@@ -226,9 +223,9 @@ const MobilePrescriptions: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-title-2 font-bold text-gray-900 dark:text-white">
-                    {prescriptions.filter(p => p.status === 'pending').length}
+                    {prescriptions.filter(p => p.status === 'active').length}
                   </p>
-                  <p className="text-caption-1 text-gray-600 dark:text-gray-400">Pending</p>
+                  <p className="text-caption-1 text-gray-600 dark:text-gray-400">Active</p>
                 </div>
               </div>
             </div>
@@ -269,10 +266,10 @@ const MobilePrescriptions: React.FC = () => {
                       </div>
                       <div>
                         <h3 className="text-callout font-semibold text-gray-900 dark:text-white">
-                          {prescription.patient_name}
+                          {prescription.patient?.name || 'Unknown Patient'}
                         </h3>
                         <p className="text-caption-2 text-gray-600 dark:text-gray-400">
-                          {formatDate(prescription.created_at)}
+                          {formatDate(prescription.date)}
                         </p>
                       </div>
                     </div>
@@ -284,11 +281,11 @@ const MobilePrescriptions: React.FC = () => {
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center text-footnote text-gray-600 dark:text-gray-400">
                       <Pill className="w-4 h-4 mr-2" />
-                      {prescription.diagnosis}
+                      Dr. {prescription.doctor_name}
                     </div>
                     <div className="flex items-center text-footnote text-gray-600 dark:text-gray-400">
                       <Star className="w-4 h-4 mr-2" />
-                      {prescription.item_count} items • {formatCurrency(prescription.total_amount)}
+                      #{prescription.prescription_number}
                     </div>
                   </div>
 
@@ -310,4 +307,4 @@ const MobilePrescriptions: React.FC = () => {
   );
 };
 
-export default MobilePrescriptions; 
+export default MobilePrescriptions;
