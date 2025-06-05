@@ -118,28 +118,42 @@ export function MedicineReplacementDialog({
     
     setFetchingItems(true);
     try {
-      const { data, error } = await supabase
+      // Fetch bill items first
+      const { data: billItemsData, error: billItemsError } = await supabase
         .from('bill_items')
         .select(`
           id,
           inventory_item_id,
           quantity,
           return_quantity,
-          unit_price,
-          inventory!bill_items_inventory_item_id_fkey (name)
+          unit_price
         `)
         .eq('bill_id', billId);
 
-      if (error) throw error;
+      if (billItemsError) throw billItemsError;
       
-      if (data) {
-        const items = data.map(item => ({
+      if (billItemsData && billItemsData.length > 0) {
+        // Get all unique inventory item IDs
+        const inventoryIds = [...new Set(billItemsData.map(item => item.inventory_item_id))];
+        
+        // Fetch inventory names separately
+        const { data: inventoryData, error: inventoryError } = await supabase
+          .from('inventory')
+          .select('id, name')
+          .in('id', inventoryIds);
+
+        if (inventoryError) throw inventoryError;
+        
+        // Create a map for quick lookup
+        const inventoryMap = new Map(inventoryData?.map(inv => [inv.id, inv.name]) || []);
+        
+        const items = billItemsData.map(item => ({
           id: item.id,
           inventory_item_id: item.inventory_item_id,
           quantity: item.quantity,
           unit_price: item.unit_price,
           returned_quantity: item.return_quantity,
-          medicine_name: item.inventory?.name || 'Unknown Item'
+          medicine_name: inventoryMap.get(item.inventory_item_id) || 'Unknown Item'
         }));
         
         setBillItems(items);
