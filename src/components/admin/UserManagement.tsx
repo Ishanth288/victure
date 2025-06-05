@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { executeWithRetry } from "@/utils/queryRetry";
+import { safeSupabaseQuery } from "@/utils/supabaseErrorHandling";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -55,15 +55,12 @@ export function UserManagement() {
     try {
       setLoading(true);
       
-      // Cast the Supabase query to match the expected return type of executeWithRetry
-      const result = await executeWithRetry<User[]>(
-        async () => {
-          return await supabase
-            .from('profiles')
-            .select('id, email:id, role, created_at, pharmacy_name, plan_type, city, state, registration_date, trial_expiration_date')
-            .order('created_at', { ascending: false });
-        },
-        { context: 'fetching users' }
+      const result = await safeSupabaseQuery(
+        () => supabase
+          .from('profiles')
+          .select('id, pharmacy_name, role, created_at, plan_type, city, state, registration_date, trial_expiration_date')
+          .order('created_at', { ascending: false }),
+        'fetching users'
       );
 
       if (result.error) {
@@ -76,8 +73,21 @@ export function UserManagement() {
       }
       
       if (result.data) {
-        setUsers(result.data);
-        setFilteredUsers(result.data);
+        const formattedUsers = result.data.map(user => ({
+          id: user.id,
+          email: user.id, // Using ID as email placeholder since we can't access auth.users
+          role: user.role || 'user',
+          created_at: user.created_at,
+          pharmacy_name: user.pharmacy_name || 'Unnamed Pharmacy',
+          plan_type: user.plan_type,
+          city: user.city,
+          state: user.state,
+          registration_date: user.registration_date,
+          trial_expiration_date: user.trial_expiration_date,
+        }));
+        
+        setUsers(formattedUsers);
+        setFilteredUsers(formattedUsers);
       }
       
     } catch (error) {

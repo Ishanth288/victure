@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,7 +66,7 @@ const MobilePrescriptions: React.FC = () => {
       if (error) throw error;
 
       const formattedData = data?.map(item => ({
-        id: item.id,
+        id: String(item.id), // Convert to string to match interface
         prescription_number: item.prescription_number,
         doctor_name: item.doctor_name || 'Not Specified',
         date: item.date,
