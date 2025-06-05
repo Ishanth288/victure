@@ -3,8 +3,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { MobileLayout } from "@/components/mobile/MobileLayout";
+import { useIsMobile } from "@/hooks/use-mobile";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -34,40 +36,59 @@ import Disclaimers from "./pages/legal/Disclaimers";
 import EULA from "./pages/legal/EULA";
 import SLA from "./pages/legal/SLA";
 
+function AppContent() {
+  const location = useLocation();
+  const isMobile = useIsMobile();
+  
+  // Pages that should NOT have mobile layout
+  const noMobileLayoutPages = ['/', '/auth'];
+  const shouldUseMobileLayout = isMobile && !noMobileLayoutPages.includes(location.pathname);
+
+  const routes = (
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/inventory" element={<Inventory />} />
+      <Route path="/billing" element={<Billing />} />
+      <Route path="/billing-cart" element={<BillingCart />} />
+      <Route path="/patients" element={<Patients />} />
+      <Route path="/prescriptions" element={<Prescriptions />} />
+      <Route path="/insights" element={<Insights />} />
+      <Route path="/settings" element={<Settings />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/purchases" element={<Purchases />} />
+      <Route path="/business-optimization" element={<BusinessOptimization />} />
+      <Route path="/admin" element={<Admin />} />
+      <Route path="/admin/system-settings" element={<SystemSettings />} />
+      <Route path="/documentation" element={<Documentation />} />
+      <Route path="/system-test" element={<SystemTest />} />
+      <Route path="/deletion-history" element={<DeletionHistory />} />
+      
+      {/* Legal Routes */}
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/terms-of-service" element={<TermsOfService />} />
+      <Route path="/refund-policy" element={<RefundPolicy />} />
+      <Route path="/acceptable-use-policy" element={<AcceptableUsePolicy />} />
+      <Route path="/disclaimers" element={<Disclaimers />} />
+      <Route path="/eula" element={<EULA />} />
+      <Route path="/sla" element={<SLA />} />
+      
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+
+  if (shouldUseMobileLayout) {
+    return <MobileLayout>{routes}</MobileLayout>;
+  }
+
+  return routes;
+}
+
 function App() {
   return (
     <ErrorBoundary>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/inventory" element={<Inventory />} />
-        <Route path="/billing" element={<Billing />} />
-        <Route path="/billing-cart" element={<BillingCart />} />
-        <Route path="/patients" element={<Patients />} />
-        <Route path="/prescriptions" element={<Prescriptions />} />
-        <Route path="/insights" element={<Insights />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/purchases" element={<Purchases />} />
-        <Route path="/business-optimization" element={<BusinessOptimization />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/admin/system-settings" element={<SystemSettings />} />
-        <Route path="/documentation" element={<Documentation />} />
-        <Route path="/system-test" element={<SystemTest />} />
-        <Route path="/deletion-history" element={<DeletionHistory />} />
-        
-        {/* Legal Routes */}
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/terms-of-service" element={<TermsOfService />} />
-        <Route path="/refund-policy" element={<RefundPolicy />} />
-        <Route path="/acceptable-use-policy" element={<AcceptableUsePolicy />} />
-        <Route path="/disclaimers" element={<Disclaimers />} />
-        <Route path="/eula" element={<EULA />} />
-        <Route path="/sla" element={<SLA />} />
-        
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <AppContent />
       <Toaster />
     </ErrorBoundary>
   );

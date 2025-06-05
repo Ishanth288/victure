@@ -12,7 +12,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { InventoryProvider } from "./contexts/InventoryContext";
 import { BillingProvider } from "./contexts/BillingContext";
 
-// Simple query client without aggressive timeouts
+// Simple query client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -27,7 +27,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Simple root render without connection monitoring
 function Root() {
   return (
     <React.StrictMode>
