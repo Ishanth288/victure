@@ -211,7 +211,7 @@ export function BillingProvider({ children }: BillingProviderProps) {
       console.log("🔄 Fetching bills for user:", userId);
       const startTime = Date.now();
 
-      // Fetch bills with related data - simplified to avoid ambiguity
+      // Step 1: Fetch bills with prescriptions and patients - avoiding bill_items relationship ambiguity
       const { data: billsData, error: billsError } = await supabase
         .from("bills")
         .select(`
@@ -228,18 +228,6 @@ export function BillingProvider({ children }: BillingProviderProps) {
               name, 
               phone_number
             )
-          ),
-          bill_items (
-            id,
-            quantity,
-            unit_price,
-            total_price,
-            return_quantity,
-            inventory_item_id,
-            inventory (
-              name,
-              unit_cost
-            )
           )
         `)
         .eq("user_id", userId)
@@ -251,11 +239,71 @@ export function BillingProvider({ children }: BillingProviderProps) {
         throw new Error(`Failed to fetch bills: ${billsError.message}`);
       }
 
+      // Step 2: Fetch bill items separately to avoid relationship ambiguity
+      let billItemsData: any[] = [];
+      let inventoryData: any[] = [];
+
+      if (billsData && billsData.length > 0) {
+        const billIds = billsData.map(bill => bill.id);
+
+        // Fetch bill items for these bills
+        const { data: items, error: itemsError } = await supabase
+          .from("bill_items")
+          .select(`
+            id,
+            bill_id,
+            quantity,
+            unit_price,
+            total_price,
+            return_quantity,
+            inventory_item_id
+          `)
+          .in("bill_id", billIds);
+
+        if (itemsError) {
+          console.warn("Error fetching bill items:", itemsError);
+        } else {
+          billItemsData = items || [];
+        }
+
+        // Step 3: Fetch inventory data for all inventory items
+        if (billItemsData.length > 0) {
+          const inventoryIds = [...new Set(billItemsData.map(item => item.inventory_item_id))];
+          
+          const { data: inventory, error: inventoryError } = await supabase
+            .from("inventory")
+            .select(`
+              id,
+              name,
+              unit_cost
+            `)
+            .in("id", inventoryIds);
+
+          if (inventoryError) {
+            console.warn("Error fetching inventory:", inventoryError);
+          } else {
+            inventoryData = inventory || [];
+          }
+        }
+      }
+
       const fetchDuration = Date.now() - startTime;
       const quality = fetchDuration < 2000 ? 'fast' : 'slow';
       setConnectionQuality(quality);
 
       if (mountedRef.current && billsData) {
+        // Create lookup maps for efficient data joining
+        const inventoryMap = new Map(inventoryData.map(inv => [inv.id, inv]));
+        const billItemsMap = new Map<number, any[]>();
+        
+        // Group bill items by bill_id
+        billItemsData.forEach(item => {
+          if (!billItemsMap.has(item.bill_id)) {
+            billItemsMap.set(item.bill_id, []);
+          }
+          billItemsMap.get(item.bill_id)?.push(item);
+        });
+
         // Enhanced bills with computed fields and normalized structure
         const enhancedBills: Bill[] = (billsData as any[]).map((bill: any) => {
           // Normalize the prescription data (from array to single object)
@@ -266,11 +314,12 @@ export function BillingProvider({ children }: BillingProviderProps) {
               : null
           } : null;
 
-          // Normalize bill items with inventory data
-          const normalizedBillItems = bill.bill_items?.map((item: any) => ({
+          // Get bill items for this bill and attach inventory data
+          const billItems = billItemsMap.get(bill.id) || [];
+          const normalizedBillItems = billItems.map((item: any) => ({
             ...item,
-            inventory_item: item.inventory && item.inventory.length > 0 ? item.inventory[0] : null
-          })) || [];
+            inventory_item: inventoryMap.get(item.inventory_item_id) || { name: 'Unknown', unit_cost: 0 }
+          }));
 
           return {
             ...bill,
@@ -358,8 +407,8 @@ export function BillingProvider({ children }: BillingProviderProps) {
             console.log('📡 Real-time bill update:', payload.eventType, payload.new?.bill_number || 'unknown');
             
             if (payload.eventType === 'INSERT' && payload.new) {
-              // Fetch the complete bill data with relations
-              const { data: newBillData, error } = await supabase
+              // Fetch the bill data without problematic relationships
+              const { data: newBillData, error: billError } = await supabase
                 .from("bills")
                 .select(`
                   *,
@@ -375,24 +424,37 @@ export function BillingProvider({ children }: BillingProviderProps) {
                       name, 
                       phone_number
                     )
-                  ),
-                  bill_items (
-                    id,
-                    quantity,
-                    unit_price,
-                    total_price,
-                    return_quantity,
-                    inventory_item_id,
-                    inventory (
-                      name,
-                      unit_cost
-                    )
                   )
                 `)
                 .eq("id", payload.new.id)
                 .single();
               
-              if (!error && newBillData) {
+              if (!billError && newBillData) {
+                // Fetch bill items separately
+                const { data: billItems, error: itemsError } = await supabase
+                  .from("bill_items")
+                  .select(`
+                    id,
+                    bill_id,
+                    quantity,
+                    unit_price,
+                    total_price,
+                    return_quantity,
+                    inventory_item_id
+                  `)
+                  .eq("bill_id", payload.new.id);
+
+                // Fetch inventory data for bill items
+                let inventoryData: any[] = [];
+                if (!itemsError && billItems && billItems.length > 0) {
+                  const inventoryIds = [...new Set(billItems.map((item: any) => item.inventory_item_id))];
+                  const { data: inventory } = await supabase
+                    .from("inventory")
+                    .select("id, name, unit_cost")
+                    .in("id", inventoryIds);
+                  inventoryData = inventory || [];
+                }
+
                 // Normalize the data structure for real-time updates
                 const bill = newBillData as any;
                 const prescription = bill.prescriptions && bill.prescriptions.length > 0 ? {
@@ -402,10 +464,13 @@ export function BillingProvider({ children }: BillingProviderProps) {
                     : null
                 } : null;
 
-                const normalizedBillItems = bill.bill_items?.map((item: any) => ({
+                // Create inventory lookup map
+                const inventoryMap = new Map(inventoryData.map(inv => [inv.id, inv]));
+                
+                const normalizedBillItems = (billItems || []).map((item: any) => ({
                   ...item,
-                  inventory_item: item.inventory && item.inventory.length > 0 ? item.inventory[0] : null
-                })) || [];
+                  inventory_item: inventoryMap.get(item.inventory_item_id) || { name: 'Unknown', unit_cost: 0 }
+                }));
 
                 const enhancedBill: Bill = {
                   ...bill,
