@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { CreditCard, DollarSign, ShoppingCart, Users } from "lucide-react";
@@ -46,24 +45,27 @@ export default function Insights() {
 
   const checkAuth = async () => {
     try {
-      const { data, error: authError } = await safeSupabaseQuery(
+      const result = await safeSupabaseQuery(
         () => supabase.auth.getSession(),
         'Insights auth check'
       );
       
-      if (authError) {
-        console.error("Authentication error:", authError);
+      if (result.error) {
+        console.error("Authentication error:", result.error);
         setError("Authentication failed. Please try logging in again.");
         toast({
           title: "Authentication Error",
-          description: authError.message || "Failed to verify authentication",
+          description: result.error.message || "Failed to verify authentication",
           variant: "destructive",
         });
         navigate("/auth");
         return;
       }
       
-      if (!data?.session) {
+      // Type the session data properly
+      const sessionData = result.data as { session: any } | null;
+      
+      if (!sessionData?.session) {
         toast({
           title: "Authentication Required",
           description: "Please login to view insights",
@@ -73,9 +75,9 @@ export default function Insights() {
         return;
       }
       
-      setUserId(data.session.user.id);
+      setUserId(sessionData.session.user.id);
       if (!dataFetchedRef.current) {
-        fetchInsightsData(data.session.user.id);
+        fetchInsightsData(sessionData.session.user.id);
         dataFetchedRef.current = true;
       }
     } catch (err: any) {

@@ -35,6 +35,28 @@ export async function safeSupabaseQuery<T>(
 }
 
 /**
+ * Check Supabase connection and attempt to reconnect if necessary
+ */
+export async function checkSupabaseConnection(): Promise<boolean> {
+  try {
+    console.log("Testing Supabase connection...");
+    // Try a simple, lightweight query to test connection
+    const { error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
+    
+    if (error) {
+      console.error('Supabase connection check failed:', error);
+      return false;
+    }
+    
+    console.log("Supabase connection test successful");
+    return true;
+  } catch (error) {
+    console.error('Error checking Supabase connection:', error);
+    return false;
+  }
+}
+
+/**
  * Handle Supabase errors with user-friendly messages
  */
 export async function handleSupabaseError(error: any, context: string = 'operation') {
