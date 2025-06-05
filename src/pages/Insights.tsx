@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { CreditCard, DollarSign, ShoppingCart, Users } from "lucide-react";
@@ -14,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { addDays, format, subDays, subMonths } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CustomerRetentionAnalysis } from "@/components/insights/CustomerRetentionAnalysis";
+import { safeSupabaseQuery, handleSupabaseError } from "@/utils/supabaseErrorHandling";
 
 export default function Insights() {
   const navigate = useNavigate();
@@ -45,10 +45,24 @@ export default function Insights() {
 
   const checkAuth = async () => {
     try {
-      const { data: { session }, error: authError } = await supabase.auth.getSession();
-      if (authError) throw authError;
+      const { data, error: authError } = await safeSupabaseQuery(
+        () => supabase.auth.getSession(),
+        'Insights auth check'
+      );
       
-      if (!session) {
+      if (authError) {
+        console.error("Authentication error:", authError);
+        setError("Authentication failed. Please try logging in again.");
+        toast({
+          title: "Authentication Error",
+          description: authError.message || "Failed to verify authentication",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return;
+      }
+      
+      if (!data?.session) {
         toast({
           title: "Authentication Required",
           description: "Please login to view insights",
@@ -58,19 +72,21 @@ export default function Insights() {
         return;
       }
       
-      setUserId(session.user.id);
+      setUserId(data.session.user.id);
       if (!dataFetchedRef.current) {
-        fetchInsightsData(session.user.id);
+        fetchInsightsData(data.session.user.id);
         dataFetchedRef.current = true;
       }
     } catch (err: any) {
       console.error("Authentication error:", err);
       setError("Authentication failed. Please try logging in again.");
+      await handleSupabaseError(err, 'Insights checkAuth');
       toast({
         title: "Authentication Error",
         description: err.message || "Failed to verify authentication",
         variant: "destructive",
       });
+      navigate("/auth");
     }
   };
 
@@ -95,43 +111,54 @@ export default function Insights() {
       const prevToDate = format(subDays(dateRange.from, 1), "yyyy-MM-dd");
 
       console.log("Fetching current bills:", { userId, fromDate, toDate });
-      // Fetch bills for current period
-      const { data: currentBills, error: currentBillsError } = await supabase
-        .from('bills')
-        .select(`
-          *,
-          prescription:prescriptions (
-            patient:patients (
-              name,
-              phone_number
+      
+      // Fetch bills for current period with error handling
+      const { data: currentBills, error: currentBillsError } = await safeSupabaseQuery(
+        () => supabase
+          .from('bills')
+          .select(`
+            *,
+            prescription:prescriptions (
+              patient:patients (
+                name,
+                phone_number
+              )
             )
-          )
-        `)
-        .eq('user_id', userId)
-        .gte('date', fromDate)
-        .lte('date', toDate);
+          `)
+          .eq('user_id', userId)
+          .gte('date', fromDate)
+          .lte('date', toDate),
+        'Current bills fetch'
+      );
 
-      if (currentBillsError) throw currentBillsError;
+      if (currentBillsError) {
+        throw currentBillsError;
+      }
 
       console.log("Fetched current bills:", currentBills?.length || 0);
 
       // Fetch bills for previous period
-      const { data: prevBills, error: prevBillsError } = await supabase
-        .from('bills')
-        .select(`
-          *,
-          prescription:prescriptions (
-            patient:patients (
-              name,
-              phone_number
+      const { data: prevBills, error: prevBillsError } = await safeSupabaseQuery(
+        () => supabase
+          .from('bills')
+          .select(`
+            *,
+            prescription:prescriptions (
+              patient:patients (
+                name,
+                phone_number
+              )
             )
-          )
-        `)
-        .eq('user_id', userId)
-        .gte('date', prevFromDate)
-        .lte('date', prevToDate);
+          `)
+          .eq('user_id', userId)
+          .gte('date', prevFromDate)
+          .lte('date', prevToDate),
+        'Previous bills fetch'
+      );
 
-      if (prevBillsError) throw prevBillsError;
+      if (prevBillsError) {
+        throw prevBillsError;
+      }
 
       console.log("Fetched previous bills:", prevBills?.length || 0);
 
@@ -218,46 +245,58 @@ export default function Insights() {
       setCustomerRetentionRate(Math.round(retentionRateValue));
       
       // Very simple change calculation - we'll just use a fixed number for now
-      // In a real app, we'd compare to a previous period
       setRetentionChange(5);
 
       console.log("Fetching bill items");
       // Fetch top products - avoiding relationship ambiguity
       // Step 1: Get bill IDs for the date range
-      const { data: billsInRange, error: billsError } = await supabase
-        .from('bills')
-        .select('id')
-        .eq('user_id', userId)
-        .gte('date', fromDate)
-        .lte('date', toDate);
+      const { data: billsInRange, error: billsError } = await safeSupabaseQuery(
+        () => supabase
+          .from('bills')
+          .select('id')
+          .eq('user_id', userId)
+          .gte('date', fromDate)
+          .lte('date', toDate),
+        'Bills in range fetch'
+      );
 
-      if (billsError) throw billsError;
+      if (billsError) {
+        throw billsError;
+      }
 
       const billIds = billsInRange?.map(bill => bill.id) || [];
       
       // Step 2: Fetch bill items for these bills
-      const { data: billItems, error: billItemsError } = await supabase
-        .from('bill_items')
-        .select(`
-          id,
-          inventory_item_id,
-          quantity,
-          unit_price,
-          total_price,
-          bill_id
-        `)
-        .in('bill_id', billIds);
+      const { data: billItems, error: billItemsError } = await safeSupabaseQuery(
+        () => supabase
+          .from('bill_items')
+          .select(`
+            id,
+            inventory_item_id,
+            quantity,
+            unit_price,
+            total_price,
+            bill_id
+          `)
+          .in('bill_id', billIds),
+        'Bill items fetch'
+      );
 
-      if (billItemsError) throw billItemsError;
+      if (billItemsError) {
+        throw billItemsError;
+      }
 
       // Step 3: Fetch inventory names for the items
       let inventoryData: any[] = [];
       if (billItems && billItems.length > 0) {
         const inventoryIds = [...new Set(billItems.map((item: any) => item.inventory_item_id))];
-        const { data: inventory, error: inventoryError } = await supabase
-          .from('inventory')
-          .select('id, name')
-          .in('id', inventoryIds);
+        const { data: inventory, error: inventoryError } = await safeSupabaseQuery(
+          () => supabase
+            .from('inventory')
+            .select('id, name')
+            .in('id', inventoryIds),
+          'Inventory fetch'
+        );
         
         if (!inventoryError) {
           inventoryData = inventory || [];
@@ -338,6 +377,7 @@ export default function Insights() {
     } catch (error: any) {
       console.error("Error fetching insights:", error);
       setError(error.message || "Failed to load insights data");
+      await handleSupabaseError(error, 'fetchInsightsData');
       toast({
         title: "Error",
         description: "Failed to load insights data: " + (error.message || "Unknown error"),

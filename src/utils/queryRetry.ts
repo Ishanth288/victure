@@ -1,74 +1,90 @@
 
-import * as Sentry from "@sentry/react";
-
-type SupabaseResult<T> = {
-  data: T;
-  error: any;
-};
+import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Execute a Supabase query with automatic retry on failure
- * @param queryFn Function that returns a Supabase query or Promise
- * @param options Configuration options for retry behavior
- * @returns Promise with the query result
+ * Retry wrapper for Supabase queries with exponential backoff
  */
-export async function executeWithRetry<T>(
-  queryFn: () => Promise<SupabaseResult<T>> | { then(onfulfilled: (value: SupabaseResult<T>) => any): any },
-  options?: {
-    maxRetries?: number;
-    retryDelay?: number;
-    context?: string;
-  }
-): Promise<SupabaseResult<T>> {
-  const maxRetries = options?.maxRetries ?? 3;
-  const retryDelay = options?.retryDelay ?? 1000;
-  const context = options?.context ? ` (${options.context})` : '';
+export async function retryQuery<T>(
+  queryFn: () => Promise<{ data: T | null; error: any }>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<{ data: T | null; error: any }> {
+  let lastError: any;
   
-  let attempts = 0;
-  let lastError: any = null;
-
-  while (attempts < maxRetries) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      // Handle both direct Supabase query objects and Promise-wrapped returns
-      // by awaiting the result (works for both types since Supabase queries are "thenable")
       const result = await queryFn();
       
-      if (result.error) {
-        // Log the error but continue with retry logic
-        console.error(`Supabase query error on attempt ${attempts + 1}${context}:`, result.error);
-        lastError = result.error;
-        
-        // If this is not the last attempt, retry after delay
-        if (attempts < maxRetries - 1) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay * (attempts + 1)));
-          attempts++;
-          continue;
-        }
+      // If successful or it's a non-retryable error, return immediately
+      if (!result.error || isNonRetryableError(result.error)) {
+        return result;
       }
       
-      return result as SupabaseResult<T>;
+      lastError = result.error;
+      
+      // If not the last attempt, wait before retrying
+      if (attempt < maxRetries - 1) {
+        const delay = baseDelay * Math.pow(2, attempt);
+        console.log(`Query failed (attempt ${attempt + 1}/${maxRetries}), retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
     } catch (error) {
-      console.error(`Error executing Supabase query on attempt ${attempts + 1}${context}:`, error);
       lastError = error;
       
-      // If this is not the last attempt, retry after delay
-      if (attempts < maxRetries - 1) {
-        await new Promise(resolve => setTimeout(resolve, retryDelay * (attempts + 1)));
-        attempts++;
-      } else {
-        // Capture more serious errors in Sentry
-        Sentry.captureException(error, {
-          tags: {
-            context: options?.context || 'supabase-query'
-          }
-        });
-        
-        // On final attempt, return formatted error response
-        return { data: null as unknown as T, error: lastError };
+      // If not the last attempt, wait before retrying
+      if (attempt < maxRetries - 1) {
+        const delay = baseDelay * Math.pow(2, attempt);
+        console.log(`Query threw error (attempt ${attempt + 1}/${maxRetries}), retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
+  
+  return { data: null, error: lastError };
+}
 
-  // If we've exhausted all retries, return the last error
-  return { data: null as unknown as T, error: lastError };
+/**
+ * Check if an error should not be retried
+ */
+function isNonRetryableError(error: any): boolean {
+  if (!error) return false;
+  
+  const message = error.message?.toLowerCase() || '';
+  const code = error.code || '';
+  
+  // Don't retry auth errors, permission errors, or invalid queries
+  return (
+    message.includes('unauthorized') ||
+    message.includes('forbidden') ||
+    message.includes('invalid') ||
+    message.includes('malformed') ||
+    code === 'PGRST301' || // Row Level Security
+    code === 'PGRST116' || // Invalid query
+    code === '401' ||
+    code === '403'
+  );
+}
+
+/**
+ * Enhanced query wrapper with built-in auth handling
+ */
+export async function queryWithAuth<T>(
+  queryFn: () => Promise<{ data: T | null; error: any }>,
+  context: string = 'query'
+): Promise<{ data: T | null; error: any }> {
+  // First check if we have a valid session
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  
+  if (sessionError) {
+    console.error(`Session error in ${context}:`, sessionError);
+    return { data: null, error: sessionError };
+  }
+  
+  if (!session) {
+    console.error(`No session found for ${context}`);
+    return { data: null, error: { message: 'Authentication required' } };
+  }
+  
+  // Execute the query with retry logic
+  return retryQuery(queryFn, 2, 500);
 }

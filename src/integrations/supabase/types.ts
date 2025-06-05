@@ -47,43 +47,43 @@ export type Database = {
           bill_id: number
           id: number
           inventory_item_id: number
+          is_replacement: boolean | null
           quantity: number
-          return_quantity: number | null
-          total_price: number
-          unit_price: number
+          replaced_item_id: number | null
           replacement_item_id: number | null
           replacement_quantity: number | null
           replacement_reason: string | null
-          is_replacement: boolean | null
-          replaced_item_id: number | null
+          return_quantity: number
+          total_price: number
+          unit_price: number
         }
         Insert: {
           bill_id: number
           id?: number
           inventory_item_id: number
+          is_replacement?: boolean | null
           quantity: number
-          return_quantity?: number | null
-          total_price: number
-          unit_price: number
+          replaced_item_id?: number | null
           replacement_item_id?: number | null
           replacement_quantity?: number | null
           replacement_reason?: string | null
-          is_replacement?: boolean | null
-          replaced_item_id?: number | null
+          return_quantity?: number
+          total_price: number
+          unit_price: number
         }
         Update: {
           bill_id?: number
           id?: number
           inventory_item_id?: number
+          is_replacement?: boolean | null
           quantity?: number
-          return_quantity?: number | null
-          total_price?: number
-          unit_price?: number
+          replaced_item_id?: number | null
           replacement_item_id?: number | null
           replacement_quantity?: number | null
           replacement_reason?: string | null
-          is_replacement?: boolean | null
-          replaced_item_id?: number | null
+          return_quantity?: number
+          total_price?: number
+          unit_price?: number
         }
         Relationships: [
           {
@@ -101,17 +101,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "bill_items_replacement_item_id_fkey"
-            columns: ["replacement_item_id"]
-            isOneToOne: false
-            referencedRelation: "inventory"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "bill_items_replaced_item_id_fkey"
             columns: ["replaced_item_id"]
             isOneToOne: false
             referencedRelation: "bill_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bill_items_replacement_item_id_fkey"
+            columns: ["replacement_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory"
             referencedColumns: ["id"]
           },
         ]
@@ -165,6 +165,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      deletion_history: {
+        Row: {
+          amount_affected: number | null
+          bill_id: number | null
+          deleted_at: string | null
+          deleted_by: string
+          deletion_reason: string | null
+          deletion_type: string | null
+          entity_data: Json
+          entity_id: number
+          entity_type: string
+          id: number
+          is_reversible: boolean | null
+          medicine_name: string | null
+          notes: string | null
+          patient_id: number | null
+          prescription_id: number | null
+          quantity_affected: number | null
+          reversal_deadline: string | null
+        }
+        Insert: {
+          amount_affected?: number | null
+          bill_id?: number | null
+          deleted_at?: string | null
+          deleted_by: string
+          deletion_reason?: string | null
+          deletion_type?: string | null
+          entity_data: Json
+          entity_id: number
+          entity_type: string
+          id?: number
+          is_reversible?: boolean | null
+          medicine_name?: string | null
+          notes?: string | null
+          patient_id?: number | null
+          prescription_id?: number | null
+          quantity_affected?: number | null
+          reversal_deadline?: string | null
+        }
+        Update: {
+          amount_affected?: number | null
+          bill_id?: number | null
+          deleted_at?: string | null
+          deleted_by?: string
+          deletion_reason?: string | null
+          deletion_type?: string | null
+          entity_data?: Json
+          entity_id?: number
+          entity_type?: string
+          id?: number
+          is_reversible?: boolean | null
+          medicine_name?: string | null
+          notes?: string | null
+          patient_id?: number | null
+          prescription_id?: number | null
+          quantity_affected?: number | null
+          reversal_deadline?: string | null
+        }
+        Relationships: []
       }
       feedback: {
         Row: {
@@ -769,29 +829,7 @@ export type Database = {
           unit_price: number | null
           user_id: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "bill_items_bill_id_fkey"
-            columns: ["bill_id"]
-            isOneToOne: false
-            referencedRelation: "bills"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bill_items_inventory_item_id_fkey"
-            columns: ["inventory_item_id"]
-            isOneToOne: false
-            referencedRelation: "inventory"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "medicine_returns_bill_item_id_fkey"
-            columns: ["bill_item_id"]
-            isOneToOne: false
-            referencedRelation: "bill_items"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Functions: {
