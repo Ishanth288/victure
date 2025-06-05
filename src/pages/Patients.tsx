@@ -411,16 +411,16 @@ export default function Patients() {
         .from("bills")
         .select(`
           *,
-          prescription:prescriptions (
+          prescriptions (
             *,
-            patient:patients (
+            patients (
               name,
               phone_number
             )
           ),
-          bill_items:bill_items (
+          bill_items (
             *,
-            inventory_item:inventory (
+            inventory (
               name,
               unit_cost
             )
@@ -431,15 +431,30 @@ export default function Patients() {
 
       if (error) throw error;
 
-      const items = billData.bill_items.map((item: any) => ({
-        id: item.inventory_item?.id || 0,
-        name: item.inventory_item?.name || 'Unknown',
-        quantity: item.quantity,
-        unit_cost: item.unit_price,
-        total: item.total_price,
-      }));
+      // Normalize the data structure  
+      const prescriptions = Array.isArray(billData.prescriptions) ? billData.prescriptions : [billData.prescriptions].filter(Boolean);
+      const normalizedBillData = {
+        ...billData,
+        prescription: prescriptions.length > 0 ? {
+          ...prescriptions[0],
+          patient: Array.isArray(prescriptions[0].patients) && prescriptions[0].patients.length > 0 
+            ? prescriptions[0].patients[0] 
+            : { name: 'Unknown', phone_number: 'Unknown' }
+        } : null
+      };
 
-      setSelectedBill({ ...billData, items });
+      const items = billData.bill_items.map((item: any) => {
+        const inventory = Array.isArray(item.inventory) ? item.inventory : [item.inventory].filter(Boolean);
+        return {
+          id: inventory.length > 0 ? inventory[0].id : 0,
+          name: inventory.length > 0 ? inventory[0].name : 'Unknown',
+          quantity: item.quantity,
+          unit_cost: item.unit_price,
+          total: item.total_price,
+        };
+      });
+
+      setSelectedBill({ ...normalizedBillData, items });
       setShowBillPreview(true);
     } catch (error) {
       console.error("Error fetching bill details:", error);
