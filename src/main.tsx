@@ -12,13 +12,14 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { InventoryProvider } from "./contexts/InventoryContext";
 import { BillingProvider } from "./contexts/BillingContext";
 
-// Create a simple query client
+// Simple query client without aggressive timeouts
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
     },
     mutations: {
       retry: 1,
@@ -26,7 +27,7 @@ const queryClient = new QueryClient({
   },
 });
 
-// Simple root render
+// Simple root render without connection monitoring
 function Root() {
   return (
     <React.StrictMode>

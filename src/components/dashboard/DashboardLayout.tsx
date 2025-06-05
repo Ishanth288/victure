@@ -22,7 +22,9 @@ export default function DashboardLayout({ children }: AuthWrapperProps) {
 
     const initializeAuth = async () => {
       try {
-        // Simple session check without complex timeout handling
+        console.log("Checking auth session...");
+        
+        // Simple session check without aggressive timeout
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
 
         if (!mounted) return;
@@ -30,23 +32,19 @@ export default function DashboardLayout({ children }: AuthWrapperProps) {
         if (error) {
           console.warn("Session check error:", error.message);
           setConnectionError(true);
-          setLoading(false);
-          return;
+        } else {
+          setSession(currentSession);
+          setConnectionError(false);
+          
+          if (!currentSession) {
+            const returnPath = location.pathname === '/auth' ? '/dashboard' : location.pathname;
+            navigate(`/auth?redirect=${returnPath}`);
+          }
         }
-
-        setSession(currentSession);
-        setConnectionError(false);
-        
-        if (!currentSession) {
-          const returnPath = location.pathname === '/auth' ? '/dashboard' : location.pathname;
-          navigate(`/auth?redirect=${returnPath}`);
-        }
-
       } catch (error: any) {
         console.warn("Auth initialization error:", error.message);
         if (mounted) {
           setConnectionError(true);
-          setLoading(false);
         }
       } finally {
         if (mounted) {
@@ -59,14 +57,14 @@ export default function DashboardLayout({ children }: AuthWrapperProps) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       if (!mounted) return;
       
+      console.log("Auth state changed:", event);
       setSession(currentSession);
       setConnectionError(false);
       
       if (event === 'SIGNED_IN' && !loading) {
         toast({
-          title: "Login Successful",
+          title: "Welcome back!",
           description: "You have been successfully logged in.",
-          variant: "default",
         });
       }
     });
@@ -77,18 +75,18 @@ export default function DashboardLayout({ children }: AuthWrapperProps) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [location.pathname, navigate, toast]);
+  }, [location.pathname, navigate, toast, loading]);
 
-  // Force timeout to prevent infinite loading
+  // Simple timeout to prevent infinite loading
   useEffect(() => {
-    const forceLoadTimeout = setTimeout(() => {
+    const timeout = setTimeout(() => {
       if (loading) {
-        console.warn('⚠️ DashboardLayout loading timeout - forcing completion');
+        console.warn('Auth loading timeout - completing');
         setLoading(false);
       }
-    }, 10000); // Reduced timeout
+    }, 5000); // Reduced timeout
 
-    return () => clearTimeout(forceLoadTimeout);
+    return () => clearTimeout(timeout);
   }, [loading]);
 
   if (loading) {
@@ -96,7 +94,7 @@ export default function DashboardLayout({ children }: AuthWrapperProps) {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <LoadingAnimation size="md" />
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     );
@@ -124,4 +122,4 @@ export default function DashboardLayout({ children }: AuthWrapperProps) {
   }
 
   return <>{children}</>;
-} 
+}
