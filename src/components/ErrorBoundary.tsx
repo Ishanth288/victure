@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
 }
 
 interface State {
@@ -28,6 +29,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("ErrorBoundary caught an error:", error.message);
+    
+    // Call the optional onError callback
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo);
+    }
   }
 
   private handleReload = () => {

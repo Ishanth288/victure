@@ -3,7 +3,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw, Loader2, Wifi, WifiOff } from 'lucide-react';
 import { isMobileDevice, mobileOptimizer } from '@/utils/mobileOptimizer';
-import { useConnectionStatus } from '@/components/ConnectionMonitor';
 import { hapticFeedback } from '@/utils/mobileUtils';
 
 interface MobileOptimizedWrapperProps {
@@ -18,6 +17,26 @@ interface MobileLoadingState {
   isLoading: boolean;
   progress: number;
   status: string;
+}
+
+// Simple connection status hook
+function useConnectionStatus(): boolean {
+  const [isConnected, setIsConnected] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsConnected(true);
+    const handleOffline = () => setIsConnected(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  return isConnected;
 }
 
 // Enhanced Error Boundary for Mobile
@@ -453,4 +472,4 @@ export function useMobileOptimizations() {
   }, []);
 
   return { isOptimized, performanceMetrics };
-} 
+}
