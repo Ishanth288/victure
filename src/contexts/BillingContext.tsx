@@ -211,32 +211,32 @@ export function BillingProvider({ children }: BillingProviderProps) {
       console.log("🔄 Fetching bills for user:", userId);
       const startTime = Date.now();
 
-      // Fetch bills with all related data in a single query
+      // Fetch bills with related data - simplified to avoid ambiguity
       const { data: billsData, error: billsError } = await supabase
         .from("bills")
         .select(`
           *,
-          prescription:prescriptions (
+          prescriptions (
             id,
             prescription_number,
             doctor_name,
             patient_id,
             date,
             status,
-            patient:patients (
+            patients (
               id,
               name, 
               phone_number
             )
           ),
-          bill_items:bill_items (
+          bill_items (
             id,
             quantity,
             unit_price,
             total_price,
             return_quantity,
             inventory_item_id,
-            inventory_item:inventory (
+            inventory (
               name,
               unit_cost
             )
@@ -256,18 +256,36 @@ export function BillingProvider({ children }: BillingProviderProps) {
       setConnectionQuality(quality);
 
       if (mountedRef.current && billsData) {
-        // Enhanced bills with computed fields
-        const enhancedBills: Bill[] = (billsData as any[]).map((bill: any) => ({
-          ...bill,
-          created_at: bill.created_at || bill.date,
-          updated_at: bill.updated_at || bill.date,
-          sort_timestamp: new Date(bill.created_at || bill.date).getTime(),
-          effective_amount: bill.total_amount - (bill.bill_items?.reduce((sum: number, item: any) => 
-            sum + ((item.return_quantity || 0) * item.unit_price), 0) || 0),
-          original_amount: bill.total_amount,
-          return_value: bill.bill_items?.reduce((sum: number, item: any) => 
-            sum + ((item.return_quantity || 0) * item.unit_price), 0) || 0
-        }));
+        // Enhanced bills with computed fields and normalized structure
+        const enhancedBills: Bill[] = (billsData as any[]).map((bill: any) => {
+          // Normalize the prescription data (from array to single object)
+          const prescription = bill.prescriptions && bill.prescriptions.length > 0 ? {
+            ...bill.prescriptions[0],
+            patient: bill.prescriptions[0].patients && bill.prescriptions[0].patients.length > 0 
+              ? bill.prescriptions[0].patients[0] 
+              : null
+          } : null;
+
+          // Normalize bill items with inventory data
+          const normalizedBillItems = bill.bill_items?.map((item: any) => ({
+            ...item,
+            inventory_item: item.inventory && item.inventory.length > 0 ? item.inventory[0] : null
+          })) || [];
+
+          return {
+            ...bill,
+            prescription,
+            bill_items: normalizedBillItems,
+            created_at: bill.created_at || bill.date,
+            updated_at: bill.updated_at || bill.date,
+            sort_timestamp: new Date(bill.created_at || bill.date).getTime(),
+            effective_amount: bill.total_amount - (normalizedBillItems.reduce((sum: number, item: any) => 
+              sum + ((item.return_quantity || 0) * item.unit_price), 0) || 0),
+            original_amount: bill.total_amount,
+            return_value: normalizedBillItems.reduce((sum: number, item: any) => 
+              sum + ((item.return_quantity || 0) * item.unit_price), 0) || 0
+          };
+        });
 
         // Transform to prescription bills
         const prescriptionBillsData = enhancedBills
@@ -345,27 +363,27 @@ export function BillingProvider({ children }: BillingProviderProps) {
                 .from("bills")
                 .select(`
                   *,
-                  prescription:prescriptions (
+                  prescriptions (
                     id,
                     prescription_number,
                     doctor_name,
                     patient_id,
                     date,
                     status,
-                    patient:patients (
+                    patients (
                       id,
                       name, 
                       phone_number
                     )
                   ),
-                  bill_items:bill_items (
+                  bill_items (
                     id,
                     quantity,
                     unit_price,
                     total_price,
                     return_quantity,
                     inventory_item_id,
-                    inventory_item:inventory (
+                    inventory (
                       name,
                       unit_cost
                     )
@@ -375,13 +393,29 @@ export function BillingProvider({ children }: BillingProviderProps) {
                 .single();
               
               if (!error && newBillData) {
+                // Normalize the data structure for real-time updates
+                const bill = newBillData as any;
+                const prescription = bill.prescriptions && bill.prescriptions.length > 0 ? {
+                  ...bill.prescriptions[0],
+                  patient: bill.prescriptions[0].patients && bill.prescriptions[0].patients.length > 0 
+                    ? bill.prescriptions[0].patients[0] 
+                    : null
+                } : null;
+
+                const normalizedBillItems = bill.bill_items?.map((item: any) => ({
+                  ...item,
+                  inventory_item: item.inventory && item.inventory.length > 0 ? item.inventory[0] : null
+                })) || [];
+
                 const enhancedBill: Bill = {
-                  ...(newBillData as any),
-                  created_at: (newBillData as any).created_at || (newBillData as any).date,
-                  updated_at: (newBillData as any).updated_at || (newBillData as any).date,
-                  sort_timestamp: new Date((newBillData as any).created_at || (newBillData as any).date).getTime(),
-                  effective_amount: (newBillData as any).total_amount,
-                  original_amount: (newBillData as any).total_amount,
+                  ...bill,
+                  prescription,
+                  bill_items: normalizedBillItems,
+                  created_at: bill.created_at || bill.date,
+                  updated_at: bill.updated_at || bill.date,
+                  sort_timestamp: new Date(bill.created_at || bill.date).getTime(),
+                  effective_amount: bill.total_amount,
+                  original_amount: bill.total_amount,
                   return_value: 0
                 };
                 
