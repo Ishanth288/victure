@@ -222,7 +222,20 @@ export default function Insights() {
       setRetentionChange(5);
 
       console.log("Fetching bill items");
-      // Fetch top products
+      // Fetch top products - avoiding relationship ambiguity
+      // Step 1: Get bill IDs for the date range
+      const { data: billsInRange, error: billsError } = await supabase
+        .from('bills')
+        .select('id')
+        .eq('user_id', userId)
+        .gte('date', fromDate)
+        .lte('date', toDate);
+
+      if (billsError) throw billsError;
+
+      const billIds = billsInRange?.map(bill => bill.id) || [];
+      
+      // Step 2: Fetch bill items for these bills
       const { data: billItems, error: billItemsError } = await supabase
         .from('bill_items')
         .select(`
@@ -231,36 +244,47 @@ export default function Insights() {
           quantity,
           unit_price,
           total_price,
-          bill_id,
-          bills!inner(date, user_id),
-          inventory!inner(name)
+          bill_id
         `)
-        .eq('bills.user_id', userId)
-        .gte('bills.date', fromDate)
-        .lte('bills.date', toDate);
+        .in('bill_id', billIds);
 
       if (billItemsError) throw billItemsError;
 
+      // Step 3: Fetch inventory names for the items
+      let inventoryData: any[] = [];
+      if (billItems && billItems.length > 0) {
+        const inventoryIds = [...new Set(billItems.map((item: any) => item.inventory_item_id))];
+        const { data: inventory, error: inventoryError } = await supabase
+          .from('inventory')
+          .select('id, name')
+          .in('id', inventoryIds);
+        
+        if (!inventoryError) {
+          inventoryData = inventory || [];
+        }
+      }
+
       console.log("Fetched bill items:", billItems?.length || 0);
+
+      // Create inventory lookup map
+      const inventoryMap = new Map(inventoryData.map(inv => [inv.id, inv.name]));
 
       // Process top products by revenue
       const productMap = new Map();
       billItems?.forEach((item: any) => {
-        if (item.inventory && item.inventory.name) {
-          const productName = item.inventory.name || `Product ${item.inventory_item_id}`;
-          const revenue = parseFloat(item.total_price) || 0;
-          
-          if (productMap.has(productName)) {
-            const product = productMap.get(productName);
-            product.revenue += revenue;
-            product.quantity += parseInt(item.quantity) || 0;
-          } else {
-            productMap.set(productName, {
-              name: productName,
-              revenue,
-              quantity: parseInt(item.quantity) || 0,
-            });
-          }
+        const productName = inventoryMap.get(item.inventory_item_id) || `Product ${item.inventory_item_id}`;
+        const revenue = parseFloat(item.total_price) || 0;
+        
+        if (productMap.has(productName)) {
+          const product = productMap.get(productName);
+          product.revenue += revenue;
+          product.quantity += parseInt(item.quantity) || 0;
+        } else {
+          productMap.set(productName, {
+            name: productName,
+            revenue,
+            quantity: parseInt(item.quantity) || 0,
+          });
         }
       });
 
