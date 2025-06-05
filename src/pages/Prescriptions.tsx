@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Clock, User, FileText, DollarSign, Trash2, Loader2, RefreshCw, Calendar, Phone, Eye, Search, Plus, ArrowLeftRight, Filter, Download, Stethoscope, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,15 +24,26 @@ import { MedicineReturnDialog } from "@/components/prescriptions/MedicineReturnD
 import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
 import { MedicineReplacementDialog } from "@/components/prescriptions/MedicineReplacementDialog";
 import { logBillItemDeletion } from "@/utils/deletionTracker";
+import { useBilling } from "@/contexts/BillingContext";
 
 export default function Prescriptions() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [prescriptions, setPrescriptions] = useState<any[]>([]);
+  
+  // Use centralized billing context
+  const { 
+    prescriptionBills, 
+    isLoading, 
+    error, 
+    refreshBills, 
+    lastUpdated,
+    isConnected,
+    connectionQuality
+  } = useBilling();
+  
   const [filteredPrescriptions, setFilteredPrescriptions] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<string>("active");
-  const [loading, setLoading] = useState(true);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [prescriptionToDelete, setPrescriptionToDelete] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -50,40 +61,45 @@ export default function Prescriptions() {
   const [showReplacementDialog, setShowReplacementDialog] = useState(false);
   const [replacementBillId, setReplacementBillId] = useState<number | null>(null);
 
-  // Real-time data refresh functionality
+  // Real-time data refresh functionality using context
   const refreshData = useCallback(async () => {
     setRefreshing(true);
     try {
-      await fetchPrescriptions();
-        toast({
+      await refreshBills();
+      toast({
         title: "Data Refreshed",
         description: "Latest prescriptions and bills loaded successfully",
       });
     } catch (error) {
       console.error("Error refreshing data:", error);
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh data. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [refreshBills, toast]);
 
   // Auto-refresh on window focus to catch updates from other tabs
   useEffect(() => {
     const handleFocus = () => {
-      if (isAuthenticated && !loading) {
+      if (isAuthenticated && !isLoading) {
         refreshData();
       }
     };
     
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [isAuthenticated, loading, refreshData]);
+  }, [isAuthenticated, isLoading, refreshData]);
 
   // Listen for custom events from billing page
   useEffect(() => {
     const handleBillGenerated = () => {
       console.log("📢 Bill generated event received, refreshing data immediately...");
       // Immediate refresh without delay
-      fetchPrescriptions();
+      refreshData();
     };
 
     const handleDataRefreshNeeded = (event: CustomEvent) => {
@@ -91,7 +107,7 @@ export default function Prescriptions() {
       if (event.detail?.type === 'bill_generated' || event.detail?.type === 'return_processed' || event.detail?.type === 'replacement_processed') {
         console.log("🔄 Triggering immediate refresh for:", event.detail.type);
         // Immediate refresh
-        fetchPrescriptions();
+        refreshData();
       }
     };
 
@@ -99,7 +115,7 @@ export default function Prescriptions() {
       if (event.key === 'lastBillGenerated' && event.newValue) {
         console.log("📦 Storage change detected for bill generation");
         // Immediate refresh for storage changes
-        fetchPrescriptions();
+        refreshData();
       }
     };
 
@@ -112,7 +128,7 @@ export default function Prescriptions() {
     const handleVisibilityChange = () => {
       if (!document.hidden && isAuthenticated) {
         console.log("🔄 Tab became visible, refreshing data...");
-        fetchPrescriptions();
+        refreshData();
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -140,156 +156,20 @@ export default function Prescriptions() {
           return;
         }
         // Auth successful, proceed to fetch data
-        fetchPrescriptions();
+        refreshData();
       } catch (error) {
         console.error("Auth error:", error);
-        setLoading(false);
+        setIsAuthenticated(false);
       }
     };
 
     checkAuth();
   }, []);
 
-  // NEW: Bill-centric prescriptions fetching - Each bill = One prescription record
-  const fetchPrescriptions = async () => {
-    try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        setIsAuthenticated(false);
-        return;
-      }
-
-      setIsAuthenticated(true);
-
-      // NEW WORKFLOW: Fetch bills as prescription records
-      const { data: billsData, error: billsError } = await supabase
-        .from("bills")
-        .select(`
-          id,
-          bill_number,
-          date,
-          total_amount,
-          prescription_id,
-          prescription:prescriptions (
-          id,
-          prescription_number,
-          doctor_name,
-          patient_id,
-          date,
-          status,
-            patient:patients (
-              id,
-              name, 
-              phone_number
-            )
-          ),
-          bill_items:bill_items (
-            id,
-            quantity,
-            unit_price,
-            total_price,
-            return_quantity
-          )
-        `)
-        .eq("user_id", user.id)
-        .order("date", { ascending: false })
-        .order("id", { ascending: false }) // Secondary sort by ID for same date/time
-        .limit(200);
-
-      if (billsError) {
-        console.error("Bills fetch error:", billsError);
-        throw billsError;
-      }
-      
-      console.log('📊 Fetched bills as prescriptions:', billsData?.length || 0);
-
-      if (billsData && billsData.length > 0) {
-        // NEW: Each bill becomes a prescription record with effective amount calculation
-        const billPrescriptions = billsData.map(bill => {
-          // Calculate effective amount after returns
-          let totalReturnValue = 0;
-          let originalAmount = bill.total_amount;
-          
-          if (bill.bill_items && bill.bill_items.length > 0) {
-            totalReturnValue = bill.bill_items.reduce((sum, item) => {
-              const returnQuantity = item.return_quantity || 0;
-              const returnValue = returnQuantity * item.unit_price;
-              return sum + returnValue;
-            }, 0);
-          }
-          
-          const effectiveAmount = originalAmount - totalReturnValue;
-          const billDate = new Date(bill.date);
-          
-          return {
-            // Use bill ID as unique identifier
-            id: bill.id,
-            bill_id: bill.id,
-            bill_number: bill.bill_number,
-            amount: effectiveAmount, // Show effective amount after returns
-            original_amount: originalAmount,
-            return_value: totalReturnValue,
-            date: bill.date,
-            
-            // Prescription details
-            prescription_id: bill.prescription_id,
-            prescription_number: bill.prescription?.prescription_number || 'Unknown',
-            doctor_name: bill.prescription?.doctor_name || 'Not Specified',
-            status: bill.prescription?.status || 'active',
-            
-            // Patient details
-            patient: bill.prescription?.patient || { name: 'Unknown', phone_number: 'Unknown' },
-            
-            // Bill items for returns/replacements
-            bill_items: bill.bill_items || [],
-            
-            // Enhanced sorting with both date and time
-            sort_priority: billDate.getTime(), // Use full timestamp for precise sorting
-            display_date: billDate // Store date object for additional sorting options
-          };
-        });
-
-        // Sort by most recent date AND time - ENHANCED PRIORITIZATION
-        billPrescriptions.sort((a, b) => {
-          // Primary sort: by full timestamp (date + time)
-          const timeDiff = b.sort_priority - a.sort_priority;
-          if (timeDiff !== 0) return timeDiff;
-          
-          // Secondary sort: by bill ID (newer bills have higher IDs)
-          return b.id - a.id;
-        });
-
-        console.log("🔢 Final sorted bills (recent first):", billPrescriptions.slice(0, 5).map(p => ({ 
-          bill_number: p.bill_number, 
-          date: p.date,
-          timestamp: p.sort_priority,
-          amount: p.amount
-        })));
-
-        setPrescriptions(billPrescriptions);
-      } else {
-        setPrescriptions([]);
-      }
-
-    } catch (error) {
-      console.error("Error fetching prescriptions:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load prescriptions. Please try refreshing.",
-        variant: "destructive",
-      });
-      setPrescriptions([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Updated filtering for bill-centric prescriptions
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      const filtered = prescriptions.filter((prescription) => {
+      const filtered = prescriptionBills.filter((prescription) => {
         if (activeTab !== "all" && prescription.status !== activeTab) {
           return false;
         }
@@ -309,7 +189,7 @@ export default function Prescriptions() {
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [prescriptions, activeTab, searchQuery]);
+  }, [prescriptionBills, activeTab, searchQuery]);
 
   const handleCreateBill = (prescriptionId: number, patientData?: any) => {
     // Pass patient data via URL params for auto-fill
@@ -437,13 +317,7 @@ export default function Prescriptions() {
         throw error;
       }
 
-      setPrescriptions(prev => 
-        prev.map(prescription => 
-          prescription.id === id
-            ? { ...prescription, status: newStatus }
-            : prescription
-        )
-      );
+      refreshData();
 
       toast({
         title: "Status Updated",
@@ -487,10 +361,10 @@ export default function Prescriptions() {
       }
 
       // Find the bill record to delete from our state
-      const billToDelete = prescriptions.find(p => p.id === prescriptionToDelete);
+      const billToDelete = prescriptionBills.find(p => p.id === prescriptionToDelete);
       if (!billToDelete) {
         console.error("Bill not found in state for ID:", prescriptionToDelete);
-        console.log("Available prescriptions:", prescriptions.map(p => ({ id: p.id, bill_id: p.bill_id })));
+        console.log("Available prescriptions:", prescriptionBills.map(p => ({ id: p.id, bill_id: p.bill_id })));
         toast({
           title: "Error", 
           description: "Bill record not found",
@@ -622,11 +496,7 @@ export default function Prescriptions() {
 
       // Step 4: Update local state immediately - remove the deleted prescription
       console.log("Updating local state to remove prescription ID:", prescriptionToDelete);
-      setPrescriptions(prev => {
-        const updated = prev.filter(prescription => prescription.id !== prescriptionToDelete);
-        console.log("Updated prescriptions count:", updated.length);
-        return updated;
-      });
+      refreshData();
       
       // Step 5: Emit events for cross-page updates
       console.log("Emitting cross-page update events");
@@ -667,7 +537,7 @@ export default function Prescriptions() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-screen">
@@ -728,7 +598,7 @@ export default function Prescriptions() {
           {filteredPrescriptions.length === 0 ? (
             <div className="col-span-full text-center p-8 bg-gray-50 rounded-lg">
               <p className="text-gray-500">No prescriptions found</p>
-              {!loading && (
+              {!isLoading && (
                 <Button 
                   variant="outline" 
                   className="mt-4" 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
@@ -10,6 +9,7 @@ import { BrowserRouter } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { InventoryProvider } from "./contexts/InventoryContext";
+import { BillingProvider } from "./contexts/BillingContext";
 import { checkSupabaseAvailability } from "./integrations/supabase/client";
 
 // Create a simplified query client
@@ -23,14 +23,20 @@ const queryClient = new QueryClient({
   },
 });
 
+// 🧹 CRITICAL: Clear any form-related localStorage on app startup
+console.log("🧹 Clearing any cached form data on app startup");
+localStorage.removeItem('billingFormData');
+localStorage.removeItem('patientFormData');
+localStorage.removeItem('prescriptionFormData');
+
 function Root() {
   const [isSupabaseAvailable, setIsSupabaseAvailable] = useState(false);
   const [loadingSupabase, setLoadingSupabase] = useState(true);
 
   useEffect(() => {
     const checkAvailability = async () => {
-      const available = await checkSupabaseAvailability();
-      setIsSupabaseAvailable(available);
+      const result = await checkSupabaseAvailability();
+      setIsSupabaseAvailable(result.available || false);
       setLoadingSupabase(false);
     };
     checkAvailability();
@@ -57,7 +63,9 @@ function Root() {
             <BrowserRouter>
               <AuthProvider>
                 <InventoryProvider>
-                  <App />
+                  <BillingProvider>
+                    <App />
+                  </BillingProvider>
                 </InventoryProvider>
                 <Toaster position="top-center" richColors closeButton />
               </AuthProvider>

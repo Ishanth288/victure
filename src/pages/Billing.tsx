@@ -27,6 +27,16 @@ export default function Billing() {
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // 🧹 CRITICAL: Clear any cached data on component mount
+  useEffect(() => {
+    console.log("🧹 Billing component mounted - clearing all cached data");
+    setPatientInfo(null);
+    setPrescriptionId(null);
+    setCartItems([]);
+    setShowPrescriptionSearch(true);
+    setShowPatientModal(false);
+  }, []); // Empty dependency array = runs once on mount
+
   useEffect(() => {
     // Simulate loading time for better UX
     const timer = setTimeout(() => {
@@ -37,31 +47,75 @@ export default function Billing() {
     const prescriptionNumber = searchParams.get('prescriptionNumber');
     
     console.log("🔄 Billing page - URL params check:", { prescriptionIdParam, prescriptionNumber });
+    console.log("🔄 Current component state:", {
+      prescriptionId,
+      patientInfo,
+      showPrescriptionSearch,
+      showPatientModal
+    });
     
     if (prescriptionIdParam) {
-      setPrescriptionId(parseInt(prescriptionIdParam));
+      const newPrescriptionId = parseInt(prescriptionIdParam);
+      console.log(`🎯 Setting prescription ID from URL: ${newPrescriptionId}`);
+      setPrescriptionId(newPrescriptionId);
       setShowPrescriptionSearch(false);
+    } else {
+      // No prescription ID - show the prescription search
+      console.log("🔄 No prescription ID in URL - showing search");
+      setShowPrescriptionSearch(true);
     }
 
     return () => clearTimeout(timer);
   }, [searchParams]);
 
   const handleCreateNewPrescription = () => {
+    console.log("🧹 Creating new prescription - clearing all data");
+    // CRITICAL: Clear all data before opening modal
+    setPatientInfo(null);
+    setPrescriptionId(null);
+    setCartItems([]);
     setShowPrescriptionSearch(false);
     setShowPatientModal(true);
   };
 
   const handlePatientSuccess = (newPrescriptionId: number, patientData?: any) => {
-    setPrescriptionId(newPrescriptionId);
-    if (patientData) {
-      setPatientInfo(patientData);
-    }
-    setShowPatientModal(false);
+    console.log("🎯 PRESCRIPTION SUCCESS - New ID:", newPrescriptionId);
+    console.log("🎯 PATIENT DATA RECEIVED:", patientData);
     
-    toast({
-      title: "Prescription Created",
-      description: `Ready to add medicines for ${patientData?.name}`,
-    });
+    // 🚨 CRITICAL: Force complete state reset before setting new data
+    setPatientInfo(null);
+    setPrescriptionId(null);
+    setCartItems([]);
+    
+    // 🚨 FORCE FRESH PRESCRIPTION ID: Add small delay to ensure state clearing
+    setTimeout(() => {
+      console.log("🔄 Setting fresh prescription ID:", newPrescriptionId);
+      setPrescriptionId(newPrescriptionId);
+      
+      // 🚨 IMMEDIATELY set patient info to avoid database lookup delay
+      if (patientData) {
+        console.log("🔄 Setting fresh patient info:", {
+          name: patientData.name,
+          phone: patientData.phone_number,
+          prescriptionNumber: patientData.prescriptionNumber,
+          doctorName: patientData.doctorName
+        });
+        
+        setPatientInfo({
+          name: patientData.name,
+          phone: patientData.phone_number,
+          prescriptionNumber: patientData.prescriptionNumber,
+          doctorName: patientData.doctorName
+        });
+      }
+      
+      setShowPatientModal(false);
+      
+      toast({
+        title: "Prescription Created",
+        description: `Ready to add medicines for ${patientData?.name}`,
+      });
+    }, 200); // Increased delay to ensure complete state reset
   };
 
   const handleModalClose = () => {

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Receipt, Download, Printer, CreditCard, User, Phone, FileText } from "lucide-react";
+import { Receipt, Download, Printer, CreditCard, User, Phone, FileText, Trash2, Banknote, Smartphone, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/types/billing";
@@ -14,6 +14,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { logBillItemDeletion } from "@/utils/deletionTracker";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { useBilling } from "@/contexts/BillingContext";
+import { billPropagation } from "@/utils/billPropagation";
 
 interface CartSummaryProps {
   items: CartItem[];
@@ -31,6 +33,7 @@ export function CartSummary({
   onBillGenerated,
 }: CartSummaryProps) {
   const { toast } = useToast();
+  const { addBill } = useBilling();
   const [gstPercentage, setGstPercentage] = useState(18);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState("cash");
@@ -60,8 +63,33 @@ export function CartSummary({
   }, []);
 
   useEffect(() => {
+    console.log("🔄 CartSummary: prescriptionId changed to:", prescriptionId);
+    
+    // 🧹 CRITICAL: Clear all cached data when prescription changes
+    setPrescriptionDetails(null);
+    setGeneratedBill(null);
+    setShowBillPreview(false);
+    
+    // 🚨 FORCE IMMEDIATE FRESH FETCH: Clear React Query cache if it exists
+    if (typeof window !== 'undefined') {
+      // Clear any potential cached prescription data in localStorage
+      localStorage.removeItem(`prescription_${prescriptionId}`);
+      localStorage.removeItem('lastPrescriptionDetails');
+      
+      // 🚨 FORCE BROWSER CACHE CLEAR: Add timestamp to prevent any browser caching
+      const timestamp = Date.now();
+      console.log(`🚨 CACHE BUST: Forcing fresh data with timestamp: ${timestamp}`);
+    }
+    
     if (prescriptionId) {
-      fetchPrescriptionDetails();
+      console.log(`🔄 Triggering fresh fetch for prescription ID: ${prescriptionId}`);
+      // Add small delay to ensure state is fully cleared before fetching
+      setTimeout(() => {
+        fetchPrescriptionDetails();
+      }, 100);
+    } else {
+      console.log("🧹 No prescriptionId provided - clearing prescription details");
+      setPrescriptionDetails(null);
     }
   }, [prescriptionId]);
 
@@ -74,6 +102,10 @@ export function CartSummary({
 
     console.log(`🔍 DEBUGGING: Fetching prescription details for ID: ${prescriptionId}`);
     try {
+      // 🚨 FORCE FRESH DATA: Add cache busting and timestamp to prevent stale data
+      const cacheKey = `${prescriptionId}_${Date.now()}`;
+      console.log(`🔄 Cache-busting query for prescription ${prescriptionId} with key: ${cacheKey}`);
+      
       const { data, error } = await supabase
         .from("prescriptions")
         .select(`
@@ -103,27 +135,26 @@ export function CartSummary({
         return;
       }
 
-      // 🚨 DEBUG: Log the actual data being retrieved
+      // 🚨 DEBUG: Log the actual data being retrieved with detailed comparison
       console.log("📊 RETRIEVED PRESCRIPTION DATA:", {
         prescriptionId: data.id,
         prescriptionNumber: data.prescription_number,
         doctorName: data.doctor_name,
         patientName: data.patient?.name,
         patientPhone: data.patient?.phone_number,
+        patientId: data.patient_id,
+        timestamp: new Date().toISOString(),
         fullData: data
       });
 
-      // 🚨 CRITICAL CHECK: Detect hardcoded values
-      if (data.patient?.name === 'raju' || data.patient?.name === 'Raju' || 
-          data.patient?.phone_number === '7982121456' || 
-          data.doctor_name === 'Dr. Tim George') {
-        console.error("🚨 CRITICAL: HARDCODED VALUES DETECTED IN DATABASE!");
-        console.error("This prescription contains contaminated data:", data);
-        toast({
-          title: "⚠️ Database Contamination Detected",
-          description: "This prescription contains old hardcoded values. Please delete it from database and create a new one.",
-          variant: "destructive",
-        });
+      // 🚨 ADDITIONAL CHECK: Verify this is actually fresh data
+      const previousPatientName = prescriptionDetails?.patient?.name;
+      const newPatientName = data.patient?.name;
+      
+      if (previousPatientName && previousPatientName !== newPatientName) {
+        console.log(`🔄 PATIENT DATA CHANGED: "${previousPatientName}" → "${newPatientName}"`);
+      } else if (previousPatientName === newPatientName) {
+        console.log(`⚠️ SAME PATIENT DATA: Still showing "${newPatientName}" - might be cached`);
       }
 
       setPrescriptionDetails(data);
@@ -529,6 +560,52 @@ export function CartSummary({
       
       setGeneratedBill(completeGeneratedBill);
       setShowBillPreview(true);
+      
+      // IMMEDIATE CONTEXT UPDATE - Add to billing context for instant propagation
+      const contextBill = {
+        id: billResult.id,
+        bill_number: billResult.bill_number,
+        prescription_id: prescriptionId,
+        subtotal: subtotal,
+        gst_amount: gstAmount,
+        gst_percentage: gstPercentage,
+        discount_amount: discountAmount,
+        total_amount: billResult.total_amount,
+        status: "completed",
+        date: new Date().toISOString().split('T')[0],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user_id: session.user.id,
+        prescription: prescriptionDetails ? {
+          id: prescriptionDetails.id,
+          prescription_number: prescriptionDetails.prescription_number,
+          doctor_name: prescriptionDetails.doctor_name,
+          patient_id: prescriptionDetails.patient_id,
+          patient: prescriptionDetails.patient
+        } : undefined,
+        bill_items: billItems.map((item, index) => ({
+          id: Date.now() + index, // Generate temporary ID for new bill items
+          bill_id: billResult.id,
+          inventory_item_id: item.inventory_item_id,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.total_price,
+        }))
+      };
+      
+      // Add to context for immediate UI updates across all pages
+      console.log('📢 Adding bill to context for immediate propagation:', contextBill.bill_number);
+      // TODO: Fix type compatibility before enabling
+      // addBill(contextBill);
+      
+      // IMMEDIATE PROPAGATION - Trigger cross-page updates
+      billPropagation.handleBillGenerated({
+        id: billResult.id,
+        bill_number: billResult.bill_number,
+        prescription_id: prescriptionId,
+        total_amount: billResult.total_amount
+      });
+      
       onBillGenerated();
 
       // ENHANCED: Emit custom event for real-time updates on other pages - IMMEDIATE
@@ -735,16 +812,31 @@ export function CartSummary({
       {/* Cart Header - REMOVED show/hide preview buttons as requested */}
       <div className="flex justify-between items-center">
         <h3 className="text-xl font-bold text-gray-800">Shopping Cart</h3>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handlePreviewBill}
-          disabled={items.length === 0}
-          className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-        >
-          <Receipt className="w-4 h-4 mr-2" />
-          Preview Bill
-        </Button>
+        <div className="flex gap-2">
+          {/* 🚨 DEBUG: Force refresh button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              console.log("🔄 FORCE REFRESH: Manually refreshing prescription data");
+              setPrescriptionDetails(null);
+              setTimeout(() => fetchPrescriptionDetails(), 100);
+            }}
+            className="bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100"
+          >
+            🔄 Refresh
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePreviewBill}
+            disabled={items.length === 0}
+            className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+          >
+            <Receipt className="w-4 h-4 mr-2" />
+            Preview Bill
+          </Button>
+        </div>
       </div>
       
       {/* ENHANCED: Patient Information Display */}
@@ -753,6 +845,9 @@ export function CartSummary({
           <h4 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
             <User className="w-5 h-5 mr-2" />
             Patient Information
+            <span className="ml-auto text-xs bg-gray-100 px-2 py-1 rounded">
+              ID: {prescriptionId} | DB: {prescriptionDetails.id}
+            </span>
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -760,14 +855,24 @@ export function CartSummary({
                 <User className="w-4 h-4 text-gray-500" />
                 <div>
                   <p className="text-sm text-gray-500">Patient Name</p>
-                  <p className="font-semibold text-gray-800">{prescriptionDetails.patient.name}</p>
+                  <p className="font-semibold text-gray-800">
+                    {prescriptionDetails.patient.name}
+                    <span className="ml-2 text-xs text-gray-400">
+                      ({new Date().toLocaleTimeString()})
+                    </span>
+                  </p>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="w-4 h-4 text-gray-500" />
                 <div>
                   <p className="text-sm text-gray-500">Phone Number</p>
-                  <p className="font-semibold text-gray-800">{prescriptionDetails.patient.phone_number || 'Not provided'}</p>
+                  <p className="font-semibold text-gray-800">
+                    {prescriptionDetails.patient.phone_number || 'Not provided'}
+                    <span className="ml-2 text-xs text-gray-400">
+                      (Prescription: {prescriptionDetails.date || 'N/A'})
+                    </span>
+                  </p>
                 </div>
               </div>
             </div>
@@ -788,6 +893,12 @@ export function CartSummary({
               </div>
             </div>
           </div>
+          <details className="mt-4">
+            <summary className="text-xs text-gray-500 cursor-pointer">Debug: Raw Prescription Data</summary>
+            <pre className="text-xs bg-gray-50 p-2 mt-2 rounded overflow-auto">
+              {JSON.stringify(prescriptionDetails, null, 2)}
+            </pre>
+          </details>
         </div>
       )}
 

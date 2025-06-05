@@ -6,572 +6,307 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Phone, UserCheck, Sparkles, Loader2 } from "lucide-react";
+import { User, Phone, Stethoscope, Save, X, UserPlus } from "lucide-react";
 
-interface EnhancedPatientDetailsModalProps {
+interface PatientModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: (prescriptionId: number, patientData?: any) => void;
-  prescriptionNumber?: string;
 }
 
 export function EnhancedPatientDetailsModal({
   open,
   onOpenChange,
   onSuccess,
-  prescriptionNumber,
-}: EnhancedPatientDetailsModalProps) {
+}: PatientModalProps) {
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitAttempts, setSubmitAttempts] = useState(0);
-  const [formData, setFormData] = useState({
-    patientName: "",
-    phoneNumber: "",
-    doctorName: "",
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // CRITICAL FIX: Force clear form data completely when modal opens
+  
+  // Fresh state - no default values
+  const [patientName, setPatientName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [doctorName, setDoctorName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  
+  // Force complete reset when modal opens/closes
   useEffect(() => {
     if (open) {
-      // COMPLETELY RESET form data - no cached values
-      console.log("🔄 Modal opened - resetting form to completely empty state");
-      setFormData({
-        patientName: "",
-        phoneNumber: "",
-        doctorName: "",
-      });
+      console.log("🔄 FRESH MODAL OPENED - Resetting all fields");
+      setPatientName("");
+      setPhoneNumber("");
+      setDoctorName("");
       setErrors({});
-      setSubmitAttempts(0);
-    } else if (!open) {
-      // Also clear when modal closes to prevent any persistence
-      console.log("🔄 Modal closed - clearing form data");
-      setFormData({
-        patientName: "",
-        phoneNumber: "",
-        doctorName: "",
-      });
-      setErrors({});
-      setSubmitAttempts(0);
+      setIsLoading(false);
     }
   }, [open]);
 
-  // ADDITIONAL: Force reset on component mount to prevent any persistence
+  // Clear any stored data on component mount
   useEffect(() => {
-    console.log("🔄 Component mounted - ensuring clean form state");
-    
-    // CRITICAL: Clear any localStorage that might persist form data
-    localStorage.removeItem('billingFormData');
+    console.log("🧹 COMPONENT MOUNTED - Clearing storage");
     localStorage.removeItem('patientFormData');
-    localStorage.removeItem('prescriptionFormData');
-    
-    setFormData({
-      patientName: "",
-      phoneNumber: "",
-      doctorName: "",
-    });
-    setErrors({});
+    localStorage.removeItem('billingFormData');
+    localStorage.removeItem('lastPatientData');
   }, []);
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+  // Input validation
+  const validateInputs = () => {
+    const newErrors: {[key: string]: string} = {};
     
-    if (!formData.patientName.trim()) {
+    if (!patientName.trim()) {
       newErrors.patientName = "Patient name is required";
-    } else if (formData.patientName.trim().length < 2) {
-      newErrors.patientName = "Patient name must be at least 2 characters";
     }
     
-    if (!formData.phoneNumber.trim()) {
+    if (!phoneNumber.trim()) {
       newErrors.phoneNumber = "Phone number is required";
-    } else {
-      const cleanPhone = formData.phoneNumber.replace(/\D/g, "");
-      if (cleanPhone.length < 10) {
-        newErrors.phoneNumber = "Please enter a valid 10-digit phone number";
-      } else if (cleanPhone.length === 11 && cleanPhone.startsWith('0')) {
-        setFormData(prev => ({
-          ...prev,
-          phoneNumber: cleanPhone.substring(1)
-        }));
-      } else if (cleanPhone.length === 12 && cleanPhone.startsWith('91')) {
-        setFormData(prev => ({
-          ...prev,
-          phoneNumber: cleanPhone.substring(2)
-        }));
-      } else if (cleanPhone.length === 13 && cleanPhone.startsWith('+91')) {
-        setFormData(prev => ({
-          ...prev,
-          phoneNumber: cleanPhone.substring(3)
-        }));
-      } else if (cleanPhone.length !== 10) {
-        newErrors.phoneNumber = "Please enter a valid 10-digit Indian mobile number";
-      } else if (!cleanPhone.match(/^[6-9]/)) {
-        newErrors.phoneNumber = "Indian mobile numbers start with 6, 7, 8, or 9";
-      }
+    } else if (phoneNumber.length < 10) {
+      newErrors.phoneNumber = "Phone number must be at least 10 digits";
     }
-    
-    // REMOVED: Doctor name validation (now optional)
-    // Doctor name is now optional, no validation required
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const generateUserScopedPrescriptionNumber = async (userId: string): Promise<string> => {
+  // Generate unique prescription number
+  const generatePrescriptionNumber = async (userId: string) => {
     try {
-      const { data: maxPrescription, error } = await supabase
-        .from("prescriptions")
-        .select("prescription_number")
-        .eq("user_id", userId)
-        .order("prescription_number", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      let nextNumber = 1;
-      if (maxPrescription?.prescription_number) {
-        console.log("Max prescription found:", maxPrescription.prescription_number);
-        const numberMatch = maxPrescription.prescription_number.match(/\d+/);
-        if (numberMatch) {
-          nextNumber = parseInt(numberMatch[0]) + 1;
-          console.log("Next number calculated:", nextNumber);
-        }
-      }
-
-      const newPrescriptionNumber = `PRE-${userId.slice(-8)}-${nextNumber}`;
-      console.log("Generated prescription number:", newPrescriptionNumber);
-      return newPrescriptionNumber;
+      const timestamp = Date.now();
+      const random = Math.floor(Math.random() * 1000);
+      return `PRE-${userId.slice(-6)}-${timestamp}-${random}`;
     } catch (error) {
       console.error("Error generating prescription number:", error);
-      return `PRE-${Date.now()}`;
+      return `PRE-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
+  // Handle form submission
+  const handleSubmit = async () => {
+    if (!validateInputs()) {
       toast({
         title: "Validation Error",
-        description: "Please check all required fields and try again.",
+        description: "Please fill in all required fields correctly",
         variant: "destructive",
       });
       return;
     }
 
-    setIsSubmitting(true);
-    setSubmitAttempts(prev => prev + 1);
-
+    setIsLoading(true);
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error("No authenticated user found. Please refresh the page and try again.");
+      console.log("🚀 STARTING FRESH PRESCRIPTION CREATION");
+      console.log("📝 NEW FORM DATA:", {
+        name: patientName.trim(),
+        phone: phoneNumber.trim(),
+        doctor: doctorName.trim() || "Not Specified"
+      });
+
+      // Get authenticated user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error("Authentication failed. Please refresh and try again.");
       }
 
-      // Clean and validate form data with better sanitization
-      const cleanPatientName = formData.patientName.trim().replace(/\s+/g, ' ');
-      const cleanPhoneNumber = formData.phoneNumber.replace(/\D/g, "");
-      const cleanDoctorName = formData.doctorName.trim().replace(/\s+/g, ' ') || 'Not Specified';
+      console.log("✅ USER AUTHENTICATED:", user.id);
 
-      // Additional validation
-      if (cleanPatientName.length < 2) {
-        throw new Error("Patient name must be at least 2 characters long.");
-      }
-      if (cleanPhoneNumber.length < 10) {
-        throw new Error("Phone number must be at least 10 digits long.");
-      }
-      // REMOVED: Doctor name validation (now optional)
-      // Doctor name is optional, no validation required
+      // Clean the form data
+      const cleanName = patientName.trim();
+      const cleanPhone = phoneNumber.replace(/\D/g, "");
+      const cleanDoctor = doctorName.trim() || "Not Specified";
 
-      let patientData;
+      // Create new patient (always create new - no conflicts)
+      console.log("🆕 CREATING BRAND NEW PATIENT");
       
-      // First, try to find existing patient by phone number with better error handling
-      const { data: existingPatient, error: fetchPatientError } = await supabase
+      const { data: newPatient, error: patientError } = await supabase
         .from("patients")
-        .select("id, name, phone_number, status")
-        .eq("phone_number", cleanPhoneNumber)
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (fetchPatientError && fetchPatientError.code !== 'PGRST116') {
-        console.error("Error fetching existing patient:", fetchPatientError);
-        throw new Error(`Failed to check existing patients: ${fetchPatientError.message}`);
-      }
-
-      if (existingPatient) {
-        // Update existing patient with comprehensive data
-        const { error: updateError } = await supabase
-          .from("patients")
-          .update({ 
-            name: cleanPatientName,
-            status: 'active'
-          })
-          .eq("id", existingPatient.id);
-        
-        if (updateError) {
-          console.warn("Failed to update patient details:", updateError);
-          // Continue with existing data rather than failing
-        }
-        
-        patientData = { 
-          ...existingPatient, 
-          name: cleanPatientName,
+        .insert({
+          name: cleanName,
+          phone_number: cleanPhone,
+          user_id: user.id,
           status: 'active'
-        };
-        console.log("Updated existing patient:", patientData);
-        
-        toast({
-          title: "Patient Found",
-          description: `Updated details for existing patient: ${cleanPatientName}`,
-        });
-      } else {
-        // Create new patient with retry logic and better error handling
-        let createAttempts = 0;
-        const maxCreateAttempts = 3;
-        
-        while (createAttempts < maxCreateAttempts) {
-          try {
-            const { data: newPatient, error: createPatientError } = await supabase
-              .from("patients")
-              .insert({
-                name: cleanPatientName,
-                phone_number: cleanPhoneNumber,
-                user_id: user.id,
-                status: 'active'
-              })
-              .select("id, name, phone_number, status")
-              .single();
+        })
+        .select("id, name, phone_number")
+        .single();
 
-            if (createPatientError) {
-              // Handle duplicate phone number error
-              if (createPatientError.code === '23505') {
-                console.log("Duplicate phone number detected, fetching existing patient...");
-                const { data: duplicatePatient } = await supabase
-                  .from("patients")
-                  .select("id, name, phone_number, status")
-                  .eq("phone_number", cleanPhoneNumber)
-                  .eq("user_id", user.id)
-                  .single();
-                
-                if (duplicatePatient) {
-                  patientData = duplicatePatient;
-                  break;
-                }
-              }
-              throw createPatientError;
-            }
-            
-            if (!newPatient || !newPatient.id) {
-              throw new Error("Patient creation returned no data");
-            }
-            
-            patientData = newPatient;
-            console.log("New patient created successfully:", patientData);
-            
-            toast({
-              title: "Patient Created",
-              description: `New patient ${cleanPatientName} created successfully`,
-            });
-            break;
-          } catch (createError: any) {
-            createAttempts++;
-            console.error(`Patient creation attempt ${createAttempts} failed:`, createError);
-            
-            if (createAttempts >= maxCreateAttempts) {
-              throw new Error(`Failed to create patient after ${maxCreateAttempts} attempts: ${createError.message}`);
-            }
-            
-            // Wait before retry with exponential backoff
-            await new Promise(resolve => setTimeout(resolve, 1000 * createAttempts));
-          }
-        }
+      if (patientError) {
+        console.error("❌ PATIENT CREATION FAILED:", patientError);
+        throw new Error(`Failed to create patient: ${patientError.message}`);
       }
 
-      if (!patientData || !patientData.id) {
-        throw new Error("Failed to create or retrieve patient data");
+      console.log("✅ NEW PATIENT CREATED:", newPatient);
+
+      // Generate unique prescription number
+      const prescriptionNumber = await generatePrescriptionNumber(user.id);
+      console.log("📋 GENERATED PRESCRIPTION NUMBER:", prescriptionNumber);
+
+      // Create new prescription
+      const { data: newPrescription, error: prescriptionError } = await supabase
+        .from("prescriptions")
+        .insert({
+          prescription_number: prescriptionNumber,
+          patient_id: newPatient.id,
+          doctor_name: cleanDoctor,
+          user_id: user.id,
+          date: new Date().toISOString().split('T')[0],
+          status: 'active'
+        })
+        .select("id, prescription_number")
+        .single();
+
+      if (prescriptionError) {
+        console.error("❌ PRESCRIPTION CREATION FAILED:", prescriptionError);
+        throw new Error(`Failed to create prescription: ${prescriptionError.message}`);
       }
 
-      // Generate prescription number with user scope and better error handling
-      const currentPrescriptionNumber = prescriptionNumber || await generateUserScopedPrescriptionNumber(user.id);
-      
-      // Create prescription with retry logic and improved error handling
-      let prescriptionData;
-      let createPrescriptionAttempts = 0;
-      const maxPrescriptionAttempts = 3;
-      
-      while (createPrescriptionAttempts < maxPrescriptionAttempts) {
-        try {
-          const { data: newPrescription, error: prescriptionError } = await supabase
-            .from("prescriptions")
-            .insert({
-              prescription_number: currentPrescriptionNumber,
-              patient_id: patientData.id,
-              doctor_name: cleanDoctorName,
-              user_id: user.id,
-              date: new Date().toISOString(),
-              status: 'active'
-            })
-            .select("*")
-            .single();
+      console.log("✅ NEW PRESCRIPTION CREATED:", newPrescription);
 
-          if (prescriptionError) {
-            // Handle unique constraint violation for prescription number
-            if (prescriptionError.code === '23505') {
-              const { data: existing, error: fetchError } = await supabase
-                .from("prescriptions")
-                .select("*")
-                .eq("prescription_number", currentPrescriptionNumber)
-                .eq("user_id", user.id)
-                .single();
-              
-              if (!fetchError && existing) {
-                console.log("Using existing prescription:", existing);
-                prescriptionData = existing;
-                break;
-              } else {
-                // Generate new prescription number and retry
-                const newPrescriptionNumber = await generateUserScopedPrescriptionNumber(user.id);
-                continue;
-              }
-            }
-            
-            throw prescriptionError;
-          }
-          
-          if (!newPrescription || !newPrescription.id) {
-            throw new Error("Prescription creation returned no data");
-          }
-          
-          prescriptionData = newPrescription;
-          console.log("New prescription created successfully:", prescriptionData);
-          break;
-        } catch (prescriptionError: any) {
-          createPrescriptionAttempts++;
-          console.error(`Prescription creation attempt ${createPrescriptionAttempts} failed:`, prescriptionError);
-          
-          if (createPrescriptionAttempts >= maxPrescriptionAttempts) {
-            throw new Error(`Failed to create prescription after ${maxPrescriptionAttempts} attempts: ${prescriptionError.message}`);
-          }
-          
-          // Wait before retry with exponential backoff
-          await new Promise(resolve => setTimeout(resolve, 1000 * createPrescriptionAttempts));
-        }
-      }
+      // Success!
+      const successData = {
+        id: newPatient.id,
+        name: cleanName,
+        phone_number: cleanPhone,
+        prescriptionNumber: prescriptionNumber,
+        doctorName: cleanDoctor
+      };
 
-      if (!prescriptionData) {
-        throw new Error("Failed to create or retrieve prescription data");
-      }
+      console.log("🎉 SUCCESS - CALLING PARENT WITH:", successData);
 
-      // Success feedback with detailed information
       toast({
-        title: "Success!",
-        description: `Patient ${cleanPatientName} and prescription ${prescriptionData.prescription_number} created successfully.`,
-        variant: "default",
+        title: "Prescription Created!",
+        description: `Now add medicines for ${cleanName}`,
       });
 
-      // Pass complete patient data to parent with all required fields
-      onSuccess(prescriptionData.id, {
-        id: patientData.id,
-        name: cleanPatientName,
-        phone_number: cleanPhoneNumber,
-        prescriptionNumber: prescriptionData.prescription_number,
-        doctorName: cleanDoctorName,
-        status: 'active'
-      });
-
-      // Reset form on success
-      setFormData({
-        patientName: "",
-        phoneNumber: "",
-        doctorName: "",
-      });
-      setErrors({});
-      setSubmitAttempts(0);
+      // Pass data to parent - DON'T close modal, let parent handle it
+      onSuccess(newPrescription.id, successData);
+      
+      // Note: NOT closing modal here - let the parent (billing page) handle the workflow
 
     } catch (error: any) {
-      console.error("Error in patient details submission:", error);
-      
-      // Provide specific error messages based on error type and attempt count
-      let errorMessage = "Failed to save patient details. Please try again.";
-      let errorTitle = "Error";
-      
-      if (submitAttempts >= 3) {
-        errorTitle = "Multiple Failures";
-        errorMessage = "Multiple attempts failed. Please check your internet connection and try again later.";
-      } else if (error.message.includes("network") || error.message.includes("connection")) {
-        errorTitle = "Network Error";
-        errorMessage = "Network connection issue. Please check your internet and try again.";
-      } else if (error.message.includes("duplicate") || error.message.includes("unique")) {
-        errorTitle = "Duplicate Data";
-        errorMessage = "Patient with this phone number already exists. Please check and try again.";
-      } else if (error.message.includes("validation") || error.message.includes("invalid")) {
-        errorTitle = "Validation Error";
-        errorMessage = error.message || "Please check your input data and try again.";
-      } else {
-        errorMessage = error.message || errorMessage;
-      }
-      
+      console.error("💥 ERROR:", error);
       toast({
-        title: errorTitle,
-        description: errorMessage,
+        title: "Error",
+        description: error.message || "Failed to create prescription",
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  // ENHANCED: Handle phone number input with better formatting
-  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    
-    // Remove all non-digits
-    const cleanValue = value.replace(/\D/g, "");
-    
-    // Handle different input formats
-    if (cleanValue.length <= 10) {
-      setFormData(prev => ({ ...prev, phoneNumber: cleanValue }));
-    } else if (cleanValue.length === 11 && cleanValue.startsWith('0')) {
-      // Remove leading 0 from numbers like 09876543210
-      setFormData(prev => ({ ...prev, phoneNumber: cleanValue.substring(1) }));
-    } else if (cleanValue.length === 12 && cleanValue.startsWith('91')) {
-      // Remove country code from numbers like 919876543210
-      setFormData(prev => ({ ...prev, phoneNumber: cleanValue.substring(2) }));
-    } else if (cleanValue.length === 13 && value.startsWith('+91')) {
-      // Remove country code from numbers like +919876543210
-      setFormData(prev => ({ ...prev, phoneNumber: cleanValue.substring(3) }));
-    }
-    
-    // Clear phone number error when user starts typing
-    if (errors.phoneNumber) {
-      setErrors(prev => ({ ...prev, phoneNumber: "" }));
-    }
+  const handleClose = () => {
+    console.log("🔄 MODAL CLOSING - Clearing all data");
+    setPatientName("");
+    setPhoneNumber("");
+    setDoctorName("");
+    setErrors({});
+    onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg border-0 p-0 overflow-hidden">
-        <Card className="border-0 shadow-2xl bg-gradient-to-br from-white via-blue-50/20 to-green-50/20">
-          <DialogHeader className="p-6 pb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 text-white rounded-t-lg">
-            <DialogTitle className="flex items-center text-xl font-semibold">
-              <Sparkles className="w-6 h-6 mr-2" />
-              Patient Details
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md mx-auto">
+        <Card className="border-none shadow-none">
+          <DialogHeader className="space-y-3 pb-6">
+            <DialogTitle className="text-2xl font-bold text-center text-gray-800 flex items-center justify-center">
+              <UserPlus className="w-6 h-6 mr-2 text-blue-600" />
+              New Prescription
             </DialogTitle>
-            <p className="text-blue-100 text-sm mt-1">
-              {prescriptionNumber ? `For Prescription ${prescriptionNumber}` : "Create new prescription"}
+            <p className="text-gray-600 text-center text-sm">
+              Enter patient details to start billing
             </p>
           </DialogHeader>
-          
-          <CardContent className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
-              <div className="space-y-2">
-                <Label htmlFor="patientName" className="text-sm font-semibold text-gray-700 flex items-center">
-                  <User className="w-4 h-4 mr-2 text-blue-600" />
-                  Patient Name *
-                </Label>
-                <Input
-                  id="patientName"
-                  name="patientName"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck="false"
-                  value={formData.patientName}
-                  onChange={(e) => {
-                    console.log("📝 Patient name input:", e.target.value);
-                    setFormData({ ...formData, patientName: e.target.value });
-                    if (errors.patientName) setErrors({ ...errors, patientName: "" });
-                  }}
-                  className={`h-12 border-2 rounded-xl px-4 transition-all duration-200 ${
-                    errors.patientName 
-                      ? "border-red-300 focus:border-red-500 bg-red-50/50" 
-                      : "border-gray-200 focus:border-blue-500 bg-white/70"
-                  }`}
-                  placeholder="Enter patient's full name"
-                />
-                {errors.patientName && (
-                  <p className="text-red-500 text-xs mt-1">{errors.patientName}</p>
-                )}
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phoneNumber" className="text-sm font-semibold text-gray-700 flex items-center">
-                  <Phone className="w-4 h-4 mr-2 text-green-600" />
-                  Phone Number *
-                </Label>
-                <Input
-                  id="phoneNumber"
-                  name="phoneNumber"
-                  type="tel"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck="false"
-                  value={formData.phoneNumber}
-                  onChange={(e) => {
-                    console.log("📝 Phone number input:", e.target.value);
-                    handlePhoneNumberChange(e);
-                  }}
-                  className={`h-12 border-2 rounded-xl px-4 transition-all duration-200 ${
-                    errors.phoneNumber 
-                      ? "border-red-300 focus:border-red-500 bg-red-50/50" 
-                      : "border-gray-200 focus:border-green-500 bg-white/70"
-                  }`}
-                  placeholder="Enter 10-digit contact number"
-                />
-                {errors.phoneNumber && (
-                  <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>
-                )}
-              </div>
+          <CardContent className="space-y-6 px-6 pb-6">
+            {/* Patient Name Field */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-gray-700 flex items-center">
+                <User className="w-4 h-4 mr-2 text-blue-500" />
+                Patient Name *
+              </Label>
+              <Input
+                value={patientName}
+                onChange={(e) => {
+                  setPatientName(e.target.value);
+                  if (errors.patientName) {
+                    setErrors(prev => ({ ...prev, patientName: "" }));
+                  }
+                }}
+                placeholder="Enter patient's full name"
+                className={`h-11 ${errors.patientName ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-blue-500'}`}
+                disabled={isLoading}
+              />
+              {errors.patientName && (
+                <p className="text-red-500 text-xs">{errors.patientName}</p>
+              )}
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="doctorName" className="text-sm font-semibold text-gray-700 flex items-center">
-                  <UserCheck className="w-4 h-4 mr-2 text-purple-600" />
-                  Doctor Name (Optional)
-                </Label>
-                <Input
-                  id="doctorName"
-                  name="doctorName"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck="false"
-                  value={formData.doctorName}
-                  onChange={(e) => {
-                    console.log("📝 Doctor name input:", e.target.value);
-                    setFormData({ ...formData, doctorName: e.target.value });
-                    if (errors.doctorName) setErrors({ ...errors, doctorName: "" });
-                  }}
-                  className={`h-12 border-2 rounded-xl px-4 transition-all duration-200 ${
-                    errors.doctorName 
-                      ? "border-red-300 focus:border-red-500 bg-red-50/50" 
-                      : "border-gray-200 focus:border-purple-500 bg-white/70"
-                  }`}
-                  placeholder="Enter prescribing doctor's name (optional)"
-                />
-                {errors.doctorName && (
-                  <p className="text-red-500 text-xs mt-1">{errors.doctorName}</p>
-                )}
-              </div>
+            {/* Phone Number Field */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-gray-700 flex items-center">
+                <Phone className="w-4 h-4 mr-2 text-green-500" />
+                Phone Number *
+              </Label>
+              <Input
+                value={phoneNumber}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "");
+                  setPhoneNumber(value);
+                  if (errors.phoneNumber) {
+                    setErrors(prev => ({ ...prev, phoneNumber: "" }));
+                  }
+                }}
+                placeholder="Enter 10-digit phone number"
+                className={`h-11 ${errors.phoneNumber ? 'border-red-300 focus:border-red-500' : 'border-gray-300 focus:border-green-500'}`}
+                disabled={isLoading}
+              />
+              {errors.phoneNumber && (
+                <p className="text-red-500 text-xs">{errors.phoneNumber}</p>
+              )}
+            </div>
 
-              <Button 
-                type="submit" 
-                className="w-full h-12 bg-gradient-to-r from-blue-600 via-purple-600 to-green-600 hover:from-blue-700 hover:via-purple-700 hover:to-green-700 text-white font-semibold rounded-xl shadow-lg transition-all duration-200 transform hover:scale-[1.02]"
-                disabled={isSubmitting}
+            {/* Doctor Name Field */}
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold text-gray-700 flex items-center">
+                <Stethoscope className="w-4 h-4 mr-2 text-purple-500" />
+                Doctor Name <span className="text-gray-400">(Optional)</span>
+              </Label>
+              <Input
+                value={doctorName}
+                onChange={(e) => setDoctorName(e.target.value)}
+                placeholder="Enter prescribing doctor's name"
+                className="h-11 border-gray-300 focus:border-purple-500"
+                disabled={isLoading}
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex space-x-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                className="flex-1 h-11"
+                disabled={isLoading}
               >
-                {isSubmitting ? (
+                <X className="w-4 h-4 mr-2" />
+                Cancel
+              </Button>
+              
+              <Button
+                onClick={handleSubmit}
+                className="flex-1 h-11 bg-blue-600 hover:bg-blue-700"
+                disabled={isLoading}
+              >
+                {isLoading ? (
                   <div className="flex items-center">
-                    <Loader2 className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                    Creating Prescription...
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                    Creating...
                   </div>
                 ) : (
-                  "Start Billing"
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Create Prescription
+                  </>
                 )}
               </Button>
-            </form>
+            </div>
           </CardContent>
         </Card>
       </DialogContent>

@@ -130,25 +130,27 @@ export function AddInventoryModal({ open, onOpenChange, onSuccess }: AddInventor
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[95vh] flex flex-col">
-        <DialogHeader className="shrink-0">
+      <DialogContent className="max-w-4xl inventory-modal-content">
+        <DialogHeader className="flex-shrink-0 pb-4 border-b">
           <DialogTitle>Add New Item</DialogTitle>
           <DialogDescription>
             Add a new item to your inventory. Fill in all required fields.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-hidden">
-          <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 pr-2">
-            <InventoryForm
-              formData={formData}
-              onInputChange={handleInputChange}
-              onSelectChange={handleSelectChange}
-              onCancel={() => {
-                resetForm();
-                onOpenChange(false);
-              }}
-              onSubmit={handleAddItem}
-            />
+        <div className="inventory-modal-body">
+          <div className="inventory-modal-scroll">
+            <div className="inventory-form-container py-4">
+              <InventoryForm
+                formData={formData}
+                onInputChange={handleInputChange}
+                onSelectChange={handleSelectChange}
+                onCancel={() => {
+                  resetForm();
+                  onOpenChange(false);
+                }}
+                onSubmit={handleAddItem}
+              />
+            </div>
           </div>
         </div>
       </DialogContent>

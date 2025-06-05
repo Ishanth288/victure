@@ -25,6 +25,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { logPatientDeletion, logPrescriptionDeletion } from "@/utils/deletionTracker";
+import { useBilling } from "@/contexts/BillingContext";
 
 export default function Patients() {
   const navigate = useNavigate();
