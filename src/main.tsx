@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
@@ -12,15 +12,13 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { InventoryProvider } from "./contexts/InventoryContext";
 import { BillingProvider } from "./contexts/BillingContext";
 
-// Create a simplified query client with better error handling
+// Create a simple query client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000,
-      retryOnMount: false,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
     mutations: {
       retry: 1,
@@ -28,12 +26,7 @@ const queryClient = new QueryClient({
   },
 });
 
-// Clear any form-related localStorage on app startup
-console.log("🧹 Clearing any cached form data on app startup");
-localStorage.removeItem('billingFormData');
-localStorage.removeItem('patientFormData');
-localStorage.removeItem('prescriptionFormData');
-
+// Simple root render
 function Root() {
   return (
     <React.StrictMode>
@@ -57,21 +50,5 @@ function Root() {
   );
 }
 
-// Add global error handlers that don't cause infinite loops
-window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled promise rejection:', event.reason);
-  // Only prevent default for specific error types to avoid blocking legitimate errors
-  if (event.reason?.message?.includes('Network request failed') || 
-      event.reason?.message?.includes('Failed to fetch')) {
-    event.preventDefault();
-  }
-});
-
-window.addEventListener('error', (event) => {
-  console.error('Global error:', event.error);
-  // Don't prevent default to allow normal error handling
-});
-
-// Simple root render without complex initialization
 const root = ReactDOM.createRoot(document.getElementById("root")!); 
 root.render(<Root />);
