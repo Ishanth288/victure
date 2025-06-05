@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 
 export interface SupabaseQueryResult<T> {
   data: T | null;
@@ -8,7 +7,7 @@ export interface SupabaseQueryResult<T> {
 }
 
 /**
- * Enhanced error handling for Supabase queries
+ * Enhanced error handling for Supabase queries with better error prevention
  */
 export async function safeSupabaseQuery<T>(
   queryFn: () => any,
@@ -17,69 +16,65 @@ export async function safeSupabaseQuery<T>(
   try {
     console.log(`Executing Supabase query: ${context}`);
     
-    // Execute the query function and await the result
-    const result = await queryFn();
+    // Execute the query function with timeout
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Query timeout')), 15000)
+    );
     
-    if (result.error) {
-      console.error(`Supabase error in ${context}:`, result.error);
+    const result = await Promise.race([queryFn(), timeoutPromise]);
+    
+    if (result && typeof result === 'object' && 'error' in result && result.error) {
+      console.warn(`Supabase error in ${context}:`, result.error.message);
       return { data: null, error: result.error };
     }
     
-    console.log(`Supabase query successful for ${context}:`, result.data?.length || 'N/A', 'records');
-    return { data: result.data, error: null };
+    console.log(`Supabase query successful for ${context}`);
+    return { data: result?.data || result, error: null };
     
   } catch (error: any) {
-    console.error(`Exception in ${context}:`, error);
+    console.warn(`Exception in ${context}:`, error.message);
     return { data: null, error };
   }
 }
 
 /**
- * Check Supabase connection and attempt to reconnect if necessary
+ * Check Supabase connection without triggering error cascades
  */
 export async function checkSupabaseConnection(): Promise<boolean> {
   try {
     console.log("Testing Supabase connection...");
-    // Try a simple, lightweight query to test connection
-    const { error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
+    
+    // Use a very lightweight query with short timeout
+    const { error } = await Promise.race([
+      supabase.from('profiles').select('count', { count: 'exact', head: true }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 3000))
+    ]) as any;
     
     if (error) {
-      console.error('Supabase connection check failed:', error);
+      console.warn('Supabase connection check failed:', error.message);
       return false;
     }
     
     console.log("Supabase connection test successful");
     return true;
-  } catch (error) {
-    console.error('Error checking Supabase connection:', error);
+  } catch (error: any) {
+    console.warn('Error checking Supabase connection:', error.message);
     return false;
   }
 }
 
 /**
- * Handle Supabase errors with user-friendly messages
+ * Handle Supabase errors with user-friendly messages without causing cascades
  */
-export async function handleSupabaseError(error: any, context: string = 'operation') {
-  console.error(`Supabase error in ${context}:`, error);
+export async function handleSupabaseError(error: any, context: string = 'operation'): Promise<string> {
+  console.warn(`Supabase error in ${context}:`, error?.message || error);
   
-  // Return a user-friendly error message
+  // Return a user-friendly error message without triggering toasts
   if (error?.message) {
     return error.message;
   }
   
   return `An error occurred during ${context}. Please try again.`;
-}
-
-/**
- * Display error messages using toast
- */
-export function displayErrorMessage(error: any, context: string = 'operation') {
-  console.error(`Error in ${context}:`, error);
-  
-  // This would need to be called from a component with access to toast
-  // For now, just log the error
-  const message = error?.message || `An error occurred during ${context}`;
-  console.error(`User-facing error: ${message}`);
 }
 
 /**
@@ -93,7 +88,8 @@ export function isConnectionError(error: any): boolean {
     message.includes('network') ||
     message.includes('connection') ||
     message.includes('timeout') ||
-    message.includes('fetch')
+    message.includes('fetch') ||
+    message.includes('failed to load')
   );
 }
 

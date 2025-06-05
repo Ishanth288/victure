@@ -22,22 +22,13 @@ export default function DashboardLayout({ children }: AuthWrapperProps) {
 
     const initializeAuth = async () => {
       try {
-        // Add connection timeout
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Connection timeout')), 10000);
-        });
-
-        const sessionPromise = supabase.auth.getSession();
-        
-        const { data: { session: currentSession }, error } = await Promise.race([
-          sessionPromise,
-          timeoutPromise
-        ]) as any;
+        // Simple session check without complex timeout handling
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
 
         if (!mounted) return;
 
         if (error) {
-          console.error("Session check error:", error);
+          console.warn("Session check error:", error.message);
           setConnectionError(true);
           setLoading(false);
           return;
@@ -51,8 +42,8 @@ export default function DashboardLayout({ children }: AuthWrapperProps) {
           navigate(`/auth?redirect=${returnPath}`);
         }
 
-      } catch (error) {
-        console.error("Auth initialization error:", error);
+      } catch (error: any) {
+        console.warn("Auth initialization error:", error.message);
         if (mounted) {
           setConnectionError(true);
           setLoading(false);
@@ -86,7 +77,7 @@ export default function DashboardLayout({ children }: AuthWrapperProps) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [location.pathname, navigate, toast, loading]);
+  }, [location.pathname, navigate, toast]);
 
   // Force timeout to prevent infinite loading
   useEffect(() => {
@@ -95,7 +86,7 @@ export default function DashboardLayout({ children }: AuthWrapperProps) {
         console.warn('⚠️ DashboardLayout loading timeout - forcing completion');
         setLoading(false);
       }
-    }, 15000);
+    }, 10000); // Reduced timeout
 
     return () => clearTimeout(forceLoadTimeout);
   }, [loading]);

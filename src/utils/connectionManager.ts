@@ -1,6 +1,6 @@
 
 import { toast } from "@/hooks/use-toast";
-import { checkSupabaseConnection } from "./supabaseErrorHandling";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ConnectionOptions {
   maxRetries?: number;
@@ -13,46 +13,61 @@ interface ConnectionOptions {
 let reconnectionAttempts = 0;
 let reconnectionTimer: ReturnType<typeof setTimeout> | null = null;
 let isReconnecting = false;
+let lastConnectionCheck = 0;
+const CONNECTION_CHECK_THROTTLE = 5000; // 5 seconds
 
 /**
- * Manages connection state and implements reconnection logic with exponential backoff
+ * Simple connection check without triggering cascading errors
+ */
+async function simpleConnectionCheck(): Promise<boolean> {
+  try {
+    // Throttle connection checks to prevent spam
+    const now = Date.now();
+    if (now - lastConnectionCheck < CONNECTION_CHECK_THROTTLE) {
+      return true; // Assume connected if checked recently
+    }
+    lastConnectionCheck = now;
+
+    // Use a very simple query with timeout
+    const { error } = await Promise.race([
+      supabase.from('profiles').select('count', { count: 'exact', head: true }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 3000))
+    ]) as any;
+    
+    return !error;
+  } catch (error) {
+    console.warn('Connection check failed (this is normal):', error);
+    return false;
+  }
+}
+
+/**
+ * Manages connection state without causing error cascades
  */
 export const connectionManager = {
   /**
-   * Check if the connection is active and attempt reconnection if not
+   * Check if the connection is active
    */
   checkConnection: async (): Promise<boolean> => {
     try {
-      const isConnected = await checkSupabaseConnection();
+      const isConnected = await simpleConnectionCheck();
       
-      if (isConnected) {
-        // If we were previously trying to reconnect, show success message
-        if (isReconnecting) {
-          toast({
-            title: "Connection restored",
-            description: "Your connection has been re-established",
-            variant: "success",
-            duration: 3000
-          });
-          isReconnecting = false;
-          reconnectionAttempts = 0;
-        }
-        return true;
-      } else {
-        // Connection failed, attempt reconnection
-        if (!isReconnecting) {
-          isReconnecting = true;
-          toast({
-            title: "Connection lost",
-            description: "Attempting to reconnect...",
-            variant: "warning",
-            duration: 5000
-          });
-        }
-        return false;
+      if (isConnected && isReconnecting) {
+        // Connection restored - reset state
+        isReconnecting = false;
+        reconnectionAttempts = 0;
+        
+        toast({
+          title: "Connection restored",
+          description: "Your connection has been re-established",
+          variant: "default",
+          duration: 3000
+        });
       }
+      
+      return isConnected;
     } catch (error) {
-      console.error("Error checking connection:", error);
+      console.warn("Connection check failed:", error);
       return false;
     }
   },
@@ -62,8 +77,8 @@ export const connectionManager = {
    */
   attemptReconnect: async (options: ConnectionOptions = {}): Promise<boolean> => {
     const {
-      maxRetries = 10,
-      initialDelay = 1000,
+      maxRetries = 3, // Reduced from 10 to prevent spam
+      initialDelay = 2000, // Increased initial delay
       maxDelay = 30000,
       onReconnectSuccess,
       onMaxRetriesExceeded
@@ -77,12 +92,14 @@ export const connectionManager = {
 
     // Check if max retries has been exceeded
     if (reconnectionAttempts >= maxRetries) {
-      toast({
-        title: "Connection failed",
-        description: "Could not re-establish connection after multiple attempts",
-        variant: "destructive",
-        duration: 0 // Don't auto-dismiss this message
-      });
+      if (!isReconnecting) {
+        toast({
+          title: "Connection issues",
+          description: "Please check your internet connection",
+          variant: "destructive",
+          duration: 5000
+        });
+      }
       
       reconnectionAttempts = 0;
       isReconnecting = false;
@@ -95,16 +112,18 @@ export const connectionManager = {
     }
 
     // Check connection status
-    const isConnected = await checkSupabaseConnection();
+    const isConnected = await simpleConnectionCheck();
     
     if (isConnected) {
       // Connection restored
-      toast({
-        title: "Connection restored",
-        description: "Your connection has been re-established",
-        variant: "success",
-        duration: 3000
-      });
+      if (isReconnecting) {
+        toast({
+          title: "Connection restored",
+          description: "Your connection has been re-established",
+          variant: "default",
+          duration: 3000
+        });
+      }
       
       reconnectionAttempts = 0;
       isReconnecting = false;
@@ -117,19 +136,10 @@ export const connectionManager = {
     } else {
       // Connection still failed, retry with exponential backoff
       reconnectionAttempts++;
+      isReconnecting = true;
       
       // Calculate delay with exponential backoff
       const delay = Math.min(initialDelay * Math.pow(1.5, reconnectionAttempts - 1), maxDelay);
-      
-      // Show reconnection attempt notification
-      if (reconnectionAttempts > 1) {
-        toast({
-          title: "Reconnecting...",
-          description: `Attempt ${reconnectionAttempts} of ${maxRetries}`,
-          variant: "warning",
-          duration: 3000
-        });
-      }
       
       // Schedule next reconnection attempt
       reconnectionTimer = setTimeout(() => {
@@ -141,67 +151,22 @@ export const connectionManager = {
   },
 
   /**
-   * Cache data locally to prevent data loss during reconnection
-   */
-  cacheData: (key: string, data: any): void => {
-    try {
-      localStorage.setItem(`connection_cache_${key}`, JSON.stringify({
-        timestamp: Date.now(),
-        data
-      }));
-    } catch (error) {
-      console.error("Error caching data:", error);
-    }
-  },
-
-  /**
-   * Retrieve cached data
-   */
-  getCachedData: (key: string, maxAge = 3600000): any => {
-    try {
-      const cachedItem = localStorage.getItem(`connection_cache_${key}`);
-      
-      if (cachedItem) {
-        const { timestamp, data } = JSON.parse(cachedItem);
-        
-        // Check if cached data is still valid (not expired)
-        if (Date.now() - timestamp < maxAge) {
-          return data;
-        }
-      }
-    } catch (error) {
-      console.error("Error retrieving cached data:", error);
-    }
-    
-    return null;
-  },
-
-  /**
    * Initialize connection management
    */
   initialize: (): void => {
     // Listen for online/offline events
     window.addEventListener('online', () => {
-      toast({
-        title: "Back online",
-        description: "Checking connection status...",
-        variant: "info",
-        duration: 3000
-      });
       connectionManager.checkConnection();
     });
     
     window.addEventListener('offline', () => {
       toast({
-        title: "Offline",
+        title: "Connection lost",
         description: "Please check your internet connection",
         variant: "warning",
         duration: 5000
       });
     });
-    
-    // Perform initial connection check
-    connectionManager.checkConnection();
   }
 };
 
@@ -212,23 +177,20 @@ export const fetchWithRetry = async (
   retryOptions: ConnectionOptions = {}
 ): Promise<Response> => {
   const {
-    maxRetries = 3,
+    maxRetries = 2, // Reduced retries
     initialDelay = 1000,
     maxDelay = 8000
   } = retryOptions;
   
   let retries = 0;
   
-  while (true) {
+  while (retries < maxRetries) {
     try {
       const response = await fetch(url, {
         ...options,
-        // Add cache control to avoid caching during development
         headers: {
           ...options.headers,
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
         }
       });
       
@@ -247,4 +209,6 @@ export const fetchWithRetry = async (
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
+  
+  throw new Error('Max retries exceeded');
 };
