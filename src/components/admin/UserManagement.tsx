@@ -73,7 +73,7 @@ export function UserManagement() {
       }
       
       if (result.data) {
-        const formattedUsers = result.data.map(user => ({
+        const formattedUsers = (result.data as any[]).map(user => ({
           id: user.id,
           email: user.id, // Using ID as email placeholder since we can't access auth.users
           role: user.role || 'user',

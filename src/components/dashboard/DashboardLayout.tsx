@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -102,7 +103,10 @@ export default function DashboardLayout({ children }: AuthWrapperProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <LoadingAnimation text="Loading dashboard..." size="md" />
+        <div className="text-center">
+          <LoadingAnimation size="md" />
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        </div>
       </div>
     );
   }
