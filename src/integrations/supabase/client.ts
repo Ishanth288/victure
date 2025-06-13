@@ -199,19 +199,26 @@ export class OptimizedQuery {
           console.warn(`⚠️ Slow query detected: ${operation} took ${duration}ms`);
         }
 
-        return { data: result.data, error: result.error };
+        if (result.error) {
+          lastError = result.error;
+          if (attempt < retries) {
+            const backoffTime = Math.min(1000 * Math.pow(2, attempt), 8000);
+            console.warn(`🔄 ${operation} attempt ${attempt + 1} failed, retrying in ${backoffTime}ms:`, result.error);
+            await new Promise(resolve => setTimeout(resolve, backoffTime));
+            continue;
+          }
+          return { data: null, error: lastError };
+        }
+        return { data: result.data, error: null };
       } catch (error) {
         lastError = error as Error;
-        
-        if (attempt === retries) {
-          console.error(`❌ ${operation} failed after ${retries + 1} attempts:`, error);
-          break;
+        if (attempt < retries) {
+          const backoffTime = Math.min(1000 * Math.pow(2, attempt), 8000);
+          console.warn(`🔄 ${operation} attempt ${attempt + 1} failed (exception), retrying in ${backoffTime}ms:`, error);
+          await new Promise(resolve => setTimeout(resolve, backoffTime));
+          continue;
         }
-
-        // Exponential backoff for retries
-        const backoffTime = Math.min(1000 * Math.pow(2, attempt), 5000);
-        console.warn(`🔄 ${operation} attempt ${attempt + 1} failed, retrying in ${backoffTime}ms:`, error);
-        await new Promise(resolve => setTimeout(resolve, backoffTime));
+        return { data: null, error: lastError };
       }
     }
 

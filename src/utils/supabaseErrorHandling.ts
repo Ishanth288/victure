@@ -14,7 +14,7 @@ export async function safeSupabaseQuery<T>(
   context: string = 'query',
   options: { timeout?: number; retries?: number } = {}
 ): Promise<SupabaseQueryResult<T>> {
-  const { timeout = 5000, retries = 1 } = options;
+  const { timeout = 10000, retries = 3 } = options; // Increased timeout to 10s and retries to 3 (4 attempts)
   let lastError: any;
   
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -37,7 +37,7 @@ export async function safeSupabaseQuery<T>(
           lastError = error;
           
           // Wait before retry with exponential backoff
-          const delay = Math.min(1000 * Math.pow(2, attempt), 3000);
+          const delay = Math.min(1000 * Math.pow(2, attempt), 8000); // Max delay 8s
           await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         }
@@ -56,7 +56,7 @@ export async function safeSupabaseQuery<T>(
         console.warn(`Retryable exception in ${context}, attempt ${attempt + 1}:`, error.message);
         
         // Wait before retry with exponential backoff
-        const delay = Math.min(1000 * Math.pow(2, attempt), 3000);
+        const delay = Math.min(1000 * Math.pow(2, attempt), 8000); // Max delay 8s
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }

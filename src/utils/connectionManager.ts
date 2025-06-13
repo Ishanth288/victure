@@ -39,14 +39,14 @@ export const connectionManager = {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       console.log(`Reconnection attempt ${attempt}/${maxAttempts}`);
       
-      const isConnected = await this.checkConnection();
+      const isConnected = await connectionManager.checkConnection();
       if (isConnected) {
         console.log('✅ Reconnection successful');
         return true;
       }
       
       if (attempt < maxAttempts) {
-        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 8000); // Increased max delay
         console.log(`⏳ Waiting ${delay}ms before next attempt...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
