@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { CreditCard, DollarSign, ShoppingCart, Users } from "lucide-react";
@@ -13,7 +14,45 @@ import { useToast } from "@/hooks/use-toast";
 import { addDays, format, subDays, subMonths } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CustomerRetentionAnalysis } from "@/components/insights/CustomerRetentionAnalysis";
-import { safeSupabaseQuery, handleSupabaseError } from "@/utils/supabaseErrorHandling";
+
+interface BillsData {
+  total_amount: string | number;
+  date: string;
+  prescriptions?: {
+    id: number;
+    prescription_number: string;
+    doctor_name: string;
+    patient_id: number;
+    patients?: {
+      name: string;
+      phone_number: string;
+    } | {
+      name: string;
+      phone_number: string;
+    }[];
+  } | {
+    id: number;
+    prescription_number: string;
+    doctor_name: string;
+    patient_id: number;
+    patients?: {
+      name: string;
+      phone_number: string;
+    } | {
+      name: string;
+      phone_number: string;
+    }[];
+  }[];
+}
+
+interface PatientsData {
+  id: number;
+}
+
+interface InventoryData {
+  id: number;
+  name: string;
+}
 
 export default function Insights() {
   const navigate = useNavigate();
@@ -108,11 +147,12 @@ export default function Insights() {
 
       console.log("Fetching current bills:", { userId, fromDate, toDate });
       
-      // Fetch bills for current period - simplified to avoid relationship ambiguity
+      // Fetch bills for current period
       const { data: currentBills, error: currentBillsError } = await supabase
         .from('bills')
         .select(`
-          *,
+          total_amount,
+          date,
           prescriptions (
             id,
             prescription_number,
@@ -132,13 +172,16 @@ export default function Insights() {
         console.error('Error fetching current bills:', currentBillsError);
         throw currentBillsError;
       }
-      console.log("Fetched current bills:", currentBills.length);
 
-      // Fetch bills for previous period - simplified
+      const currentBillsData = (currentBills || []) as BillsData[];
+      console.log("Fetched current bills:", currentBillsData.length);
+
+      // Fetch bills for previous period
       const { data: prevBills, error: prevBillsError } = await supabase
         .from('bills')
         .select(`
-          *,
+          total_amount,
+          date,
           prescriptions (
             id,
             prescription_number,
@@ -158,11 +201,13 @@ export default function Insights() {
         console.error('Error fetching previous bills:', prevBillsError);
         throw prevBillsError;
       }
-      console.log("Fetched previous bills:", prevBills.length);
+
+      const prevBillsData = (prevBills || []) as BillsData[];
+      console.log("Fetched previous bills:", prevBillsData.length);
 
       // Calculate total sales (number of bills)
-      const currentSalesCount = currentBills.length;
-      const prevSalesCount = prevBills.length;
+      const currentSalesCount = currentBillsData.length;
+      const prevSalesCount = prevBillsData.length;
       setTotalSales(currentSalesCount);
       
       // Calculate sales change percentage
@@ -172,8 +217,8 @@ export default function Insights() {
       setSalesChange(Math.round(salesChangePercent));
 
       // Calculate monthly revenue
-      const currentRevenue = currentBills.reduce((sum: number, bill: any) => sum + (parseFloat(bill.total_amount) || 0), 0);
-      const prevRevenue = prevBills.reduce((sum: number, bill: any) => sum + (parseFloat(bill.total_amount) || 0), 0);
+      const currentRevenue = currentBillsData.reduce((sum: number, bill: BillsData) => sum + (parseFloat(String(bill.total_amount)) || 0), 0);
+      const prevRevenue = prevBillsData.reduce((sum: number, bill: BillsData) => sum + (parseFloat(String(bill.total_amount)) || 0), 0);
       setMonthlyRevenue(currentRevenue);
       
       console.log("Revenue calculation:", { currentRevenue, prevRevenue });
@@ -196,19 +241,24 @@ export default function Insights() {
       setAovChange(Math.round(aovChangePercent));
 
       // Process repeat customer data from both periods for a more complete picture
-      const allBills = [...currentBills, ...prevBills];
+      const allBills = [...currentBillsData, ...prevBillsData];
       
       // Group customers by phone number to identify repeats
       const customerMap = new Map();
       
-      allBills.forEach((bill: any) => {
+      allBills.forEach((bill: BillsData) => {
         // Handle both array and single object format for prescriptions
         const prescription = Array.isArray(bill?.prescriptions) ? bill.prescriptions[0] : bill?.prescriptions;
-        const patients = Array.isArray(prescription?.patients) ? prescription.patients[0] : prescription?.patients;
+        let patients = prescription?.patients;
+        
+        // Handle both array and single object format for patients
+        if (Array.isArray(patients)) {
+          patients = patients[0];
+        }
         
         if (patients?.phone_number) {
           const phone = patients.phone_number;
-          const amount = parseFloat(bill.total_amount) || 0;
+          const amount = parseFloat(String(bill.total_amount)) || 0;
           
           if (customerMap.has(phone)) {
             const customer = customerMap.get(phone);
@@ -250,8 +300,7 @@ export default function Insights() {
       setRetentionChange(5);
 
       console.log("Fetching bill items");
-      // Fetch top products - avoiding relationship ambiguity (simplified without safeSupabaseQuery)
-      // Step 1: Get bill IDs for the date range
+      // Fetch top products
       const { data: billsInRange, error: billsError } = await supabase
         .from('bills')
         .select('id')
@@ -264,7 +313,8 @@ export default function Insights() {
         throw billsError;
       }
 
-      const billIds = billsInRange?.map(bill => bill.id) || [];
+      const billsInRangeData = (billsInRange || []) as { id: number }[];
+      const billIds = billsInRangeData.map(bill => bill.id);
       
       // Step 2: Fetch bill items for these bills
       const { data: billItems, error: billItemsError } = await supabase
@@ -284,10 +334,12 @@ export default function Insights() {
         throw billItemsError;
       }
 
+      const billItemsData = billItems || [];
+
       // Step 3: Fetch inventory names for the items
-      let inventoryData: any[] = [];
-      if (billItems && billItems.length > 0) {
-        const inventoryIds = [...new Set(billItems.map((item: any) => item.inventory_item_id))];
+      let inventoryData: InventoryData[] = [];
+      if (billItemsData && billItemsData.length > 0) {
+        const inventoryIds = [...new Set(billItemsData.map((item: any) => item.inventory_item_id))];
         const { data: inventory, error: inventoryError } = await supabase
           .from('inventory')
           .select('id, name')
@@ -296,18 +348,18 @@ export default function Insights() {
         if (inventoryError) {
           console.error('Error fetching inventory:', inventoryError);
         } else {
-          inventoryData = inventory || [];
+          inventoryData = (inventory || []) as InventoryData[];
         }
       }
 
-      console.log("Fetched bill items:", billItems.length);
+      console.log("Fetched bill items:", billItemsData.length);
 
       // Create inventory lookup map
       const inventoryMap = new Map(inventoryData.map(inv => [inv.id, inv.name]));
 
       // Process top products by revenue
       const productMap = new Map();
-      billItems.forEach((item: any) => {
+      billItemsData.forEach((item: any) => {
         const productName = inventoryMap.get(item.inventory_item_id) || `Product ${item.inventory_item_id}`;
         const revenue = parseFloat(item.total_price) || 0;
         
@@ -350,11 +402,11 @@ export default function Insights() {
       }
       
       // Fill in actual revenue data
-      currentBills.forEach((bill: any) => {
+      currentBillsData.forEach((bill: BillsData) => {
         if (bill.date) {
           const dateStr = bill.date.substring(0, 10); // Get YYYY-MM-DD part
           if (revenueByDay.has(dateStr)) {
-            revenueByDay.set(dateStr, revenueByDay.get(dateStr) + (parseFloat(bill.total_amount) || 0));
+            revenueByDay.set(dateStr, revenueByDay.get(dateStr) + (parseFloat(String(bill.total_amount)) || 0));
           }
         }
       });
@@ -374,7 +426,6 @@ export default function Insights() {
     } catch (error: any) {
       console.error("Error fetching insights:", error);
       setError(error.message || "Failed to load insights data");
-      await handleSupabaseError(error, 'fetchInsightsData');
       toast({
         title: "Error",
         description: "Failed to load insights data: " + (error.message || "Unknown error"),

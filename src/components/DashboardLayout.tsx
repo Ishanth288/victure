@@ -1,9 +1,11 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { MainContent } from '@/components/dashboard/layout/MainContent';
 import { SidebarContainer } from '@/components/dashboard/layout/SidebarContainer';
 import { PlanBanner } from '@/components/dashboard/PlanBanner';
+import { LoadingAnimation } from '@/components/LoadingAnimation';
 import { supabase } from '@/integrations/supabase/client';
 
 interface DashboardLayoutProps {

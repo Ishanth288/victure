@@ -60,7 +60,7 @@ export function useProductData(userId: string | null, dateRange: { from: Date, t
       if (inventoryError) throw inventoryError;
       
       // Create inventory lookup map
-      const inventoryMap = new Map();
+      const inventoryMap = new Map<number, string>();
       if (inventory) {
         inventory.forEach(item => {
           inventoryMap.set(item.id, item.name || `Product ${item.id}`);
@@ -68,14 +68,14 @@ export function useProductData(userId: string | null, dateRange: { from: Date, t
       }
       
       // Process top products by revenue
-      const productMap = new Map();
+      const productMap = new Map<string, { name: string; revenue: number; quantity: number }>();
       
       billItems.forEach((item) => {
         const productName = inventoryMap.get(item.inventory_item_id) || `Product ${item.inventory_item_id}`;
         const revenue = parseFloat(String(item.total_price)) || 0;
         
         if (productMap.has(productName)) {
-          const product = productMap.get(productName);
+          const product = productMap.get(productName)!;
           product.revenue += revenue;
           product.quantity += parseInt(String(item.quantity)) || 0;
         } else {

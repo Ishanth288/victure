@@ -66,12 +66,12 @@ const MobilePrescriptions: React.FC = () => {
       if (error) throw error;
 
       const formattedData = data?.map(item => ({
-        id: String(item.id), // Convert to string to match interface
+        id: String(item.id),
         prescription_number: item.prescription_number,
         doctor_name: item.doctor_name || 'Not Specified',
         date: item.date,
         status: item.status as 'active' | 'completed' | 'cancelled',
-        patient: item.patients ? { name: item.patients.name } : undefined
+        patient: Array.isArray(item.patients) ? { name: item.patients[0]?.name } : { name: item.patients?.name }
       })) || [];
 
       setPrescriptions(formattedData);
