@@ -19,7 +19,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
 
   console.log('🔍 AuthWrapper: Starting initialization', { pathname: location.pathname });
 
-  const withConnectionTimeout = useCallback(async <T,>(promise: Promise<T>, timeoutMs: number = 3000): Promise<T> => {
+  const withConnectionTimeout = useCallback(async <T,>(promise: Promise<T>, timeoutMs: number = 10000): Promise<T> => {
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error(`Connection timeout after ${timeoutMs / 1000} seconds`)), timeoutMs);
     });
@@ -56,7 +56,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
         // Add connection timeout to session check
         const sessionResult = await withConnectionTimeout(
           supabase.auth.getSession(),
-          5000 // Increased timeout to 5 seconds
+          10000 // Increased timeout to 10 seconds
         );
 
         const { data: { session }, error } = sessionResult;
@@ -94,8 +94,8 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
         handleConnectionError(error);
         
         // Implement exponential backoff for retries
-        if (attempt < 1) { // Reduced to max 2 attempts
-          const delay = Math.min(2000 * Math.pow(2, attempt), 4000); // Faster retry
+        if (attempt < 2) { // Increased to max 3 attempts (0, 1, 2)
+          const delay = Math.min(2000 * Math.pow(2, attempt), 8000); // Max delay 8s
           console.log(`⏳ Retrying in ${delay}ms...`);
           
           setTimeout(() => {
