@@ -3,8 +3,8 @@ import type { Database } from './types';
 
 // Validate and sanitize Supabase configuration
 const getSupabaseConfig = () => {
-  const url = import.meta.env.VITE_SUPABASE_URL || "https://aysdilfgxlyuplikmmdt.supabase.co";
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5c2RpbGZneGx5dXBsaWttbWR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAxNjU0NTAsImV4cCI6MjA1NTc0MTQ1MH0.7OLDoAC5i8F6IbORW7kY6at5pWdTZDB44D0g6kPaWpA";
+  const url = "https://aysdilfgxlyuplikmmdt.supabase.co";
+  const key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5c2RpbGZneGx5dXBsaWttbWR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAxNjU0NTAsImV4cCI6MjA1NTc0MTQ1MH0.7OLDoAC5i8F6IbORW7kY6at5pWdTZDB44D0g6kPaWpA";
   
   // Validate URL format
   try {
@@ -40,7 +40,7 @@ export const supabase = createClient<Database>(
       detectSessionInUrl: true,
       storage: localStorage,
       flowType: 'pkce',
-      debug: false
+      debug: true
     },
     realtime: {
       params: {

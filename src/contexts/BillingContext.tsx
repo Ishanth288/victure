@@ -201,186 +201,98 @@ export function BillingProvider({ children }: BillingProviderProps) {
 
   // Fetch bills with enhanced sorting
   const fetchBills = useCallback(async (userId: string, showProgress = false) => {
-    if (!userId || !mountedRef.current) return;
-
     try {
       if (showProgress) {
-        setIsLoading(true);
+        console.log("🔄 Fetching bills...");
       }
 
-      console.log("🔄 Fetching bills for user:", userId);
       const startTime = Date.now();
-
-      // Step 1: Fetch bills with prescriptions and patients - avoiding bill_items relationship ambiguity
       const { data: billsData, error: billsError } = await supabase
-        .from("bills")
+        .from('bills')
         .select(`
           *,
-          prescriptions (
+          prescriptions!inner (
             id,
             prescription_number,
             doctor_name,
-            patient_id,
             date,
             status,
+            patient_id,
             patients (
               id,
-              name, 
+              name,
               phone_number
             )
-          )
-        `)
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .order("id", { ascending: false })
-        .limit(500);
-
-      if (billsError) {
-        throw new Error(`Failed to fetch bills: ${billsError.message}`);
-      }
-
-      // Step 2: Fetch bill items separately to avoid relationship ambiguity
-      let billItemsData: BillItem[] = [];
-      let inventoryData: Array<{ id: number; name: string; unit_cost: number }> = [];
-
-      if (billsData && billsData.length > 0) {
-        const billIds = billsData.map(bill => bill.id);
-
-        // Fetch bill items for these bills
-        const { data: items, error: itemsError } = await supabase
-          .from("bill_items")
-          .select(`
+          ),
+          bill_items (
             id,
-            bill_id,
+            inventory_item_id,
             quantity,
             unit_price,
             total_price,
-            return_quantity,
-            inventory_item_id
-          `)
-          .in("bill_id", billIds);
+            return_quantity
+          )
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
-        if (itemsError) {
-          console.warn("Error fetching bill items:", itemsError);
-        } else {
-          billItemsData = items || [];
-        }
-
-        // Step 3: Fetch inventory data for all inventory items
-        if (billItemsData.length > 0) {
-          const inventoryIds = [...new Set(billItemsData.map(item => item.inventory_item_id))];
-          
-          const { data: inventory, error: inventoryError } = await supabase
-            .from("inventory")
-            .select(`
-              id,
-              name,
-              unit_cost
-            `)
-            .in("id", inventoryIds);
-
-          if (inventoryError) {
-            console.warn("Error fetching inventory:", inventoryError);
-          } else {
-            inventoryData = inventory || [];
-          }
-        }
+      if (billsError) {
+        throw billsError;
       }
 
       const fetchDuration = Date.now() - startTime;
-      const quality = fetchDuration < 2000 ? 'fast' : 'slow';
-      setConnectionQuality(quality);
+      const quality = fetchDuration < 1000 ? 'fast' : fetchDuration < 3000 ? 'medium' : 'slow';
 
-      if (mountedRef.current && billsData) {
-        // Create lookup maps for efficient data joining
-        const inventoryMap = new Map(inventoryData.map(inv => [inv.id, inv]));
-        const billItemsMap = new Map<number, BillItem[]>();
+      if (!billsData) {
+        console.log("No bills found");
+        setBills([]);
+        setPrescriptionBills([]);
+        return;
+      }
+
+      // Transform to prescription bills
+      const prescriptionBillsData = billsData.map(bill => {
+        const prescription = bill.prescriptions;
+        const patient = prescription?.patients;
+        const billDate = bill.date || new Date().toISOString();
         
-        // Group bill items by bill_id
-        billItemsData.forEach(item => {
-          if (!billItemsMap.has(item.bill_id || 0)) {
-            billItemsMap.set(item.bill_id || 0, []);
-          }
-          billItemsMap.get(item.bill_id || 0)?.push(item);
-        });
+        return {
+          id: bill.id,
+          bill_id: bill.id,
+          bill_number: bill.bill_number,
+          amount: bill.total_amount,
+          original_amount: bill.total_amount,
+          return_value: bill.bill_items?.reduce((sum, item) => sum + ((item.return_quantity || 0) * item.unit_price), 0) || 0,
+          date: billDate,
+          prescription_id: prescription?.id || null,
+          prescription_number: prescription?.prescription_number || 'Unknown',
+          doctor_name: prescription?.doctor_name || 'Unknown',
+          status: prescription?.status || 'unknown',
+          patient: patient ? {
+            name: patient.name || 'Unknown',
+            phone_number: patient.phone_number || 'Unknown'
+          } : {
+            name: 'Unknown',
+            phone_number: 'Unknown'
+          },
+          bill_items: bill.bill_items || [],
+          sort_priority: 0,
+          display_date: new Date(billDate)
+        };
+      });
 
-        // Enhanced bills with computed fields and normalized structure
-        const enhancedBills: Bill[] = (billsData as Bill[]).map((bill: Bill) => {
-          // Normalize the prescription data (from array to single object)
-          const prescription = (bill as unknown as { prescriptions?: Array<{ 
-            id: number; 
-            prescription_number: string; 
-            doctor_name: string; 
-            patient_id: number; 
-            date: string; 
-            status: string; 
-            patients?: Array<{ id: number; name: string; phone_number: string }> 
-          }> }).prescriptions && (bill as unknown as { prescriptions: Array<unknown> }).prescriptions.length > 0 ? {
-            ...(bill as unknown as { prescriptions: Array<{ 
-              id: number; 
-              prescription_number: string; 
-              doctor_name: string; 
-              patient_id: number; 
-              date: string; 
-              status: string; 
-              patients?: Array<{ id: number; name: string; phone_number: string }> 
-            }> }).prescriptions[0],
-            patient: (bill as unknown as { prescriptions: Array<{ patients?: Array<{ id: number; name: string; phone_number: string }> }> }).prescriptions[0].patients && (bill as unknown as { prescriptions: Array<{ patients: Array<{ id: number; name: string; phone_number: string }> }> }).prescriptions[0].patients.length > 0 
-              ? (bill as unknown as { prescriptions: Array<{ patients: Array<{ id: number; name: string; phone_number: string }> }> }).prescriptions[0].patients[0] 
-              : null
-          } : null;
+      // Sort by date, most recent first
+      const sortedBills = prescriptionBillsData.sort((a, b) => {
+        return b.display_date.getTime() - a.display_date.getTime();
+      });
 
-          // Get bill items for this bill and attach inventory data
-          const billItems = billItemsMap.get(bill.id) || [];
-          const normalizedBillItems = billItems.map((item: BillItem) => ({
-            ...item,
-            inventory_item: inventoryMap.get(item.inventory_item_id) || { name: 'Unknown', unit_cost: 0 }
-          }));
+      setBills(billsData);
+      setPrescriptionBills(sortedBills);
+      setError(null);
+      setLastUpdated(new Date());
 
-          return {
-            ...bill,
-            prescription,
-            bill_items: normalizedBillItems,
-            created_at: bill.created_at || bill.date,
-            updated_at: bill.updated_at || bill.date,
-            sort_timestamp: new Date(bill.created_at || bill.date).getTime(),
-            effective_amount: bill.total_amount - (normalizedBillItems.reduce((sum: number, item: BillItem) => 
-              sum + ((item.return_quantity || 0) * item.unit_price), 0) || 0),
-            original_amount: bill.total_amount,
-            return_value: normalizedBillItems.reduce((sum: number, item: BillItem) => 
-              sum + ((item.return_quantity || 0) * item.unit_price), 0) || 0
-          };
-        });
-
-        // Transform to prescription bills
-        const prescriptionBillsData = enhancedBills
-          .filter(bill => bill.prescription)
-          .map(transformBillToPrescriptionBill);
-
-        // Sort both datasets
-        const sortedBills = enhancedBills.sort((a, b) => {
-          const aTime = a.sort_timestamp || 0;
-          const bTime = b.sort_timestamp || 0;
-          if (bTime !== aTime) return bTime - aTime;
-          return b.id - a.id;
-        });
-
-        const sortedPrescriptionBills = sortPrescriptionBills(prescriptionBillsData);
-
-        setBills(sortedBills);
-        setPrescriptionBills(sortedPrescriptionBills);
-        setError(null);
-        setLastUpdated(new Date());
-
-        console.log(`✅ Bills loaded: ${sortedBills.length} total, ${sortedPrescriptionBills.length} with prescriptions in ${fetchDuration}ms (${quality})`);
-        
-        // Log first few for debugging
-        console.log("🔢 Recent bills:", sortedBills.slice(0, 3).map(b => ({ 
-          bill_number: b.bill_number, 
-          date: b.date,
-          created_at: b.created_at,
-          amount: b.total_amount
-        })));
+      if (showProgress) {
+        console.log(`✅ Bills loaded: ${sortedBills.length} total in ${fetchDuration}ms (${quality})`);
       }
     } catch (error) {
       console.error("Failed to fetch bills:", error);
@@ -398,7 +310,7 @@ export function BillingProvider({ children }: BillingProviderProps) {
         setIsLoading(false);
       }
     }
-  }, [toast, transformBillToPrescriptionBill, sortPrescriptionBills]);
+  }, [toast]);
 
   // Enhanced real-time subscription
   const setupRealtimeSubscription = useCallback(async (userId: string) => {

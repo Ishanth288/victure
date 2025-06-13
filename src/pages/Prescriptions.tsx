@@ -147,14 +147,11 @@ export default function Prescriptions() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          toast({
-            title: "Authentication Required",
-            description: "Please login to view prescriptions",
-            variant: "destructive",
-          });
+          setIsAuthenticated(false);
           navigate("/auth");
           return;
         }
+        setIsAuthenticated(true);
         // Auth successful, proceed to fetch data
         refreshData();
       } catch (error) {
@@ -166,26 +163,46 @@ export default function Prescriptions() {
     checkAuth();
   }, []);
 
+  // Show auth error toast when authentication state changes
+  useEffect(() => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please login to view prescriptions",
+        variant: "destructive",
+      });
+    }
+  }, [isAuthenticated, toast]);
+
   // Updated filtering for bill-centric prescriptions
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      const filtered = prescriptionBills.filter((prescription) => {
-        if (activeTab !== "all" && prescription.status !== activeTab) {
-          return false;
-        }
+      try {
+        const filtered = prescriptionBills.filter((prescription) => {
+          if (activeTab !== "all" && prescription.status !== activeTab) {
+            return false;
+          }
 
-        if (searchQuery === "") return true;
+          if (searchQuery === "") return true;
 
-        const query = searchQuery.toLowerCase();
-        return (
-          prescription.prescription_number.toLowerCase().includes(query) ||
-          prescription.doctor_name.toLowerCase().includes(query) ||
-          prescription.patient?.name.toLowerCase().includes(query) ||
-          prescription.bill_number.toLowerCase().includes(query)
-        );
-      });
+          const query = searchQuery.toLowerCase();
+          return (
+            prescription.prescription_number?.toLowerCase().includes(query) ||
+            prescription.doctor_name?.toLowerCase().includes(query) ||
+            prescription.patient?.name?.toLowerCase().includes(query) ||
+            prescription.bill_number?.toLowerCase().includes(query)
+          );
+        });
 
-      setFilteredPrescriptions(filtered);
+        setFilteredPrescriptions(filtered);
+      } catch (error) {
+        console.error("Error filtering prescriptions:", error);
+        toast({
+          title: "Error",
+          description: "Failed to filter prescriptions",
+          variant: "destructive",
+        });
+      }
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timeoutId);
