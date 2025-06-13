@@ -26,7 +26,17 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
       try {
         console.log('🔄 AuthWrapper: Checking authentication...');
         
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // Reduce timeout for faster initialization
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Auth check timeout')), 3000)
+        );
+        
+        const sessionPromise = supabase.auth.getSession();
+        
+        const { data: { session }, error } = await Promise.race([
+          sessionPromise, 
+          timeoutPromise
+        ]) as any;
 
         if (!mounted) return;
 
@@ -58,7 +68,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
         
         setIsLoading(false);
       } catch (error) {
-        console.error('❌ AuthWrapper: Critical error:', error);
+        console.warn('⚠️ AuthWrapper: Auth check failed, continuing without auth:', error);
         
         if (mounted) {
           setIsAuthenticated(false);
@@ -93,14 +103,14 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
 
     initializeAuth();
 
-    // Cleanup timeout to prevent infinite loading
+    // Faster timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
       if (mounted && isLoading) {
         console.warn('⚠️ AuthWrapper: Loading timeout - setting default state');
         setIsLoading(false);
         setIsAuthenticated(false);
       }
-    }, 5000);
+    }, 2000); // Reduced from 5000 to 2000
 
     return () => {
       mounted = false;
@@ -114,7 +124,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4 mx-auto"></div>
           <p className="text-gray-600">Loading...</p>
         </div>
       </div>

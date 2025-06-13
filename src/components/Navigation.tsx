@@ -36,19 +36,29 @@ export default function Navigation() {
     return () => subscription.unsubscribe();
   }, [location.pathname]);
 
-  const handleLogin = () => {
+  const handleLogin = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Login button clicked');
     navigate('/auth', { state: { isLogin: true } });
   };
 
-  const handleGetStarted = () => {
+  const handleGetStarted = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Get Started button clicked');
     navigate('/auth', { state: { isLogin: false } });
   };
 
-  const handleDashboard = () => {
+  const handleDashboard = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     navigate('/dashboard');
   };
 
-  const handleSignOut = async () => {
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsLoading(true);
     try {
       await supabase.auth.signOut();
@@ -142,14 +152,16 @@ export default function Navigation() {
                 <>
                   <Button 
                     variant="outline" 
-                    className="border-primary text-primary hover:bg-primary/10"
+                    className="border-primary text-primary hover:bg-primary/10 cursor-pointer"
                     onClick={handleLogin}
+                    type="button"
                   >
                     Login
                   </Button>
                   <Button 
-                    className="bg-primary hover:bg-primary-dark text-white"
+                    className="bg-primary hover:bg-primary-dark text-white cursor-pointer"
                     onClick={handleGetStarted}
+                    type="button"
                   >
                     Get Started
                   </Button>
