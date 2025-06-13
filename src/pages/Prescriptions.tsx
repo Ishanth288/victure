@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { format } from "date-fns";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -49,15 +50,15 @@ export default function Prescriptions() {
   const [refreshing, setRefreshing] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
-  // NEW: Return dialog state
+  // Return dialog state
   const [showReturnDialog, setShowReturnDialog] = useState(false);
   const [returnBillId, setReturnBillId] = useState<number | null>(null);
   
-  // NEW: Bill preview state
+  // Bill preview state
   const [showBillPreview, setShowBillPreview] = useState(false);
   const [selectedBill, setSelectedBill] = useState<any>(null);
   
-  // NEW: Replacement dialog state
+  // Replacement dialog state
   const [showReplacementDialog, setShowReplacementDialog] = useState(false);
   const [replacementBillId, setReplacementBillId] = useState<number | null>(null);
 
@@ -98,7 +99,6 @@ export default function Prescriptions() {
   useEffect(() => {
     const handleBillGenerated = () => {
       console.log("📢 Bill generated event received, refreshing data immediately...");
-      // Immediate refresh without delay
       refreshData();
     };
 
@@ -106,7 +106,6 @@ export default function Prescriptions() {
       console.log("📢 Data refresh needed event received:", event.detail);
       if (event.detail?.type === 'bill_generated' || event.detail?.type === 'return_processed' || event.detail?.type === 'replacement_processed') {
         console.log("🔄 Triggering immediate refresh for:", event.detail.type);
-        // Immediate refresh
         refreshData();
       }
     };
@@ -114,7 +113,6 @@ export default function Prescriptions() {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'lastBillGenerated' && event.newValue) {
         console.log("📦 Storage change detected for bill generation");
-        // Immediate refresh for storage changes
         refreshData();
       }
     };
@@ -139,7 +137,7 @@ export default function Prescriptions() {
       window.removeEventListener('storage', handleStorageChange);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isAuthenticated]); // Depend on auth state
+  }, [isAuthenticated, refreshData]);
 
   // Simplified auth check
   useEffect(() => {
@@ -152,8 +150,6 @@ export default function Prescriptions() {
           return;
         }
         setIsAuthenticated(true);
-        // Auth successful, proceed to fetch data
-        refreshData();
       } catch (error) {
         console.error("Auth error:", error);
         setIsAuthenticated(false);
@@ -161,20 +157,9 @@ export default function Prescriptions() {
     };
 
     checkAuth();
-  }, []);
+  }, [navigate]);
 
-  // Show auth error toast when authentication state changes
-  useEffect(() => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please login to view prescriptions",
-        variant: "destructive",
-      });
-    }
-  }, [isAuthenticated, toast]);
-
-  // Updated filtering for bill-centric prescriptions
+  // Updated filtering for bill-centric prescriptions - moved to useEffect to prevent render-time setState
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       try {
@@ -206,7 +191,7 @@ export default function Prescriptions() {
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [prescriptionBills, activeTab, searchQuery]);
+  }, [prescriptionBills, activeTab, searchQuery, toast]);
 
   const handleCreateBill = (prescriptionId: number, patientData?: any) => {
     // Pass patient data via URL params for auto-fill
@@ -222,7 +207,7 @@ export default function Prescriptions() {
     navigate(`/billing?${searchParams.toString()}`);
   };
 
-  // NEW: Bill preview handler
+  // Bill preview handler
   const handleBillPreview = async (billId: number) => {
     try {
       const { data: billData, error } = await supabase
@@ -284,85 +269,38 @@ export default function Prescriptions() {
     }
   };
 
-  // NEW: Return system handler
+  // Return system handler
   const handleReturn = (billId: number, billNumber: string) => {
-    // Open return dialog
     setReturnBillId(billId);
     setShowReturnDialog(true);
   };
 
-  // NEW: Replacement system handler  
+  // Replacement system handler  
   const handleReplacement = (billId: number, billNumber: string) => {
-    // Open replacement dialog
     setReplacementBillId(billId);
     setShowReplacementDialog(true);
   };
 
-  // NEW: Return dialog success handler
+  // Return dialog success handler
   const handleReturnSuccess = () => {
     setShowReturnDialog(false);
     setReturnBillId(null);
-    // Refresh data to show updated information
     refreshData();
     
-    // Emit events for other pages to refresh
     window.dispatchEvent(new CustomEvent('dataRefreshNeeded', { 
       detail: { type: 'return_processed' }
     }));
   };
 
-  // NEW: Replacement dialog success handler
+  // Replacement dialog success handler
   const handleReplacementSuccess = () => {
     setShowReplacementDialog(false);
     setReplacementBillId(null);
-    // Refresh data to show updated information
     refreshData();
     
-    // Emit events for other pages to refresh
     window.dispatchEvent(new CustomEvent('dataRefreshNeeded', { 
       detail: { type: 'replacement_processed' }
     }));
-  };
-
-  const handleToggleStatus = async (id: number, currentStatus: string) => {
-    try {
-      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-      
-      console.log(`Updating prescription ${id} status from ${currentStatus} to ${newStatus}`);
-      
-      const { data: prescriptionData, error: fetchError } = await supabase
-        .from("prescriptions")
-        .select("id, status")
-        .eq("id", id)
-        .single();
-        
-      if (fetchError) throw fetchError;
-      if (!prescriptionData) throw new Error("Prescription not found");
-      
-      const { error } = await supabase
-        .from("prescriptions")
-        .update({ status: newStatus })
-        .eq("id", id);
-
-      if (error) {
-        console.error("Error details:", error);
-        throw error;
-      }
-
-      refreshData();
-
-      toast({
-        title: "Status Updated",
-        description: `Prescription marked as ${newStatus}`,
-      });
-    } catch (error: any) {
-      console.error("Error updating prescription status:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update prescription status",
-        variant: "destructive",
-      });
-    }
   };
 
   const handleDeletePrescription = (id: number) => {
@@ -371,7 +309,7 @@ export default function Prescriptions() {
     setDeleteDialogOpen(true);
   };
 
-  // NEW: Bill deletion logic (bills treated as prescriptions)
+  // Bill deletion logic
   const confirmDeletePrescription = async () => {
     if (!prescriptionToDelete) {
       console.log("No prescription to delete");
@@ -396,7 +334,6 @@ export default function Prescriptions() {
       const billToDelete = prescriptionBills.find(p => p.id === prescriptionToDelete);
       if (!billToDelete) {
         console.error("Bill not found in state for ID:", prescriptionToDelete);
-        console.log("Available prescriptions:", prescriptionBills.map(p => ({ id: p.id, bill_id: p.bill_id })));
         toast({
           title: "Error", 
           description: "Bill record not found",
@@ -469,7 +406,6 @@ export default function Prescriptions() {
       // Step 2: Delete bill items first (foreign key constraint)
       console.log("Deleting bill items for bill_id:", billToDelete.bill_id);
       
-      // First get the bill items that will be deleted for logging
       const { data: billItemsToDelete, error: fetchBillItemsError } = await supabase
         .from('bill_items')
         .select('*')
@@ -573,7 +509,23 @@ export default function Prescriptions() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-screen">
-          Loading...
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p>Loading prescriptions...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">Error loading prescriptions: {error}</p>
+            <Button onClick={refreshData}>Try Again</Button>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -584,8 +536,7 @@ export default function Prescriptions() {
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
           <div className="flex items-center space-x-4">
-          <h1 className="text-3xl font-bold">Prescriptions</h1>
-            {/* ENHANCED: Real-time refresh button */}
+            <h1 className="text-3xl font-bold">Prescriptions</h1>
             <Button
               variant="outline"
               size="sm"
@@ -618,7 +569,6 @@ export default function Prescriptions() {
           className="max-w-md mb-6"
         />
 
-        {/* ENHANCED: Show loading state during refresh */}
         {refreshing && (
           <div className="flex items-center justify-center py-4 text-blue-600">
             <Loader2 className="h-5 w-5 animate-spin mr-2" />
@@ -648,11 +598,11 @@ export default function Prescriptions() {
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="text-lg font-medium">{prescription.patient?.name}</h3>
                       <div className="flex flex-col items-end space-y-1">
-                      <Badge 
-                        variant={prescription.status === 'active' ? 'default' : 'secondary'}
-                      >
-                        {prescription.status}
-                      </Badge>
+                        <Badge 
+                          variant={prescription.status === 'active' ? 'default' : 'secondary'}
+                        >
+                          {prescription.status}
+                        </Badge>
                         <div className="text-right">
                           {prescription.return_value > 0 ? (
                             <div className="space-y-1">
@@ -696,27 +646,27 @@ export default function Prescriptions() {
                         <Phone className="w-4 h-4 mr-2" />
                         <span>{prescription.patient?.phone_number}</span>
                       </div>
-                      </div>
                     </div>
+                  </div>
                     
                   <div className="grid grid-cols-2 border-t border-gray-100">
-                            <Button 
-                              variant="ghost" 
+                    <Button 
+                      variant="ghost" 
                       className="rounded-none py-3 text-blue-600 hover:bg-blue-50"
                       onClick={() => handleBillPreview(prescription.bill_id)}
-                            >
+                    >
                       <Eye className="h-4 w-4 mr-2" />
                       Preview
-                            </Button>
+                    </Button>
                     
-                                <Button 
-                                  variant="ghost" 
+                    <Button 
+                      variant="ghost" 
                       className="rounded-none py-3 text-orange-600 hover:bg-orange-50 border-l border-gray-100"
                       onClick={() => handleReturn(prescription.bill_id, prescription.bill_number)}
                     >
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Return
-                                </Button>
+                    </Button>
                   </div>
 
                   <div className="grid grid-cols-2 border-t border-gray-100">
@@ -725,12 +675,12 @@ export default function Prescriptions() {
                       className="rounded-none py-3 text-purple-600 hover:bg-purple-50"
                       onClick={() => handleReplacement(prescription.bill_id, prescription.bill_number)}
                     >
-                      <Loader2 className="h-4 w-4 mr-2" />
+                      <ArrowLeftRight className="h-4 w-4 mr-2" />
                       Replace
                     </Button>
                     
-                      <Button 
-                        variant="ghost" 
+                    <Button 
+                      variant="ghost" 
                       className="rounded-none py-3 text-destructive hover:bg-red-50 border-l border-gray-100"
                       onClick={() => handleDeletePrescription(prescription.id)}
                     >
@@ -745,7 +695,7 @@ export default function Prescriptions() {
         </div>
       </div>
       
-      {/* NEW: Return Dialog */}
+      {/* Return Dialog */}
       <MedicineReturnDialog
         isOpen={showReturnDialog}
         onClose={() => {
@@ -756,7 +706,7 @@ export default function Prescriptions() {
         onSuccess={handleReturnSuccess}
       />
       
-      {/* NEW: Bill Preview Dialog */}
+      {/* Bill Preview Dialog */}
       {selectedBill && (
         <BillPreviewDialog
           open={showBillPreview}
@@ -766,7 +716,7 @@ export default function Prescriptions() {
         />
       )}
       
-      {/* NEW: Replacement Dialog */}
+      {/* Replacement Dialog */}
       <MedicineReplacementDialog
         isOpen={showReplacementDialog}
         onClose={() => {
@@ -777,7 +727,7 @@ export default function Prescriptions() {
         onSuccess={handleReplacementSuccess}
       />
       
-      {/* Keep existing dialogs */}
+      {/* Delete Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -797,4 +747,3 @@ export default function Prescriptions() {
     </DashboardLayout>
   );
 }
-
