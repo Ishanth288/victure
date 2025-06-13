@@ -57,10 +57,13 @@ export function useDashboardData(): DashboardData {
       const queries = [
         // Revenue query
         OptimizedQuery.execute(
-          () => supabase
-            .from('bills')
-            .select('total_amount')
-            .eq('user_id', userId),
+          async () => {
+            const result = await supabase
+              .from('bills')
+              .select('total_amount')
+              .eq('user_id', userId);
+            return result;
+          },
           {
             cacheKey: `revenue_${userId}`,
             cacheTTL: CACHE_TTL,
@@ -71,10 +74,13 @@ export function useDashboardData(): DashboardData {
         
         // Inventory query  
         OptimizedQuery.execute(
-          () => supabase
-            .from('inventory')
-            .select('quantity, unit_cost, reorder_point')
-            .eq('user_id', userId),
+          async () => {
+            const result = await supabase
+              .from('inventory')
+              .select('quantity, unit_cost, reorder_point')
+              .eq('user_id', userId);
+            return result;
+          },
           {
             cacheKey: `inventory_stats_${userId}`,
             cacheTTL: CACHE_TTL,
@@ -85,11 +91,14 @@ export function useDashboardData(): DashboardData {
         
         // Prescriptions query
         OptimizedQuery.execute(
-          () => supabase
-            .from('prescriptions')
-            .select('id')
-            .eq('user_id', userId)
-            .gte('created_at', new Date().toISOString().split('T')[0]),
+          async () => {
+            const result = await supabase
+              .from('prescriptions')
+              .select('id')
+              .eq('user_id', userId)
+              .gte('date', new Date().toISOString().split('T')[0]);
+            return result;
+          },
           {
             cacheKey: `prescriptions_today_${userId}_${new Date().toISOString().split('T')[0]}`,
             cacheTTL: 300000, // 5 minutes for today's data
@@ -304,4 +313,4 @@ export function getDashboardCacheInfo(): {
     cacheSize: cacheStats.size,
     keys: dashboardKeys
   };
-} 
+}
