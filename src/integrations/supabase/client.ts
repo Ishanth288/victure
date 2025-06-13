@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -29,7 +30,7 @@ const getSupabaseConfig = () => {
 
 const { url: SUPABASE_URL, key: SUPABASE_PUBLISHABLE_KEY } = getSupabaseConfig();
 
-// Enhanced Supabase client with performance optimizations
+// Enhanced Supabase client with reduced timeouts and better error handling
 export const supabase = createClient<Database>(
   SUPABASE_URL, 
   SUPABASE_PUBLISHABLE_KEY,
@@ -40,18 +41,30 @@ export const supabase = createClient<Database>(
       detectSessionInUrl: true,
       storage: localStorage,
       flowType: 'pkce',
-      debug: true
+      debug: false // Reduced debug logging
     },
     realtime: {
       params: {
         eventsPerSecond: 2
       },
-      heartbeatIntervalMs: 30000,
-      reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 30000)
+      heartbeatIntervalMs: 15000, // Reduced from 30s
+      reconnectAfterMs: (tries: number) => Math.min(tries * 500, 5000) // Faster reconnect
     },
     global: {
       headers: {
         'x-client-info': 'victure-pharmacy-v3'
+      },
+      fetch: (url, options = {}) => {
+        // Add timeout to all requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
+        return fetch(url, {
+          ...options,
+          signal: controller.signal,
+        }).finally(() => {
+          clearTimeout(timeoutId);
+        });
       }
     },
     db: {
@@ -60,10 +73,10 @@ export const supabase = createClient<Database>(
   }
 );
 
-// Query timeout wrapper for all database operations
+// Simplified query timeout wrapper
 export const withTimeout = <T>(
   promise: Promise<T>, 
-  timeoutMs: number = 8000,
+  timeoutMs: number = 3000, // Reduced from 8s to 3s
   operation: string = 'Database operation'
 ): Promise<T> => {
   return Promise.race([

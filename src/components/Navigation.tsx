@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { HashLink } from 'react-router-hash-link';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -43,7 +44,7 @@ export default function Navigation() {
           toast({
             title: "Signed Out",
             description: "You have been successfully signed out.",
-            variant: "info",
+            variant: "default",
           });
         }
       }
@@ -53,14 +54,17 @@ export default function Navigation() {
   }, [location.pathname, toast]);
 
   const handleLogin = () => {
+    console.log('Login button clicked'); // Debug log
     navigate('/auth', { state: { isLogin: true } });
   };
 
   const handleDashboard = () => {
+    console.log('Dashboard button clicked'); // Debug log
     navigate('/dashboard');
   };
 
   const handleSignOut = async () => {
+    console.log('Sign out button clicked'); // Debug log
     try {
       await supabase.auth.signOut();
       navigate('/');
@@ -156,13 +160,14 @@ export default function Navigation() {
                 <>
                   <Button 
                     variant="outline" 
-                    className="border-primary text-primary hover:bg-primary/10"
+                    className="border-primary text-primary hover:bg-primary/10 cursor-pointer"
                     onClick={handleLogin}
+                    type="button"
                   >
                     Login
                   </Button>
                   <HashLink smooth to="#pricing">
-                    <Button className="bg-primary hover:bg-primary-dark text-white">
+                    <Button className="bg-primary hover:bg-primary-dark text-white cursor-pointer">
                       Get Started
                     </Button>
                   </HashLink>

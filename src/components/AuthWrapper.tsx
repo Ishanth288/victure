@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -25,12 +26,14 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
   useEffect(() => {
     let mounted = true;
     let timeoutId: NodeJS.Timeout;
-    let fallbackTimeoutId: NodeJS.Timeout;
 
-    // Fallback timeout to prevent infinite loading
-    fallbackTimeoutId = setTimeout(() => {
+    // Reduced timeout for faster response
+    const INIT_TIMEOUT = 8000; // 8 seconds instead of 15
+
+    // Timeout to prevent infinite loading
+    timeoutId = setTimeout(() => {
       if (mounted && isLoading) {
-        console.warn('⚠️ AuthWrapper: Fallback timeout triggered - forcing load completion');
+        console.warn('⚠️ AuthWrapper: Timeout triggered - completing load');
         setIsLoading(false);
         setIsAuthenticated(false);
         
@@ -38,24 +41,26 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
           navigate('/');
         }
       }
-    }, 15000); // 15 second fallback
+    }, INIT_TIMEOUT);
 
     const initializeAuth = async () => {
       try {
         console.log('🔄 AuthWrapper: Starting authentication check...');
         setConnectionError(null);
         
-        // Quick test to verify Supabase client is working
+        // Quick session check with reduced timeout
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<{ data: { session: null }; error: Error }>((_, reject) =>
+          setTimeout(() => reject(new Error('Connection timeout after 3 seconds')), 3000)
+        );
+
         const { data: { session }, error } = await Promise.race([
-          supabase.auth.getSession(),
-          new Promise<{ data: { session: null }; error: Error }>((_, reject) =>
-            setTimeout(() => reject(new Error('Connection timeout after 5 seconds')), 5000)
-          )
+          sessionPromise,
+          timeoutPromise
         ]);
 
-        // Clear timeouts if successful
+        // Clear timeout if successful
         if (timeoutId) clearTimeout(timeoutId);
-        if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
 
         if (!mounted) return;
 
@@ -101,9 +106,8 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
       } catch (error) {
         console.error('❌ AuthWrapper: Critical initialization error:', error);
         
-        // Clear timeouts
+        // Clear timeout
         if (timeoutId) clearTimeout(timeoutId);
-        if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
         
         if (mounted) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown connection error';
@@ -157,9 +161,8 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
       mounted = false;
       subscription.unsubscribe();
       if (timeoutId) clearTimeout(timeoutId);
-      if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
     };
-  }, [navigate, location.pathname, toast]);
+  }, [navigate, location.pathname]);
 
   if (isLoading) {
     return (
