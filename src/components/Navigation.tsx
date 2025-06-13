@@ -1,34 +1,26 @@
+
 import { Button } from "@/components/ui/button";
 import { HashLink } from 'react-router-hash-link';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Home } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 export default function Navigation() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isAuthPage, setIsAuthPage] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Check if current page is auth page
-    setIsAuthPage(location.pathname === '/auth');
-
     // Check if user is logged in
     const checkAuth = async () => {
-      setIsLoading(true);
       try {
         const { data: { session } } = await supabase.auth.getSession();
         setIsLoggedIn(!!session);
       } catch (error) {
         console.error("Auth check error:", error);
         setIsLoggedIn(false);
-      } finally {
-        setIsLoading(false);
       }
     };
     
@@ -38,22 +30,18 @@ export default function Navigation() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setIsLoggedIn(!!session);
-        
-        if (event === 'SIGNED_OUT') {
-          toast({
-            title: "Signed Out",
-            description: "You have been successfully signed out.",
-            variant: "info",
-          });
-        }
       }
     );
     
     return () => subscription.unsubscribe();
-  }, [location.pathname, toast]);
+  }, [location.pathname]);
 
   const handleLogin = () => {
     navigate('/auth', { state: { isLogin: true } });
+  };
+
+  const handleGetStarted = () => {
+    navigate('/auth', { state: { isLogin: false } });
   };
 
   const handleDashboard = () => {
@@ -61,16 +49,14 @@ export default function Navigation() {
   };
 
   const handleSignOut = async () => {
+    setIsLoading(true);
     try {
       await supabase.auth.signOut();
       navigate('/');
     } catch (error) {
       console.error("Error signing out:", error);
-      toast({
-        title: "Sign Out Failed",
-        description: "There was a problem signing you out. Please try again.",
-        variant: "destructive",
-      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -78,7 +64,7 @@ export default function Navigation() {
   const showHomeButton = location.pathname !== '/';
 
   // Simplified navigation for auth pages
-  if (isAuthPage) {
+  if (location.pathname === '/auth') {
     return (
       <nav className="py-4">
         <div className="container mx-auto px-4">
@@ -133,22 +119,22 @@ export default function Navigation() {
 
           {/* Conditional buttons based on auth state */}
           <div className="flex items-center space-x-4">
-            {isLoading ? (
-              <div className="h-10 w-20 animate-pulse rounded bg-gray-200"></div>
-            ) : isLoggedIn ? (
+            {isLoggedIn ? (
               <>
                 <Button 
                   variant="outline" 
                   className="border-primary text-primary hover:bg-primary/10"
                   onClick={handleDashboard}
+                  disabled={isLoading}
                 >
                   Dashboard
                 </Button>
                 <Button 
                   className="bg-primary hover:bg-primary-dark text-white"
                   onClick={handleSignOut}
+                  disabled={isLoading}
                 >
-                  Sign Out
+                  {isLoading ? 'Signing Out...' : 'Sign Out'}
                 </Button>
               </>
             ) : (
@@ -161,11 +147,12 @@ export default function Navigation() {
                   >
                     Login
                   </Button>
-                  <HashLink smooth to="#pricing">
-                    <Button className="bg-primary hover:bg-primary-dark text-white">
-                      Get Started
-                    </Button>
-                  </HashLink>
+                  <Button 
+                    className="bg-primary hover:bg-primary-dark text-white"
+                    onClick={handleGetStarted}
+                  >
+                    Get Started
+                  </Button>
                 </>
               )
             )}
