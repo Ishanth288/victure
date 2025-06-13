@@ -54,13 +54,21 @@ export const supabase = createClient<Database>(
         'x-client-info': 'victure-pharmacy-v3'
       },
       fetch: (url, options = {}) => {
-        // Add timeout to all requests
+        // Enhanced fetch with better error handling and shorter timeout
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        const timeoutId = setTimeout(() => {
+          console.warn(`Request timeout for ${url}`);
+          controller.abort();
+        }, 3000); // Reduced to 3 second timeout
         
         return fetch(url, {
           ...options,
           signal: controller.signal,
+        }).catch((error) => {
+          if (error.name === 'AbortError') {
+            throw new Error(`Connection timeout after 3 seconds`);
+          }
+          throw error;
         }).finally(() => {
           clearTimeout(timeoutId);
         });

@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,10 +14,11 @@ import Insights from "./pages/Insights";
 import BillingCart from "./pages/BillingCart";
 import Billing from "./pages/Billing";
 import Purchases from "./pages/Purchases";
-import { AuthWrapper } from "./components/AuthWrapper";
+import { AuthWrapper } from "@/components/AuthWrapper";
 import { BillingProvider } from "./contexts/BillingContext";
 import { InventoryProvider } from "./contexts/InventoryContext";
-import ErrorBoundary from "./components/ErrorBoundary";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import { ConnectionHealthMonitor } from "@/components/ConnectionHealthMonitor";
 
 const Admin = lazy(() => import("./pages/Admin"));
 const SystemSettings = lazy(() => import("./pages/admin/SystemSettings"));
@@ -37,24 +38,21 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <ErrorBoundary
-      onError={(error, errorInfo) => {
-        console.error('App Error:', error, errorInfo);
-        // Send to monitoring service
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-          (window as any).gtag('event', 'exception', {
-            description: error.message,
-            fatal: false
-          });
-        }
-      }}
-    >
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <AuthWrapper>
-            <BillingProvider>
-              <InventoryProvider>
-                <div className="min-h-screen bg-gray-50">
+      <ErrorBoundary
+        onError={(error, errorInfo) => {
+          console.error('App Error:', error, errorInfo);
+          // Send to monitoring service
+          if (typeof window !== 'undefined' && (window as any).gtag) {
+            (window as any).gtag('event', 'exception', {
+              description: error.message,
+              fatal: false
+            });
+          }
+        }}
+      >
+            <AuthWrapper>
+                  <div className="min-h-screen bg-gray-50">
+                    <ConnectionHealthMonitor />
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<Auth />} />
@@ -116,13 +114,9 @@ function App() {
                     />
                   </Routes>
                 </div>
-              </InventoryProvider>
-            </BillingProvider>
-          </AuthWrapper>
+            </AuthWrapper>
           <Toaster />
           <Sonner />
-        </TooltipProvider>
-      </QueryClientProvider>
     </ErrorBoundary>
   );
 }
