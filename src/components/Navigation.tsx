@@ -1,26 +1,34 @@
-
 import { Button } from "@/components/ui/button";
 import { HashLink } from 'react-router-hash-link';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Home } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Navigation() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isAuthPage, setIsAuthPage] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
+    // Check if current page is auth page
+    setIsAuthPage(location.pathname === '/auth');
+
     // Check if user is logged in
     const checkAuth = async () => {
+      setIsLoading(true);
       try {
         const { data: { session } } = await supabase.auth.getSession();
         setIsLoggedIn(!!session);
       } catch (error) {
         console.error("Auth check error:", error);
         setIsLoggedIn(false);
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -30,43 +38,39 @@ export default function Navigation() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setIsLoggedIn(!!session);
+        
+        if (event === 'SIGNED_OUT') {
+          toast({
+            title: "Signed Out",
+            description: "You have been successfully signed out.",
+            variant: "info",
+          });
+        }
       }
     );
     
     return () => subscription.unsubscribe();
-  }, [location.pathname]);
+  }, [location.pathname, toast]);
 
-  const handleLogin = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('Login button clicked');
+  const handleLogin = () => {
     navigate('/auth', { state: { isLogin: true } });
   };
 
-  const handleGetStarted = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('Get Started button clicked');
-    navigate('/auth', { state: { isLogin: false } });
-  };
-
-  const handleDashboard = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDashboard = () => {
     navigate('/dashboard');
   };
 
-  const handleSignOut = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsLoading(true);
+  const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
       navigate('/');
     } catch (error) {
       console.error("Error signing out:", error);
-    } finally {
-      setIsLoading(false);
+      toast({
+        title: "Sign Out Failed",
+        description: "There was a problem signing you out. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -74,7 +78,7 @@ export default function Navigation() {
   const showHomeButton = location.pathname !== '/';
 
   // Simplified navigation for auth pages
-  if (location.pathname === '/auth') {
+  if (isAuthPage) {
     return (
       <nav className="py-4">
         <div className="container mx-auto px-4">
@@ -129,22 +133,22 @@ export default function Navigation() {
 
           {/* Conditional buttons based on auth state */}
           <div className="flex items-center space-x-4">
-            {isLoggedIn ? (
+            {isLoading ? (
+              <div className="h-10 w-20 animate-pulse rounded bg-gray-200"></div>
+            ) : isLoggedIn ? (
               <>
                 <Button 
                   variant="outline" 
                   className="border-primary text-primary hover:bg-primary/10"
                   onClick={handleDashboard}
-                  disabled={isLoading}
                 >
                   Dashboard
                 </Button>
                 <Button 
                   className="bg-primary hover:bg-primary-dark text-white"
                   onClick={handleSignOut}
-                  disabled={isLoading}
                 >
-                  {isLoading ? 'Signing Out...' : 'Sign Out'}
+                  Sign Out
                 </Button>
               </>
             ) : (
@@ -152,19 +156,16 @@ export default function Navigation() {
                 <>
                   <Button 
                     variant="outline" 
-                    className="border-primary text-primary hover:bg-primary/10 cursor-pointer"
+                    className="border-primary text-primary hover:bg-primary/10"
                     onClick={handleLogin}
-                    type="button"
                   >
                     Login
                   </Button>
-                  <Button 
-                    className="bg-primary hover:bg-primary-dark text-white cursor-pointer"
-                    onClick={handleGetStarted}
-                    type="button"
-                  >
-                    Get Started
-                  </Button>
+                  <HashLink smooth to="#pricing">
+                    <Button className="bg-primary hover:bg-primary-dark text-white">
+                      Get Started
+                    </Button>
+                  </HashLink>
                 </>
               )
             )}

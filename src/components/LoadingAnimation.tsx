@@ -2,24 +2,20 @@
 import React from 'react';
 
 interface LoadingAnimationProps {
-  text?: string;
   size?: 'sm' | 'md' | 'lg';
+  className?: string;
 }
 
-export const LoadingAnimation: React.FC<LoadingAnimationProps> = ({ 
-  text = "Loading...", 
-  size = 'md' 
-}) => {
+export function LoadingAnimation({ size = 'md', className = '' }: LoadingAnimationProps) {
   const sizeClasses = {
-    sm: 'h-6 w-6',
-    md: 'h-12 w-12',
-    lg: 'h-16 w-16'
+    sm: 'w-4 h-4',
+    md: 'w-8 h-8',
+    lg: 'w-12 h-12'
   };
 
   return (
-    <div className="flex flex-col items-center justify-center space-y-4">
-      <div className={`animate-spin rounded-full border-b-2 border-primary ${sizeClasses[size]}`} />
-      <p className="text-gray-600 text-center">{text}</p>
-    </div>
+    <div className={`animate-spin rounded-full border-b-2 border-primary ${sizeClasses[size]} ${className}`}></div>
   );
-};
+}
+
+export default LoadingAnimation;

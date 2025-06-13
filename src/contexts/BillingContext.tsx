@@ -1,6 +1,7 @@
+
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from "react";
 import { RealtimeChannel } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, checkSupabaseAvailability } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export interface BillItem {
