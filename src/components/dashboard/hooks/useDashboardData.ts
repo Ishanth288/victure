@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase, OptimizedQuery } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DashboardData {
   totalRevenue: number;
@@ -41,7 +41,7 @@ export function useDashboardData(): DashboardData {
     return user;
   }, []);
 
-  // Parallel data fetching with progress tracking
+  // Simplified data fetching without OptimizedQuery
   const fetchAllDashboardData = useCallback(async () => {
     if (!mountedRef.current) return;
 
@@ -54,73 +54,17 @@ export function useDashboardData(): DashboardData {
       
       setLoadingProgress(20);
 
-      // Parallel queries with individual caching
-      const queries = [
-        // Revenue query
-        OptimizedQuery.execute(
-          async () => {
-            const result = await supabase
-              .from('bills')
-              .select('total_amount')
-              .eq('user_id', userId);
-            return result;
-          },
-          {
-            cacheKey: `revenue_${userId}`,
-            cacheTTL: CACHE_TTL,
-            timeout: 4000,
-            operation: 'Revenue Query'
-          }
-        ),
-        
-        // Inventory query  
-        OptimizedQuery.execute(
-          async () => {
-            const result = await supabase
-              .from('inventory')
-              .select('quantity, unit_cost, reorder_point')
-              .eq('user_id', userId);
-            return result;
-          },
-          {
-            cacheKey: `inventory_stats_${userId}`,
-            cacheTTL: CACHE_TTL,
-            timeout: 4000,
-            operation: 'Inventory Stats Query'
-          }
-        ),
-        
-        // Prescriptions query
-        OptimizedQuery.execute(
-          async () => {
-            const result = await supabase
-              .from('prescriptions')
-              .select('id')
-              .eq('user_id', userId)
-              .gte('date', new Date().toISOString().split('T')[0]);
-            return result;
-          },
-          {
-            cacheKey: `prescriptions_today_${userId}_${new Date().toISOString().split('T')[0]}`,
-            cacheTTL: 300000, // 5 minutes for today's data
-            timeout: 4000,
-            operation: 'Prescriptions Today Query'
-          }
-        )
-      ];
-
-      setLoadingProgress(40);
-
-      // Execute all queries in parallel
       const startTime = Date.now();
-      const results = await Promise.allSettled(queries);
-      const queryDuration = Date.now() - startTime;
+      
+      // Execute queries in parallel with basic error handling
+      const [revenueResult, inventoryResult, prescriptionsResult] = await Promise.allSettled([
+        supabase.from('bills').select('total_amount').eq('user_id', userId),
+        supabase.from('inventory').select('quantity, unit_cost, reorder_point').eq('user_id', userId),
+        supabase.from('prescriptions').select('id').eq('user_id', userId).gte('date', new Date().toISOString().split('T')[0])
+      ]);
 
       setLoadingProgress(70);
 
-      // Process results with proper type handling
-      const [revenueResult, inventoryResult, prescriptionsResult] = results;
-      
       let totalRevenue = 0;
       let totalInventoryValue = 0;
       let lowStockItems = 0;
@@ -153,7 +97,7 @@ export function useDashboardData(): DashboardData {
         ).length;
       }
 
-      // Process prescriptions data with correct type casting
+      // Process prescriptions data
       if (prescriptionsResult.status === 'fulfilled' && prescriptionsResult.value.data) {
         const prescriptionsData = prescriptionsResult.value.data as Array<{ id: number }>;
         totalPrescriptionsToday = prescriptionsData.length;
@@ -161,7 +105,9 @@ export function useDashboardData(): DashboardData {
 
       setLoadingProgress(90);
 
-      // Update state immediately and ensure loading completes
+      const queryDuration = Date.now() - startTime;
+
+      // Update state
       if (mountedRef.current) {
         setDashboardData({
           totalRevenue,
@@ -181,18 +127,10 @@ export function useDashboardData(): DashboardData {
           setConnectionStatus('disconnected');
         }
 
-        // Complete loading immediately
         setLoadingProgress(100);
         setIsLoading(false);
 
-        console.log(`📊 Dashboard data loaded in ${queryDuration}ms - Status: ${
-          queryDuration < 2000 ? 'connected' : queryDuration < 5000 ? 'slow' : 'disconnected'
-        }`, {
-          totalRevenue,
-          totalInventoryValue,
-          totalPrescriptionsToday,
-          lowStockItems
-        });
+        console.log(`📊 Dashboard data loaded in ${queryDuration}ms`);
       }
 
     } catch (error) {
@@ -200,15 +138,6 @@ export function useDashboardData(): DashboardData {
       
       if (mountedRef.current) {
         setConnectionStatus('disconnected');
-        
-        // Don't show error if we have cached data
-        const cacheStats = OptimizedQuery.getCacheStats();
-        if (cacheStats.size === 0) {
-          console.warn('No cached data available, showing error state');
-        }
-      }
-    } finally {
-      if (mountedRef.current) {
         setIsLoading(false);
         setLoadingProgress(100);
       }
@@ -221,7 +150,7 @@ export function useDashboardData(): DashboardData {
 
     hasInitialized.current = true;
     
-    // Set up loading timeout with proper cleanup
+    // Set up loading timeout
     loadingTimeoutRef.current = setTimeout(() => {
       if (isLoading && mountedRef.current) {
         console.warn('⚠️ Dashboard loading timeout - forcing completion');
@@ -231,9 +160,7 @@ export function useDashboardData(): DashboardData {
       }
     }, PARALLEL_LOADING_TIMEOUT);
 
-    // Start fetching data
     fetchAllDashboardData().finally(() => {
-      // Clear timeout once data fetching is complete
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
         loadingTimeoutRef.current = null;
@@ -247,26 +174,6 @@ export function useDashboardData(): DashboardData {
       }
     };
   }, [fetchAllDashboardData]);
-
-  // Auto-refresh data every 5 minutes
-  useEffect(() => {
-    const refreshInterval = setInterval(() => {
-      if (!isLoading && mountedRef.current) {
-        console.log('🔄 Auto-refreshing dashboard data');
-        
-        // Clear cache to get fresh data
-        const user = getCurrentUser().then(user => {
-          OptimizedQuery.clearCache(`revenue_${user.id}`);
-          OptimizedQuery.clearCache(`inventory_stats_${user.id}`);
-          OptimizedQuery.clearCache(`prescriptions_today_${user.id}`);
-        });
-        
-        fetchAllDashboardData();
-      }
-    }, 300000); // 5 minutes
-
-    return () => clearInterval(refreshInterval);
-  }, [isLoading, fetchAllDashboardData, getCurrentUser]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -284,34 +191,5 @@ export function useDashboardData(): DashboardData {
     lastUpdated,
     connectionStatus,
     loadingProgress
-  };
-}
-
-// Utility function to refresh dashboard data
-export function refreshAllDashboardData(): void {
-  // Clear all dashboard-related cache
-  OptimizedQuery.clearCache('revenue_');
-  OptimizedQuery.clearCache('inventory_stats_');
-  OptimizedQuery.clearCache('prescriptions_today_');
-  console.log('🔄 Dashboard cache cleared, data will refresh on next load');
-}
-
-// Utility function to get dashboard cache info
-export function getDashboardCacheInfo(): { 
-  hasCachedData: boolean; 
-  cacheSize: number;
-  keys: string[];
-} {
-  const cacheStats = OptimizedQuery.getCacheStats();
-  const dashboardKeys = cacheStats.keys.filter(key => 
-    key.includes('revenue_') || 
-    key.includes('inventory_stats_') || 
-    key.includes('prescriptions_today_')
-  );
-  
-  return { 
-    hasCachedData: dashboardKeys.length > 0, 
-    cacheSize: cacheStats.size,
-    keys: dashboardKeys
   };
 }

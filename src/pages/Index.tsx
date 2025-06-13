@@ -13,8 +13,21 @@ import { fetchPricingPlans } from "@/services/pricingPlans";
 // Lazy load the Pricing component to improve initial load time
 const Pricing = lazy(() => import("@/components/blocks/Pricing").then(module => ({ default: module.Pricing })));
 
-// Define fallback pricing data
-const fallbackPlans = [
+// Define fallback pricing data with consistent type
+interface PricingPlan {
+  name: string;
+  price: string;
+  yearlyPrice: string;
+  period: string;
+  features: string[];
+  description: string;
+  buttonText: string;
+  href: string;
+  isPopular: boolean;
+  planId?: string;
+}
+
+const fallbackPlans: PricingPlan[] = [
   {
     name: "FREE",
     price: "0",
@@ -80,7 +93,7 @@ const fallbackPlans = [
 
 export default function Index() {
   const navigate = useNavigate();
-  const [pricingPlans, setPricingPlans] = useState(fallbackPlans);
+  const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>(fallbackPlans);
   const [isPricingLoading, setIsPricingLoading] = useState(true);
 
   useEffect(() => {
@@ -90,7 +103,20 @@ export default function Index() {
         console.log('🔄 Loading pricing plans...');
         const plans = await fetchPricingPlans();
         if (plans && plans.length > 0) {
-          setPricingPlans(plans);
+          // Transform the plans to match our PricingPlan interface
+          const transformedPlans: PricingPlan[] = plans.map(plan => ({
+            name: plan.name,
+            price: plan.price,
+            yearlyPrice: plan.yearlyPrice,
+            period: plan.period,
+            features: plan.features,
+            description: plan.description,
+            buttonText: plan.buttonText,
+            href: plan.href,
+            isPopular: plan.isPopular,
+            planId: plan.planId
+          }));
+          setPricingPlans(transformedPlans);
           console.log('✅ Pricing plans loaded successfully');
         } else {
           console.log('ℹ️ Using fallback pricing plans');
