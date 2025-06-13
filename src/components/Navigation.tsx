@@ -16,12 +16,9 @@ export default function Navigation() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if current page is auth page
     setIsAuthPage(location.pathname === '/auth');
 
-    // Check if user is logged in
     const checkAuth = async () => {
-      setIsLoading(true);
       try {
         const { data: { session } } = await supabase.auth.getSession();
         setIsLoggedIn(!!session);
@@ -35,7 +32,6 @@ export default function Navigation() {
     
     checkAuth();
     
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setIsLoggedIn(!!session);
@@ -53,18 +49,24 @@ export default function Navigation() {
     return () => subscription.unsubscribe();
   }, [location.pathname, toast]);
 
-  const handleLogin = () => {
-    console.log('Login button clicked'); // Debug log
+  const handleLogin = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Login button clicked');
     navigate('/auth', { state: { isLogin: true } });
   };
 
-  const handleDashboard = () => {
-    console.log('Dashboard button clicked'); // Debug log
+  const handleDashboard = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Dashboard button clicked');
     navigate('/dashboard');
   };
 
-  const handleSignOut = async () => {
-    console.log('Sign out button clicked'); // Debug log
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Sign out button clicked');
     try {
       await supabase.auth.signOut();
       navigate('/');
@@ -78,10 +80,8 @@ export default function Navigation() {
     }
   };
 
-  // Show home button on all pages except the index page
   const showHomeButton = location.pathname !== '/';
 
-  // Simplified navigation for auth pages
   if (isAuthPage) {
     return (
       <nav className="py-4">
@@ -114,7 +114,6 @@ export default function Navigation() {
             </HashLink>
           </div>
 
-          {/* Only show these navigation links on the home page */}
           {location.pathname === '/' && (
             <div className="hidden md:flex items-center space-x-6">
               <HashLink smooth to="#features" className="text-neutral-600 hover:text-primary transition-colors">
@@ -135,7 +134,6 @@ export default function Navigation() {
             </div>
           )}
 
-          {/* Conditional buttons based on auth state */}
           <div className="flex items-center space-x-4">
             {isLoading ? (
               <div className="h-10 w-20 animate-pulse rounded bg-gray-200"></div>
@@ -145,12 +143,14 @@ export default function Navigation() {
                   variant="outline" 
                   className="border-primary text-primary hover:bg-primary/10"
                   onClick={handleDashboard}
+                  type="button"
                 >
                   Dashboard
                 </Button>
                 <Button 
                   className="bg-primary hover:bg-primary-dark text-white"
                   onClick={handleSignOut}
+                  type="button"
                 >
                   Sign Out
                 </Button>
@@ -160,14 +160,14 @@ export default function Navigation() {
                 <>
                   <Button 
                     variant="outline" 
-                    className="border-primary text-primary hover:bg-primary/10 cursor-pointer"
+                    className="border-primary text-primary hover:bg-primary/10"
                     onClick={handleLogin}
                     type="button"
                   >
                     Login
                   </Button>
                   <HashLink smooth to="#pricing">
-                    <Button className="bg-primary hover:bg-primary-dark text-white cursor-pointer">
+                    <Button className="bg-primary hover:bg-primary-dark text-white">
                       Get Started
                     </Button>
                   </HashLink>

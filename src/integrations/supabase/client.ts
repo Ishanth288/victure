@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -386,4 +385,3 @@ export class SupabaseConnectionManager {
 if (typeof window !== 'undefined' && import.meta.env.PROD) {
   SupabaseConnectionManager.startMonitoring();
 }
-
