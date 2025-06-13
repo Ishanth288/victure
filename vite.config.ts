@@ -22,7 +22,7 @@ export default defineConfig(({ command, mode }) => {
     },
     plugins: [
       react(),
-      isDevelopment && componentTagger(),
+      // isDevelopment && componentTagger(), // Temporarily removed for debugging
     ].filter(Boolean),
     resolve: {
       alias: {
@@ -55,7 +55,7 @@ export default defineConfig(({ command, mode }) => {
         'lucide-react',
         'date-fns'
       ],
-      exclude: ['@lovable-dev/lovable']
+      // exclude: ['@lovable-dev/lovable'] // Temporarily removed for debugging
     },
     // Reduce console noise
     logLevel: isDevelopment ? 'info' : 'warn',
