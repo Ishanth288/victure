@@ -19,7 +19,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
 
   console.log('🔍 AuthWrapper: Starting initialization', { pathname: location.pathname });
 
-  const withConnectionTimeout = useCallback(async <T>(promise: Promise<T>, timeoutMs: number = 3000): Promise<T> => {
+  const withConnectionTimeout = useCallback(async <T,>(promise: Promise<T>, timeoutMs: number = 3000): Promise<T> => {
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error(`Connection timeout after ${timeoutMs / 1000} seconds`)), timeoutMs);
     });
