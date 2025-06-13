@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, OptimizedQuery } from '@/integrations/supabase/client';
 
@@ -117,7 +118,7 @@ export function useDashboardData(): DashboardData {
 
       setLoadingProgress(70);
 
-      // Process results
+      // Process results with proper type handling
       const [revenueResult, inventoryResult, prescriptionsResult] = results;
       
       let totalRevenue = 0;
@@ -152,9 +153,9 @@ export function useDashboardData(): DashboardData {
         ).length;
       }
 
-      // Process prescriptions data
+      // Process prescriptions data with correct type casting
       if (prescriptionsResult.status === 'fulfilled' && prescriptionsResult.value.data) {
-        const prescriptionsData = prescriptionsResult.value.data as Array<{ id: string }>;
+        const prescriptionsData = prescriptionsResult.value.data as Array<{ id: number }>;
         totalPrescriptionsToday = prescriptionsData.length;
       }
 
