@@ -59,7 +59,7 @@ export const supabase = createClient<Database>(
         const timeoutId = setTimeout(() => {
           console.warn(`Request timeout for ${url}`);
           controller.abort();
-        }, 3000); // Reduced to 3 second timeout
+        }, 10000); // Increased to 10 second timeout
         
         return fetch(url, {
           ...options,
@@ -83,7 +83,7 @@ export const supabase = createClient<Database>(
 // Simplified query timeout wrapper
 export const withTimeout = <T>(
   promise: Promise<T>, 
-  timeoutMs: number = 3000, // Reduced from 8s to 3s
+  timeoutMs: number = 10000, // Increased from 3s to 10s
   operation: string = 'Database operation'
 ): Promise<T> => {
   return Promise.race([
@@ -126,7 +126,7 @@ export class OptimizedQuery {
       cacheKey,
       cacheTTL = 60000, // 1 minute default
       retries = 2,
-      timeout = 6000, // 6 seconds default
+      timeout = 10000, // 10 seconds default, increased from 6s
       operation = 'Query'
     } = options;
 
@@ -195,7 +195,7 @@ export class OptimizedQuery {
         const result = await withTimeout(queryFn(), timeout, operation);
         const duration = Date.now() - startTime;
         
-        if (duration > 3000) {
+        if (duration > 5000) { // Adjusted threshold for slow query warning
           console.warn(`⚠️ Slow query detected: ${operation} took ${duration}ms`);
         }
 

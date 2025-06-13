@@ -47,7 +47,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
           navigate('/auth');
         }
       }
-    }, 10000); // 10 second maximum loading time
+    }, 20000); // 20 second maximum loading time
 
     const initializeAuth = async (attempt: number = 0) => {
       try {
@@ -94,7 +94,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
         handleConnectionError(error);
         
         // Implement exponential backoff for retries
-        if (attempt < 2) { // Increased to max 3 attempts (0, 1, 2)
+        if (attempt < 3) { // Increased to max 4 attempts (0, 1, 2, 3)
           const delay = Math.min(2000 * Math.pow(2, attempt), 8000); // Max delay 8s
           console.log(`⏳ Retrying in ${delay}ms...`);
           
@@ -177,7 +177,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
           {connectionError ? (
             <div className="space-y-2">
               <p className="text-amber-600 text-lg">Connection issues detected...</p>
-              <p className="text-gray-600 text-sm">Attempting to reconnect (attempt {retryCount + 1}/3)</p>
+              <p className="text-gray-600 text-sm">Attempting to reconnect (attempt {retryCount + 1}/4)</p>
             </div>
           ) : (
             <p className="text-gray-600 text-lg">Please wait...</p>
