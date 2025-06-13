@@ -924,11 +924,7 @@ export function CartSummary({
               </p>
             </div>
             <ScrollArea 
-              className={`p-4 space-y-3 ${
-                items.length > 4 
-                  ? 'max-h-[320px]' 
-                  : ''
-              }`}
+              className={`p-4 space-y-3 max-h-[320px] overflow-y-auto scrollbar-thin`}
             >
               {items.map((item) => (
                 <CartItemRow
