@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from "react";
 import { RealtimeChannel } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, checkSupabaseAvailability } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export interface BillItem {
@@ -111,52 +111,6 @@ export function BillingProvider({ children }: BillingProviderProps) {
   const mountedRef = useRef(true);
   const isInitialized = useRef(false);
 
-  // Optimistic UI helpers
-  const addBill = useCallback((newBill: Bill) => {
-    setBills(prev => {
-      const sortedBills = [newBill, ...prev].sort((a, b) => {
-        const aTime = new Date(a.created_at || a.date).getTime();
-        const bTime = new Date(b.created_at || b.date).getTime();
-        if (bTime !== aTime) return bTime - aTime;
-        return b.id - a.id;
-      });
-      return sortedBills;
-    });
-    
-    // Also update prescription bills
-    if (newBill.prescription) {
-      const prescriptionBill = transformBillToPrescriptionBill(newBill);
-      setPrescriptionBills(prev => {
-        const updated = [prescriptionBill, ...prev.filter(p => p.bill_id !== newBill.id)];
-        return sortPrescriptionBills(updated);
-      });
-    }
-    
-    setLastUpdated(new Date());
-  }, []);
-
-  const updateBill = useCallback((billId: number, updates: Partial<Bill>) => {
-    setBills(prev => prev.map(bill => 
-      bill.id === billId ? { ...bill, ...updates } : bill
-    ));
-    
-    setPrescriptionBills(prev => prev.map(pBill => {
-      if (pBill.bill_id === billId) {
-        const updatedAmount = updates.total_amount || pBill.amount;
-        return { ...pBill, amount: updatedAmount };
-      }
-      return pBill;
-    }));
-    
-    setLastUpdated(new Date());
-  }, []);
-
-  const removeBill = useCallback((billId: number) => {
-    setBills(prev => prev.filter(bill => bill.id !== billId));
-    setPrescriptionBills(prev => prev.filter(pBill => pBill.bill_id !== billId));
-    setLastUpdated(new Date());
-  }, []);
-
   // Transform bill to prescription bill format
   const transformBillToPrescriptionBill = useCallback((bill: Bill): PrescriptionBill => {
     const totalReturnValue = bill.bill_items?.reduce((sum, item) => {
@@ -197,6 +151,52 @@ export function BillingProvider({ children }: BillingProviderProps) {
       // Secondary sort: by bill ID (newer bills have higher IDs)
       return b.id - a.id;
     });
+  }, []);
+
+  // Optimistic UI helpers
+  const addBill = useCallback((newBill: Bill) => {
+    setBills(prev => {
+      const sortedBills = [newBill, ...prev].sort((a, b) => {
+        const aTime = new Date(a.created_at || a.date).getTime();
+        const bTime = new Date(b.created_at || b.date).getTime();
+        if (bTime !== aTime) return bTime - aTime;
+        return b.id - a.id;
+      });
+      return sortedBills;
+    });
+    
+    // Also update prescription bills
+    if (newBill.prescription) {
+      const prescriptionBill = transformBillToPrescriptionBill(newBill);
+      setPrescriptionBills(prev => {
+        const updated = [prescriptionBill, ...prev.filter(p => p.bill_id !== newBill.id)];
+        return sortPrescriptionBills(updated);
+      });
+    }
+    
+    setLastUpdated(new Date());
+  }, [transformBillToPrescriptionBill, sortPrescriptionBills]);
+
+  const updateBill = useCallback((billId: number, updates: Partial<Bill>) => {
+    setBills(prev => prev.map(bill => 
+      bill.id === billId ? { ...bill, ...updates } : bill
+    ));
+    
+    setPrescriptionBills(prev => prev.map(pBill => {
+      if (pBill.bill_id === billId) {
+        const updatedAmount = updates.total_amount || pBill.amount;
+        return { ...pBill, amount: updatedAmount };
+      }
+      return pBill;
+    }));
+    
+    setLastUpdated(new Date());
+  }, []);
+
+  const removeBill = useCallback((billId: number) => {
+    setBills(prev => prev.filter(bill => bill.id !== billId));
+    setPrescriptionBills(prev => prev.filter(pBill => pBill.bill_id !== billId));
+    setLastUpdated(new Date());
   }, []);
 
   // Fetch bills with enhanced sorting
@@ -240,8 +240,8 @@ export function BillingProvider({ children }: BillingProviderProps) {
       }
 
       // Step 2: Fetch bill items separately to avoid relationship ambiguity
-      let billItemsData: any[] = [];
-      let inventoryData: any[] = [];
+      let billItemsData: BillItem[] = [];
+      let inventoryData: Array<{ id: number; name: string; unit_cost: number }> = [];
 
       if (billsData && billsData.length > 0) {
         const billIds = billsData.map(bill => bill.id);
@@ -294,29 +294,45 @@ export function BillingProvider({ children }: BillingProviderProps) {
       if (mountedRef.current && billsData) {
         // Create lookup maps for efficient data joining
         const inventoryMap = new Map(inventoryData.map(inv => [inv.id, inv]));
-        const billItemsMap = new Map<number, any[]>();
+        const billItemsMap = new Map<number, BillItem[]>();
         
         // Group bill items by bill_id
         billItemsData.forEach(item => {
-          if (!billItemsMap.has(item.bill_id)) {
-            billItemsMap.set(item.bill_id, []);
+          if (!billItemsMap.has(item.bill_id || 0)) {
+            billItemsMap.set(item.bill_id || 0, []);
           }
-          billItemsMap.get(item.bill_id)?.push(item);
+          billItemsMap.get(item.bill_id || 0)?.push(item);
         });
 
         // Enhanced bills with computed fields and normalized structure
-        const enhancedBills: Bill[] = (billsData as any[]).map((bill: any) => {
+        const enhancedBills: Bill[] = (billsData as Bill[]).map((bill: Bill) => {
           // Normalize the prescription data (from array to single object)
-          const prescription = bill.prescriptions && bill.prescriptions.length > 0 ? {
-            ...bill.prescriptions[0],
-            patient: bill.prescriptions[0].patients && bill.prescriptions[0].patients.length > 0 
-              ? bill.prescriptions[0].patients[0] 
+          const prescription = (bill as unknown as { prescriptions?: Array<{ 
+            id: number; 
+            prescription_number: string; 
+            doctor_name: string; 
+            patient_id: number; 
+            date: string; 
+            status: string; 
+            patients?: Array<{ id: number; name: string; phone_number: string }> 
+          }> }).prescriptions && (bill as unknown as { prescriptions: Array<unknown> }).prescriptions.length > 0 ? {
+            ...(bill as unknown as { prescriptions: Array<{ 
+              id: number; 
+              prescription_number: string; 
+              doctor_name: string; 
+              patient_id: number; 
+              date: string; 
+              status: string; 
+              patients?: Array<{ id: number; name: string; phone_number: string }> 
+            }> }).prescriptions[0],
+            patient: (bill as unknown as { prescriptions: Array<{ patients?: Array<{ id: number; name: string; phone_number: string }> }> }).prescriptions[0].patients && (bill as unknown as { prescriptions: Array<{ patients: Array<{ id: number; name: string; phone_number: string }> }> }).prescriptions[0].patients.length > 0 
+              ? (bill as unknown as { prescriptions: Array<{ patients: Array<{ id: number; name: string; phone_number: string }> }> }).prescriptions[0].patients[0] 
               : null
           } : null;
 
           // Get bill items for this bill and attach inventory data
           const billItems = billItemsMap.get(bill.id) || [];
-          const normalizedBillItems = billItems.map((item: any) => ({
+          const normalizedBillItems = billItems.map((item: BillItem) => ({
             ...item,
             inventory_item: inventoryMap.get(item.inventory_item_id) || { name: 'Unknown', unit_cost: 0 }
           }));
@@ -328,10 +344,10 @@ export function BillingProvider({ children }: BillingProviderProps) {
             created_at: bill.created_at || bill.date,
             updated_at: bill.updated_at || bill.date,
             sort_timestamp: new Date(bill.created_at || bill.date).getTime(),
-            effective_amount: bill.total_amount - (normalizedBillItems.reduce((sum: number, item: any) => 
+            effective_amount: bill.total_amount - (normalizedBillItems.reduce((sum: number, item: BillItem) => 
               sum + ((item.return_quantity || 0) * item.unit_price), 0) || 0),
             original_amount: bill.total_amount,
-            return_value: normalizedBillItems.reduce((sum: number, item: any) => 
+            return_value: normalizedBillItems.reduce((sum: number, item: BillItem) => 
               sum + ((item.return_quantity || 0) * item.unit_price), 0) || 0
           };
         });
@@ -568,60 +584,60 @@ export function BillingProvider({ children }: BillingProviderProps) {
     mountedRef.current = true;
 
     const initializeBilling = async () => {
+      if (!mountedRef.current || isInitialized.current) return;
+
       try {
-        // Add timeout for authentication check
-        const authPromise = supabase.auth.getUser();
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Authentication timeout')), 10000)
-        );
-        
+        setIsLoading(true);
+        setError(null);
+
+        console.log("🔄 Initializing billing context...");
+
+        // Check authentication with timeout
         const { data: { user }, error: authError } = await Promise.race([
-          authPromise,
-          timeoutPromise
-        ]) as any;
-        
+          supabase.auth.getUser(),
+          new Promise<{ data: { user: null }; error: Error }>((_, reject) =>
+            setTimeout(() => reject(new Error('Authentication timeout after 5000ms')), 5000)
+          )
+        ]);
+
         if (authError) {
-          console.warn('Authentication check failed:', authError.message);
-          if (mounted) {
-            setIsLoading(false);
-          }
-          return;
+          throw new Error(`Authentication failed: ${authError.message}`);
         }
 
         if (!user) {
-          if (mounted) {
-            setIsLoading(false);
-          }
-          return;
+          throw new Error('No authenticated user found');
         }
 
+        console.log("✅ Authentication successful for user:", user.id);
         userIdRef.current = user.id;
 
-        if (mounted) {
-          // Use timeout for data fetching
-          const fetchPromise = fetchBills(user.id, true);
-          const fetchTimeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Data fetch timeout')), 15000)
-          );
-          
-          try {
-            await Promise.race([fetchPromise, fetchTimeoutPromise]);
-          } catch (error) {
-            console.warn('Initial fetch timeout, will retry:', error);
-            // Don't fail completely, just set loading to false
-            if (mounted) {
-              setIsLoading(false);
-              setError('Initial load was slow, please refresh if needed');
-            }
-          }
-          
-          await setupRealtimeSubscription(user.id);
+        // Test database connection before fetching bills
+        const connectionStatus = await checkSupabaseAvailability();
+        if (!connectionStatus.available) {
+          throw new Error('Database connection failed - unable to establish connection');
         }
+
+        console.log(`✅ Database connection established (${connectionStatus.connectionSpeed})`);
+        setConnectionQuality(connectionStatus.connectionSpeed);
+
+        // Fetch bills data
+        await fetchBills(user.id, true);
+
+        console.log("✅ Billing context initialized successfully");
+        setIsConnected(true);
+        isInitialized.current = true;
+
       } catch (error) {
-        console.error("Error initializing billing:", error);
-        if (mounted) {
-          const errorMessage = error instanceof Error ? error.message : "Failed to initialize billing";
-          setError(errorMessage);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        console.error("❌ Error initializing billing:", errorMessage);
+        setError(errorMessage);
+        setIsConnected(false);
+        
+        // Reset bills on error
+        setBills([]);
+        setPrescriptionBills([]);
+      } finally {
+        if (mountedRef.current) {
           setIsLoading(false);
         }
       }

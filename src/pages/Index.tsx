@@ -1,4 +1,3 @@
-
 import React from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -81,7 +80,7 @@ const IndexComponent = () => {
       cleanupOptimizations();
       observer.disconnect();
     };
-  }, []);
+  }, [navigate]);
 
   // Simplified error handler
   const handleError = (error: Error) => {
@@ -304,135 +303,33 @@ const IndexComponent = () => {
               backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d97706' fill-opacity='0.3'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
             }} />
             
-            {/* Floating cultural elements - simplified */}
-            <m.div 
-              variants={floatingVariants}
-              animate="animate"
-              className="absolute top-32 right-10 text-orange-100 text-4xl opacity-30 hidden lg:block"
-            >
-              🕉️
-            </m.div>
-            
-            <m.div 
-              variants={mandalaVariants}
-              animate="animate"
-              className="absolute top-48 left-16 w-20 h-20 border border-rose-100 rounded-full opacity-20 hidden lg:block"
-            />
-            
-            <m.div 
-              variants={floatingVariants}
-              animate="animate"
-              className="absolute bottom-64 right-20 text-amber-100 text-3xl opacity-25 hidden lg:block"
-            >
-              🪷
-            </m.div>
-            
-            <m.div 
-              variants={mandalaVariants}
-              animate="animate"
-              className="absolute bottom-32 left-12 w-16 h-16 border border-orange-100 rounded-full opacity-15 hidden lg:block"
-            />
-          </div>
-
-          {/* Mobile vs Desktop rendering */}
-          {isMobile ? (
-            <MobileHeroSection />
-          ) : (
-            <>
-              <Navigation />
-              <m.main 
-                className="relative z-10" 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-              >
-                <HeroSection />
-                
-                <MainContentWrapper 
-                  useFallback={true} 
-                  onError={handleError}
-                  className="-mt-24" 
-                >
-                  <FloatingIconsSection />
-                </MainContentWrapper>
-                
-                <MainContentWrapper 
-                  onError={handleError}
-                  className="-mt-32" 
-                >
-                  <ScrollAnimationSection />
-                </MainContentWrapper>
-                
-                <MainContentWrapper 
-                  onError={handleError}
-                  className="-mt-24" 
-                >
-                  <ContentSection />
-                </MainContentWrapper>
-
-                {/* Enhanced Feedback Section with Indian-inspired design */}
-                <section 
-                  id="feedback" 
-                  className="py-12 lg:py-16 bg-gradient-to-br from-orange-50/50 via-rose-50/50 to-amber-50/50 -mt-16 content-visibility-auto relative" 
-                  ref={feedbackSectionRef}
-                >
-                  {/* Decorative pattern overlay */}
-                  <div className="absolute inset-0 opacity-5" style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f97316' fill-opacity='0.6'%3E%3Ccircle cx='20' cy='20' r='3'/%3E%3Ccircle cx='20' cy='10' r='1'/%3E%3Ccircle cx='20' cy='30' r='1'/%3E%3Ccircle cx='10' cy='20' r='1'/%3E%3Ccircle cx='30' cy='20' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-                  }} />
-                  
-                  <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <m.div
-                      initial={{ opacity: 0, y: 30 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6 }}
-                      viewport={{ once: true }}
-                      className="text-center mb-8 lg:mb-12"
-                    >
-                      <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-4">
-                        Your Feedback{" "}
-                        <span className="text-transparent bg-gradient-to-r from-orange-500 to-rose-500 bg-clip-text">
-                          Matters
-                        </span>
-                      </h2>
-                      <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-                        Help us serve the healthcare community better with your valuable insights
-                      </p>
-                    </m.div>
-                    
-                    <m.div
-                      initial={{ opacity: 0, y: 30 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6, delay: 0.2 }}
-                      viewport={{ once: true }}
-                      className="max-w-4xl mx-auto"
-                    >
+            {/* Mobile vs Desktop rendering */}
+            {isMobile ? (
+              <MobileHeroSection />
+            ) : (
+              <>
+                <Navigation />
+                <m.main className="relative z-10">
+                  <HeroSection />
+                  <MainContentWrapper onError={handleError}>
+                    <FloatingIconsSection />
+                  </MainContentWrapper>
+                  <MainContentWrapper onError={handleError}>
+                    <ScrollAnimationSection />
+                  </MainContentWrapper>
+                  <MainContentWrapper onError={handleError}>
+                    <ContentSection />
+                  </MainContentWrapper>
+                  <section id="feedback" className="py-12">
+                    <div className="container mx-auto px-4">
                       <FeedbackForm />
-                    </m.div>
-                  </div>
-                  
-                  {/* Bottom decorative elements */}
-                  <m.div 
-                    variants={floatingVariants}
-                    animate="animate"
-                    className="absolute bottom-4 left-4 text-orange-200/50 text-xl opacity-30 hidden lg:block"
-                  >
-                    ✨
-                  </m.div>
-                  
-                  <m.div 
-                    variants={floatingVariants}
-                    animate="animate"
-                    className="absolute bottom-8 right-8 text-rose-200/50 text-lg opacity-25 hidden lg:block"
-                  >
-                    🌸
-                  </m.div>
-                </section>
-              </m.main>
-              
-              <Footer />
-            </>
-          )}
+                    </div>
+                  </section>
+                </m.main>
+                <Footer />
+              </>
+            )}
+          </div>
         </div>
       </OnboardingProvider>
     </LazyMotion>

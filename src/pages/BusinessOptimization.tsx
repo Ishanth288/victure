@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from "react";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { BusinessOptimizationPage } from "@/components/dashboard/BusinessOptimization";
 import { Fallback, ErrorFallback } from "@/components/ui/fallback";
 import { stableToast } from "@/components/ui/stable-toast";

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from "../components/DashboardLayout";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { WelcomeDialog } from "@/components/dashboard";
 import { OptimizedDashboardWidgets } from "@/components/dashboard/OptimizedDashboardWidgets";
 import { useToast } from "@/hooks/use-toast";

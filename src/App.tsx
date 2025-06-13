@@ -1,94 +1,128 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { MobileLayout } from "@/components/mobile/MobileLayout";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
-import Billing from "./pages/Billing";
-import BillingCart from "./pages/BillingCart";
 import Patients from "./pages/Patients";
 import Prescriptions from "./pages/Prescriptions";
 import Insights from "./pages/Insights";
-import Settings from "./pages/Settings";
-import Profile from "./pages/Profile";
+import BillingCart from "./pages/BillingCart";
 import Purchases from "./pages/Purchases";
-import BusinessOptimization from "./pages/BusinessOptimization";
-import Admin from "./pages/Admin";
-import SystemSettings from "./pages/admin/SystemSettings";
-import Documentation from "./pages/Documentation";
-import SystemTest from "./pages/SystemTest";
-import DeletionHistory from "./pages/DeletionHistory";
-import NotFound from "./pages/NotFound";
+import { AuthWrapper } from "./components/AuthWrapper";
+import { BillingProvider } from "./contexts/BillingContext";
+import { InventoryProvider } from "./contexts/InventoryContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 
-// Legal pages
-import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
-import TermsOfService from "./pages/legal/TermsOfService";
-import RefundPolicy from "./pages/legal/RefundPolicy";
-import AcceptableUsePolicy from "./pages/legal/AcceptableUsePolicy";
-import Disclaimers from "./pages/legal/Disclaimers";
-import EULA from "./pages/legal/EULA";
-import SLA from "./pages/legal/SLA";
+const Admin = lazy(() => import("./pages/Admin"));
+const SystemSettings = lazy(() => import("./pages/admin/SystemSettings"));
+const DeletionHistory = lazy(() => import("./pages/DeletionHistory"));
+const SystemTest = lazy(() => import("./pages/SystemTest"));
+const BusinessOptimization = lazy(() => import("./pages/BusinessOptimization"));
+const Documentation = lazy(() => import("./pages/Documentation"));
 
-function AppContent() {
-  const location = useLocation();
-  const isMobile = useIsMobile();
-  
-  // Pages that should NOT have mobile layout
-  const noMobileLayoutPages = ['/', '/auth'];
-  const shouldUseMobileLayout = isMobile && !noMobileLayoutPages.includes(location.pathname);
-
-  const routes = (
-    <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/inventory" element={<Inventory />} />
-      <Route path="/billing" element={<Billing />} />
-      <Route path="/billing-cart" element={<BillingCart />} />
-      <Route path="/patients" element={<Patients />} />
-      <Route path="/prescriptions" element={<Prescriptions />} />
-      <Route path="/insights" element={<Insights />} />
-      <Route path="/settings" element={<Settings />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/purchases" element={<Purchases />} />
-      <Route path="/business-optimization" element={<BusinessOptimization />} />
-      <Route path="/admin" element={<Admin />} />
-      <Route path="/admin/system-settings" element={<SystemSettings />} />
-      <Route path="/documentation" element={<Documentation />} />
-      <Route path="/system-test" element={<SystemTest />} />
-      <Route path="/deletion-history" element={<DeletionHistory />} />
-      
-      {/* Legal Routes */}
-      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-      <Route path="/terms-of-service" element={<TermsOfService />} />
-      <Route path="/refund-policy" element={<RefundPolicy />} />
-      <Route path="/acceptable-use-policy" element={<AcceptableUsePolicy />} />
-      <Route path="/disclaimers" element={<Disclaimers />} />
-      <Route path="/eula" element={<EULA />} />
-      <Route path="/sla" element={<SLA />} />
-      
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-  );
-
-  if (shouldUseMobileLayout) {
-    return <MobileLayout>{routes}</MobileLayout>;
-  }
-
-  return routes;
-}
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000,
+      retry: 1,
+    },
+  },
+});
 
 function App() {
   return (
-    <ErrorBoundary>
-      <AppContent />
-      <Toaster />
+    <ErrorBoundary
+      onError={(error, errorInfo) => {
+        console.error('App Error:', error, errorInfo);
+        // Send to monitoring service
+        if (typeof window !== 'undefined' && (window as any).gtag) {
+          (window as any).gtag('event', 'exception', {
+            description: error.message,
+            fatal: false
+          });
+        }
+      }}
+    >
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <BrowserRouter>
+            <AuthWrapper>
+              <BillingProvider>
+                <InventoryProvider>
+                  <div className="min-h-screen bg-gray-50">
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/inventory" element={<Inventory />} />
+                      <Route path="/patients" element={<Patients />} />
+                      <Route path="/prescriptions" element={<Prescriptions />} />
+                      <Route path="/insights" element={<Insights />} />
+                      <Route path="/billing-cart" element={<BillingCart />} />
+                      <Route path="/purchases" element={<Purchases />} />
+                      <Route 
+                        path="/admin" 
+                        element={
+                          <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                            <Admin />
+                          </Suspense>
+                        } 
+                      />
+                      <Route 
+                        path="/admin/settings" 
+                        element={
+                          <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                            <SystemSettings />
+                          </Suspense>
+                        } 
+                      />
+                      <Route 
+                        path="/deletion-history" 
+                        element={
+                          <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                            <DeletionHistory />
+                          </Suspense>
+                        } 
+                      />
+                      <Route 
+                        path="/system-test" 
+                        element={
+                          <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                            <SystemTest />
+                          </Suspense>
+                        } 
+                      />
+                      <Route 
+                        path="/business-optimization" 
+                        element={
+                          <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                            <BusinessOptimization />
+                          </Suspense>
+                        } 
+                      />
+                      <Route 
+                        path="/documentation" 
+                        element={
+                          <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                            <Documentation />
+                          </Suspense>
+                        } 
+                      />
+                    </Routes>
+                  </div>
+                </InventoryProvider>
+              </BillingProvider>
+            </AuthWrapper>
+            <Toaster />
+            <Sonner />
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }

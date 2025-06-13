@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -11,40 +10,77 @@ interface AuthWrapperProps {
 export function AuthWrapper({ children }: AuthWrapperProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
+  console.log('🔍 AuthWrapper: Rendering with state:', { 
+    isLoading, 
+    isAuthenticated, 
+    currentPath: location.pathname,
+    connectionError
+  });
+
   useEffect(() => {
     let mounted = true;
+    let timeoutId: NodeJS.Timeout;
+    let fallbackTimeoutId: NodeJS.Timeout;
+
+    // Fallback timeout to prevent infinite loading
+    fallbackTimeoutId = setTimeout(() => {
+      if (mounted && isLoading) {
+        console.warn('⚠️ AuthWrapper: Fallback timeout triggered - forcing load completion');
+        setIsLoading(false);
+        setIsAuthenticated(false);
+        
+        if (location.pathname !== '/auth' && location.pathname !== '/') {
+          navigate('/');
+        }
+      }
+    }, 15000); // 15 second fallback
 
     const initializeAuth = async () => {
       try {
-        // Get current session with extended timeout
-        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('🔄 AuthWrapper: Starting authentication check...');
+        setConnectionError(null);
+        
+        // Quick test to verify Supabase client is working
+        const { data: { session }, error } = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<{ data: { session: null }; error: Error }>((_, reject) =>
+            setTimeout(() => reject(new Error('Connection timeout after 5 seconds')), 5000)
+          )
+        ]);
+
+        // Clear timeouts if successful
+        if (timeoutId) clearTimeout(timeoutId);
+        if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
 
         if (!mounted) return;
 
+        console.log('✅ AuthWrapper: Session check completed', { 
+          hasSession: !!session, 
+          hasUser: !!session?.user,
+          currentPath: location.pathname 
+        });
+
         if (error) {
-          console.error('Auth session error:', error);
-          toast({
-            title: "Authentication Error",
-            description: "Failed to verify session. Please try again.",
-            variant: "destructive",
-          });
+          console.error('❌ AuthWrapper: Session error:', error);
+          setConnectionError(error.message);
           
-          if (mounted) {
-            setIsAuthenticated(false);
-            setIsLoading(false);
-            
-            if (location.pathname !== '/auth') {
-              navigate('/auth');
-            }
+          // For auth errors, still allow access to public pages
+          setIsAuthenticated(false);
+          setIsLoading(false);
+          
+          if (location.pathname !== '/auth' && location.pathname !== '/') {
+            navigate('/');
           }
           return;
         }
 
         if (session?.user) {
+          console.log('✅ AuthWrapper: User authenticated:', session.user.id);
           setIsAuthenticated(true);
           
           // If on auth page and authenticated, redirect to dashboard
@@ -52,29 +88,33 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
             navigate('/');
           }
         } else {
+          console.log('ℹ️ AuthWrapper: No authenticated user');
           setIsAuthenticated(false);
           
-          // If not on auth page and not authenticated, redirect to auth
-          if (location.pathname !== '/auth') {
+          // Only redirect to auth if not on public pages
+          if (location.pathname !== '/auth' && location.pathname !== '/') {
             navigate('/auth');
           }
         }
         
         setIsLoading(false);
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        console.error('❌ AuthWrapper: Critical initialization error:', error);
+        
+        // Clear timeouts
+        if (timeoutId) clearTimeout(timeoutId);
+        if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
         
         if (mounted) {
-          toast({
-            title: "Connection Error",
-            description: "Failed to initialize authentication. Please refresh the page.",
-            variant: "destructive",
-          });
+          const errorMessage = error instanceof Error ? error.message : 'Unknown connection error';
+          setConnectionError(errorMessage);
+          
+          // For critical errors, allow access to the landing page
           setIsAuthenticated(false);
           setIsLoading(false);
           
-          if (location.pathname !== '/auth') {
-            navigate('/auth');
+          if (location.pathname !== '/') {
+            navigate('/');
           }
         }
       }
@@ -116,13 +156,71 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      if (timeoutId) clearTimeout(timeoutId);
+      if (fallbackTimeoutId) clearTimeout(fallbackTimeoutId);
     };
-  }, [navigate, location.pathname]);
+  }, [navigate, location.pathname, toast]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center max-w-md px-6">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mb-6 mx-auto"></div>
+          
+          <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+            Loading Victure
+          </h2>
+          <p className="text-gray-600 text-lg mb-2">Connecting to your pharmacy system...</p>
+          
+          {connectionError && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">
+                <strong>Connection Issue:</strong> {connectionError}
+              </p>
+            </div>
+          )}
+          
+          <div className="mt-6 space-y-3">
+            {/* Quick bypass for demo */}
+            <button 
+              onClick={() => {
+                console.log('🚀 Demo: Bypassing authentication');
+                setIsLoading(false);
+                setIsAuthenticated(false);
+                setConnectionError(null);
+                navigate('/');
+              }}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Continue to Demo
+            </button>
+            
+            {/* Debug bypass */}
+            <button 
+              onClick={() => {
+                console.log('🔧 Debug: Force bypass');
+                setIsLoading(false);
+                setIsAuthenticated(false);
+                setConnectionError(null);
+              }}
+              className="w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm"
+            >
+              Force Continue (Debug)
+            </button>
+            
+            {/* Reload page */}
+            <button 
+              onClick={() => window.location.reload()}
+              className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+            >
+              Reload Page
+            </button>
+          </div>
+          
+          <p className="text-gray-500 text-xs mt-4">
+            Having trouble? The demo will work without authentication.
+          </p>
+        </div>
       </div>
     );
   }
