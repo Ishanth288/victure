@@ -16,6 +16,7 @@ export interface InventoryItemDB {
   supplier: string | null;
   storage_condition: string | null;
   status: string;
+  created_at: string | null;
 }
 
 export interface InventoryItem extends InventoryItemDB {}
