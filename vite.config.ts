@@ -1,3 +1,4 @@
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -30,22 +31,27 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     build: {
-      // Optimize chunk sizes
-      chunkSizeWarningLimit: 1000,
+      // Optimize for production deployment
+      chunkSizeWarningLimit: 500,
       rollupOptions: {
         output: {
           manualChunks: {
             vendor: ['react', 'react-dom'],
-            ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
+            ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
             supabase: ['@supabase/supabase-js'],
-            utils: ['date-fns', 'lucide-react']
+            router: ['react-router-dom'],
+            utils: ['date-fns', 'lucide-react', 'clsx', 'tailwind-merge'],
+            charts: ['recharts'],
+            motion: ['framer-motion']
           }
         }
       },
-      // Improve build performance
-      target: 'esnext',
-      minify: isProduction ? 'esbuild' : false,
-      sourcemap: isDevelopment,
+      // Improve build performance and size
+      target: 'es2020',
+      minify: 'esbuild',
+      sourcemap: false, // Disable sourcemaps in production for faster loading
+      cssCodeSplit: true,
+      reportCompressedSize: false, // Faster builds
     },
     optimizeDeps: {
       include: [
@@ -53,7 +59,8 @@ export default defineConfig(({ command, mode }) => {
         'react-dom',
         '@supabase/supabase-js',
         'lucide-react',
-        'date-fns'
+        'date-fns',
+        'react-router-dom'
       ],
       // exclude: ['@lovable-dev/lovable'] // Temporarily removed for debugging
     },

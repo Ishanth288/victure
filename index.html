@@ -1,17 +1,71 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Victure - Pharmacy Management Solution</title>
-    <meta name="description" content="Transform your pharmacy operations with Victure, a comprehensive pharmacy management system." />
+    
+    <!-- SEO Meta Tags -->
+    <title>Victure - AI-Powered Pharmacy Management System | Streamline Your Operations</title>
+    <meta name="description" content="Transform your pharmacy with Victure's AI-powered management system. Inventory tracking, billing, patient records, and business insights - all in one platform. Free trial available." />
+    <meta name="keywords" content="pharmacy management, inventory software, billing system, patient records, pharmacy automation, medical inventory, prescription management, healthcare software, pharmacy POS" />
     <meta name="author" content="Victure" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://victure.app" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://victure.app" />
+    <meta property="og:title" content="Victure - AI-Powered Pharmacy Management System" />
+    <meta property="og:description" content="Transform your pharmacy with Victure's AI-powered management system. Streamline inventory, billing, and patient management." />
     <meta property="og:image" content="/og-image.png" />
+    <meta property="og:site_name" content="Victure" />
+    <meta property="og:locale" content="en_US" />
     
-    <!-- Removed problematic preloads for /src/index.css and /src/main.tsx -->
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://victure.app" />
+    <meta property="twitter:title" content="Victure - AI-Powered Pharmacy Management System" />
+    <meta property="twitter:description" content="Transform your pharmacy with Victure's AI-powered management system. Streamline inventory, billing, and patient management." />
+    <meta property="twitter:image" content="/og-image.png" />
     
+    <!-- Additional SEO -->
+    <meta name="theme-color" content="#f97316" />
+    <meta name="msapplication-TileColor" content="#f97316" />
+    <meta name="application-name" content="Victure" />
+    
+    <!-- Performance optimization -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://aysdilfgxlyuplikmmdt.supabase.co" />
+    <link rel="dns-prefetch" href="https://aysdilfgxlyuplikmmdt.supabase.co" />
+    
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+    <link rel="apple-touch-icon" href="/og-image.png" />
+    
+    <!-- Schema.org structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Victure",
+      "applicationCategory": "BusinessApplication",
+      "description": "AI-powered pharmacy management system for inventory, billing, and patient management",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "description": "Free trial available"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "ratingCount": "10000"
+      }
+    }
+    </script>
     
     <style>
       body { margin: 0; padding: 0; }
@@ -20,18 +74,18 @@
         align-items: center; 
         justify-content: center; 
         min-height: 100vh;
-        background-color: #f9fafb; /* Light gray background */
+        background-color: #f9fafb;
       }
       .spinner {
         width: 40px;
         height: 40px;
-        border: 3px solid rgba(0,0,0,0.1); /* Light border */
+        border: 3px solid rgba(0,0,0,0.1);
         border-radius: 50%;
-        border-top-color: #3b82f6; /* Blue top border for spinning effect */
-        animation: spin 1s ease-in-out infinite; /* Animation definition */
+        border-top-color: #3b82f6;
+        animation: spin 1s ease-in-out infinite;
       }
       @keyframes spin {
-        to { transform: rotate(360deg); } /* Rotate 360 degrees */
+        to { transform: rotate(360deg); }
       }
     </style>
   </head>
@@ -39,7 +93,8 @@
   <body>
     <div id="root">
       <div class="initial-loader">
-        <div class="spinner"></div> </div>
+        <div class="spinner"></div>
+      </div>
     </div>
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>

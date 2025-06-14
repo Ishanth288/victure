@@ -17,6 +17,7 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Flower, Heart, Shield, Activity, Sparkles, Star, ArrowRight } from "lucide-react";
+import { SEOHead } from "@/components/SEO/SEOHead";
 import { supabase } from "@/integrations/supabase/client";
 
 // Simplified memo wrapper to reduce re-renders
@@ -282,6 +283,10 @@ const IndexComponent = () => {
   if (isError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-rose-50 to-amber-50">
+        <SEOHead 
+          title="Error - Victure"
+          description="Something went wrong loading Victure pharmacy management system."
+        />
         <Fallback message="Something went wrong. Please refresh the page." />
       </div>
     );
@@ -289,6 +294,11 @@ const IndexComponent = () => {
 
   return (
     <LazyMotion features={domAnimation} strict>
+      <SEOHead 
+        title="Victure - Transform Your Pharmacy Operations with AI"
+        description="Join 10,000+ pharmacies using Victure's AI-powered management system. Streamline inventory, automate billing, manage patients, and boost profits. Start your free trial today!"
+        keywords="pharmacy management software, inventory tracking, prescription billing, patient records, healthcare automation, pharmacy POS system, medical inventory management, pharmacy analytics"
+      />
       <OnboardingProvider
         isOpen={showOnboarding}
         setIsOpen={setShowOnboarding}

@@ -1,6 +1,7 @@
 
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { HelmetProvider } from 'react-helmet-async';
 import App from "./App.tsx";
 import "./index.css";
 import { Toaster } from "@/components/ui/sonner";
@@ -12,11 +13,11 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { InventoryProvider } from "./contexts/InventoryContext";
 import { BillingProvider } from "./contexts/BillingContext";
 
-// Simple query client
+// Optimized query client for production
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: 2,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000,
       gcTime: 10 * 60 * 1000,
@@ -30,22 +31,24 @@ const queryClient = new QueryClient({
 function Root() {
   return (
     <React.StrictMode>
-      <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <BrowserRouter>
-              <AuthProvider>
-                <InventoryProvider>
-                  <BillingProvider>
-                    <App />
-                  </BillingProvider>
-                </InventoryProvider>
-                <Toaster position="top-center" richColors closeButton />
-              </AuthProvider>
-            </BrowserRouter>
-          </TooltipProvider>
-        </QueryClientProvider>
-      </ThemeProvider>
+      <HelmetProvider>
+        <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+          <QueryClientProvider client={queryClient}>
+            <TooltipProvider>
+              <BrowserRouter>
+                <AuthProvider>
+                  <InventoryProvider>
+                    <BillingProvider>
+                      <App />
+                    </BillingProvider>
+                  </InventoryProvider>
+                  <Toaster position="top-center" richColors closeButton />
+                </AuthProvider>
+              </BrowserRouter>
+            </TooltipProvider>
+          </QueryClientProvider>
+        </ThemeProvider>
+      </HelmetProvider>
     </React.StrictMode>
   );
 }
