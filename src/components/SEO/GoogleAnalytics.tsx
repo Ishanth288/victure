@@ -2,6 +2,14 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
+// Extend the Window interface to include Google Analytics properties
+declare global {
+  interface Window {
+    dataLayer: any[];
+    gtag: (...args: any[]) => void;
+  }
+}
+
 interface GoogleAnalyticsProps {
   measurementId?: string;
 }
@@ -21,7 +29,7 @@ export function GoogleAnalytics({ measurementId = 'G-XXXXXXXXXX' }: GoogleAnalyt
     function gtag(...args: any[]) {
       window.dataLayer.push(args);
     }
-    (window as any).gtag = gtag;
+    window.gtag = gtag;
 
     gtag('js', new Date());
     gtag('config', measurementId, {
@@ -40,8 +48,8 @@ export function GoogleAnalytics({ measurementId = 'G-XXXXXXXXXX' }: GoogleAnalyt
 
   // Track page views on route change
   useEffect(() => {
-    if ((window as any).gtag) {
-      (window as any).gtag('config', measurementId, {
+    if (window.gtag) {
+      window.gtag('config', measurementId, {
         page_path: location.pathname + location.search,
         page_title: document.title,
       });
