@@ -128,7 +128,11 @@ export function useInventoryForm(onSuccess: () => void) {
         description: "Item added successfully",
       });
 
-      return newItem as InventoryItem;
+      // Transform the returned data to match InventoryItem type
+      return {
+        ...newItem,
+        created_at: newItem.created_at || null,
+      } as InventoryItem;
 
     } catch (error) {
       console.error("Error adding item:", error);
@@ -211,7 +215,11 @@ export function useInventoryForm(onSuccess: () => void) {
         description: "Item updated successfully",
       });
 
-      return updatedItem as InventoryItem;
+      // Transform the returned data to match InventoryItem type
+      return {
+        ...updatedItem,
+        created_at: updatedItem.created_at || null,
+      } as InventoryItem;
 
     } catch (error) {
       console.error("Error updating item:", error);

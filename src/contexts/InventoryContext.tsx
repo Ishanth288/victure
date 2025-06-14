@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode, Dispatch, SetStateAction, useRef } from "react";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import { type InventoryItem, type InventoryItemFormData, type InventoryItemDB } from "@/types/inventory";
@@ -67,14 +66,15 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
       }
 
       if (mountedRef.current) {
-        const transformedData = (data || []).map((item: InventoryItemDB) => ({
+        const transformedData = (data || []).map((item: any) => ({
           ...item,
           id: Number(item.id),
           quantity: Number(item.quantity) || 0,
           unit_cost: Number(item.unit_cost) || 0,
           selling_price: Number(item.selling_price) || 0,
           reorder_point: Number(item.reorder_point) || 10,
-        }));
+          created_at: item.created_at || null, // Handle optional created_at
+        } as InventoryItem));
 
         setInventory(transformedData);
         setError(null);
@@ -121,7 +121,7 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
             
             // Simple update handling
             if (payload.eventType === 'INSERT' && payload.new) {
-              const newItem = payload.new as InventoryItemDB;
+              const newItem = payload.new as any;
               const transformedItem: InventoryItem = {
                 ...newItem,
                 id: Number(newItem.id),
@@ -129,6 +129,7 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
                 unit_cost: Number(newItem.unit_cost) || 0,
                 selling_price: Number(newItem.selling_price) || 0,
                 reorder_point: Number(newItem.reorder_point) || 10,
+                created_at: newItem.created_at || null,
               };
               
               setInventory(prev => [transformedItem, ...prev]);
@@ -138,7 +139,7 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
               setInventory(prev => prev.filter(item => item.id !== deletedId));
               setLastUpdated(new Date());
             } else if (payload.eventType === 'UPDATE' && payload.new) {
-              const updatedItem = payload.new as InventoryItemDB;
+              const updatedItem = payload.new as any;
               const transformedItem: InventoryItem = {
                 ...updatedItem,
                 id: Number(updatedItem.id),
@@ -146,6 +147,7 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
                 unit_cost: Number(updatedItem.unit_cost) || 0,
                 selling_price: Number(updatedItem.selling_price) || 0,
                 reorder_point: Number(updatedItem.reorder_point) || 10,
+                created_at: updatedItem.created_at || null,
               };
               
               setInventory(prev => prev.map(item => 

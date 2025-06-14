@@ -16,7 +16,10 @@ export interface InventoryItemDB {
   supplier: string | null;
   storage_condition: string | null;
   status: string;
-  created_at: string | null;
+  user_id: string;
+  migration_id: string | null;
+  category: string | null;
+  created_at?: string | null; // Make this optional since it's not always returned
 }
 
 export interface InventoryItem extends InventoryItemDB {}
