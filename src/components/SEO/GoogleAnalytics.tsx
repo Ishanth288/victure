@@ -6,7 +6,7 @@ interface GoogleAnalyticsProps {
   measurementId?: string;
 }
 
-export function GoogleAnalytics({ measurementId = 'G-XXXXXXXXXX' }: GoogleAnalyticsProps) {
+export function GoogleAnalytics({ measurementId = 'G-G-0Q0N9Q2ZRC' }: GoogleAnalyticsProps) {
   const location = useLocation();
 
   useEffect(() => {
