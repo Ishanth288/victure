@@ -1,4 +1,3 @@
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -42,7 +41,8 @@ export default defineConfig(({ command, mode }) => {
             router: ['react-router-dom'],
             utils: ['date-fns', 'lucide-react', 'clsx', 'tailwind-merge'],
             charts: ['recharts'],
-            motion: ['framer-motion']
+            motion: ['framer-motion'],
+            seo: ['react-helmet-async']
           }
         }
       },
@@ -60,7 +60,8 @@ export default defineConfig(({ command, mode }) => {
         '@supabase/supabase-js',
         'lucide-react',
         'date-fns',
-        'react-router-dom'
+        'react-router-dom',
+        'react-helmet-async'
       ],
       // exclude: ['@lovable-dev/lovable'] // Temporarily removed for debugging
     },

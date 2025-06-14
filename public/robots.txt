@@ -1,0 +1,22 @@
+
+User-agent: *
+Allow: /
+
+# Block admin and sensitive areas
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /auth
+Disallow: /settings
+Disallow: /api/
+
+# Allow important pages
+Allow: /
+Allow: /pricing
+Allow: /features
+Allow: /legal/*
+
+# Sitemap location
+Sitemap: https://victure.app/sitemap.xml
+
+# Crawl delay (optional)
+Crawl-delay: 1
