@@ -73,7 +73,6 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
           unit_cost: Number(item.unit_cost) || 0,
           selling_price: Number(item.selling_price) || 0,
           reorder_point: Number(item.reorder_point) || 10,
-          created_at: item.created_at || null, // Handle optional created_at
         } as InventoryItem));
 
         setInventory(transformedData);
@@ -129,7 +128,6 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
                 unit_cost: Number(newItem.unit_cost) || 0,
                 selling_price: Number(newItem.selling_price) || 0,
                 reorder_point: Number(newItem.reorder_point) || 10,
-                created_at: newItem.created_at || null,
               };
               
               setInventory(prev => [transformedItem, ...prev]);
@@ -147,7 +145,6 @@ export function InventoryProvider({ children }: InventoryProviderProps) {
                 unit_cost: Number(updatedItem.unit_cost) || 0,
                 selling_price: Number(updatedItem.selling_price) || 0,
                 reorder_point: Number(updatedItem.reorder_point) || 10,
-                created_at: updatedItem.created_at || null,
               };
               
               setInventory(prev => prev.map(item => 

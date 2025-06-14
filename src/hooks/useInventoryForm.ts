@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -128,11 +127,7 @@ export function useInventoryForm(onSuccess: () => void) {
         description: "Item added successfully",
       });
 
-      // Transform the returned data to match InventoryItem type
-      return {
-        ...newItem,
-        created_at: newItem.created_at || null,
-      } as InventoryItem;
+      return newItem as InventoryItem;
 
     } catch (error) {
       console.error("Error adding item:", error);
@@ -215,11 +210,7 @@ export function useInventoryForm(onSuccess: () => void) {
         description: "Item updated successfully",
       });
 
-      // Transform the returned data to match InventoryItem type
-      return {
-        ...updatedItem,
-        created_at: updatedItem.created_at || null,
-      } as InventoryItem;
+      return updatedItem as InventoryItem;
 
     } catch (error) {
       console.error("Error updating item:", error);
