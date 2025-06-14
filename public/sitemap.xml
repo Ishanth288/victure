@@ -2,32 +2,62 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://victure.app/</loc>
-    <lastmod>2024-12-14</lastmod>
+    <loc>https://victure.in/</loc>
+    <lastmod>2025-01-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://victure.app/auth</loc>
-    <lastmod>2024-12-14</lastmod>
+    <loc>https://victure.in/auth</loc>
+    <lastmod>2025-01-26</lastmod>
     <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://victure.in/insights</loc>
+    <lastmod>2025-01-26</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://victure.app/legal/privacy-policy</loc>
-    <lastmod>2024-12-14</lastmod>
+    <loc>https://victure.in/patients</loc>
+    <lastmod>2025-01-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://victure.in/inventory</loc>
+    <lastmod>2025-01-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://victure.in/prescriptions</loc>
+    <lastmod>2025-01-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://victure.in/billing</loc>
+    <lastmod>2025-01-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://victure.in/legal/privacy-policy</loc>
+    <lastmod>2025-01-26</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://victure.app/legal/terms-of-service</loc>
-    <lastmod>2024-12-14</lastmod>
+    <loc>https://victure.in/legal/terms-of-service</loc>
+    <lastmod>2025-01-26</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://victure.app/legal/refund-policy</loc>
-    <lastmod>2024-12-14</lastmod>
+    <loc>https://victure.in/legal/refund-policy</loc>
+    <lastmod>2025-01-26</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

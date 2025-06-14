@@ -12,6 +12,22 @@
   ],
   "routes": [
     {
+      "src": "/sitemap.xml",
+      "dest": "/sitemap.xml",
+      "headers": {
+        "Content-Type": "application/xml",
+        "Cache-Control": "public, max-age=3600"
+      }
+    },
+    {
+      "src": "/robots.txt",
+      "dest": "/robots.txt",
+      "headers": {
+        "Content-Type": "text/plain",
+        "Cache-Control": "public, max-age=3600"
+      }
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }

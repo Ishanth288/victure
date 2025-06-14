@@ -8,31 +8,61 @@ export interface SitemapUrl {
 
 export const sitemapUrls: SitemapUrl[] = [
   {
-    loc: 'https://victure.app/',
+    loc: 'https://victure.in/',
     lastmod: new Date().toISOString().split('T')[0],
     changefreq: 'weekly',
     priority: 1.0
   },
   {
-    loc: 'https://victure.app/auth',
+    loc: 'https://victure.in/auth',
     lastmod: new Date().toISOString().split('T')[0],
     changefreq: 'monthly',
+    priority: 0.6
+  },
+  {
+    loc: 'https://victure.in/insights',
+    lastmod: new Date().toISOString().split('T')[0],
+    changefreq: 'weekly',
     priority: 0.8
   },
   {
-    loc: 'https://victure.app/legal/privacy-policy',
+    loc: 'https://victure.in/patients',
+    lastmod: new Date().toISOString().split('T')[0],
+    changefreq: 'weekly',
+    priority: 0.7
+  },
+  {
+    loc: 'https://victure.in/inventory',
+    lastmod: new Date().toISOString().split('T')[0],
+    changefreq: 'weekly',
+    priority: 0.7
+  },
+  {
+    loc: 'https://victure.in/prescriptions',
+    lastmod: new Date().toISOString().split('T')[0],
+    changefreq: 'weekly',
+    priority: 0.7
+  },
+  {
+    loc: 'https://victure.in/billing',
+    lastmod: new Date().toISOString().split('T')[0],
+    changefreq: 'weekly',
+    priority: 0.7
+  },
+  {
+    loc: 'https://victure.in/legal/privacy-policy',
     lastmod: new Date().toISOString().split('T')[0],
     changefreq: 'yearly',
     priority: 0.3
   },
   {
-    loc: 'https://victure.app/legal/terms-of-service',
+    loc: 'https://victure.in/legal/terms-of-service',
     lastmod: new Date().toISOString().split('T')[0],
     changefreq: 'yearly',
     priority: 0.3
   },
   {
-    loc: 'https://victure.app/legal/refund-policy',
+    loc: 'https://victure.in/legal/refund-policy',
     lastmod: new Date().toISOString().split('T')[0],
     changefreq: 'yearly',
     priority: 0.3
