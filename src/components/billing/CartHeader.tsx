@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, Phone, FileText, Calendar, ChevronDown } from "lucide-react";
+import { User, Phone, Calendar, FileText } from "lucide-react";
 
 interface CartHeaderProps {
   patientName?: string;
@@ -19,107 +19,65 @@ export const CartHeader: React.FC<CartHeaderProps> = ({
   doctorName = "Dr. Not Specified",
   prescriptionDate
 }) => {
-  const formatTime = (dateString?: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: true 
-    });
-  };
-
-  const formatPrescriptionId = (id?: string) => {
-    if (!id) return '';
-    return `PRE-${id.slice(-8)}`;
-  };
-
   return (
-    <div className="w-full max-w-sm">
-      <Card className="border border-gray-200 shadow-sm">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <User className="h-5 w-5 text-blue-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Patient Information</h3>
-            {prescriptionId && (
-              <Badge variant="outline" className="ml-auto text-xs">
-                ID: {prescriptionId}
-              </Badge>
-            )}
-            {prescriptionId && (
-              <Badge variant="outline" className="text-xs">
-                DB: {prescriptionId}
-              </Badge>
-            )}
-          </div>
-        </CardHeader>
+    <Card className="mb-6 shadow-sm border-l-4 border-l-primary">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+            <User className="h-5 w-5 text-primary" />
+            Patient Information
+          </h2>
+          {prescriptionId && (
+            <Badge variant="outline" className="text-sm font-medium">
+              ID: {prescriptionId}
+            </Badge>
+          )}
+        </div>
         
-        <CardContent className="space-y-4 pt-0">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                <User className="h-3 w-3" />
-                <span>Patient Name</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-gray-400" />
-                <span className="font-medium text-gray-900">{patientName}</span>
-                {prescriptionDate && (
-                  <span className="text-xs text-gray-500">
-                    ({formatTime(prescriptionDate)})
-                  </span>
-                )}
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-600">
+              <User className="h-4 w-4" />
+              Patient Name
             </div>
-
-            <div>
-              <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                <FileText className="h-3 w-3" />
-                <span>Doctor Name</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-gray-400" />
-                <span className="font-medium text-gray-900">{doctorName}</span>
-              </div>
-            </div>
+            <p className="text-base font-semibold text-gray-900 truncate">
+              {patientName}
+            </p>
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                <Phone className="h-3 w-3" />
-                <span>Phone Number</span>
-              </div>
-              <div className="font-medium text-gray-900">{phoneNumber}</div>
+          
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-600">
+              <Phone className="h-4 w-4" />
+              Phone Number
             </div>
-
-            <div>
-              <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                <Calendar className="h-3 w-3" />
-                <span>Prescription Number</span>
-              </div>
-              <div className="font-medium text-gray-900">
-                {formatPrescriptionId(prescriptionId)}
-              </div>
-            </div>
+            <p className="text-base font-semibold text-gray-900">
+              {phoneNumber}
+            </p>
           </div>
-
+          
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-600">
+              <FileText className="h-4 w-4" />
+              Doctor Name
+            </div>
+            <p className="text-base font-semibold text-gray-900 truncate">
+              {doctorName}
+            </p>
+          </div>
+          
           {prescriptionDate && (
-            <div className="pt-2 border-t border-gray-100">
-              <div className="flex items-center gap-1 text-sm text-gray-600 mb-1">
-                <span>(Prescription Date: {new Date(prescriptionDate).toLocaleDateString()})</span>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-600">
+                <Calendar className="h-4 w-4" />
+                Prescription Date
               </div>
+              <p className="text-base font-semibold text-gray-900">
+                {new Date(prescriptionDate).toLocaleDateString()}
+              </p>
             </div>
           )}
-
-          <div className="pt-2">
-            <button className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
-              <ChevronDown className="h-4 w-4" />
-              <span>Debug: Raw Prescription Data</span>
-            </button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
