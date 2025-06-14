@@ -47,7 +47,7 @@ export function SEOHead({
       <meta property="og:type" content={type} />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={image} />
+      <meta property="og:image" content="" />
       <meta property="og:url" content={url} />
       <meta property="og:site_name" content="Victure" />
       <meta property="og:locale" content="en_US" />
@@ -56,7 +56,7 @@ export function SEOHead({
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={image} />
+      <meta name="twitter:image" content="" />
       <meta name="twitter:site" content="@victure_app" />
       <meta name="twitter:creator" content="@victure_app" />
       
