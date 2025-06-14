@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface SupabaseQueryResult<T> {
@@ -7,21 +6,21 @@ export interface SupabaseQueryResult<T> {
 }
 
 /**
- * Enhanced error handling for Supabase queries with better error prevention and retry logic
+ * Enhanced error handling for Supabase queries with much faster timeouts
  */
 export async function safeSupabaseQuery<T>(
   queryFn: () => any,
   context: string = 'query',
   options: { timeout?: number; retries?: number } = {}
 ): Promise<SupabaseQueryResult<T>> {
-  const { timeout = 10000, retries = 3 } = options; // Increased timeout to 10s and retries to 3 (4 attempts)
+  const { timeout = 3000, retries = 1 } = options; // Reduced timeout to 3s and retries to 1
   let lastError: any;
   
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       console.log(`Executing Supabase query: ${context} (attempt ${attempt + 1}/${retries + 1})`);
       
-      // Execute the query function with timeout
+      // Execute the query function with short timeout
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error(`Query timeout after ${timeout}ms`)), timeout)
       );
@@ -31,14 +30,13 @@ export async function safeSupabaseQuery<T>(
       if (result && typeof result === 'object' && 'error' in result && result.error) {
         const error = result.error;
         
-        // Check if this is a retryable error
+        // Only retry connection-related errors
         if (isRetryableError(error) && attempt < retries) {
           console.warn(`Retryable error in ${context}, attempt ${attempt + 1}:`, error.message);
           lastError = error;
           
-          // Wait before retry with exponential backoff
-          const delay = Math.min(1000 * Math.pow(2, attempt), 8000); // Max delay 8s
-          await new Promise(resolve => setTimeout(resolve, delay));
+          // Very short wait before retry
+          await new Promise(resolve => setTimeout(resolve, 500));
           continue;
         }
         
@@ -54,10 +52,7 @@ export async function safeSupabaseQuery<T>(
       
       if (isRetryableError(error) && attempt < retries) {
         console.warn(`Retryable exception in ${context}, attempt ${attempt + 1}:`, error.message);
-        
-        // Wait before retry with exponential backoff
-        const delay = Math.min(1000 * Math.pow(2, attempt), 8000); // Max delay 8s
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise(resolve => setTimeout(resolve, 500));
         continue;
       }
       
@@ -70,16 +65,16 @@ export async function safeSupabaseQuery<T>(
 }
 
 /**
- * Check Supabase connection without triggering error cascades
+ * Check Supabase connection with very short timeout
  */
 export async function checkSupabaseConnection(): Promise<boolean> {
   try {
     console.log("Testing Supabase connection...");
     
-    // Use a very lightweight query with short timeout
+    // Very short timeout for connection test
     const { error } = await Promise.race([
       supabase.from('profiles').select('count', { count: 'exact', head: true }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 3000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 1500))
     ]) as any;
     
     if (error) {

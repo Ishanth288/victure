@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -29,7 +30,7 @@ const getSupabaseConfig = () => {
 
 const { url: SUPABASE_URL, key: SUPABASE_PUBLISHABLE_KEY } = getSupabaseConfig();
 
-// Enhanced Supabase client with reduced timeouts and better error handling
+// Optimized Supabase client with much shorter timeouts
 export const supabase = createClient<Database>(
   SUPABASE_URL, 
   SUPABASE_PUBLISHABLE_KEY,
@@ -40,26 +41,26 @@ export const supabase = createClient<Database>(
       detectSessionInUrl: true,
       storage: localStorage,
       flowType: 'pkce',
-      debug: false // Reduced debug logging
+      debug: false
     },
     realtime: {
       params: {
         eventsPerSecond: 2
       },
-      heartbeatIntervalMs: 15000, // Reduced from 30s
-      reconnectAfterMs: (tries: number) => Math.min(tries * 500, 5000) // Faster reconnect
+      heartbeatIntervalMs: 30000,
+      reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 5000)
     },
     global: {
       headers: {
         'x-client-info': 'victure-pharmacy-v3'
       },
       fetch: (url, options = {}) => {
-        // Enhanced fetch with better error handling and shorter timeout
+        // Much shorter timeout for faster failures
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
           console.warn(`Request timeout for ${url}`);
           controller.abort();
-        }, 10000); // Increased to 10 second timeout
+        }, 3000); // Reduced from 10s to 3s
         
         return fetch(url, {
           ...options,
@@ -80,10 +81,10 @@ export const supabase = createClient<Database>(
   }
 );
 
-// Simplified query timeout wrapper
+// Much shorter timeout wrapper
 export const withTimeout = <T>(
   promise: Promise<T>, 
-  timeoutMs: number = 10000, // Increased from 3s to 10s
+  timeoutMs: number = 3000, // Reduced from 10s to 3s
   operation: string = 'Database operation'
 ): Promise<T> => {
   return Promise.race([
