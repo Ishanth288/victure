@@ -21,14 +21,14 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
     let mounted = true;
     let subscription: any;
     
-    // Much shorter fallback timeout
+    // Shorter fallback timeout
     const fallbackTimeout = setTimeout(() => {
       if (mounted && isLoading) {
-        console.warn('⚠️ AuthWrapper: Quick fallback timeout, loading without auth check');
+        console.warn('⚠️ AuthWrapper: Fallback timeout, continuing without auth check');
         setIsLoading(false);
-        // Allow app to continue without auth check
+        // Don't redirect on timeout, just continue
       }
-    }, 3000); // Reduced from 20s to 3s
+    }, 2000); // Reduced to 2 seconds
 
     const quickAuthCheck = async () => {
       try {
@@ -36,7 +36,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
         
         // Very short timeout for auth check
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Auth check timeout')), 2000); // Only 2 seconds
+          setTimeout(() => reject(new Error('Auth check timeout')), 1500); // Only 1.5 seconds
         });
         
         const authPromise = supabase.auth.getSession();
@@ -117,6 +117,8 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
         subscription = data.subscription;
       } catch (error) {
         console.warn('Auth listener setup failed, app will continue:', error);
+        // Force loading to false if listener setup fails
+        setIsLoading(false);
       }
     };
 
@@ -131,7 +133,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
     };
   }, []); // Empty dependency array
 
-  // Much faster loading screen timeout
+  // Faster loading screen with timeout protection
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">

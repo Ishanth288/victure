@@ -18,12 +18,13 @@ export function GoogleAnalytics({ measurementId = 'G-G-0Q0N9Q2ZRC' }: GoogleAnal
 
     // Initialize gtag
     window.dataLayer = window.dataLayer || [];
-    function gtag(command: string, action: string, params: object) {
-      window.dataLayer.push(arguments);
+    function gtag(...args: any[]) {
+      window.dataLayer.push(args);
     }
     window.gtag = gtag;
 
-    gtag('js', new Date().toISOString(), {});
+    // Fix: Use Date object directly, not ISO string
+    gtag('js', new Date());
     gtag('config', measurementId, {
       page_title: document.title,
       page_location: window.location.href,
