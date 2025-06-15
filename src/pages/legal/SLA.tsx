@@ -1,4 +1,5 @@
 
+
 import LegalLayout from "@/components/layouts/LegalLayout";
 import { SEOHead } from "@/components/SEO/SEOHead";
 
@@ -8,10 +9,8 @@ export default function SLA() {
       <SEOHead
         title="Service Level Agreement (SLA) | Victure Pharmacy SaaS"
         description="Read Victure's SLA for Indian clinics. Learn about uptime, support, and data protection for our pharmacy management SaaS."
-        canonical="https://victure.in/legal/SLA"
-        ogTitle="Service Level Agreement - Victure Pharmacy SaaS"
-        ogDescription="Victure's SLA for pharmacy SaaS customers in India: uptime, support, and security commitments."
-        ogUrl="https://victure.in/legal/SLA"
+        canonicalUrl="https://victure.in/legal/SLA"
+        pageType="legal"
       />
       <h2 className="text-3xl font-bold mt-2 mb-4">Service Level Agreement (SLA)</h2>
       
@@ -68,3 +67,4 @@ export default function SLA() {
     </>
   );
 }
+

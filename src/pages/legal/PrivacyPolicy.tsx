@@ -1,4 +1,5 @@
 
+
 import LegalLayout from "@/components/layouts/LegalLayout";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,10 +13,8 @@ export default function PrivacyPolicy() {
       <SEOHead
         title="Privacy Policy | Victure Pharmacy SaaS"
         description="Read Victure's privacy policy for Indian clinics. Learn how we protect your pharmacy and patient data with our AI-powered management system."
-        canonical="https://victure.in/legal/PrivacyPolicy"
-        ogTitle="Privacy Policy - Victure Pharmacy SaaS"
-        ogDescription="How Victure protects your privacy and data. Secure, compliant pharmacy management for Indian clinics."
-        ogUrl="https://victure.in/legal/PrivacyPolicy"
+        canonicalUrl="https://victure.in/legal/PrivacyPolicy"
+        pageType="legal"
       />
       <h2 className="text-3xl font-bold mt-2 mb-4">Privacy Policy</h2>
       
@@ -133,3 +132,4 @@ export default function PrivacyPolicy() {
     </>
   );
 }
+

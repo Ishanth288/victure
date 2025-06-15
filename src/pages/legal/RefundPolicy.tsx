@@ -1,4 +1,5 @@
 
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -11,10 +12,8 @@ export default function RefundPolicy() {
       <SEOHead
         title="Refund & Cancellation Policy | Victure Pharmacy SaaS"
         description="Review Victure's refund and cancellation policy for Indian clinics. Learn about our terms for subscription, billing, and support."
-        canonical="https://victure.in/legal/RefundPolicy"
-        ogTitle="Refund & Cancellation Policy - Victure Pharmacy SaaS"
-        ogDescription="Victure's refund and cancellation terms for pharmacy SaaS customers in India."
-        ogUrl="https://victure.in/legal/RefundPolicy"
+        canonicalUrl="https://victure.in/legal/RefundPolicy"
+        pageType="legal"
       />
       <h2 className="text-3xl font-bold mt-2 mb-4">Refund & Cancellation Policy</h2>
       
@@ -64,3 +63,4 @@ export default function RefundPolicy() {
     </>
   );
 }
+
