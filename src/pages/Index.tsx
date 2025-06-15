@@ -1,3 +1,4 @@
+
 import React from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -34,23 +35,6 @@ const IndexComponent = () => {
   } = useOnboarding();
   
   useEffect(() => {
-    // Check authentication first
-    // const checkAuth = async () => {
-    //   try {
-    //     const { data: { session } } = await supabase.auth.getSession();
-    //     if (session) {
-    //       // User is logged in, redirect to dashboard
-    //       navigate('/dashboard');
-    //       return;
-    //     }
-    //   } catch (error) {
-    //     console.error('Auth check error:', error);
-    //     // Continue to show landing page if auth check fails
-    //   }
-    // };
-    
-    // checkAuth();
-    
     // Check if mobile
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -188,53 +172,12 @@ const IndexComponent = () => {
                 Join thousands of healthcare professionals who trust Victure to streamline their pharmacy operations with cutting-edge technology.
               </p>
 
-              {/* Feature highlights */}
-              <div className="space-y-4 mb-8">
-                {[
-                  { icon: <Heart className="h-5 w-5 text-red-500" />, text: "Caring for Community Health" },
-                  { icon: <Activity className="h-5 w-5 text-green-500" />, text: "Real-time Health Monitoring" },
-                  { icon: <Shield className="h-5 w-5 text-blue-500" />, text: "Secure & Trusted Platform" },
-                  { icon: <Sparkles className="h-5 w-5 text-purple-500" />, text: "AI-Powered Insights" },
-                ].map((feature, index) => (
-                  <m.div 
-                    key={index}
-                    initial={{ opacity: 0, x: -30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.6 + index * 0.1, duration: 0.5 }}
-                    className="flex items-center space-x-3 bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-white/50 text-left"
-                  >
-                    {feature.icon}
-                    <span className="text-gray-700 font-medium">{feature.text}</span>
-                  </m.div>
-                ))}
-              </div>
-
-              {/* Trust indicators */}
-              <m.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.2, duration: 0.6 }}
-                className="mb-8"
-              >
-                <div className="flex items-center justify-center space-x-2 mb-2">
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-                    ))}
-                  </div>
-                  <span className="text-sm text-gray-600 font-medium">4.9/5 Rating</span>
-                </div>
-                <p className="text-sm text-gray-600">
-                  <span className="font-bold text-orange-600">10,000+</span> Happy Pharmacies across India
-                </p>
-              </m.div>
-
               {/* CTA Buttons */}
               <m.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1.4, duration: 0.6 }}
-                className="space-y-4 relative z-20" // Added z-20 to ensure buttons are on top
+                className="space-y-4 relative z-20"
               >
                 <Button
                   onClick={() => navigate('/auth')}
@@ -252,26 +195,6 @@ const IndexComponent = () => {
                 >
                   Sign In
                 </Button>
-              </m.div>
-
-              {/* Bottom trust elements */}
-              <m.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.6, duration: 0.6 }}
-                className="mt-8 pt-6 border-t border-gray-200"
-              >
-                <div className="flex justify-center items-center space-x-6 text-sm text-gray-500">
-                  <div className="flex items-center">
-                    <Shield className="h-4 w-4 mr-1 text-green-500" />
-                    <span>SSL Secured</span>
-                  </div>
-                  <div className="h-4 w-px bg-gray-300" />
-                  <div className="flex items-center">
-                    <Heart className="h-4 w-4 mr-1 text-red-500" />
-                    <span>Made in India</span>
-                  </div>
-                </div>
               </m.div>
             </m.div>
           </div>
@@ -311,40 +234,33 @@ const IndexComponent = () => {
         onSkip={skipOnboarding}
       >
         <div className="min-h-screen bg-white">
-          {/* Enhanced Background with Indian-inspired patterns */}
-          <div className="absolute inset-0">
-            {/* Subtle Indian pattern overlay */}
-            <div className="absolute inset-0 opacity-5" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d97706' fill-opacity='0.3'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-            }} />
-            
-            {/* Mobile vs Desktop rendering */}
-            {isMobile ? (
-              <MobileHeroSection />
-            ) : (
-              <>
-                <Navigation />
-                <m.main className="relative z-10">
-                  <HeroSection />
-                  <MainContentWrapper onError={handleError}>
-                    <FloatingIconsSection />
-                  </MainContentWrapper>
-                  <MainContentWrapper onError={handleError}>
-                    <ScrollAnimationSection />
-                  </MainContentWrapper>
-                  <MainContentWrapper onError={handleError}>
-                    <ContentSection />
-                  </MainContentWrapper>
-                  <section id="feedback" className="py-12">
-                    <div className="container mx-auto px-4">
-                      <FeedbackForm />
-                    </div>
-                  </section>
-                </m.main>
-                <Footer />
-              </>
-            )}
-          </div>
+          {/* Check if mobile and render accordingly */}
+          {isMobile ? (
+            <MobileHeroSection />
+          ) : (
+            <>
+              {/* Desktop version with full navigation and content */}
+              <Navigation />
+              <m.main className="relative z-10">
+                <HeroSection />
+                <MainContentWrapper onError={handleError}>
+                  <FloatingIconsSection />
+                </MainContentWrapper>
+                <MainContentWrapper onError={handleError}>
+                  <ScrollAnimationSection />
+                </MainContentWrapper>
+                <MainContentWrapper onError={handleError}>
+                  <ContentSection />
+                </MainContentWrapper>
+                <section id="feedback" className="py-12">
+                  <div className="container mx-auto px-4">
+                    <FeedbackForm />
+                  </div>
+                </section>
+              </m.main>
+              <Footer />
+            </>
+          )}
         </div>
       </OnboardingProvider>
     </LazyMotion>
