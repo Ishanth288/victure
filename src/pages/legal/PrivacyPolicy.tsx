@@ -3,10 +3,19 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
+import SEOHead from "@/components/SEO/SEOHead";
 
 export default function PrivacyPolicy() {
   return (
     <>
+      <SEOHead
+        title="Privacy Policy | Victure Pharmacy SaaS"
+        description="Read Victure's privacy policy for Indian clinics. Learn how we protect your pharmacy and patient data with our AI-powered management system."
+        canonical="https://victure.in/legal/PrivacyPolicy"
+        ogTitle="Privacy Policy - Victure Pharmacy SaaS"
+        ogDescription="How Victure protects your privacy and data. Secure, compliant pharmacy management for Indian clinics."
+        ogUrl="https://victure.in/legal/PrivacyPolicy"
+      />
       <h2 className="text-3xl font-bold mt-2 mb-4">Privacy Policy</h2>
       
       <Alert className="mb-6 bg-green-50 text-green-800 border-green-200">

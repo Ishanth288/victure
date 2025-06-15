@@ -78,9 +78,11 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/legal/privacy" className="text-muted-foreground hover:text-primary transition-colors">
-                  Privacy Policy
-                </Link>
+                <Link to="/legal/PrivacyPolicy" className="text-muted-foreground hover:underline">Privacy Policy</Link>
+                <span className="mx-2">|</span>
+                <Link to="/legal/RefundPolicy" className="text-muted-foreground hover:underline">Refund Policy</Link>
+                <span className="mx-2">|</span>
+                <Link to="/legal/SLA" className="text-muted-foreground hover:underline">SLA</Link>
               </li>
               <li>
                 <Link to="/legal/acceptable-use" className="text-muted-foreground hover:text-primary transition-colors">
