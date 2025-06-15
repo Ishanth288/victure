@@ -1,5 +1,6 @@
+
 import LegalLayout from "@/components/layouts/LegalLayout";
-import SEOHead from "@/components/SEO/SEOHead";
+import { SEOHead } from "@/components/SEO/SEOHead";
 
 export default function SLA() {
   return (

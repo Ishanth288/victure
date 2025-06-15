@@ -1,8 +1,9 @@
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
-import SEOHead from "@/components/SEO/SEOHead";
+import { SEOHead } from "@/components/SEO/SEOHead";
 
 export default function RefundPolicy() {
   return (
