@@ -121,6 +121,9 @@ export default function BillingCart() {
         <CartHeader 
           patientName={prescriptionDetails?.patient?.name}
           phoneNumber={prescriptionDetails?.patient?.phone_number}
+          prescriptionId={prescriptionId}
+          doctorName={prescriptionDetails?.doctor_name}
+          prescriptionDate={prescriptionDetails?.date}
         />
 
         <CartContent
