@@ -4,9 +4,8 @@ import type { Database } from './types';
 
 // Validate and sanitize Supabase configuration
 const getSupabaseConfig = () => {
-  const url = "https://aysdilfgxlyuplikmmdt.supabase.co";
-  const key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5c2RpbGZneGx5dXBsaWttbWR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAxNjU0NTAsImV4cCI6MjA1NTc0MTQ1MH0.7OLDoAC5i8F6IbORW7kY6at5pWdTZDB44D0g6kPaWpA";
-  
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
   // Validate URL format
   try {
     new URL(url);
@@ -14,17 +13,14 @@ const getSupabaseConfig = () => {
     console.error('❌ Invalid Supabase URL:', url);
     throw new Error(`Invalid Supabase URL: ${url}. Please check your environment variables.`);
   }
-  
   if (!key || key.length < 50) {
     console.error('❌ Invalid Supabase API key');
     throw new Error('Invalid Supabase API key. Please check your environment variables.');
   }
-  
   console.log('✅ Supabase configuration validated:', { 
     url: url.substring(0, 30) + '...', 
     keyLength: key.length 
   });
-  
   return { url, key };
 };
 

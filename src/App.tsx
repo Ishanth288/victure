@@ -19,6 +19,7 @@ import { BillingProvider } from "./contexts/BillingContext";
 import { InventoryProvider } from "./contexts/InventoryContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ConnectionHealthMonitor } from "@/components/ConnectionHealthMonitor";
+import Settings from "./pages/Settings";
 
 const Admin = lazy(() => import("./pages/Admin"));
 const SystemSettings = lazy(() => import("./pages/admin/SystemSettings"));
@@ -72,6 +73,7 @@ function App() {
                         </Suspense>
                       } 
                     />
+                    <Route path="/settings" element={<Settings />} />
                     <Route 
                       path="/admin/settings" 
                       element={
