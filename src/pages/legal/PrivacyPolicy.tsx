@@ -13,7 +13,7 @@ export default function PrivacyPolicy() {
       <SEO
         title="Privacy Policy | Victure Pharmacy SaaS"
         description="Read Victure's privacy policy for Indian clinics. Learn how we protect your pharmacy and patient data with our AI-powered management system."
-        canonicalUrl="https://victure.in/legal/privacy-policy"
+        canonicalUrl="https://www.victure.in/legal/privacy-policy"
       />
       <h2 className="text-3xl font-bold mt-2 mb-4">Privacy Policy</h2>
       

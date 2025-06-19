@@ -9,7 +9,7 @@ export default function SLA() {
       <SEO
         title="Service Level Agreement (SLA) | Victure Pharmacy SaaS"
         description="Read Victure's SLA for Indian clinics. Learn about uptime, support, and data protection for our pharmacy management SaaS."
-        canonicalUrl="https://victure.in/legal/sla"
+        canonicalUrl="https://www.victure.in/legal/sla"
       />
       <h2 className="text-3xl font-bold mt-2 mb-4">Service Level Agreement (SLA)</h2>
       

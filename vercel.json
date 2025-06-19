@@ -32,11 +32,17 @@
           "value": "www.victure.in"
         }
       ],
-      "destination": "https://victure.in/:path*",
+      "destination": "https://www.victure.in/:path*" ,
       "permanent": true
     }
   ],
   "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
+      ]
+    },
     {
       "source": "/sitemap.xml",
       "headers": [

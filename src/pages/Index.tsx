@@ -82,7 +82,7 @@ const IndexComponent = () => {
       <SEO
         title="Victure - AI-Powered Pharmacy Management for Indian Clinics"
         description="Transform your pharmacy with Victure's AI-driven platform. Real-time analytics, smart inventory, and profit tracking for clinics in India."
-        canonicalUrl="https://victure.in/"
+        canonicalUrl="https://www.victure.in/"
       />
       <OnboardingProvider
         isOpen={showOnboarding}

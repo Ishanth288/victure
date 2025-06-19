@@ -12,7 +12,7 @@ export default function RefundPolicy() {
       <SEO
         title="Refund & Cancellation Policy | Victure Pharmacy SaaS"
         description="Review Victure's refund and cancellation policy for Indian clinics. Learn about our terms for subscription, billing, and support."
-        canonicalUrl="https://victure.in/legal/refund-policy"
+        canonicalUrl="https://www.victure.in/legal/refund-policy"
       />
       <h2 className="text-3xl font-bold mt-2 mb-4">Refund & Cancellation Policy</h2>
       
