@@ -1,3 +1,5 @@
+
+
 import LegalLayout from "@/components/layouts/LegalLayout";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -129,3 +131,4 @@ export default function PrivacyPolicy() {
     </>
   );
 }
+

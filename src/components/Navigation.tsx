@@ -22,6 +22,7 @@ export default function Navigation() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         setIsLoggedIn(!!session);
+        console.log('Navigation: Auth check complete, isLoggedIn:', !!session);
       } catch (error) {
         console.error("Auth check error:", error);
         setIsLoggedIn(false);
@@ -35,6 +36,7 @@ export default function Navigation() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setIsLoggedIn(!!session);
+        console.log('Navigation: Auth state changed, isLoggedIn:', !!session);
         
         if (event === 'SIGNED_OUT') {
           toast({
@@ -156,23 +158,21 @@ export default function Navigation() {
                 </Button>
               </>
             ) : (
-              location.pathname === '/' && (
-                <>
-                  <Button 
-                    variant="outline" 
-                    className="border-primary text-primary hover:bg-primary/10"
-                    onClick={handleLogin}
-                    type="button"
-                  >
-                    Login
+              <>
+                <Button 
+                  variant="outline" 
+                  className="border-primary text-primary hover:bg-primary/10"
+                  onClick={handleLogin}
+                  type="button"
+                >
+                  Login
+                </Button>
+                <HashLink smooth to="#pricing">
+                  <Button className="bg-primary hover:bg-primary-dark text-white">
+                    Get Started
                   </Button>
-                  <HashLink smooth to="#pricing">
-                    <Button className="bg-primary hover:bg-primary-dark text-white">
-                      Get Started
-                    </Button>
-                  </HashLink>
-                </>
-              )
+                </HashLink>
+              </>
             )}
           </div>
         </div>

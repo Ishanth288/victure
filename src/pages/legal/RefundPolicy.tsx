@@ -1,3 +1,5 @@
+
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -60,3 +62,4 @@ export default function RefundPolicy() {
     </>
   );
 }
+

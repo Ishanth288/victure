@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -21,14 +21,13 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
     let mounted = true;
     let subscription: any;
     
-    // Much shorter fallback timeout
+    // Much shorter fallback timeout to prevent blocking UI
     const fallbackTimeout = setTimeout(() => {
       if (mounted && isLoading) {
-        console.warn('⚠️ AuthWrapper: Quick fallback timeout, loading without auth check');
+        console.warn('⚠️ AuthWrapper: Fallback timeout, continuing without auth check');
         setIsLoading(false);
-        // Allow app to continue without auth check
       }
-    }, 3000); // Reduced from 20s to 3s
+    }, 500); // Reduced to 500ms
 
     const quickAuthCheck = async () => {
       try {
@@ -36,7 +35,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
         
         // Very short timeout for auth check
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Auth check timeout')), 2000); // Only 2 seconds
+          setTimeout(() => reject(new Error('Auth check timeout')), 300); // Only 300ms
         });
         
         const authPromise = supabase.auth.getSession();
@@ -62,7 +61,8 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
           console.log('ℹ️ AuthWrapper: No authenticated user');
           setIsAuthenticated(false);
           
-          if (location.pathname !== '/auth' && location.pathname !== '/') {
+          // Only redirect if we're on a protected route, not on home page
+          if (location.pathname !== '/auth' && location.pathname !== '/' && !location.pathname.startsWith('/legal')) {
             navigate('/auth');
           }
         }
@@ -76,8 +76,8 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
         setIsLoading(false);
         setIsAuthenticated(false);
         
-        // Only redirect if we're on a protected route
-        if (location.pathname !== '/auth' && location.pathname !== '/') {
+        // Only redirect if we're on a protected route, not on home page
+        if (location.pathname !== '/auth' && location.pathname !== '/' && !location.pathname.startsWith('/legal')) {
           navigate('/auth');
         }
       }
@@ -108,7 +108,8 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
             setIsAuthenticated(false);
             setIsLoading(false);
             
-            if (location.pathname !== '/auth' && location.pathname !== '/') {
+            // Only redirect if we're on a protected route, not on home page
+            if (location.pathname !== '/auth' && location.pathname !== '/' && !location.pathname.startsWith('/legal')) {
               navigate('/auth');
             }
           }
@@ -117,6 +118,7 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
         subscription = data.subscription;
       } catch (error) {
         console.warn('Auth listener setup failed, app will continue:', error);
+        setIsLoading(false);
       }
     };
 
@@ -131,14 +133,14 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
     };
   }, []); // Empty dependency array
 
-  // Much faster loading screen timeout
+  // Much faster loading screen
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center max-w-md px-6">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mb-4 mx-auto"></div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Loading Victure</h2>
-          <p className="text-gray-600">Please wait...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-3 mx-auto"></div>
+          <h2 className="text-lg font-semibold text-gray-800 mb-1">Loading</h2>
+          <p className="text-sm text-gray-600">Please wait...</p>
         </div>
       </div>
     );

@@ -1,3 +1,5 @@
+
+
 import LegalLayout from "@/components/layouts/LegalLayout";
 import { SEO } from "@/components/SEO/index.tsx";
 
@@ -64,3 +66,4 @@ export default function SLA() {
     </>
   );
 }
+
