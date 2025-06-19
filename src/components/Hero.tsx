@@ -1,24 +1,29 @@
 
 import { HashLink } from 'react-router-hash-link';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { m } from "framer-motion";
+import { Loader2 } from "lucide-react";
 
 export default function Hero() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isGettingStarted, setIsGettingStarted] = useState(false);
 
-  const handleGetStarted = () => {
-    // Navigate to pricing section
-    if (location.pathname === '/') {
-      // On home page, scroll directly
-      const pricingSection = document.getElementById('pricing');
-      if (pricingSection) {
-        pricingSection.scrollIntoView({ behavior: 'smooth' });
+  const handleGetStarted = async () => {
+    setIsGettingStarted(true);
+    try {
+      if (location.pathname === '/') {
+        const pricingSection = document.getElementById('pricing');
+        if (pricingSection) {
+          pricingSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      } else {
+        navigate('/#pricing');
       }
-    } else {
-      // From other pages, navigate to home with pricing anchor
-      navigate('/#pricing');
+    } finally {
+      setTimeout(() => setIsGettingStarted(false), 800);
     }
   };
 
@@ -66,6 +71,8 @@ export default function Hero() {
               <Button 
                 size="lg"
                 className="bg-primary hover:bg-primary/90 text-white px-8 w-full sm:w-auto"
+                onClick={handleGetStarted}
+                loading={isGettingStarted}
               >
                 Get Started
               </Button>
