@@ -21,29 +21,34 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   useEffect(() => {
     async function getUserAndPlan() {
+      console.log('DashboardLayout: getUserAndPlan started');
       setLoading(true);
       setPlanDataConfirmed(false);
       
       try {
         const { data: { user } } = await supabase.auth.getUser();
+        console.log('DashboardLayout: supabase.auth.getUser() response', user);
 
         if (user) {
           setUser(user);
+          console.log('DashboardLayout: User found', user);
 
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('plan_type')
             .eq('id', user.id)
             .single();
+          console.log('DashboardLayout: Profile fetch result', { profile, profileError });
 
           if (profileError) {
-            console.error('Error fetching user profile plan:', profileError);
+            console.error('DashboardLayout: Error fetching user profile plan:', profileError);
             // Only set fallback after confirmed database response
             await new Promise(resolve => setTimeout(resolve, 200));
             setUserPlan("FREE");
             setPlanDataConfirmed(true);
           } else if (profile && profile.plan_type) {
             const fetchedPlan = profile.plan_type;
+            console.log('DashboardLayout: Fetched plan from profile', fetchedPlan);
             
             // Map old plan names to new plan names if needed
             const planMapping: Record<string, "FREE" | "PRO" | "PRO PLUS"> = {
@@ -61,26 +66,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             } else if (planMapping[fetchedPlan]) {
               setUserPlan(planMapping[fetchedPlan]);
             } else {
-              console.warn(`Unexpected plan type from profiles: "${fetchedPlan}". Defaulting to FREE.`);
+              console.warn(`DashboardLayout: Unexpected plan type from profiles: "${fetchedPlan}". Defaulting to FREE.`);
               setUserPlan("FREE");
             }
             setPlanDataConfirmed(true);
           } else {
-            console.warn("No plan_type found in profile. Defaulting to FREE.");
+            console.warn("DashboardLayout: No plan_type found in profile. Defaulting to FREE.");
             await new Promise(resolve => setTimeout(resolve, 200));
             setUserPlan("FREE");
             setPlanDataConfirmed(true);
           }
         } else {
+          console.log('DashboardLayout: No user found from supabase.auth.getUser()');
           setUser(null);
           setUserPlan("FREE");
           setPlanDataConfirmed(true);
         }
       } catch (error) {
-        console.error("Error in getUserAndPlan:", error);
+        console.error("DashboardLayout: Error in getUserAndPlan:", error);
         setUserPlan("FREE");
         setPlanDataConfirmed(true);
       } finally {
+        console.log('DashboardLayout: getUserAndPlan finished. Loading:', false);
         setLoading(false);
       }
     }
@@ -89,6 +96,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('DashboardLayout: onAuthStateChange event', { event, session });
         if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
           getUserAndPlan();
         }

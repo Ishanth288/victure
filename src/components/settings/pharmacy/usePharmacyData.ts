@@ -26,27 +26,34 @@ export function usePharmacyData() {
   }, []);
 
   const fetchPharmacyData = async () => {
+    console.log('usePharmacyData: fetchPharmacyData started');
     setIsLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('usePharmacyData: supabase.auth.getSession() response', session);
+
       if (!session?.user?.id) {
+        console.log('usePharmacyData: No session or user ID found. Returning early.');
         setIsLoading(false);
         return;
       }
+      console.log('usePharmacyData: Session and user ID found', session.user.id);
 
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single();
+      console.log('usePharmacyData: Profile fetch result', { data, error });
 
       if (error) throw error;
       if (data) {
+        console.log('usePharmacyData: Pharmacy data fetched successfully', data);
         setPharmacyData(data);
         updateTitle(data.pharmacy_name);
       }
     } catch (error: any) {
-      console.error("Error fetching pharmacy data:", error);
+      console.error("usePharmacyData: Error fetching pharmacy data:", error);
       setStatusMessage({
         type: 'error',
         message: error.message
@@ -57,6 +64,7 @@ export function usePharmacyData() {
         variant: "destructive"
       });
     } finally {
+      console.log('usePharmacyData: fetchPharmacyData finished. Loading:', false);
       setIsLoading(false);
     }
   };

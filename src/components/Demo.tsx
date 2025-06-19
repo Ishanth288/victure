@@ -7,40 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "./ui/button";
 
-const demoSlides = [
-  {
-    title: "Intuitive Dashboard",
-    description: "Get a comprehensive overview of your pharmacy operations with our intuitive dashboard. Monitor key metrics, track inventory levels, and stay on top of important notifications.",
-    features: ["Real-time analytics", "Stock alerts", "Sales overview", "Daily tasks"],
-    icon: LayoutGrid,
-    bgColor: "bg-blue-50",
-    image: "/lovable-uploads/021137c1-766e-475d-bdf8-f35d8cb4de4f.png"
-  },
-  {
-    title: "Smart Inventory",
-    description: "Manage your inventory efficiently with our smart tracking system. Get alerts for low stock, expiring medicines, and automated reorder suggestions.",
-    features: ["Expiry tracking", "Auto reordering", "Stock optimization", "Batch tracking"],
-    icon: Package,
-    bgColor: "bg-green-50",
-    image: "/lovable-uploads/3f4b5dd8-c427-4dbd-8acb-f4a64b8819e0.png"
-  },
-  {
-    title: "Purchase Management",
-    description: "Streamline your procurement process with digital purchase orders. Track deliveries, manage suppliers, and maintain organized records of all transactions.",
-    features: ["Digital PO generation", "Delivery tracking", "Supplier management", "Payment history"],
-    icon: ShoppingCart,
-    bgColor: "bg-purple-50",
-    image: "/lovable-uploads/bf1efd0f-65b1-4ecb-9949-3c7eeb666718.png"
-  },
-  {
-    title: "Business Analytics",
-    description: "Make data-driven decisions with comprehensive analytics. Track sales trends, inventory turnover, and generate insights for better business growth.",
-    features: ["Sales analytics", "Inventory reports", "Financial insights", "Growth metrics"],
-    icon: LineChart,
-    bgColor: "bg-orange-50",
-    image: "/lovable-uploads/93e91152-c4a8-4723-9a9b-dca03c7f8236.png"
-  }
-];
+const demoSlides = [];
 
 export default function Demo() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -52,6 +19,10 @@ export default function Demo() {
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev - 1 + demoSlides.length) % demoSlides.length);
   };
+
+  if (demoSlides.length === 0) {
+    return null;
+  }
 
   const slide = demoSlides[currentSlide];
 
