@@ -6,6 +6,7 @@ import { MainContent } from '@/components/dashboard/layout/MainContent';
 import { SidebarContainer } from '@/components/dashboard/layout/SidebarContainer';
 import { PlanBanner } from '@/components/dashboard/PlanBanner';
 import { LoadingAnimation } from '@/components/LoadingAnimation';
+import { SEO } from '@/components/SEO/index.tsx';
 import { supabase } from '@/integrations/supabase/client';
 
 interface DashboardLayoutProps {
@@ -114,7 +115,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [loading, planDataConfirmed]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <>
+      <SEO
+        title="Dashboard"
+        description="Victure Dashboard"
+        canonicalUrl="https://victure.app/dashboard"
+        noIndex
+      />
+      <div className="flex h-screen overflow-hidden bg-gray-50">
       <SidebarContainer />
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <MainContent>
@@ -129,5 +137,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </MainContent>
       </div>
     </div>
+    </>
   );
 }

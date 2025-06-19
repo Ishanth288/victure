@@ -78,25 +78,18 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/legal/PrivacyPolicy" className="text-muted-foreground hover:underline">Privacy Policy</Link>
-                <span className="mx-2">|</span>
-                <Link to="/legal/RefundPolicy" className="text-muted-foreground hover:underline">Refund Policy</Link>
-                <span className="mx-2">|</span>
-                <Link to="/legal/SLA" className="text-muted-foreground hover:underline">SLA</Link>
+                <Link to="/legal/privacy-policy" className="text-muted-foreground hover:text-primary transition-colors">
+                  Privacy Policy
+                </Link>
               </li>
               <li>
-                <Link to="/legal/acceptable-use" className="text-muted-foreground hover:text-primary transition-colors">
-                  Acceptable Use
+                <Link to="/legal/refund-policy" className="text-muted-foreground hover:text-primary transition-colors">
+                  Refund Policy
                 </Link>
               </li>
               <li>
                 <Link to="/legal/sla" className="text-muted-foreground hover:text-primary transition-colors">
-                  SLA
-                </Link>
-              </li>
-              <li>
-                <Link to="/legal/refund" className="text-muted-foreground hover:text-primary transition-colors">
-                  Refund Policy
+                  Service Level Agreement
                 </Link>
               </li>
             </ul>

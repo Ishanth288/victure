@@ -1,4 +1,15 @@
 
 User-agent: *
 Allow: /
+Disallow: /dashboard
+Disallow: /inventory
+Disallow: /patients
+Disallow: /prescriptions
+Disallow: /billing
+Disallow: /purchases
+Disallow: /insights
+Disallow: /profile
+Disallow: /settings
+Disallow: /admin
+Disallow: /auth
 Sitemap: https://victure.in/sitemap.xml

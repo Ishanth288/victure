@@ -177,7 +177,7 @@ export default function LegalFooter() {
               Data Handling
             </Button>
             
-            <Link to="/legal/privacy">
+            <Link to="/legal/privacy-policy">
               <Button 
                 variant="link" 
                 size="sm" 

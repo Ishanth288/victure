@@ -23,6 +23,19 @@
       "destination": "/index.html"
     }
   ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.victure.in"
+        }
+      ],
+      "destination": "https://victure.in/:path*",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/sitemap.xml",

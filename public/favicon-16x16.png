@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <!-- Background -->
+  <rect width="16" height="16" rx="2" fill="#ffffff"/>
+  
+  <!-- Victure Diamond Logo -->
+  <g transform="translate(3, 3)">
+    <!-- Main diamond shape -->
+    <path d="M5 0 L10 2.5 L5 5 L0 2.5 Z" fill="#10b981"/>
+    <path d="M5 5 L10 2.5 L10 7.5 L5 10 Z" fill="#059669"/>
+    <path d="M5 5 L0 2.5 L0 7.5 L5 10 Z" fill="#34d399"/>
+    <path d="M5 10 L0 7.5 L5 5 L10 7.5 Z" fill="#10b981"/>
+  </g>
+</svg>
