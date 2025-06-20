@@ -20,6 +20,7 @@ import { InventoryProvider } from "./contexts/InventoryContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ConnectionHealthMonitor } from "@/components/ConnectionHealthMonitor";
 import Settings from "./pages/Settings";
+import DashboardLayout from "./components/DashboardLayout";
 
 const Admin = lazy(() => import("./pages/Admin"));
 const SystemSettings = lazy(() => import("./pages/admin/SystemSettings"));
@@ -27,6 +28,7 @@ const DeletionHistory = lazy(() => import("./pages/DeletionHistory"));
 const SystemTest = lazy(() => import("./pages/SystemTest"));
 const BusinessOptimization = lazy(() => import("./pages/BusinessOptimization"));
 const Documentation = lazy(() => import("./pages/Documentation"));
+const WhatsAppPage = lazy(() => import("./pages/WhatsApp")); // Added WhatsAppPage import
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -99,11 +101,13 @@ function App() {
                       } 
                     />
                     <Route 
-                      path="/business-optimization" 
+                      path="/business-optimization"
                       element={
-                        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-                          <BusinessOptimization />
-                        </Suspense>
+                        <DashboardLayout>
+                          <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                            <BusinessOptimization />
+                          </Suspense>
+                        </DashboardLayout>
                       } 
                     />
                     <Route 
@@ -111,6 +115,14 @@ function App() {
                       element={
                         <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
                           <Documentation />
+                        </Suspense>
+                      } 
+                    />
+                    <Route 
+                      path="/whatsapp" // Added WhatsApp route
+                      element={
+                        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                          <WhatsAppPage />
                         </Suspense>
                       } 
                     />

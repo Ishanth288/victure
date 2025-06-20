@@ -80,7 +80,8 @@ export function DashboardStats() {
     {
       title: "Prescriptions Today",
       value: Math.floor(totalPrescriptionsToday || 0),
-      formattedValue: (totalPrescriptionsToday || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
+      // formattedValue is not directly used for display with AnimatedCounter, value is used.
+      // We will handle the unit display in the CardContent.
       icon: "📋",
       className: "",
       bgColor: "bg-gradient-to-br from-purple-50 to-purple-100",
@@ -89,7 +90,8 @@ export function DashboardStats() {
     {
       title: "Low Stock Items",
       value: Math.floor(lowStockItems || 0),
-      formattedValue: `${Math.floor(lowStockItems || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} items`,
+      // formattedValue is not directly used for display with AnimatedCounter, value is used.
+      // We will handle the unit display in the CardContent.
       icon: "⚠️",
       className: "cursor-pointer hover:scale-105 transition-transform duration-200",
       link: "/inventory?filter=low-stock",
@@ -104,7 +106,7 @@ export function DashboardStats() {
   return (
     <div className="space-y-6">
       {/* Loading Progress Bar */}
-      {showProgressBar && (
+      {/* {showProgressBar && (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600">Loading dashboard data...</span>
@@ -112,10 +114,10 @@ export function DashboardStats() {
           </div>
           <Progress value={loadingProgress} className="h-2" />
         </div>
-      )}
+      )} */}
 
       {/* Status Bar */}
-      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+      {/* <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
         <div className="flex items-center space-x-2">
           <span className="text-xs font-medium text-gray-500">Status:</span>
           <span className={`flex items-center space-x-1 text-xs font-medium ${statusInfo.color}`}>
@@ -130,7 +132,7 @@ export function DashboardStats() {
             <span className="text-green-600 font-medium">⚡ Optimized</span>
           )}
         </div>
-      </div>
+      </div> */}
 
       {/* Info message if all values are zero */}
       {allZero && !isLoading && (
@@ -200,18 +202,17 @@ export function DashboardStats() {
                     </div>
                   ) : (
                     <div className="space-y-1">
-                      <div className="text-3xl font-bold text-gray-900 tracking-tight">
-                        {card.title === "Total Revenue" || card.title === "Inventory Value" ? (
-                          formatCurrency(card.value)
-                        ) : card.title === "Prescriptions Today" ? (
-                          <AnimatedCounter value={card.value} />
-                        ) : (
-                          <div className="flex items-center space-x-1">
-                            <AnimatedCounter value={card.value} />
-                            <span className="text-sm font-normal text-gray-600">items</span>
-                          </div>
-                        )}
-                      </div>
+                      {/* Main value display */}
+                      {card.title === "Total Revenue" || card.title === "Inventory Value" ? (
+                        <div className="text-3xl font-bold text-gray-900 tracking-tight">
+                          {formatCurrency(card.value)}
+                        </div>
+                      ) : (
+                        <div className="text-3xl font-bold text-gray-900 tracking-tight flex items-baseline space-x-1">
+                          <AnimatedCounter value={Math.floor(card.value)} decimalPrecision={0} />
+                          <span className="text-sm font-normal text-gray-600">units</span>
+                        </div>
+                      )}
                       
                       {/* Performance indicator for each card */}
                       {connectionStatus === 'connected' && (

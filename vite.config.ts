@@ -22,7 +22,7 @@ export default defineConfig(({ command, mode }) => {
     },
     plugins: [
       react(),
-      // isDevelopment && componentTagger(), // Temporarily removed for debugging
+      isDevelopment && componentTagger(),
     ].filter(Boolean),
     resolve: {
       alias: {

@@ -23,8 +23,6 @@ export default function DashboardLayout({ children }: AuthWrapperProps) {
     const initializeAuth = async () => {
       try {
         console.log("Checking auth session...");
-        
-        // Simple session check without aggressive timeout
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
 
         if (!mounted) return;
@@ -35,7 +33,6 @@ export default function DashboardLayout({ children }: AuthWrapperProps) {
         } else {
           setSession(currentSession);
           setConnectionError(false);
-          
           if (!currentSession) {
             const returnPath = location.pathname === '/auth' ? '/dashboard' : location.pathname;
             navigate(`/auth?redirect=${returnPath}`);
@@ -53,14 +50,11 @@ export default function DashboardLayout({ children }: AuthWrapperProps) {
       }
     };
 
-    // Set up auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
       if (!mounted) return;
-      
       console.log("Auth state changed:", event);
       setSession(currentSession);
       setConnectionError(false);
-      
       if (event === 'SIGNED_IN' && !loading) {
         toast({
           title: "Welcome back!",
@@ -77,14 +71,13 @@ export default function DashboardLayout({ children }: AuthWrapperProps) {
     };
   }, [location.pathname, navigate, toast, loading]);
 
-  // Simple timeout to prevent infinite loading
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (loading) {
         console.warn('Auth loading timeout - completing');
         setLoading(false);
       }
-    }, 5000); // Reduced timeout
+    }, 5000);
 
     return () => clearTimeout(timeout);
   }, [loading]);
