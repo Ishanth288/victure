@@ -10,7 +10,7 @@ import KpiCard from "@/components/dashboard/KpiCard"; // Import the new KpiCard 
 import { Fallback, ErrorFallback } from "@/components/ui/fallback";
 import { stableToast } from "@/components/ui/stable-toast";
 import { displayErrorMessage } from "@/utils/errorHandling";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import DashboardLayout from "@/components/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useSalesStats } from "@/hooks/use-sales-stats";
 import { useProductData } from "@/hooks/use-product-data";
@@ -102,7 +102,6 @@ export default function BusinessOptimization() {
   }
   return (
     <>
-      {/* PlanBanner is already rendered by DashboardLayout with correct planType, so remove this duplicate */}
       <PlanLimitAlert currentValue={totalSales} maxValue={100000} resourceName="Sales" />
       <div className="container mx-auto px-0 py-4">
         <header className="mb-12">
