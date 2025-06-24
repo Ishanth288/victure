@@ -132,10 +132,10 @@ export default function BusinessOptimization() {
           </section>
           {/* Feature Sections */}
           <div className="space-y-10">
-            <IntelligentInventorySection userId={user?.id} />
-            <AdvancedSalesForecastingSection userId={user?.id} />
-            <SupplierPurchaseOptimizationSection userId={user?.id} />
-            <SalesCustomerRelationshipSection userId={user?.id} />
+            <IntelligentInventorySection />
+            <AdvancedSalesForecastingSection />
+            <SupplierPurchaseOptimizationSection />
+            <SalesCustomerRelationshipSection />
             <p className="text-center text-gray-500 mt-10 py-4">We're continuously developing new features to empower your business. Stay tuned!</p>
           </div>
         </div>
