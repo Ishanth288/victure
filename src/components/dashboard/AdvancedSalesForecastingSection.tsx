@@ -4,12 +4,28 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { format, subDays, subMonths, getMonth } from 'date-fns';
+import { displayErrorMessage } from '@/utils/errorHandling';
 
 interface ForecastData {
   demandPrediction: string;
   seasonalTrends: string;
   accuracyLevel: number;
   lastUpdated: string;
+}
+
+interface SalesDataItem {
+  quantity: number;
+  total_price: number;
+  inventory?: {
+    name: string;
+    category: string;
+  } | null;
+  bill: {
+    date: string;
+    user_id: string;
+  } | null;
 }
 
 const AdvancedSalesForecastingSection: React.FC = () => {
@@ -20,24 +36,108 @@ const AdvancedSalesForecastingSection: React.FC = () => {
   const fetchForecastData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1800));
     try {
-      // Simulate success
-      if (Math.random() > 0.1) { // 90% success rate
-        setForecastData({
-          demandPrediction: 'Increased demand for cold & flu medication expected next month.',
-          seasonalTrends: 'Allergy medication sales peak in Spring; Vitamin D supplements rise in Winter.',
-          accuracyLevel: Math.floor(Math.random() * 15) + 80, // 80-95%
-          lastUpdated: new Date().toLocaleDateString(),
-        });
-      } else {
-        // Simulate error
-        throw new Error('Failed to retrieve sales forecasting data. Please try again.');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      
+      const today = new Date();
+      const currentMonth = getMonth(today);
+      const threeMonthsAgo = subMonths(today, 3);
+      const fromDate = format(threeMonthsAgo, 'yyyy-MM-dd');
+      const toDate = format(today, 'yyyy-MM-dd');
+      
+      // Fetch sales data for the last 3 months with better error handling
+      const { data: salesData, error: salesError } = (await supabase
+        .from('bill_items')
+        .select(`
+          quantity,
+          total_price,
+          inventory:inventory_item_id (
+            name,
+            category
+          ),
+          bill:bills!inner (
+            date,
+            user_id
+          )
+        `)
+        .gte('bill.date', fromDate)
+        .lte('bill.date', toDate)
+        .eq('bill.user_id', user.id)
+        .not('bill', 'is', null)) as { data: SalesDataItem[] | null; error: any };
+      
+      if (salesError) throw salesError;
+      
+      // Analyze sales patterns by category and month
+      const categoryTrends = new Map();
+      const monthlyData = new Map();
+      
+      salesData?.forEach(item => {
+        // Add null checks for bill and bill.date
+        if (!item.bill || !item.bill.date) {
+          console.warn('Skipping item with missing bill data:', item);
+          return;
+        }
+        
+        const category = item.inventory?.category || 'General';
+        const month = getMonth(new Date(item.bill.date));
+        const monthKey = format(new Date(item.bill.date), 'yyyy-MM');
+        
+        // Category trends
+        const categoryData = categoryTrends.get(category) || { total: 0, count: 0 };
+        categoryData.total += item.total_price;
+        categoryData.count += item.quantity;
+        categoryTrends.set(category, categoryData);
+        
+        // Monthly trends
+        const monthData = monthlyData.get(monthKey) || { total: 0, count: 0 };
+        monthData.total += item.total_price;
+        monthData.count += item.quantity;
+        monthlyData.set(monthKey, monthData);
+      });
+      
+      // Generate demand predictions based on trends
+      const topCategories = Array.from(categoryTrends.entries())
+        .sort(([,a], [,b]) => b.total - a.total)
+        .slice(0, 3);
+      
+      let demandPrediction = 'No significant trends detected.';
+      if (topCategories.length > 0) {
+        const topCategory = topCategories[0][0];
+        demandPrediction = `Increased demand for ${topCategory.toLowerCase()} products expected based on recent trends.`;
       }
+      
+      // Generate seasonal insights
+      let seasonalTrends = 'Analyzing seasonal patterns...';
+      if (currentMonth >= 2 && currentMonth <= 4) {
+        seasonalTrends = 'Spring season: Allergy medications and vitamins typically see increased demand.';
+      } else if (currentMonth >= 5 && currentMonth <= 7) {
+        seasonalTrends = 'Summer season: Sunscreen, hydration supplements, and digestive aids are in higher demand.';
+      } else if (currentMonth >= 8 && currentMonth <= 10) {
+        seasonalTrends = 'Monsoon/Fall season: Cold & flu medications, immunity boosters show increased sales.';
+      } else {
+        seasonalTrends = 'Winter season: Vitamin D supplements, cough syrups, and respiratory medications peak.';
+      }
+      
+      // Calculate accuracy level based on data consistency
+      const monthlyValues = Array.from(monthlyData.values());
+      const avgMonthlyTotal = monthlyValues.reduce((sum, data) => sum + data.total, 0) / monthlyValues.length;
+      const variance = monthlyValues.reduce((sum, data) => sum + Math.pow(data.total - avgMonthlyTotal, 2), 0) / monthlyValues.length;
+      const coefficientOfVariation = Math.sqrt(variance) / avgMonthlyTotal;
+      
+      // Higher consistency = higher accuracy (inverse relationship with coefficient of variation)
+      const accuracyLevel = Math.max(70, Math.min(95, Math.round(90 - (coefficientOfVariation * 100))));
+      
+      setForecastData({
+        demandPrediction,
+        seasonalTrends,
+        accuracyLevel,
+        lastUpdated: new Date().toLocaleDateString(),
+      });
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
+        displayErrorMessage(err, 'Sales Forecasting');
       } else {
         setError('An unknown error occurred.');
       }

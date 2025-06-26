@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import Skeleton from "@/components/ui/skeleton-loader";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2, Package, AlertTriangle } from "lucide-react";
@@ -78,11 +79,8 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
 
   if (isLoading) {
     return (
-      <div className="border rounded-lg p-8 text-center">
-        <div className="flex items-center justify-center space-x-2">
-          <div className="w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-gray-600">Loading inventory...</span>
-        </div>
+      <div className="border rounded-lg p-8">
+        <Skeleton variant="table" rows={5} />
       </div>
     );
   }

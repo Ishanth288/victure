@@ -17,10 +17,12 @@ const getSupabaseConfig = () => {
     console.error('❌ Invalid Supabase API key');
     throw new Error('Invalid Supabase API key. Please check your environment variables.');
   }
-  console.log('✅ Supabase configuration validated:', { 
-    url: url.substring(0, 30) + '...', 
-    keyLength: key.length 
-  });
+  if (import.meta.env.VITE_DEBUG_LOGS) {
+    console.log('✅ Supabase configuration validated:', { 
+      url: url.substring(0, 30) + '...', 
+      keyLength: key.length 
+    });
+  }
   return { url, key };
 };
 
@@ -54,7 +56,7 @@ export const supabase = createClient<Database>(
         // Much shorter timeout for faster failures
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
-          console.warn(`Request timeout for ${url}`);
+          if (import.meta.env.VITE_DEBUG_LOGS) console.warn(`Request timeout for ${url}`);
           controller.abort();
         }, 3000); // Reduced from 10s to 3s
         
@@ -131,7 +133,7 @@ export class OptimizedQuery {
     if (cacheKey && this.cache.has(cacheKey)) {
       const cached = this.cache.get(cacheKey)!;
       if (Date.now() - cached.timestamp < cached.ttl) {
-        console.log(`🎯 Cache hit for ${cacheKey}`);
+        if (import.meta.env.VITE_DEBUG_LOGS) console.log(`🎯 Cache hit for ${cacheKey}`);
         return { data: cached.data as T, error: null };
       } else {
         this.cache.delete(cacheKey);
@@ -140,7 +142,7 @@ export class OptimizedQuery {
 
     // Check if the same query is already pending
     if (cacheKey && this.pendingQueries.has(cacheKey)) {
-      console.log(`⏳ Reusing pending query for ${cacheKey}`);
+      if (import.meta.env.VITE_DEBUG_LOGS) console.log(`⏳ Reusing pending query for ${cacheKey}`);
       try {
         const result = await this.pendingQueries.get(cacheKey)!;
         return result as QueryResult<T>;
@@ -193,7 +195,7 @@ export class OptimizedQuery {
         const duration = Date.now() - startTime;
         
         if (duration > 5000) { // Adjusted threshold for slow query warning
-          console.warn(`⚠️ Slow query detected: ${operation} took ${duration}ms`);
+          if (import.meta.env.VITE_DEBUG_LOGS) console.warn(`⚠️ Slow query detected: ${operation} took ${duration}ms`);
         }
 
         if (result.error) {

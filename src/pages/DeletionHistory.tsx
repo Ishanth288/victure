@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from "@/components/DashboardLayout";
+
 import { Calendar, Search, Filter, Download, RefreshCw, Trash2, Package, User, FileText, AlertCircle, Clock, DollarSign } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfDay, subWeeks, subMonths } from 'date-fns';
+import Skeleton from "@/components/ui/skeleton-loader";
 
 // Temporary interface until Supabase types are regenerated
 interface DeletionRecord {
@@ -512,9 +513,8 @@ function DeletionHistoryContent() {
 
       {/* Loading State */}
       {loading && !error && (
-        <div className="flex flex-col items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent mb-4"></div>
-          <p className="text-gray-600">Loading deletion history...</p>
+        <div className="space-y-4">
+          <Skeleton variant="dashboard" />
         </div>
       )}
 
@@ -586,8 +586,6 @@ function DeletionHistoryContent() {
 
 export default function DeletionHistory() {
   return (
-    <DashboardLayout>
       <DeletionHistoryContent />
-    </DashboardLayout>
   );
-} 
+}

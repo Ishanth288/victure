@@ -1,6 +1,8 @@
 
 import { stableToast } from '@/components/ui/stable-toast';
 
+const recentErrors = new Set<string>();
+
 /**
  * Display standardized error messages throughout the application
  * @param error The error object or message
@@ -9,10 +11,18 @@ import { stableToast } from '@/components/ui/stable-toast';
 export const displayErrorMessage = (error: any, context?: string) => {
   const errorMessage = error?.message || error?.error?.message || String(error);
   const contextPrefix = context ? `${context}: ` : '';
-  
+  const fullMessage = `${contextPrefix}${errorMessage}`;
+
+  if (recentErrors.has(fullMessage)) {
+    return;
+  }
+
+  recentErrors.add(fullMessage);
+  setTimeout(() => recentErrors.delete(fullMessage), 3000); // Clear after 3 seconds
+
   stableToast({
     title: "Error",
-    description: `${contextPrefix}${errorMessage}`,
+    description: fullMessage,
     variant: "destructive",
   });
   

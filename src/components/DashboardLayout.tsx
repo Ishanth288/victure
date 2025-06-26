@@ -1,6 +1,4 @@
 
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import { MainContent } from '@/components/dashboard/layout/MainContent';
 import { SidebarContainer } from '@/components/dashboard/layout/SidebarContainer';

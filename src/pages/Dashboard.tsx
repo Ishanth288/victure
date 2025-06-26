@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import DashboardLayout from "../components/DashboardLayout";
+import { useState, useEffect } from "react";
+
+import Skeleton from "@/components/ui/skeleton-loader";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { WelcomeDialog } from "@/components/dashboard";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,6 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <DashboardLayout>
       <ErrorBoundary>
       {showPostLoginOnboarding && <div className="mb-6">Welcome to your pharmacy dashboard!</div>}
       <WelcomeDialog isOpen={isHelpOpen} onOpenChange={setIsHelpOpen} />
@@ -62,6 +62,5 @@ export default function Dashboard() {
         </div>
       </div>
       </ErrorBoundary>
-    </DashboardLayout>
   );
 }

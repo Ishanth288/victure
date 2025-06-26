@@ -26,7 +26,7 @@ export function useRealtimeUpdates({
         const { data } = await supabase.auth.getUser();
         const user = data?.user;
         
-        if (!user) return () => {};
+if (!user || !dataFetched) return () => {};
         
         console.log("Setting up realtime subscriptions for user:", user.id);
         const channel = supabase

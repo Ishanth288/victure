@@ -70,6 +70,7 @@ export default defineConfig(({ command, mode }) => {
     define: {
       __DEV__: isDevelopment,
       'process.env.NODE_ENV': JSON.stringify(mode)
-    }
+    },
+    envPrefix: ['VITE_']
   };
 });

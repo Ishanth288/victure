@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { addDays, format } from "date-fns";
-import DashboardLayout from "@/components/DashboardLayout";
+
+import Skeleton from "@/components/ui/skeleton-loader";
 import { Input } from "@/components/ui/input";
 import { PatientList } from "@/components/patients/PatientList";
 import { DateRangeFilter } from "@/components/patients/DateRangeFilter";
@@ -647,16 +648,13 @@ export default function Patients() {
 
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-screen">
-          Loading...
+        <div className="container mx-auto px-4 py-6">
+          <Skeleton variant="dashboard" />
         </div>
-      </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout>
       <div className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
@@ -761,6 +759,5 @@ export default function Patients() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-    </DashboardLayout>
   );
 }

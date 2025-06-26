@@ -1,23 +1,111 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { XIcon, RefreshCwIcon } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
+import { displayErrorMessage } from '@/utils/errorHandling';
+import { BillData } from '@/types/billing';
 
-// TODO: Implement actual data fetching logic from Supabase
 const fetchTodaysProgress = async () => {
-  // Simulate API call - Replace with actual Supabase query
-  console.warn("fetchTodaysProgress is using mock data. Replace with actual API call.");
-  await new Promise(resolve => setTimeout(resolve, 500)); // Shorter delay for now
-  // Return empty or default data structure until real data is implemented
-  return {
-    prescriptionsGenerated: 0,
-    amountValueSold: '0.00',
-    profitToday: '0.00',
-    billsInCash: 0,
-    billsInUpi: 0,
-    repeatedCustomers: 0,
-    // Add more metrics as needed, initialized to zero or appropriate defaults
-  };
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+    
+    const today = format(new Date(), 'yyyy-MM-dd');
+    
+    // Fetch today's prescriptions
+    const { data: prescriptions, error: prescError } = await supabase
+      .from('prescriptions')
+      .select('id')
+      .eq('user_id', user.id)
+      .gte('created_at', today)
+      .lt('created_at', format(new Date(Date.now() + 24 * 60 * 60 * 1000), 'yyyy-MM-dd'));
+    
+    if (prescError) throw prescError;
+    
+    // Fetch today's bills
+    const { data: bills, error: billsError } = await supabase
+      .from('bills')
+      .select('total_amount, payment_method')
+      .eq('user_id', user.id)
+      .eq('date', today);
+    
+    if (billsError) throw billsError;
+    const billsTyped = bills as unknown as BillData[];
+    // Calculate metrics
+    const prescriptionsGenerated = prescriptions?.length || 0;
+    const totalSales = billsTyped?.reduce((sum, bill) => sum + (bill?.total_amount || 0), 0) || 0;
+    const billsInCash = billsTyped?.filter(bill => bill.payment_method === 'cash').length || 0;
+    const billsInUpi = billsTyped?.filter(bill => bill.payment_method === 'upi').length || 0;
+    
+    // Calculate profit (assuming 20% margin for simplicity)
+    const profitToday = totalSales * 0.2;
+    
+    // Get repeated customers (customers who have bills before today)
+    const { data: todayPatients, error: patientsError } = await supabase
+      .from('bills')
+      .select(`
+        prescription:prescriptions (
+          patient:patients (
+            id
+          )
+        )
+      `)
+      .eq('user_id', user.id)
+      .eq('date', today);
+    
+    if (patientsError) throw patientsError;
+    
+    const todayPatientIds = todayPatients
+      ?.map(bill => bill.prescription?.patient?.id)
+      .filter(Boolean) || [];
+    
+    let repeatedCustomers = 0;
+    if (todayPatientIds.length > 0) {
+      const { data: previousBills, error: prevError } = await supabase
+        .from('bills')
+        .select(`
+          prescription:prescriptions (
+            patient:patients (
+              id
+            )
+          )
+        `)
+        .eq('user_id', user.id)
+        .lt('date', today)
+        .in('prescriptions.patients.id', todayPatientIds);
+      
+      if (!prevError && previousBills) {
+        const previousPatientIds = new Set(
+          previousBills
+            .map(bill => bill.prescription?.patient?.id)
+            .filter(Boolean)
+        );
+        repeatedCustomers = todayPatientIds.filter(id => previousPatientIds.has(id)).length;
+      }
+    }
+    
+    return {
+      prescriptionsGenerated,
+      amountValueSold: totalSales.toFixed(2),
+      profitToday: profitToday.toFixed(2),
+      billsInCash,
+      billsInUpi,
+      repeatedCustomers,
+    };
+  } catch (error) {
+    console.error('Error fetching today\'s progress:', error);
+    displayErrorMessage(error as Error, 'Today\'s Progress');
+    return {
+      prescriptionsGenerated: 0,
+      amountValueSold: '0.00',
+      profitToday: '0.00',
+      billsInCash: 0,
+      billsInUpi: 0,
+      repeatedCustomers: 0,
+    };
+  }
 };
 
 const TodaysProgressPopoverContent: React.FC = () => {

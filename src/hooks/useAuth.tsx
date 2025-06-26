@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -7,6 +7,7 @@ interface AuthState {
   session: Session | null;
   loading: boolean;
   error: string | null;
+  ready: boolean;
 }
 
 interface AuthActions {
@@ -25,6 +26,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     // Get initial session
@@ -44,6 +46,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
         setLoading(false);
+        setReady(true);
       }
     };
 
@@ -167,6 +170,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     session,
     loading,
     error,
+    ready,
     signIn,
     signUp,
     signOut,

@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { CreditCard, DollarSign, ShoppingCart, Users } from "lucide-react";
-import DashboardLayout from "@/components/DashboardLayout";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
@@ -555,42 +555,39 @@ export default function Insights() {
 
   if (error) {
     return (
-      <DashboardLayout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col items-center justify-center min-h-[60vh]">
-            <h2 className="text-2xl font-bold text-red-600 mb-4">Error Loading Insights</h2>
-            <p className="text-gray-700 mb-4">{error}</p>
-            <button 
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-              onClick={() => {
-                if (userId) fetchInsightsData(userId);
-                else checkAuth();
-              }}
-            >
-              Retry
-            </button>
-          </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Error Loading Insights</h2>
+          <p className="text-gray-700 mb-4">{error}</p>
+          <button 
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            onClick={() => {
+              if (userId) fetchInsightsData(userId);
+              else checkAuth();
+            }}
+          >
+            Retry
+          </button>
         </div>
-      </DashboardLayout>
-    );
+      </div>
+  );
   }
 
   return (
-    <DashboardLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-          <h1 className="text-3xl font-bold mb-4 md:mb-0">Insights</h1>
-          
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Tabs 
-              value={period} 
-              onValueChange={handlePeriodChange}
-              className="w-full sm:w-auto"
-            >
-              <TabsList className="grid grid-cols-5 w-full sm:w-auto">
-                <TabsTrigger value="7d">7D</TabsTrigger>
-                <TabsTrigger value="30d">30D</TabsTrigger>
-                <TabsTrigger value="90d">90D</TabsTrigger>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <h1 className="text-3xl font-bold mb-4 md:mb-0">Insights</h1>
+        
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Tabs 
+            value={period} 
+            onValueChange={handlePeriodChange}
+            className="w-full sm:w-auto"
+          >
+            <TabsList className="grid grid-cols-5 w-full sm:w-auto">
+              <TabsTrigger value="7d">7D</TabsTrigger>
+              <TabsTrigger value="30d">30D</TabsTrigger>
+              <TabsTrigger value="90d">90D</TabsTrigger>
                 <TabsTrigger value="6m">6M</TabsTrigger>
                 <TabsTrigger value="1y">1Y</TabsTrigger>
               </TabsList>
@@ -650,6 +647,5 @@ export default function Insights() {
           </>
         )}
       </div>
-    </DashboardLayout>
   );
 }

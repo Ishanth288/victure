@@ -37,12 +37,12 @@ function Root() {
             <TooltipProvider>
               <BrowserRouter>
                 <AuthProvider>
-                  <InventoryProvider>
-                    <BillingProvider>
+                  <BillingProvider>
+                    <InventoryProvider>
                       <App />
-                    </BillingProvider>
-                  </InventoryProvider>
-                  <Toaster position="top-center" richColors closeButton />
+                      <Toaster position="top-center" richColors closeButton />
+                    </InventoryProvider>
+                  </BillingProvider>
                 </AuthProvider>
               </BrowserRouter>
             </TooltipProvider>

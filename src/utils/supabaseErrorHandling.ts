@@ -1,62 +1,127 @@
 import { supabase } from '@/integrations/supabase/client';
+import { supabaseCircuitBreaker } from './circuitBreaker';
+import { CURRENT_CONFIG } from './performanceConfig';
+import { globalCache, createCacheKey } from './smartCache';
 
 export interface SupabaseQueryResult<T> {
   data: T | null;
   error: any;
 }
 
+export interface QueryOptions {
+  timeout?: number;
+  retries?: number;
+  useCache?: boolean;
+  cacheTTL?: number;
+  cacheKey?: string;
+  bypassCircuitBreaker?: boolean;
+}
+
 /**
- * Enhanced error handling for Supabase queries with much faster timeouts
+ * Enhanced error handling for Supabase queries with circuit breaker and caching
  */
 export async function safeSupabaseQuery<T>(
   queryFn: () => any,
   context: string = 'query',
-  options: { timeout?: number; retries?: number } = {}
+  options: QueryOptions = {}
 ): Promise<SupabaseQueryResult<T>> {
-  const { timeout = 3000, retries = 1 } = options; // Reduced timeout to 3s and retries to 1
+  const {
+    timeout = CURRENT_CONFIG.queryTimeout,
+    retries = CURRENT_CONFIG.retryAttempts,
+    useCache = false,
+    cacheTTL = CURRENT_CONFIG.cacheTimeout,
+    cacheKey,
+    bypassCircuitBreaker = false
+  } = options;
+  
+  // Try cache first if enabled
+  if (useCache && cacheKey) {
+    const cached = await globalCache.get<T>(cacheKey);
+    if (cached !== null) {
+      if (CURRENT_CONFIG.enableVerboseLogging) {
+        console.log(`📦 Cache hit for ${context}: ${cacheKey}`);
+      }
+      return { data: cached, error: null };
+    }
+  }
+  
   let lastError: any;
+  
+  // Wrapper function for circuit breaker
+  const executeQuery = async (): Promise<any> => {
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error(`Query timeout after ${timeout}ms`)), timeout)
+    );
+    
+    return Promise.race([queryFn(), timeoutPromise]);
+  };
   
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      console.log(`Executing Supabase query: ${context} (attempt ${attempt + 1}/${retries + 1})`);
+      if (CURRENT_CONFIG.enableVerboseLogging) {
+        console.log(`🔍 Executing Supabase query: ${context} (attempt ${attempt + 1}/${retries + 1})`);
+      }
       
-      // Execute the query function with short timeout
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error(`Query timeout after ${timeout}ms`)), timeout)
-      );
+      let result;
       
-      const result = await Promise.race([queryFn(), timeoutPromise]);
+      // Use circuit breaker unless bypassed
+      if (!bypassCircuitBreaker && CURRENT_CONFIG.enableCircuitBreaker) {
+        result = await supabaseCircuitBreaker.execute(executeQuery, context);
+      } else {
+        result = await executeQuery();
+      }
       
       if (result && typeof result === 'object' && 'error' in result && result.error) {
         const error = result.error;
         
         // Only retry connection-related errors
         if (isRetryableError(error) && attempt < retries) {
-          console.warn(`Retryable error in ${context}, attempt ${attempt + 1}:`, error.message);
+          console.warn(`🔄 Retryable error in ${context}, attempt ${attempt + 1}:`, error.message);
           lastError = error;
           
-          // Very short wait before retry
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // Exponential backoff with jitter
+          const delay = Math.min(
+            CURRENT_CONFIG.retryDelay * Math.pow(2, attempt) + Math.random() * 100,
+            5000
+          );
+          await new Promise(resolve => setTimeout(resolve, delay));
           continue;
         }
         
-        console.warn(`Supabase error in ${context}:`, error.message);
+        console.warn(`❌ Supabase error in ${context}:`, error.message);
         return { data: null, error };
       }
       
-      console.log(`Supabase query successful for ${context}`);
+      // Cache successful result if caching is enabled
+      if (useCache && cacheKey && result) {
+        const dataToCache = result?.data || result;
+        await globalCache.set(cacheKey, dataToCache, cacheTTL);
+        if (CURRENT_CONFIG.enableVerboseLogging) {
+          console.log(`💾 Cached result for ${context}: ${cacheKey}`);
+        }
+      }
+      
+      if (CURRENT_CONFIG.enableVerboseLogging) {
+        console.log(`✅ Supabase query successful for ${context}`);
+      }
       return { data: result?.data || result, error: null };
       
     } catch (error: any) {
       lastError = error;
       
       if (isRetryableError(error) && attempt < retries) {
-        console.warn(`Retryable exception in ${context}, attempt ${attempt + 1}:`, error.message);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        console.warn(`🔄 Retryable exception in ${context}, attempt ${attempt + 1}:`, error.message);
+        
+        // Exponential backoff with jitter
+        const delay = Math.min(
+          CURRENT_CONFIG.retryDelay * Math.pow(2, attempt) + Math.random() * 100,
+          5000
+        );
+        await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
       
-      console.warn(`Exception in ${context}:`, error.message);
+      console.warn(`❌ Exception in ${context}:`, error.message);
       break;
     }
   }
@@ -65,27 +130,32 @@ export async function safeSupabaseQuery<T>(
 }
 
 /**
- * Check Supabase connection with very short timeout
+ * Check Supabase connection with optimized timeout and circuit breaker
  */
 export async function checkSupabaseConnection(): Promise<boolean> {
   try {
-    console.log("Testing Supabase connection...");
+    if (CURRENT_CONFIG.enableVerboseLogging) {
+      console.log("🔍 Testing Supabase connection...");
+    }
     
-    // Very short timeout for connection test
-    const { error } = await Promise.race([
-      supabase.from('profiles').select('count', { count: 'exact', head: true }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 1500))
-    ]) as any;
+    const connectionTest = async () => {
+      return supabase.from('profiles').select('count', { count: 'exact', head: true });
+    };
     
-    if (error) {
-      console.warn('Supabase connection check failed:', error.message);
+    // Use circuit breaker for connection test
+    const result = await supabaseCircuitBreaker.execute(connectionTest, 'connection-check');
+    
+    if (result?.error) {
+      console.warn('🔴 Supabase connection check failed:', result.error.message);
       return false;
     }
     
-    console.log("Supabase connection test successful");
+    if (CURRENT_CONFIG.enableVerboseLogging) {
+      console.log("✅ Supabase connection test successful");
+    }
     return true;
   } catch (error: any) {
-    console.warn('Error checking Supabase connection:', error.message);
+    console.warn('🔴 Error checking Supabase connection:', error.message);
     return false;
   }
 }

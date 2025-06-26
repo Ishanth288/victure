@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from "@/components/DashboardLayout";
+
 import { FeedbackList } from "@/components/admin/FeedbackList";
 import { UserManagement } from "@/components/admin/UserManagement";
 import { PlanManagement } from "@/components/admin/PlanManagement";
@@ -12,6 +12,7 @@ import { useAdminStats } from "@/hooks/useAdminStats";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { LoadingAnimation } from "@/components/ui/loading-animation";
 import { SecurityCodeModal } from "@/components/admin/SecurityCodeModal";
+import Skeleton from "@/components/ui/skeleton-loader";
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -28,9 +29,9 @@ export default function Admin() {
   // Display loading state while checking access
   if (isAccessLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-        <LoadingAnimation text="Verifying admin credentials" size="lg" />
-      </div>
+        <div className="container mx-auto px-4 py-6">
+          <Skeleton variant="dashboard" />
+        </div>
     );
   }
 
@@ -51,7 +52,6 @@ export default function Admin() {
 
   // Once authorized, show the admin portal
   return (
-    <DashboardLayout>
       <div className="container mx-auto py-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <h1 className="text-3xl font-bold">Admin Portal</h1>
@@ -67,6 +67,5 @@ export default function Admin() {
           planContent={<PlanManagement />}
         />
       </div>
-    </DashboardLayout>
   );
 }

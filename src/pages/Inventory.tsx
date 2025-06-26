@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from "@/components/DashboardLayout";
+
+import Skeleton from "@/components/ui/skeleton-loader";
 import InventoryHeader from "@/components/inventory/InventoryHeader";
 import InventorySearch from "@/components/inventory/InventorySearch";
 import InventoryTable from "@/components/inventory/InventoryTable";
@@ -561,10 +562,8 @@ function InventoryContent() {
 // Main inventory page component
 export default function Inventory() {
   return (
-    <DashboardLayout>
-      <InventoryProvider>
-        <InventoryContent />
-      </InventoryProvider>
-    </DashboardLayout>
+    <InventoryProvider>
+      <InventoryContent />
+    </InventoryProvider>
   );
 }

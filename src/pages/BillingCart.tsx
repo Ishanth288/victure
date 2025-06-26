@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import DashboardLayout from "@/components/DashboardLayout";
 import { CartHeader } from "@/components/billing/CartHeader";
 import { CartContent } from "@/components/billing/CartContent";
 import { useToast } from "@/components/ui/use-toast";
@@ -116,25 +115,23 @@ export default function BillingCart() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="container mx-auto px-4 py-6">
-        <CartHeader 
-          patientName={prescriptionDetails?.patient?.name}
-          phoneNumber={prescriptionDetails?.patient?.phone_number}
-          prescriptionId={prescriptionId}
-          doctorName={prescriptionDetails?.doctor_name}
-          prescriptionDate={prescriptionDetails?.date}
-        />
+    <div className="container mx-auto px-4 py-6">
+      <CartHeader 
+        patientName={prescriptionDetails?.patient?.name}
+        phoneNumber={prescriptionDetails?.patient?.phone_number}
+        prescriptionId={prescriptionId}
+        doctorName={prescriptionDetails?.doctor_name}
+        prescriptionDate={prescriptionDetails?.date}
+      />
 
-        <CartContent
-          items={cartItems}
-          onAddToCart={handleAddToCart}
-          onRemoveItem={handleRemoveItem}
-          onUpdateQuantity={handleUpdateQuantity}
-          prescriptionId={parseInt(prescriptionId!)}
-          onBillGenerated={handleBillGenerated}
-        />
-      </div>
-    </DashboardLayout>
+      <CartContent
+        items={cartItems}
+        onAddToCart={handleAddToCart}
+        onRemoveItem={handleRemoveItem}
+        onUpdateQuantity={handleUpdateQuantity}
+        prescriptionId={parseInt(prescriptionId!)}
+        onBillGenerated={handleBillGenerated}
+      />
+    </div>
   );
 }

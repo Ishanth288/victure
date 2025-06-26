@@ -1,7 +1,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { format } from "date-fns";
-import DashboardLayout from "@/components/DashboardLayout";
+
+import Skeleton from "@/components/ui/skeleton-loader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -507,32 +508,25 @@ export default function Prescriptions() {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p>Loading prescriptions...</p>
-          </div>
-        </div>
-      </DashboardLayout>
+      <div className="container mx-auto px-4 py-6">
+        <Skeleton variant="dashboard" />
+      </div>
     );
   }
 
   if (error) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-screen">
-          <div className="text-center">
-            <p className="text-red-600 mb-4">Error loading prescriptions: {error}</p>
-            <Button onClick={refreshData}>Try Again</Button>
-          </div>
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Error loading prescriptions: {error}</p>
+          <Button onClick={refreshData}>Try Again</Button>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
           <div className="flex items-center space-x-4">
@@ -696,6 +690,7 @@ export default function Prescriptions() {
       </div>
       
       {/* Return Dialog */}
+
       <MedicineReturnDialog
         isOpen={showReturnDialog}
         onClose={() => {
@@ -744,6 +739,6 @@ export default function Prescriptions() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </DashboardLayout>
+    </>
   );
 }

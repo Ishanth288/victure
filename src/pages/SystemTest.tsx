@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { BillingSystemTester } from "@/utils/billTestUtils";
 import { useToast } from "@/hooks/use-toast";
-import DashboardLayout from "@/components/DashboardLayout";
+
 
 interface TestResult {
   test: string;
@@ -109,8 +109,7 @@ export default function SystemTest() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
+    <div className="container mx-auto px-4 py-6 max-w-6xl">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             🧪 Billing System Health Check
@@ -340,7 +339,6 @@ export default function SystemTest() {
             </CardContent>
           </Card>
         )}
-      </div>
-    </DashboardLayout>
+    </div>
   );
-} 
+}

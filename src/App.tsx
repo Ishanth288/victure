@@ -1,8 +1,4 @@
 import { lazy, Suspense } from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -15,12 +11,11 @@ import BillingCart from "./pages/BillingCart";
 import Billing from "./pages/Billing";
 import Purchases from "./pages/Purchases";
 import { AuthWrapper } from "@/components/AuthWrapper";
-import { BillingProvider } from "./contexts/BillingContext";
-import { InventoryProvider } from "./contexts/InventoryContext";
+import DashboardLayout from "@/components/DashboardLayout";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ConnectionHealthMonitor } from "@/components/ConnectionHealthMonitor";
 import Settings from "./pages/Settings";
-import DashboardLayout from "./components/DashboardLayout";
+
 
 const Admin = lazy(() => import("./pages/Admin"));
 const SystemSettings = lazy(() => import("./pages/admin/SystemSettings"));
@@ -30,14 +25,6 @@ const BusinessOptimization = lazy(() => import("./pages/BusinessOptimization"));
 const Documentation = lazy(() => import("./pages/Documentation"));
 const WhatsAppPage = lazy(() => import("./pages/WhatsApp")); // Added WhatsAppPage import
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000,
-      retry: 1,
-    },
-  },
-});
 
 function App() {
   return (
@@ -59,23 +46,23 @@ function App() {
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<Auth />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/inventory" element={<Inventory />} />
-                    <Route path="/patients" element={<Patients />} />
-                    <Route path="/prescriptions" element={<Prescriptions />} />
-                    <Route path="/insights" element={<Insights />} />
-                    <Route path="/billing" element={<Billing />} />
-                    <Route path="/billing-cart" element={<BillingCart />} />
-                    <Route path="/purchases" element={<Purchases />} />
+                    <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
+                    <Route path="/inventory" element={<DashboardLayout><Inventory /></DashboardLayout>} />
+                    <Route path="/patients" element={<DashboardLayout><Patients /></DashboardLayout>} />
+                    <Route path="/prescriptions" element={<DashboardLayout><Prescriptions /></DashboardLayout>} />
+                    <Route path="/insights" element={<DashboardLayout><Insights /></DashboardLayout>} />
+                    <Route path="/billing" element={<DashboardLayout><Billing /></DashboardLayout>} />
+                    <Route path="/billing-cart" element={<DashboardLayout><BillingCart /></DashboardLayout>} />
+                    <Route path="/purchases" element={<DashboardLayout><Purchases /></DashboardLayout>} />
                     <Route 
                       path="/admin" 
                       element={
                         <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-                          <Admin />
+                          <DashboardLayout><Admin /></DashboardLayout>
                         </Suspense>
                       } 
                     />
-                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/settings" element={<DashboardLayout><Settings /></DashboardLayout>} />
                     <Route 
                       path="/admin/settings" 
                       element={
@@ -88,7 +75,7 @@ function App() {
                       path="/deletion-history" 
                       element={
                         <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-                          <DeletionHistory />
+                          <DashboardLayout><DeletionHistory /></DashboardLayout>
                         </Suspense>
                       } 
                     />
@@ -103,11 +90,9 @@ function App() {
                     <Route 
                       path="/business-optimization"
                       element={
-                        <DashboardLayout>
-                          <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-                            <BusinessOptimization />
-                          </Suspense>
-                        </DashboardLayout>
+                        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                          <DashboardLayout><BusinessOptimization /></DashboardLayout>
+                        </Suspense>
                       } 
                     />
                     <Route 
@@ -122,15 +107,13 @@ function App() {
                       path="/whatsapp" // Added WhatsApp route
                       element={
                         <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-                          <WhatsAppPage />
+                          <DashboardLayout><WhatsAppPage /></DashboardLayout>
                         </Suspense>
                       } 
                     />
                   </Routes>
                 </div>
             </AuthWrapper>
-          <Toaster />
-          <Sonner />
     </ErrorBoundary>
   );
 }

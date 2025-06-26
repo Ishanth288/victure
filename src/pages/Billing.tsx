@@ -1,6 +1,6 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
-import DashboardLayout from "@/components/DashboardLayout";
+
 import { EnhancedPatientDetailsModal } from "@/components/billing/EnhancedPatientDetailsModal";
 import { SearchMedicineInput } from "@/components/billing/SearchMedicineInput";
 import { CartSummary } from "@/components/billing/CartSummary";
@@ -173,107 +173,99 @@ export default function Billing() {
   };
 
   if (isLoading) {
-    return (
-      <DashboardLayout>
-        <BillingSkeleton />
-      </DashboardLayout>
-    );
+    return <BillingSkeleton />;
   }
 
   if (showPrescriptionSearch) {
     return (
-      <DashboardLayout>
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex justify-center items-center min-h-[60vh]">
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-blue-50 to-white max-w-md w-full">
-              <CardHeader className="text-center">
-                <CardTitle className="flex items-center justify-center text-xl font-semibold text-gray-800">
-                  <FileText className="w-6 h-6 mr-2 text-blue-600" />
-                  Start Billing
-                </CardTitle>
-                <p className="text-sm text-gray-600 mt-2">
-                  Create a new prescription to begin billing
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <Button 
-                  onClick={handleCreateNewPrescription}
-                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create New Prescription
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <Card className="shadow-lg border-0 bg-gradient-to-br from-blue-50 to-white max-w-md w-full">
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center text-xl font-semibold text-gray-800">
+                <FileText className="w-6 h-6 mr-2 text-blue-600" />
+                Start Billing
+              </CardTitle>
+              <p className="text-sm text-gray-600 mt-2">
+                Create a new prescription to begin billing
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Button 
+                onClick={handleCreateNewPrescription}
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create New Prescription
+              </Button>
+            </CardContent>
+          </Card>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
-      <Suspense fallback={<BillingSkeleton />}>
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-3xl font-bold">Billing</h1>
-            {patientInfo?.prescriptionNumber && (
-              <Badge variant="outline" className="text-sm">
-                Prescription #{patientInfo.prescriptionNumber}
-              </Badge>
-            )}
+    <Suspense fallback={<BillingSkeleton />}>
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-bold">Billing</h1>
+          {patientInfo?.prescriptionNumber && (
+            <Badge variant="outline" className="text-sm">
+              Prescription #{patientInfo.prescriptionNumber}
+            </Badge>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Search and Results Area */}
+          <div className="lg:col-span-2">
+            <Card className="shadow-lg border-0">
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg py-3">
+                <CardTitle className="flex items-center text-lg font-semibold">
+                  <Search className="w-5 h-5 mr-2" />
+                  Search Medicines
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <SearchMedicineInput 
+                  onAddItem={handleAddItem}
+                  cartItems={cartItems}
+                />
+              </CardContent>
+            </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Search and Results Area */}
-            <div className="lg:col-span-2">
+          {/* Cart Summary */}
+          <div className="lg:col-span-1">
+            {prescriptionId && (
               <Card className="shadow-lg border-0">
-                <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg py-3">
+                <CardHeader className="bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-t-lg py-3">
                   <CardTitle className="flex items-center text-lg font-semibold">
-                    <Search className="w-5 h-5 mr-2" />
-                    Search Medicines
+                    <Receipt className="w-5 h-5 mr-2" />
+                    Bill Summary
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4">
-                  <SearchMedicineInput 
-                    onAddItem={handleAddItem}
-                    cartItems={cartItems}
+                  <CartSummary
+                    items={cartItems}
+                    prescriptionId={prescriptionId}
+                    onRemoveItem={handleRemoveItem}
+                    onUpdateQuantity={handleUpdateQuantity}
+                    onBillGenerated={handleBillGenerated}
                   />
                 </CardContent>
               </Card>
-            </div>
-
-            {/* Cart Summary */}
-            <div className="lg:col-span-1">
-              {prescriptionId && (
-                <Card className="shadow-lg border-0">
-                  <CardHeader className="bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-t-lg py-3">
-                    <CardTitle className="flex items-center text-lg font-semibold">
-                      <Receipt className="w-5 h-5 mr-2" />
-                      Bill Summary
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <CartSummary
-                      items={cartItems}
-                      prescriptionId={prescriptionId}
-                      onRemoveItem={handleRemoveItem}
-                      onUpdateQuantity={handleUpdateQuantity}
-                      onBillGenerated={handleBillGenerated}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+            )}
           </div>
         </div>
+      </div>
 
-        <EnhancedPatientDetailsModal
-          open={showPatientModal}
-          onOpenChange={handleModalClose}
-          onSuccess={handlePatientSuccess}
-        />
-      </Suspense>
-    </DashboardLayout>
+      <EnhancedPatientDetailsModal
+        open={showPatientModal}
+        onOpenChange={handleModalClose}
+        onSuccess={handlePatientSuccess}
+      />
+    </Suspense>
   );
 }

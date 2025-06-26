@@ -4,6 +4,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, MessageSquare, Users2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { format, subMonths, subDays } from 'date-fns';
+import { displayErrorMessage } from '@/utils/errorHandling';
 
 interface GrowthData {
   refillReminderImpact: string;
@@ -19,23 +22,133 @@ const SalesCustomerRelationshipSection: React.FC = () => {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1900)); 
     try {
-      // Simulate success
-      if (Math.random() > 0.1) { // 90% success rate
-        setGrowthData({
-          refillReminderImpact: 'Automated refill reminders increased repeat purchases by 12% last quarter.',
-          loyaltyProgramInsight: 'Top 10% of loyalty members contribute to 35% of total revenue. Consider exclusive offers.',
-          lastUpdated: new Date().toLocaleDateString(),
-        });
-      } else {
-        // Simulate error
-        throw new Error('Failed to retrieve sales and customer relationship data. Please try again.');
-      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      
+      const today = new Date();
+      const threeMonthsAgo = subMonths(today, 3);
+      const sixMonthsAgo = subMonths(today, 6);
+      const fromDate = format(threeMonthsAgo, 'yyyy-MM-dd');
+      const toDate = format(today, 'yyyy-MM-dd');
+      const previousPeriodFrom = format(sixMonthsAgo, 'yyyy-MM-dd');
+      const previousPeriodTo = format(threeMonthsAgo, 'yyyy-MM-dd');
+      
+      // Fetch current period customer data
+      const { data: currentCustomers, error: currentError } = await supabase
+        .from('bills')
+        .select(`
+          id,
+          total_amount,
+          date,
+          prescription:prescriptions (
+            patient:patients (
+              id,
+              name,
+              phone_number
+            )
+          )
+        `)
+        .eq('user_id', user.id)
+        .gte('date', fromDate)
+        .lte('date', toDate);
+      
+      if (currentError) throw currentError;
+      
+      // Fetch previous period customer data for comparison
+      const { data: previousCustomers, error: previousError } = await supabase
+        .from('bills')
+        .select(`
+          id,
+          total_amount,
+          date,
+          prescription:prescriptions (
+            patient:patients (
+              id,
+              name,
+              phone_number
+            )
+          )
+        `)
+        .eq('user_id', user.id)
+        .gte('date', previousPeriodFrom)
+        .lte('date', previousPeriodTo);
+      
+      if (previousError) throw previousError;
+      
+      // Analyze customer patterns
+      const currentCustomerMap = new Map();
+      const previousCustomerMap = new Map();
+      
+      // Process current period data
+      currentCustomers?.forEach(bill => {
+        const patientId = bill.prescription?.patient?.id;
+        if (patientId) {
+          const customerData = currentCustomerMap.get(patientId) || {
+            name: bill.prescription.patient.name,
+            totalSpent: 0,
+            visitCount: 0,
+            lastVisit: bill.date
+          };
+          customerData.totalSpent += bill.total_amount;
+          customerData.visitCount += 1;
+          if (new Date(bill.date) > new Date(customerData.lastVisit)) {
+            customerData.lastVisit = bill.date;
+          }
+          currentCustomerMap.set(patientId, customerData);
+        }
+      });
+      
+      // Process previous period data
+      previousCustomers?.forEach(bill => {
+        const patientId = bill.prescription?.patient?.id;
+        if (patientId) {
+          const customerData = previousCustomerMap.get(patientId) || {
+            totalSpent: 0,
+            visitCount: 0
+          };
+          customerData.totalSpent += bill.total_amount;
+          customerData.visitCount += 1;
+          previousCustomerMap.set(patientId, customerData);
+        }
+      });
+      
+      // Calculate repeat customers
+      const repeatCustomers = Array.from(currentCustomerMap.keys())
+        .filter(patientId => previousCustomerMap.has(patientId));
+      
+      const repeatCustomerRate = currentCustomerMap.size > 0 
+        ? (repeatCustomers.length / currentCustomerMap.size * 100).toFixed(1)
+        : '0';
+      
+      // Analyze top customers (top 10% by spending)
+      const sortedCustomers = Array.from(currentCustomerMap.entries())
+        .sort(([,a], [,b]) => b.totalSpent - a.totalSpent);
+      
+      const topCustomersCount = Math.max(1, Math.ceil(sortedCustomers.length * 0.1));
+      const topCustomers = sortedCustomers.slice(0, topCustomersCount);
+      const topCustomersRevenue = topCustomers.reduce((sum, [,data]) => sum + data.totalSpent, 0);
+      const totalRevenue = Array.from(currentCustomerMap.values())
+        .reduce((sum, data) => sum + data.totalSpent, 0);
+      
+      const topCustomersContribution = totalRevenue > 0 
+        ? (topCustomersRevenue / totalRevenue * 100).toFixed(0)
+        : '0';
+      
+      // Generate insights
+      const refillReminderImpact = `Customer retention analysis shows ${repeatCustomerRate}% of customers are returning. ${repeatCustomers.length > 0 ? 'Implement refill reminders to boost repeat visits.' : 'Focus on customer retention strategies.'}`;
+      
+      const loyaltyProgramInsight = `Top ${topCustomersCount} customers (${(topCustomersCount/sortedCustomers.length*100).toFixed(0)}%) contribute ${topCustomersContribution}% of total revenue. ${topCustomersContribution > 30 ? 'Consider exclusive offers for high-value customers.' : 'Develop loyalty programs to increase customer value.'}`;
+      
+      setGrowthData({
+        refillReminderImpact,
+        loyaltyProgramInsight,
+        lastUpdated: new Date().toLocaleDateString(),
+      });
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
+        displayErrorMessage(err, 'Customer Relationship Analysis');
       } else {
         setError('An unknown error occurred.');
       }

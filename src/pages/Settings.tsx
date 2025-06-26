@@ -4,11 +4,8 @@ import SecuritySettings from "@/components/settings/SecuritySettings";
 import PharmacySettings from "@/components/settings/PharmacySettings";
 import NotificationSettings from "@/components/settings/NotificationSettings";
 import { DataMigration } from "@/components/settings/DataMigration";
-import DashboardLayout from "@/components/DashboardLayout";
-
 export default function Settings() {
   return (
-    <DashboardLayout>
       <div className="space-y-6 pb-6">
         <div className="flex justify-between">
           <div>
@@ -44,6 +41,5 @@ export default function Settings() {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
   );
 }

@@ -7,12 +7,22 @@ import { displayErrorMessage } from '@/utils/errorHandling';
 export function useProductData(userId: string | null, dateRange: { from: Date, to: Date }) {
   const [topProducts, setTopProducts] = useState<Array<{name: string, value: number}>>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+  const [error, setError] = useState<Error | null>(null);
+
   const fetchProductData = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      setIsLoading(false);
+      return;
+    }
     
     try {
       setIsLoading(true);
+      setError(null);
+      
+      // Validate inputs
+      if (!dateRange.from || !dateRange.to) {
+        throw new Error('Invalid date range provided for product data');
+      }
       
       // Format dates for query
       const fromDate = format(dateRange.from, "yyyy-MM-dd");
@@ -97,14 +107,17 @@ export function useProductData(userId: string | null, dateRange: { from: Date, t
         }));
       
       setTopProducts(productsArray);
-      setIsLoading(false);
       
-    } catch (error) {
-      console.error('Error fetching product data:', error);
-      displayErrorMessage(error, 'Product Data');
+    } catch (err) {
+      const newError = err instanceof Error ? err : new Error('An unknown error occurred');
+      console.error('Error fetching product data:', newError);
+      displayErrorMessage(newError, 'Error in Product Data');
+      setError(newError);
+      setTopProducts([]);
+    } finally {
       setIsLoading(false);
     }
-  }, [userId, dateRange]);
+  }, [userId, dateRange.from, dateRange.to]);
   
   useEffect(() => {
     fetchProductData();
@@ -113,6 +126,7 @@ export function useProductData(userId: string | null, dateRange: { from: Date, t
   return {
     topProducts,
     isLoading,
+    error,
     refreshProductData: fetchProductData
   };
 }

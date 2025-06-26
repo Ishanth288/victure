@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,6 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import Skeleton from '@/components/ui/skeleton-loader';
 
 export default function Purchases() {
   const { toast } = useToast();
@@ -546,16 +547,14 @@ export default function Purchases() {
 
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-screen">
-          Loading...
+        <div className="container mx-auto px-4 py-6">
+          <Skeleton variant="dashboard" />
         </div>
-      </DashboardLayout>
     );
   }
 
-  return (
-    <DashboardLayout>
+ return (
+    <>
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
           <h1 className="text-3xl font-bold">Purchase Orders</h1>
@@ -628,6 +627,7 @@ export default function Purchases() {
         </div>
       </div>
 
+      {/* Dialogs */}
       <AddPurchaseOrderDialog
         open={isPurchaseDialogOpen}
         onOpenChange={setPurchaseDialogOpen}
@@ -640,15 +640,15 @@ export default function Purchases() {
         orderItems={selectedOrderItems}
         onSubmit={handleUpdateDeliverySubmit}
         onComplete={handleCompleteOrder}
-        orderId={selectedOrderId || undefined}
       />
 
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure you want to delete this order?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the purchase order and all related items.
+              This action cannot be undone. This will permanently delete the purchase order.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -659,6 +659,6 @@ export default function Purchases() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </DashboardLayout>
+    </>
   );
 }

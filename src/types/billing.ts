@@ -19,6 +19,7 @@ export interface BillData {
   discount_amount: number;
   total_amount: number;
   status: string;
+  payment_method?: string;
   prescription?: {
     patient?: {
       name: string;

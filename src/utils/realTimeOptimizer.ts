@@ -72,20 +72,20 @@ class RealTimeOptimizer {
 
     // Subscribe with enhanced error handling
     channel.subscribe((status, err) => {
-      console.log(`📡 Channel ${channelKey} status:`, status);
+      if (import.meta.env.VITE_DEBUG_LOGS) console.log(`📡 Channel ${channelKey} status:`, status);
       
       switch (status) {
         case 'SUBSCRIBED':
           this.isConnected = true;
           this.connectionRetries = 0;
-          console.log(`✅ Successfully subscribed to ${channelKey}`);
+          if (import.meta.env.VITE_DEBUG_LOGS) console.log(`✅ Successfully subscribed to ${channelKey}`);
           break;
           
         case 'CHANNEL_ERROR':
         case 'TIMED_OUT':
         case 'CLOSED':
           this.isConnected = false;
-          console.error(`❌ Channel ${channelKey} error:`, err);
+          if (import.meta.env.VITE_DEBUG_LOGS) console.error(`❌ Channel ${channelKey} error:`, err);
           this.handleReconnection(channelKey, configs, userId);
           break;
       }
@@ -111,7 +111,7 @@ class RealTimeOptimizer {
         callback(payload);
         this.callbackThrottleMap.set(callback, { lastCall: now });
       } catch (error) {
-        console.error('Real-time callback error:', error);
+        if (import.meta.env.VITE_DEBUG_LOGS) console.error('Real-time callback error:', error);
       }
     } else {
       // Throttle the call
@@ -141,7 +141,7 @@ class RealTimeOptimizer {
     userId: string
   ): void {
     if (this.connectionRetries >= this.maxRetries) {
-      console.warn(`🔄 Max reconnection attempts reached for ${channelKey}`);
+      if (import.meta.env.VITE_DEBUG_LOGS) console.warn(`🔄 Max reconnection attempts reached for ${channelKey}`);
       return;
     }
 
@@ -154,7 +154,7 @@ class RealTimeOptimizer {
     // Calculate delay with exponential backoff
     const delay = this.retryDelay * Math.pow(2, this.connectionRetries);
     
-    console.log(`🔄 Attempting reconnection for ${channelKey} in ${delay}ms`);
+    if (import.meta.env.VITE_DEBUG_LOGS) console.log(`🔄 Attempting reconnection for ${channelKey} in ${delay}ms`);
     
     const timeout = setTimeout(() => {
       this.connectionRetries++;
@@ -184,7 +184,7 @@ class RealTimeOptimizer {
       // No more subscriptions, cleanup channel
       const channel = this.channels.get(channelKey);
       if (channel) {
-        console.log(`🧹 Cleaning up channel ${channelKey}`);
+        if (import.meta.env.VITE_DEBUG_LOGS) console.log(`🧹 Cleaning up channel ${channelKey}`);
         supabase.removeChannel(channel);
       }
       
