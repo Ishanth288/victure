@@ -68,7 +68,7 @@ export default function Patients() {
       const patientGroup = patientsByPhone.get(phone);
       patientGroup.prescriptions.push(bill);
       patientGroup.bills.push(bill);
-      patientGroup.total_spent += bill.total_amount || 0;
+      patientGroup.total_spent += parseFloat(String(bill.total_amount)) || 0;
     });
     setPatients(Array.from(patientsByPhone.values()));
   }, [prescriptionBills]);
