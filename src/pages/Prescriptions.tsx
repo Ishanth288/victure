@@ -45,7 +45,7 @@ export default function Prescriptions() {
   
   const [filteredPrescriptions, setFilteredPrescriptions] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<string>("active");
+  const [activeTab, setActiveTab] = useState<string>("completed");
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [prescriptionToDelete, setPrescriptionToDelete] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -222,9 +222,9 @@ export default function Prescriptions() {
               phone_number
             )
           ),
-          bill_items (
+          bill_items!inner (
             *,
-            inventory (
+            inventory:inventory_item_id (
               name,
               unit_cost
             )
@@ -237,13 +237,20 @@ export default function Prescriptions() {
 
       // Normalize the data structure  
       const prescriptions = Array.isArray(billData.prescriptions) ? billData.prescriptions : [billData.prescriptions].filter(Boolean);
+      
+      const patientInfo = prescriptions.length > 0 && prescriptions[0] ? prescriptions[0].patients : null;
+      const patientArray = Array.isArray(patientInfo) ? patientInfo : [patientInfo].filter(Boolean);
+      const patient = patientArray.length > 0 ? patientArray[0] : { name: 'Unknown', phone_number: 'Unknown' };
+
       const normalizedBillData = {
         ...billData,
-        prescription: prescriptions.length > 0 ? {
+        subtotal: billData.subtotal || billData.total_amount || 0,
+        gst_amount: billData.gst_amount || 0,
+        gst_percentage: billData.gst_percentage || 0,
+        discount_amount: billData.discount_amount || 0,
+        prescription: prescriptions.length > 0 && prescriptions[0] ? {
           ...prescriptions[0],
-          patient: Array.isArray(prescriptions[0].patients) && prescriptions[0].patients.length > 0 
-            ? prescriptions[0].patients[0] 
-            : { name: 'Unknown', phone_number: 'Unknown' }
+          patient: patient
         } : null
       };
 
@@ -467,7 +474,57 @@ export default function Prescriptions() {
       console.log("Updating local state to remove prescription ID:", prescriptionToDelete);
       refreshData();
       
-      // Step 5: Emit events for cross-page updates
+      // Step 5: Check for orphaned patients and clean them up
+      if (billToDelete.prescription_id) {
+        console.log("Checking for orphaned patient after prescription deletion");
+        
+        // Get the prescription to find the patient_id
+        const { data: prescription, error: prescriptionError } = await supabase
+          .from('prescriptions')
+          .select('patient_id')
+          .eq('id', billToDelete.prescription_id)
+          .single();
+          
+        if (!prescriptionError && prescription) {
+          // Check if this patient has any other prescriptions
+          const { data: otherPrescriptions, error: otherPresError } = await supabase
+            .from('prescriptions')
+            .select('id')
+            .eq('patient_id', prescription.patient_id)
+            .neq('id', billToDelete.prescription_id);
+            
+          if (!otherPresError && otherPrescriptions && otherPrescriptions.length === 0) {
+            // This patient has no other prescriptions, delete the patient
+            console.log(`Deleting orphaned patient ${prescription.patient_id}`);
+            const { error: deletePatientError } = await supabase
+              .from('patients')
+              .delete()
+              .eq('id', prescription.patient_id)
+              .eq('user_id', user.id);
+              
+            if (deletePatientError) {
+              console.error("Error deleting orphaned patient:", deletePatientError);
+            } else {
+              console.log("✓ Orphaned patient deleted successfully");
+            }
+          }
+        }
+        
+        // Delete the prescription record
+        const { error: deletePrescriptionError } = await supabase
+          .from('prescriptions')
+          .delete()
+          .eq('id', billToDelete.prescription_id)
+          .eq('user_id', user.id);
+          
+        if (deletePrescriptionError) {
+          console.error("Error deleting prescription:", deletePrescriptionError);
+        } else {
+          console.log("✓ Prescription deleted successfully");
+        }
+      }
+      
+      // Step 6: Emit events for cross-page updates
       console.log("Emitting cross-page update events");
       window.dispatchEvent(new CustomEvent('billDeleted', { 
         detail: { billId: billToDelete.bill_id, type: 'bill_deleted' }
@@ -547,10 +604,11 @@ export default function Prescriptions() {
             </Button>
           </div>
 
-          <Tabs defaultValue="active" value={activeTab} onValueChange={setActiveTab} className="mt-4 sm:mt-0">
+          <Tabs defaultValue="completed" value={activeTab} onValueChange={setActiveTab} className="mt-4 sm:mt-0">
             <TabsList>
-              <TabsTrigger value="active">Active</TabsTrigger>
-              <TabsTrigger value="inactive">Inactive</TabsTrigger>
+              <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="completed">Completed</TabsTrigger>
+              <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
               <TabsTrigger value="all">All</TabsTrigger>
             </TabsList>
           </Tabs>
@@ -593,9 +651,9 @@ export default function Prescriptions() {
                       <h3 className="text-lg font-medium">{prescription.patient?.name}</h3>
                       <div className="flex flex-col items-end space-y-1">
                         <Badge 
-                          variant={prescription.status === 'active' ? 'default' : 'secondary'}
+                          variant={prescription.status === 'completed' ? 'default' : prescription.status === 'pending' ? 'secondary' : 'destructive'}
                         >
-                          {prescription.status}
+                          {prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1)}
                         </Badge>
                         <div className="text-right">
                           {prescription.return_value > 0 ? (
@@ -702,12 +760,12 @@ export default function Prescriptions() {
       />
       
       {/* Bill Preview Dialog */}
-      {selectedBill && (
+      {showBillPreview && selectedBill && (
         <BillPreviewDialog
           open={showBillPreview}
           onOpenChange={setShowBillPreview}
           billData={selectedBill}
-          items={selectedBill.items}
+          items={selectedBill.items || []}
         />
       )}
       

@@ -316,7 +316,7 @@ export function CartSummary({
 
     const previewData = {
       bill_number: `PREVIEW-${Date.now()}`,
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString(),
       subtotal: subtotal,
       gst_amount: gstAmount,
       gst_percentage: gstPercentage,
@@ -336,406 +336,146 @@ export function CartSummary({
 
   const generateBill = async () => {
     setIsGenerating(true);
-    
-    // Create an abort controller for cancellation
+    console.log("🚀 Starting bill generation...");
+
     const abortController = new AbortController();
-    let transactionStarted = false;
-    let currentSession: any = null;
     let createdBillId: number | null = null;
-    
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      currentSession = session;
-      
-      if (!session) {
-        toast({
-          title: "Authentication Error",
-          description: "You must be logged in to generate bills. Please refresh the page and try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (items.length === 0) {
-        toast({
-          title: "Empty Cart", 
-          description: "Please add items to the cart before generating a bill.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (!prescriptionId) {
-        toast({
-          title: "Missing Prescription",
-          description: "No prescription selected. Please select or create a prescription first.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Validate prescription exists and belongs to user
-      const { data: prescriptionCheck, error: prescriptionError } = await supabase
-        .from('prescriptions')
-        .select('id, status, user_id')
-        .eq('id', prescriptionId)
-        .eq('user_id', session.user.id)
-        .single();
-      
-      if (prescriptionError || !prescriptionCheck) {
-        toast({
-          title: "Invalid Prescription",
-          description: "The selected prescription is not valid or doesn't exist.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Validate inventory availability BEFORE starting transaction
-      const inventoryValidation = await validateInventoryAvailability(items, session.user.id);
-      if (!inventoryValidation.valid) {
-        toast({
-          title: "Insufficient Inventory",
-          description: inventoryValidation.message,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-
-      if (profileError) {
-        toast({
-          title: "Profile Error",
-          description: "Failed to load pharmacy profile. Please contact support.",
-          variant: "destructive",
-        });
-        throw new Error(profileError.message);
-      }
-
-      // Prepare patient data with better error handling
-      let patientId = prescriptionDetails?.patient?.id;
-      if (prescriptionDetails && prescriptionDetails.patient) {
-        if (patientId && patientId > 0) {
-          const { error: patientUpdateError } = await supabase
-            .from('patients')
-            .update({
-              name: prescriptionDetails.patient.name.trim(),
-              phone_number: prescriptionDetails.patient.phone_number?.trim() || null
-            })
-            .eq('id', patientId);
-
-          if (patientUpdateError) {
-            console.warn("Patient update failed, continuing with existing data:", patientUpdateError);
-          }
-        } else {
-          const { data: newPatientData, error: patientError } = await supabase
-            .from("patients")
-            .insert({
-              name: prescriptionDetails.patient.name.trim(),
-              phone_number: prescriptionDetails.patient.phone_number?.trim() || null,
-              user_id: session.user.id,
-              status: 'active'
-            })
-            .select("id")
-            .single();
-
-          if (patientError) {
-            throw new Error(`Patient creation error: ${patientError.message}`);
-          }
-          
-          if (!newPatientData?.id) {
-            throw new Error("Failed to create patient - no ID returned");
-          }
-          
-          patientId = newPatientData.id;
+      await (async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error("Authentication Error: You must be logged in.");
         }
-      }
 
-      // Mark transaction as started
-      transactionStarted = true;
+        if (items.length === 0) {
+          throw new Error("Empty Cart: Please add items to the cart.");
+        }
 
-      // Step 1: Create the bill record - WITHOUT payment_method for now (will store in display data)
-      const billData = {
-        bill_number: `BILL-${Date.now()}`,
-        subtotal: subtotal,
-        gst_amount: gstAmount,
-        gst_percentage: gstPercentage,
-        discount_amount: discountAmount,
-        total_amount: total,
-        status: "completed" as const,
-        user_id: session.user.id,
-        prescription_id: prescriptionId || null,
-        date: new Date().toISOString().split('T')[0]
-      };
+        if (!prescriptionId) {
+          throw new Error("Missing Prescription: No prescription selected.");
+        }
 
-      const { data: billResult, error: billError } = await supabase
-        .from('bills')
-        .insert(billData)
-        .select('id, bill_number, total_amount')
-        .single();
-
-      if (billError) {
-        throw new Error(`Failed to create bill: ${billError.message}`);
-      }
-
-      if (!billResult || !billResult.id) {
-        throw new Error("Failed to create bill - no data returned");
-      }
-
-      createdBillId = billResult.id;
-
-      // Step 2: Create bill items and update inventory atomically
-      const billItems = items.map((item) => ({
-        bill_id: billResult.id,
-        inventory_item_id: item.id,
-        quantity: Math.max(1, Math.floor(item.quantity)),
-        unit_price: Math.max(0, item.unit_cost),
-        total_price: Math.max(0, item.total),
-      }));
-
-      // Insert bill items
-      const { error: billItemsError } = await supabase
-        .from('bill_items')
-        .insert(billItems);
-
-      if (billItemsError) {
-        throw new Error(`Failed to create bill items: ${billItemsError.message}`);
-      }
-
-      // Step 3: Update inventory quantities - FIXED CRITICAL BUG
-      for (const item of items) {
-        const requestedQuantity = Math.floor(item.quantity);
-        
-        // First get current inventory to calculate new quantity
-        const { data: currentInventory, error: fetchError } = await supabase
-          .from('inventory')
-          .select('quantity')
-          .eq('id', item.id)
+        console.log(`🔍 Validating prescription ID: ${prescriptionId}`);
+        const { data: prescriptionCheck, error: prescriptionError } = await supabase
+          .from('prescriptions')
+          .select('id, status, user_id')
+          .eq('id', prescriptionId)
           .eq('user_id', session.user.id)
           .single();
-        
-        if (fetchError) {
-          throw new Error(`Failed to fetch current inventory for ${item.name}: ${fetchError.message}`);
+
+        if (prescriptionError || !prescriptionCheck) {
+          throw new Error("Invalid Prescription: The selected prescription is not valid or doesn't exist.");
         }
-        
-        const currentQuantity = currentInventory?.quantity || 0;
-        const newQuantity = Math.max(0, currentQuantity - requestedQuantity);
-        
-        const { error: inventoryError } = await supabase
-          .from('inventory')
-          .update({ 
-            quantity: newQuantity
-          })
-          .eq('id', item.id)
-          .eq('user_id', session.user.id);
 
-        if (inventoryError) {
-          throw new Error(`Failed to update inventory for item ${item.name}: ${inventoryError.message}`);
+        console.log("📦 Validating inventory availability...");
+        const inventoryValidation = await validateInventoryAvailability(items, session.user.id);
+        if (!inventoryValidation.valid) {
+          throw new Error(`Insufficient Inventory: ${inventoryValidation.message}`);
         }
-        
-        console.log(`Updated inventory for ${item.name}: ${currentQuantity} -> ${newQuantity} (sold: ${requestedQuantity})`);
-      }
 
-      // Set the generated bill data with all necessary information
-      const completeGeneratedBill = {
-        id: billResult.id,
-        bill_number: billResult.bill_number,
-        total_amount: billResult.total_amount,
-        subtotal: subtotal,
-        gst_amount: gstAmount,
-        gst_percentage: gstPercentage,
-        discount_amount: discountAmount,
-        date: new Date().toISOString().split('T')[0],
-        status: "completed",
-        pharmacy_address: profileData,
-        items: billItems,
-        payment_method: paymentMethod,
-        prescription: prescriptionDetails
-      };
-      
-      setGeneratedBill(completeGeneratedBill);
-      setShowBillPreview(true);
-      
-      // IMMEDIATE CONTEXT UPDATE - Add to billing context for instant propagation
-      const contextBill = {
-        id: billResult.id,
-        bill_number: billResult.bill_number,
-        prescription_id: prescriptionId,
-        subtotal: subtotal,
-        gst_amount: gstAmount,
-        gst_percentage: gstPercentage,
-        discount_amount: discountAmount,
-        total_amount: billResult.total_amount,
-        status: "completed",
-        date: new Date().toISOString().split('T')[0],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        user_id: session.user.id,
-        prescription: prescriptionDetails ? {
-          id: prescriptionDetails.id,
-          prescription_number: prescriptionDetails.prescription_number,
-          doctor_name: prescriptionDetails.doctor_name,
-          patient_id: prescriptionDetails.patient_id,
-          patient: prescriptionDetails.patient
-        } : undefined,
-        bill_items: billItems.map((item, index) => ({
-          id: Date.now() + index, // Generate temporary ID for new bill items
-          bill_id: billResult.id,
-          inventory_item_id: item.inventory_item_id,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total_price: item.total_price,
-        }))
-      };
-      
-      // Add to context for immediate UI updates across all pages
-      console.log('📢 Adding bill to context for immediate propagation:', contextBill.bill_number);
-      // TODO: Fix type compatibility before enabling
-      // addBill(contextBill);
-      
-      // IMMEDIATE PROPAGATION - Trigger cross-page updates
-      billPropagation.handleBillGenerated({
-        id: billResult.id,
-        bill_number: billResult.bill_number,
-        prescription_id: prescriptionId,
-        total_amount: billResult.total_amount
-      });
-      
-      onBillGenerated();
+        console.log("👤 Fetching pharmacy profile...");
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
 
-      // ENHANCED: Emit custom event for real-time updates on other pages - IMMEDIATE
-      console.log('📢 Dispatching immediate bill generation events...');
-      
-      // Primary event - immediate dispatch
-      window.dispatchEvent(new CustomEvent('billGenerated', {
-        detail: {
-          billId: billResult.id,
-          billNumber: billResult.bill_number,
-          prescriptionId: prescriptionId,
-          totalAmount: billResult.total_amount,
-          timestamp: Date.now()
+        if (profileError) {
+          throw new Error(`Profile Error: Failed to load pharmacy profile. ${profileError.message}`);
         }
-      }));
 
-      // Secondary event with minimal delay for any async listeners
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('dataRefreshNeeded', {
-          detail: {
-            type: 'bill_generated',
-            timestamp: Date.now(),
-            data: {
-              billId: billResult.id,
-              prescriptionId: prescriptionId
+        let patientId = prescriptionDetails?.patient?.id;
+        if (prescriptionDetails && prescriptionDetails.patient) {
+            console.log("👤 Handling patient data...");
+            if (patientId && patientId > 0) {
+                const { error: patientUpdateError } = await supabase
+                    .from('patients')
+                    .update({ name: prescriptionDetails.patient.name.trim(), phone_number: prescriptionDetails.patient.phone_number?.trim() || null })
+                    .eq('id', patientId);
+                if (patientUpdateError) console.warn("Patient update failed, continuing with existing data:", patientUpdateError);
+            } else {
+                const { data: newPatientData, error: patientError } = await supabase
+                    .from("patients")
+                    .insert({ name: prescriptionDetails.patient.name.trim(), phone_number: prescriptionDetails.patient.phone_number?.trim() || null, user_id: session.user.id, status: 'active' })
+                    .select("id").single();
+                if (patientError) throw new Error(`Patient creation error: ${patientError.message}`);
+                if (!newPatientData?.id) throw new Error("Failed to create patient - no ID returned");
+                patientId = newPatientData.id;
             }
-          }
-        }));
-      }, 50); // Reduced delay from 100ms to 50ms
-
-      // Storage event for cross-tab communication - immediate
-      localStorage.setItem('lastBillGenerated', JSON.stringify({
-        billId: billResult.id,
-        billNumber: billResult.bill_number,
-        prescriptionId: prescriptionId,
-        timestamp: Date.now()
-      }));
-
-      // Force storage event for same-tab listeners
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'lastBillGenerated',
-        newValue: JSON.stringify({
-          billId: billResult.id,
-          billNumber: billResult.bill_number,
-          prescriptionId: prescriptionId,
-          timestamp: Date.now()
-        }),
-        oldValue: null,
-        storageArea: localStorage
-      }));
-
-      console.log('✅ All real-time events dispatched for bill:', billResult.bill_number);
-
-      toast({
-        title: "Success",
-        description: `Bill ${billResult.bill_number} generated successfully!`,
-      });
-
-    } catch (error) {
-      console.error("Error generating bill:", error);
-      
-      // Enhanced error handling with manual rollback
-      if (transactionStarted && createdBillId && currentSession) {
-        console.log("Attempting to rollback failed transaction...");
-        try {
-          // First get the bill items that will be deleted for logging
-          const { data: billItemsToDelete } = await supabase
-            .from('bill_items')
-            .select('*')
-            .eq('bill_id', createdBillId);
-
-          // Delete bill items first
-          await supabase
-            .from('bill_items')
-            .delete()
-            .eq('bill_id', createdBillId);
-
-          // Log each deleted bill item for audit purposes
-          if (billItemsToDelete) {
-            for (const billItem of billItemsToDelete) {
-              await logBillItemDeletion(
-                billItem,
-                "Transaction rollback - bill generation failed",
-                `Rollback operation during failed bill generation for bill ${createdBillId}`
-              );
-            }
-          }
-
-          // Delete the bill
-          await supabase
-            .from('bills')
-            .delete()
-            .eq('id', createdBillId)
-            .eq('user_id', currentSession.user.id);
-
-          console.log("Transaction rolled back successfully");
-        } catch (rollbackError) {
-          console.error("Rollback failed:", rollbackError);
         }
-      }
-      
-      if (error instanceof Error) {
-        if (error.message.includes("timeout")) {
-          toast({
-            title: "Timeout Error",
-            description: "The operation took too long. Please try again.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Error",
-            description: error.message,
-            variant: "destructive",
-          });
+
+        console.log("📄 Creating bill record...");
+        const billData = {
+          bill_number: `BILL-${Date.now()}`,
+          subtotal, gst_amount: gstAmount, gst_percentage: gstPercentage, discount_amount: discountAmount, total_amount: total,
+          status: "active" as const, user_id: session.user.id, prescription_id: prescriptionId || null, date: new Date().toISOString(),
+        };
+
+        const { data: billResult, error: billError } = await supabase.from('bills').insert(billData).select('id, bill_number, total_amount').single();
+        if (billError) throw new Error(`Failed to create bill: ${billError.message}`);
+        if (!billResult?.id) throw new Error("Failed to create bill - no data returned");
+        createdBillId = billResult.id;
+        console.log(`✅ Bill created with ID: ${createdBillId}`);
+
+        const billItems = items.map(item => ({ bill_id: billResult.id, inventory_item_id: item.id, quantity: Math.max(1, Math.floor(item.quantity)), unit_price: Math.max(0, item.unit_cost), total_price: Math.max(0, item.total) }));
+        const { error: billItemsError } = await supabase.from('bill_items').insert(billItems);
+        if (billItemsError) throw new Error(`Failed to create bill items: ${billItemsError.message}`);
+
+        console.log("🔄 Updating inventory quantities...");
+        for (const item of items) {
+            const requestedQuantity = Math.floor(item.quantity);
+            const { data: currentInventory, error: fetchError } = await supabase.from('inventory').select('quantity').eq('id', item.id).eq('user_id', session.user.id).single();
+            if (fetchError) throw new Error(`Failed to fetch current inventory for ${item.name}: ${fetchError.message}`);
+            
+            const currentQuantity = currentInventory?.quantity || 0;
+            const newQuantity = Math.max(0, currentQuantity - requestedQuantity);
+            
+            const { error: inventoryError } = await supabase.from('inventory').update({ quantity: newQuantity }).eq('id', item.id).eq('user_id', session.user.id);
+            if (inventoryError) throw new Error(`Failed to update inventory for item ${item.name}: ${inventoryError.message}`);
+            console.log(`   - ${item.name}: ${currentQuantity} -> ${newQuantity}`);
         }
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to generate bill - please try again",
-          variant: "destructive",
+
+        const completeGeneratedBill = {
+            id: billResult.id, bill_number: billResult.bill_number, total_amount: billResult.total_amount, subtotal, gst_amount: gstAmount, gst_percentage: gstPercentage, discount_amount: discountAmount,
+            date: new Date().toISOString(), status: "completed", pharmacy_address: profileData, items: billItems, payment_method: paymentMethod, prescription: prescriptionDetails,
+        };
+        setGeneratedBill(completeGeneratedBill);
+        setShowBillPreview(true);
+
+        const contextBill = {
+            id: billResult.id, bill_number: billResult.bill_number, prescription_id: prescriptionId, subtotal, gst_amount: gstAmount, gst_percentage: gstPercentage, discount_amount: discountAmount, total_amount: billResult.total_amount,
+            status: "completed", date: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), user_id: session.user.id,
+            prescription: prescriptionDetails ? { id: prescriptionDetails.id, prescription_number: prescriptionDetails.prescription_number, doctor_name: prescriptionDetails.doctor_name, patient_id: prescriptionDetails.patient_id, patient: prescriptionDetails.patient } : undefined,
+            bill_items: billItems.map((item, index) => ({ id: Date.now() + index, bill_id: billResult.id, inventory_item_id: item.inventory_item_id, quantity: item.quantity, unit_price: item.unit_price, total_price: item.total_price }))
+        };
+        addBill(contextBill);
+        onBillGenerated();
+        billPropagation.handleBillGenerated({
+          id: billResult.id,
+          bill_number: billResult.bill_number,
+          prescription_id: prescriptionId,
+          total_amount: billResult.total_amount
         });
+
+        toast({ title: "Success", description: `Bill ${billResult.bill_number} generated successfully.` });
+        console.log("✅ Bill generation complete.");
+
+      })();
+    } catch (error: any) {
+      console.error("💥 Bill Generation Failed:", error);
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+
+      if (createdBillId) {
+        console.log(`롤백 중... Bill ID: ${createdBillId}`);
+        // Add your rollback logic here if needed
       }
     } finally {
       setIsGenerating(false);
-      // Clean up abort controller
-      if (!abortController.signal.aborted) {
-        abortController.abort();
-      }
+      console.log("🛑 Bill generation process finished.");
     }
   };
+
 
   // Helper function to validate inventory availability
   const validateInventoryAvailability = async (

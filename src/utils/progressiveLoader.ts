@@ -9,10 +9,10 @@ import { safeSupabaseQuery, QueryOptions } from './supabaseErrorHandling';
 import { globalCache, createCacheKey } from './smartCache';
 
 export interface LoadingPriority {
-  CRITICAL = 0,
-  HIGH = 1,
-  MEDIUM = 2,
-  LOW = 3
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3
 }
 
 export interface DataLoader<T> {
@@ -354,7 +354,7 @@ export function createSupabaseLoader<T>(
     retryOnError,
     cacheKey: useCache ? createCacheKey('progressive', { key }) : undefined,
     cacheTTL,
-    loader: async () => {
+    loader: async (): Promise<T> => {
       const result = await safeSupabaseQuery(
         queryFn,
         `progressive-${key}`,
@@ -369,7 +369,7 @@ export function createSupabaseLoader<T>(
         throw new Error(result.error.message || `Failed to load ${key}`);
       }
       
-      return result.data;
+      return result.data as T;
     }
   };
 }

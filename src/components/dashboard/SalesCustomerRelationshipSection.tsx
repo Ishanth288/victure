@@ -138,7 +138,7 @@ const SalesCustomerRelationshipSection: React.FC = () => {
       // Generate insights
       const refillReminderImpact = `Customer retention analysis shows ${repeatCustomerRate}% of customers are returning. ${repeatCustomers.length > 0 ? 'Implement refill reminders to boost repeat visits.' : 'Focus on customer retention strategies.'}`;
       
-      const loyaltyProgramInsight = `Top ${topCustomersCount} customers (${(topCustomersCount/sortedCustomers.length*100).toFixed(0)}%) contribute ${topCustomersContribution}% of total revenue. ${topCustomersContribution > 30 ? 'Consider exclusive offers for high-value customers.' : 'Develop loyalty programs to increase customer value.'}`;
+      const loyaltyProgramInsight = `Top ${topCustomersCount} customers (${(topCustomersCount/sortedCustomers.length*100).toFixed(0)}%) contribute ${topCustomersContribution}% of total revenue. ${Number(topCustomersContribution) > 30 ? 'Consider exclusive offers for high-value customers.' : 'Develop loyalty programs to increase customer value.'}`;
       
       setGrowthData({
         refillReminderImpact,

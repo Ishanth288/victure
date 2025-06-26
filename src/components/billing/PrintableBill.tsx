@@ -91,7 +91,7 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
         </thead>
         <tbody>
           {items.map((item, index) => (
-            <tr key={item.id}>
+            <tr key={`${item.id}-${index}`}>
               <td className="p-1 border">{index + 1}</td>
               <td className="p-1 border">{item.name}</td>
               <td className="p-1 border">{item.quantity}</td>

@@ -45,7 +45,7 @@ describe('useInventoryInsights', () => {
   });
 
   it('should handle authentication error', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
+    (mockSupabase.auth.getUser as jest.Mock).mockResolvedValue({
       data: { user: null },
       error: null
     });
@@ -88,7 +88,7 @@ describe('useInventoryInsights', () => {
       }
     ];
 
-    mockSupabase.auth.getUser.mockResolvedValue({
+    (mockSupabase.auth.getUser as jest.Mock).mockResolvedValue({
       data: { user: mockUser },
       error: null
     });
@@ -100,7 +100,7 @@ describe('useInventoryInsights', () => {
     const mockLte = jest.fn().mockReturnThis();
 
     mockSupabase.from.mockImplementation((table) => {
-      if (table === 'inventory') {
+      if (table === 'return_analytics') {
         return {
           select: mockSelect.mockResolvedValue({
             data: mockInventory,
@@ -144,7 +144,7 @@ describe('useInventoryInsights', () => {
     const mockUser = { id: 'user-123' };
     const mockError = new Error('Database connection failed');
 
-    mockSupabase.auth.getUser.mockResolvedValue({
+    (mockSupabase.auth.getUser as jest.Mock).mockResolvedValue({
       data: { user: mockUser },
       error: null
     });
@@ -175,7 +175,7 @@ describe('useInventoryInsights', () => {
   it('should allow manual refetch', async () => {
     const mockUser = { id: 'user-123' };
     
-    mockSupabase.auth.getUser.mockResolvedValue({
+    (mockSupabase.auth.getUser as jest.Mock).mockResolvedValue({
       data: { user: mockUser },
       error: null
     });

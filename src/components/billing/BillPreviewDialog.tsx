@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Printer, Download } from "lucide-react";
+import { Printer, Download, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { useRef } from "react";
 import { toast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface BillPreviewDialogProps {
   open: boolean;
@@ -29,6 +30,12 @@ export function BillPreviewDialog({
   items,
 }: BillPreviewDialogProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+
+  const handleNewBill = () => {
+    onOpenChange(false);
+    navigate('/billing');
+  };
 
   const handlePrint = () => {
     if (!printRef.current) return;
@@ -172,6 +179,10 @@ export function BillPreviewDialog({
           <DialogTitle className="flex items-center justify-between">
             <span>Bill Preview</span>
             <div className="flex gap-2">
+              <Button variant="default" size="sm" onClick={handleNewBill}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Bill
+              </Button>
               <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="w-4 h-4 mr-2" />
                 Export PDF

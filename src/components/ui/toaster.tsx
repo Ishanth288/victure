@@ -6,11 +6,11 @@ export function Toaster() {
       position="top-right"
       richColors={false}
       closeButton={true}
-      duration={4000}
-      visibleToasts={2}
+      duration={3500}
+      visibleToasts={5}
       className="z-50"
-      gap={12}
-      expand={false}
+      gap={4}
+      expand={true}
       toastOptions={{
         style: {
           background: 'transparent',

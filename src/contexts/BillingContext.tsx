@@ -81,6 +81,7 @@ interface BillingContextType {
   
   // Actions
   refreshBills: () => Promise<void>;
+  addBill: (bill: Bill) => void;
   
   // Real-time status
   isConnected: boolean;
@@ -167,6 +168,13 @@ if (!userId || channelRef.current || !isFetched) return;
     await refetch();
   }, [refetch]);
 
+  // Add bill function to prevent duplicates
+  const addBill = useCallback((newBill: Bill) => {
+    // Since we're using React Query, we just trigger a refetch
+    // The real-time subscription will handle the update automatically
+    refetch();
+  }, [refetch]);
+
   // Setup realtime subscription when user is available and initial fetch is complete
   useEffect(() => {
     if (!user?.id) return;
@@ -210,6 +218,7 @@ if (!userId || channelRef.current || !isFetched) return;
     connectionQuality,
     isConnected,
     refreshBills,
+    addBill,
   };
 
   return (

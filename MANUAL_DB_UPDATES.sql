@@ -31,3 +31,7 @@ COMMENT ON COLUMN prescriptions.doctor_name IS 'Name of the prescribing doctor (
 UPDATE prescriptions 
 SET doctor_name = 'Not Specified' 
 WHERE doctor_name IS NULL; 
+
+-- 7. Update all bills with status 'completed' to 'active' so old prescriptions appear
+UPDATE bills SET status = 'active' WHERE status = 'completed';
+-- End of update
