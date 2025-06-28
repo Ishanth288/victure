@@ -1,19 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
   <!-- Background -->
   <rect width="180" height="180" rx="20" fill="#ffffff"/>
   
-  <!-- Victure Diamond Logo -->
-  <g transform="translate(45, 45)">
-    <!-- Main diamond shape -->
-    <path d="M45 0 L90 22.5 L45 45 L0 22.5 Z" fill="#10b981"/>
-    <path d="M45 45 L90 22.5 L90 67.5 L45 90 Z" fill="#059669"/>
-    <path d="M45 45 L0 22.5 L0 67.5 L45 90 Z" fill="#34d399"/>
-    <path d="M45 90 L0 67.5 L45 45 L90 67.5 Z" fill="#10b981"/>
+  <!-- New Victure Logo -->
+  <g transform="translate(30, 30)">
+    <!-- Main logo shape based on the new design -->
+    <circle cx="60" cy="60" r="50" fill="#10b981" opacity="0.1"/>
+    <circle cx="60" cy="60" r="40" fill="#10b981" opacity="0.15"/>
+    <circle cx="60" cy="60" r="30" fill="#10b981" opacity="0.2"/>
+    <circle cx="60" cy="60" r="20" fill="#10b981"/>
     
-    <!-- Inner diamond detail -->
-    <path d="M45 18 L72 31.5 L45 45 L18 31.5 Z" fill="#ffffff" opacity="0.3"/>
-    <path d="M45 45 L72 31.5 L72 58.5 L45 72 Z" fill="#ffffff" opacity="0.2"/>
-    <path d="M45 45 L18 31.5 L18 58.5 L45 72 Z" fill="#ffffff" opacity="0.4"/>
-    <path d="M45 72 L18 58.5 L45 45 L72 58.5 Z" fill="#ffffff" opacity="0.3"/>
+    <!-- Inner detail -->
+    <circle cx="60" cy="60" r="10" fill="#ffffff" opacity="0.8"/>
   </g>
 </svg>

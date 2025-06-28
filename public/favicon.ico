@@ -2,18 +2,15 @@
   <!-- Background -->
   <rect width="64" height="64" rx="8" fill="#ffffff"/>
   
-  <!-- Victure Diamond Logo -->
-  <g transform="translate(12, 12)">
-    <!-- Main diamond shape -->
-    <path d="M20 0 L40 10 L20 20 L0 10 Z" fill="#10b981"/>
-    <path d="M20 20 L40 10 L40 30 L20 40 Z" fill="#059669"/>
-    <path d="M20 20 L0 10 L0 30 L20 40 Z" fill="#34d399"/>
-    <path d="M20 40 L0 30 L20 20 L40 30 Z" fill="#10b981"/>
+  <!-- New Victure Logo -->
+  <g transform="translate(8, 8)">
+    <!-- Main logo shape based on the new design -->
+    <circle cx="24" cy="24" r="20" fill="#10b981" opacity="0.1"/>
+    <circle cx="24" cy="24" r="16" fill="#10b981" opacity="0.2"/>
+    <circle cx="24" cy="24" r="12" fill="#10b981" opacity="0.3"/>
+    <circle cx="24" cy="24" r="8" fill="#10b981"/>
     
-    <!-- Inner diamond detail -->
-    <path d="M20 8 L32 14 L20 20 L8 14 Z" fill="#ffffff" opacity="0.3"/>
-    <path d="M20 20 L32 14 L32 26 L20 32 Z" fill="#ffffff" opacity="0.2"/>
-    <path d="M20 20 L8 14 L8 26 L20 32 Z" fill="#ffffff" opacity="0.4"/>
-    <path d="M20 32 L8 26 L20 20 L32 26 Z" fill="#ffffff" opacity="0.3"/>
+    <!-- Inner detail -->
+    <circle cx="24" cy="24" r="4" fill="#ffffff" opacity="0.8"/>
   </g>
 </svg>

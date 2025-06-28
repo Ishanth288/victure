@@ -19,8 +19,7 @@ const fetchTodaysProgress = async () => {
       .from('prescriptions')
       .select('id')
       .eq('user_id', user.id)
-      .gte('created_at', today)
-      .lt('created_at', format(new Date(Date.now() + 24 * 60 * 60 * 1000), 'yyyy-MM-dd'));
+      .eq('date', today);
     
     if (prescError) throw prescError;
     
