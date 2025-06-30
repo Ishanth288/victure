@@ -25,7 +25,7 @@ const DeletionHistory = lazy(() => import("./pages/DeletionHistory"));
 const SystemTest = lazy(() => import("./pages/SystemTest"));
 const BusinessOptimization = lazy(() => import("./pages/BusinessOptimization"));
 const Documentation = lazy(() => import("./pages/Documentation"));
-const WhatsAppPage = lazy(() => import("./pages/whatsapp")); // Added WhatsAppPage import
+// const WhatsAppPage = lazy(() => import("./pages/whatsapp")); // Temporarily disabled for Vercel build
 
 
 function App() {
@@ -118,14 +118,16 @@ function App() {
                         </Suspense>
                       } 
                     />
+                    {/* Temporarily disabled WhatsApp route for Vercel build
                     <Route 
-                      path="/whatsapp" // Added WhatsApp route
+                      path="/whatsapp"
                       element={
                         <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
                           <DashboardLayout><WhatsAppPage /></DashboardLayout>
                         </Suspense>
                       } 
                     />
+                    */}
                   </Routes>
                 </div>
             </AuthWrapper>
