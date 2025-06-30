@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, User, FileText, DollarSign, Trash2, Loader2, RefreshCw, Calendar, Phone, Eye, Search, Plus, ArrowLeftRight, Filter, Download, Stethoscope, Package } from "lucide-react";
+import { Clock, User, FileText, DollarSign, Trash2, Loader2, RefreshCw, Calendar, Phone, Eye, Search, Plus, ArrowLeftRight, Filter, Download, Stethoscope, Package, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -27,25 +27,44 @@ import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
 import { MedicineReplacementDialog } from "@/components/prescriptions/MedicineReplacementDialog";
 import { logBillItemDeletion } from "@/utils/deletionTracker";
 import { useBilling } from "@/contexts/BillingContext";
+import { usePrescriptionsQuery } from "@/hooks/queries/usePrescriptionsQuery";
+import { useAuth } from "@/hooks/useAuth";
+
 
 export default function Prescriptions() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
-  // Use centralized billing context
+  // Debug logging
+  console.log('🔍 Prescriptions Debug:', {
+    user: user,
+    userId: user?.id,
+    userEmail: user?.email
+  });
+  
+  // Use new prescriptions query
   const { 
-    prescriptionBills, 
+    data: prescriptions = [], 
     isLoading, 
     error, 
-    refreshBills, 
-    lastUpdated,
-    isConnected,
-    connectionQuality
-  } = useBilling();
+    refetch: refreshPrescriptions
+  } = usePrescriptionsQuery(user?.id || null);
+  
+  // Debug prescription data
+  console.log('📋 Prescriptions Data:', {
+    prescriptions,
+    count: prescriptions.length,
+    isLoading,
+    error
+  });
+  
+  // Keep billing context for bill operations
+  const { refreshBills } = useBilling();
   
   const [filteredPrescriptions, setFilteredPrescriptions] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<string>("completed");
+  const [activeTab, setActiveTab] = useState<string>("all");
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [prescriptionToDelete, setPrescriptionToDelete] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -62,15 +81,20 @@ export default function Prescriptions() {
   // Replacement dialog state
   const [showReplacementDialog, setShowReplacementDialog] = useState(false);
   const [replacementBillId, setReplacementBillId] = useState<number | null>(null);
+  
+  // Delete all dialog state
+  const [isDeleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
-  // Real-time data refresh functionality using context
+  // Real-time data refresh functionality
   const refreshData = useCallback(async () => {
     setRefreshing(true);
     try {
-      await refreshBills();
+      await refreshPrescriptions();
+      await refreshBills(); // Still refresh bills for operations
       toast({
         title: "Data Refreshed",
-        description: "Latest prescriptions and bills loaded successfully",
+        description: "Latest prescriptions loaded successfully",
       });
     } catch (error) {
       console.error("Error refreshing data:", error);
@@ -82,7 +106,7 @@ export default function Prescriptions() {
     } finally {
       setRefreshing(false);
     }
-  }, [refreshBills, toast]);
+  }, [refreshPrescriptions, refreshBills, toast]);
 
   // Auto-refresh on window focus to catch updates from other tabs
   useEffect(() => {
@@ -160,11 +184,13 @@ export default function Prescriptions() {
     checkAuth();
   }, [navigate]);
 
-  // Updated filtering for bill-centric prescriptions - moved to useEffect to prevent render-time setState
+  // Updated filtering for prescriptions - moved to useEffect to prevent render-time setState
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       try {
-        const filtered = prescriptionBills.filter((prescription) => {
+
+        
+        const filtered = prescriptions.filter((prescription) => {
           if (activeTab !== "all" && prescription.status !== activeTab) {
             return false;
           }
@@ -175,11 +201,12 @@ export default function Prescriptions() {
           return (
             prescription.prescription_number?.toLowerCase().includes(query) ||
             prescription.doctor_name?.toLowerCase().includes(query) ||
-            prescription.patient?.name?.toLowerCase().includes(query) ||
-            prescription.bill_number?.toLowerCase().includes(query)
+            prescription.patients?.name?.toLowerCase().includes(query)
           );
         });
 
+
+        
         setFilteredPrescriptions(filtered);
       } catch (error) {
         console.error("Error filtering prescriptions:", error);
@@ -192,7 +219,7 @@ export default function Prescriptions() {
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [prescriptionBills, activeTab, searchQuery, toast]);
+  }, [prescriptions, activeTab, searchQuery, toast]);
 
   const handleCreateBill = (prescriptionId: number, patientData?: any) => {
     // Pass patient data via URL params for auto-fill
@@ -338,13 +365,25 @@ export default function Prescriptions() {
         return;
       }
 
-      // Find the bill record to delete from our state
-      const billToDelete = prescriptionBills.find(p => p.id === prescriptionToDelete);
-      if (!billToDelete) {
-        console.error("Bill not found in state for ID:", prescriptionToDelete);
+      // Find the prescription record to delete from our state
+      const prescriptionToDeleteRecord = prescriptions.find(p => p.id === prescriptionToDelete);
+      if (!prescriptionToDeleteRecord) {
+        console.error("Prescription not found in state for ID:", prescriptionToDelete);
         toast({
           title: "Error", 
-          description: "Bill record not found",
+          description: "Prescription record not found",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Get the bill from the prescription record
+      const billToDelete = prescriptionToDeleteRecord.bills?.[0];
+      if (!billToDelete) {
+        console.error("No bill found for prescription ID:", prescriptionToDelete);
+        toast({
+          title: "Error", 
+          description: "No bill found for this prescription",
           variant: "destructive"
         });
         return;
@@ -352,17 +391,16 @@ export default function Prescriptions() {
       
       console.log("Found bill to delete:", {
         id: billToDelete.id,
-        bill_id: billToDelete.bill_id,
         bill_number: billToDelete.bill_number,
-        patient: billToDelete.patient?.name
+        patient: prescriptionToDeleteRecord.patients?.name
       });
 
       // Step 1: Fetch and restore inventory for the bill being deleted
-      console.log("Fetching bill items for bill_id:", billToDelete.bill_id);
+      console.log("Fetching bill items for bill_id:", billToDelete.id);
       const { data: billItems, error: billItemsError } = await supabase
         .from('bill_items')
         .select('inventory_item_id, quantity, return_quantity')
-        .eq('bill_id', billToDelete.bill_id);
+        .eq('bill_id', billToDelete.id);
 
       if (billItemsError) {
         console.error("Error fetching bill items:", billItemsError);
@@ -412,12 +450,12 @@ export default function Prescriptions() {
       }
 
       // Step 2: Delete bill items first (foreign key constraint)
-      console.log("Deleting bill items for bill_id:", billToDelete.bill_id);
+      console.log("Deleting bill items for bill_id:", billToDelete.id);
       
       const { data: billItemsToDelete, error: fetchBillItemsError } = await supabase
         .from('bill_items')
         .select('*')
-        .eq('bill_id', billToDelete.bill_id);
+        .eq('bill_id', billToDelete.id);
 
       if (fetchBillItemsError) {
         console.error("Error fetching bill items for logging:", fetchBillItemsError);
@@ -426,7 +464,7 @@ export default function Prescriptions() {
       const { error: deleteItemsError } = await supabase
         .from('bill_items')
         .delete()
-        .eq('bill_id', billToDelete.bill_id);
+        .eq('bill_id', billToDelete.id);
       
       if (deleteItemsError) {
         console.error("Error deleting bill items:", deleteItemsError);
@@ -452,11 +490,11 @@ export default function Prescriptions() {
       console.log("✓ Bill items deleted successfully");
 
       // Step 3: Delete the bill itself
-      console.log("Deleting bill with id:", billToDelete.bill_id, "user_id:", user.id);
+      console.log("Deleting bill with id:", billToDelete.id, "user_id:", user.id);
       const { error: deleteBillError } = await supabase
         .from('bills')
         .delete()
-        .eq('id', billToDelete.bill_id)
+        .eq('id', billToDelete.id)
         .eq('user_id', user.id);
       
       if (deleteBillError) {
@@ -475,14 +513,14 @@ export default function Prescriptions() {
       refreshData();
       
       // Step 5: Check for orphaned patients and clean them up
-      if (billToDelete.prescription_id) {
+      if (billToDelete && billToDelete.id) {
         console.log("Checking for orphaned patient after prescription deletion");
         
         // Get the prescription to find the patient_id
         const { data: prescription, error: prescriptionError } = await supabase
           .from('prescriptions')
           .select('patient_id')
-          .eq('id', billToDelete.prescription_id)
+          .eq('id', prescriptionToDelete)
           .single();
           
         if (!prescriptionError && prescription) {
@@ -491,7 +529,7 @@ export default function Prescriptions() {
             .from('prescriptions')
             .select('id')
             .eq('patient_id', prescription.patient_id)
-            .neq('id', billToDelete.prescription_id);
+            .neq('id', prescriptionToDelete);
             
           if (!otherPresError && otherPrescriptions && otherPrescriptions.length === 0) {
             // This patient has no other prescriptions, delete the patient
@@ -514,7 +552,7 @@ export default function Prescriptions() {
         const { error: deletePrescriptionError } = await supabase
           .from('prescriptions')
           .delete()
-          .eq('id', billToDelete.prescription_id)
+          .eq('id', prescriptionToDelete)
           .eq('user_id', user.id);
           
         if (deletePrescriptionError) {
@@ -527,7 +565,7 @@ export default function Prescriptions() {
       // Step 6: Emit events for cross-page updates
       console.log("Emitting cross-page update events");
       window.dispatchEvent(new CustomEvent('billDeleted', { 
-        detail: { billId: billToDelete.bill_id, type: 'bill_deleted' }
+        detail: { billId: billToDelete.id, type: 'bill_deleted' }
       }));
       window.dispatchEvent(new CustomEvent('dataRefreshNeeded', { 
         detail: { type: 'bill_deleted' }
@@ -535,7 +573,7 @@ export default function Prescriptions() {
       
       // Cross-tab communication
       localStorage.setItem('lastBillDeleted', JSON.stringify({
-        billId: billToDelete.bill_id,
+        billId: billToDelete.id,
         timestamp: Date.now(),
         type: 'bill_deleted'
       }));
@@ -563,6 +601,106 @@ export default function Prescriptions() {
     }
   };
 
+  const handleDeleteAllPrescriptions = async () => {
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "User not authenticated",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsDeletingAll(true);
+    
+    try {
+      console.log("Starting delete all prescriptions process...");
+      
+      // First, get all bill IDs for this user
+      const { data: userBills, error: billsQueryError } = await supabase
+        .from('bills')
+        .select('id')
+        .eq('user_id', user.id);
+      
+      if (billsQueryError) {
+        console.error('Error fetching user bills:', billsQueryError);
+        throw billsQueryError;
+      }
+      
+      // Delete all bill_items for this user's bills
+      if (userBills && userBills.length > 0) {
+        const billIds = userBills.map(bill => bill.id);
+        const { error: billItemsError } = await supabase
+          .from('bill_items')
+          .delete()
+          .in('bill_id', billIds);
+        
+        if (billItemsError) {
+          console.error('Error deleting bill items:', billItemsError);
+          throw billItemsError;
+        }
+      }
+      
+      // Delete all bills for this user
+      const { error: billsError } = await supabase
+        .from('bills')
+        .delete()
+        .eq('user_id', user.id);
+      
+      if (billsError) {
+        console.error('Error deleting bills:', billsError);
+        throw billsError;
+      }
+      
+      // Delete all prescriptions for this user
+      const { error: prescriptionsError } = await supabase
+        .from('prescriptions')
+        .delete()
+        .eq('user_id', user.id);
+      
+      if (prescriptionsError) {
+        console.error('Error deleting prescriptions:', prescriptionsError);
+        throw prescriptionsError;
+      }
+      
+      // Delete all patients for this user
+      const { error: patientsError } = await supabase
+        .from('patients')
+        .delete()
+        .eq('user_id', user.id);
+      
+      if (patientsError) {
+        console.error('Error deleting patients:', patientsError);
+        throw patientsError;
+      }
+      
+      toast({
+        title: "All Data Deleted",
+        description: "All prescriptions, bills, and patients have been deleted successfully.",
+        variant: "default"
+      });
+      
+      // Emit events for cross-page updates
+      window.dispatchEvent(new CustomEvent('dataRefreshNeeded', { 
+        detail: { type: 'bulk_delete_prescriptions' }
+      }));
+      
+      // Refresh the data
+      refreshData();
+      
+    } catch (error: any) {
+      console.error('Error deleting all data:', error);
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to delete all data",
+        variant: "destructive"
+      });
+    } finally {
+       setIsDeletingAll(false);
+       setDeleteAllDialogOpen(false);
+     }
+   };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-6">
@@ -575,7 +713,7 @@ export default function Prescriptions() {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
-          <p className="text-red-600 mb-4">Error loading prescriptions: {error}</p>
+          <p className="text-red-600 mb-4">Error loading prescriptions: {error?.message || String(error)}</p>
           <Button onClick={refreshData}>Try Again</Button>
         </div>
       </div>
@@ -584,51 +722,78 @@ export default function Prescriptions() {
 
   return (
     <>
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-3xl font-bold">Prescriptions</h1>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={refreshData}
-              disabled={refreshing}
-              className="flex items-center space-x-2"
-            >
-              {refreshing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
+      <div className="container mx-auto px-4 py-8">
+        <div className="p-6 space-y-6">
+          {/* Header Section with proper semantic HTML */}
+          <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Prescriptions</h1>
+              <p className="text-sm text-gray-600 mt-1">
+                Manage your prescription records efficiently
+              </p>
+            </div>
+            
+            <div className="flex flex-wrap gap-3">
+              <Button 
+                onClick={() => setDeleteAllDialogOpen(true)} 
+                variant="destructive" 
+                size="sm"
+                disabled={refreshing || isDeletingAll || filteredPrescriptions.length === 0}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refreshData}
+                disabled={refreshing}
+                className="flex items-center gap-2"
+              >
+                {refreshing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                <span>{refreshing ? "Refreshing..." : "Refresh"}</span>
+              </Button>
+            </div>
+          </header>
+
+          {/* Tabs and Search Section */}
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="relative flex-1 max-w-md">
+              <Input
+                placeholder="Search by prescription number, bill number, doctor or patient name"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            </div>
+            
+            <Tabs defaultValue="completed" value={activeTab} onValueChange={setActiveTab}>
+              <TabsList>
+                <TabsTrigger value="pending">Pending</TabsTrigger>
+                <TabsTrigger value="completed">Completed</TabsTrigger>
+                <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+                <TabsTrigger value="all">All</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          {/* Main Content Card */}
+          <Card className="rounded-xl border shadow-sm">
+            <CardContent className="p-6">
+              {refreshing && (
+                <div className="flex items-center justify-center py-4 text-blue-600 mb-4">
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                  <span>Updating data...</span>
+                </div>
               )}
-              <span>{refreshing ? "Refreshing..." : "Refresh"}</span>
-            </Button>
-          </div>
 
-          <Tabs defaultValue="completed" value={activeTab} onValueChange={setActiveTab} className="mt-4 sm:mt-0">
-            <TabsList>
-              <TabsTrigger value="pending">Pending</TabsTrigger>
-              <TabsTrigger value="completed">Completed</TabsTrigger>
-              <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
-              <TabsTrigger value="all">All</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        <Input
-          placeholder="Search by prescription number, bill number, doctor or patient name"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-md mb-6"
-        />
-
-        {refreshing && (
-          <div className="flex items-center justify-center py-4 text-blue-600">
-            <Loader2 className="h-5 w-5 animate-spin mr-2" />
-            <span>Updating data...</span>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredPrescriptions.length === 0 ? (
             <div className="col-span-full text-center p-8 bg-gray-50 rounded-lg">
               <p className="text-gray-500">No prescriptions found</p>
@@ -643,34 +808,33 @@ export default function Prescriptions() {
               )}
             </div>
           ) : (
-            filteredPrescriptions.map((prescription) => (
+            filteredPrescriptions.map((prescription) => {
+              const prescriptionStatus = prescription.has_bill ? "completed" : "pending";
+              return (
               <Card key={prescription.id} className="overflow-hidden hover:shadow-md transition-shadow">
                 <CardContent className="p-0">
                   <div className="p-4">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-lg font-medium">{prescription.patient?.name}</h3>
+                      <h3 className="text-lg font-medium">{prescription.patients?.name}</h3>
                       <div className="flex flex-col items-end space-y-1">
                         <Badge 
-                          variant={prescription.status === 'completed' ? 'default' : prescription.status === 'pending' ? 'secondary' : 'destructive'}
+                          variant={prescriptionStatus === 'completed' ? 'default' : prescriptionStatus === 'pending' ? 'secondary' : 'destructive'}
                         >
-                          {prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1)}
+                          {prescriptionStatus.charAt(0).toUpperCase() + prescriptionStatus.slice(1)}
                         </Badge>
                         <div className="text-right">
-                          {prescription.return_value > 0 ? (
+                          {prescription.has_bill ? (
                             <div className="space-y-1">
-                              <div className="text-sm text-gray-400 line-through">
-                                ₹{prescription.original_amount.toFixed(2)}
+                              <div className="text-xl font-bold text-green-600">
+                                ₹{prescription.bill_total_amount || 0}
                               </div>
-                              <div className="text-lg font-bold text-green-600">
-                                ₹{prescription.amount.toFixed(2)}
-                              </div>
-                              <div className="text-xs text-orange-600">
-                                (₹{prescription.return_value.toFixed(2)} returned)
+                              <div className="text-xs text-gray-500">
+                                Bill #{prescription.bill_number}
                               </div>
                             </div>
                           ) : (
-                            <div className="text-xl font-bold text-green-600">
-                              ₹{prescription.amount.toFixed(2)}
+                            <div className="text-sm text-gray-500">
+                              No Bill Yet
                             </div>
                           )}
                         </div>
@@ -686,64 +850,94 @@ export default function Prescriptions() {
                         <FileText className="w-4 h-4 mr-2" />
                         <span>Rx #{prescription.prescription_number}</span>
                       </div>
-                      <div className="flex items-center">
-                        <DollarSign className="w-4 h-4 mr-2" />
-                        <span>Bill #{prescription.bill_number}</span>
-                      </div>
+                      {prescription.has_bill && (
+                        <div className="flex items-center">
+                          <DollarSign className="w-4 h-4 mr-2" />
+                          <span>Bill Generated</span>
+                        </div>
+                      )}
                       <div className="flex items-center">
                         <Calendar className="w-4 h-4 mr-2" />
-                        <span>{format(new Date(prescription.date), "MMM dd, yyyy h:mm a")}</span>
+                        <span>{format(new Date(prescription.created_at), "MMM dd, yyyy h:mm a")}</span>
                       </div>
                       <div className="flex items-center">
                         <Phone className="w-4 h-4 mr-2" />
-                        <span>{prescription.patient?.phone_number}</span>
+                        <span>{prescription.patients?.phone_number}</span>
                       </div>
                     </div>
                   </div>
                     
-                  <div className="grid grid-cols-2 border-t border-gray-100">
-                    <Button 
-                      variant="ghost" 
-                      className="rounded-none py-3 text-blue-600 hover:bg-blue-50"
-                      onClick={() => handleBillPreview(prescription.bill_id)}
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      Preview
-                    </Button>
-                    
-                    <Button 
-                      variant="ghost" 
-                      className="rounded-none py-3 text-orange-600 hover:bg-orange-50 border-l border-gray-100"
-                      onClick={() => handleReturn(prescription.bill_id, prescription.bill_number)}
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Return
-                    </Button>
-                  </div>
+                  {prescription.has_bill ? (
+                    <>
+                      <div className="grid grid-cols-2 border-t border-gray-100">
+                        <Button 
+                          variant="ghost" 
+                          className="rounded-none py-3 text-blue-600 hover:bg-blue-50"
+                          onClick={() => handleBillPreview(prescription.bill_id)}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Preview
+                        </Button>
+                        
+                        <Button 
+                          variant="ghost" 
+                          className="rounded-none py-3 text-orange-600 hover:bg-orange-50 border-l border-gray-100"
+                          onClick={() => handleReturn(prescription.bill_id, prescription.bill_number)}
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Return
+                        </Button>
+                      </div>
 
-                  <div className="grid grid-cols-2 border-t border-gray-100">
-                    <Button 
-                      variant="ghost" 
-                      className="rounded-none py-3 text-purple-600 hover:bg-purple-50"
-                      onClick={() => handleReplacement(prescription.bill_id, prescription.bill_number)}
-                    >
-                      <ArrowLeftRight className="h-4 w-4 mr-2" />
-                      Replace
-                    </Button>
-                    
-                    <Button 
-                      variant="ghost" 
-                      className="rounded-none py-3 text-destructive hover:bg-red-50 border-l border-gray-100"
-                      onClick={() => handleDeletePrescription(prescription.id)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </Button>
-                  </div>
+                      <div className="grid grid-cols-2 border-t border-gray-100">
+                        <Button 
+                          variant="ghost" 
+                          className="rounded-none py-3 text-purple-600 hover:bg-purple-50"
+                          onClick={() => handleReplacement(prescription.bill_id, prescription.bill_number)}
+                        >
+                          <ArrowLeftRight className="h-4 w-4 mr-2" />
+                          Replace
+                        </Button>
+                        
+                        <Button 
+                          variant="ghost" 
+                          className="rounded-none py-3 text-destructive hover:bg-red-50 border-l border-gray-100"
+                          onClick={() => handleDeletePrescription(prescription.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="grid grid-cols-2 border-t border-gray-100">
+                      <Button 
+                        variant="ghost" 
+                        className="rounded-none py-3 text-green-600 hover:bg-green-50"
+                        onClick={() => handleCreateBill(prescription.id, prescription.patients)}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Generate Bill
+                      </Button>
+                      
+                      <Button 
+                        variant="ghost" 
+                        className="rounded-none py-3 text-destructive hover:bg-red-50 border-l border-gray-100"
+                        onClick={() => handleDeletePrescription(prescription.id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-            ))
+              );
+            })
           )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
       
@@ -793,6 +987,45 @@ export default function Prescriptions() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeletePrescription} className="bg-red-600 hover:bg-red-700">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Delete All Dialog */}
+      <AlertDialog open={isDeleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete All Prescriptions and Patients?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>All prescription records</li>
+                <li>All bill records and items</li>
+                <li>All patient records</li>
+                <li>All associated data for your account</li>
+              </ul>
+              <strong className="text-red-600 block mt-2">This will completely reset your data!</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingAll}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteAllPrescriptions} 
+              className="bg-red-600 hover:bg-red-700"
+              disabled={isDeletingAll}
+            >
+              {isDeletingAll ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete All"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { RealtimeChannel } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +15,11 @@ export interface BillItem {
   unit_price: number;
   total_price: number;
   return_quantity?: number;
+  is_replacement?: boolean;
+  replaced_item_id?: number;
+  replacement_item_id?: number;
+  replacement_quantity?: number;
+  replacement_reason?: string;
   inventory_item?: {
     name: string;
     unit_cost: number;

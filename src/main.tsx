@@ -30,7 +30,7 @@ const queryClient = new QueryClient({
 
 function Root() {
   return (
-    <React.StrictMode>
+    <>
       <HelmetProvider>
         <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
           <QueryClientProvider client={queryClient}>
@@ -49,9 +49,13 @@ function Root() {
           </QueryClientProvider>
         </ThemeProvider>
       </HelmetProvider>
-    </React.StrictMode>
+    </>
   );
 }
 
 const root = ReactDOM.createRoot(document.getElementById("root")!); 
-root.render(<Root />);
+root.render(
+  <React.StrictMode>
+    <Root />
+  </React.StrictMode>
+);

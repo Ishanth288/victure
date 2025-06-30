@@ -10,7 +10,7 @@ import { PurchaseOrder, PurchaseOrderItem } from "@/types/purchases";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Download, Printer, Plus } from "lucide-react";
+import { Download, Printer, Plus, Search } from "lucide-react";
 import { format } from "date-fns";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -24,6 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Card, CardContent } from "@/components/ui/card";
 import Skeleton from '@/components/ui/skeleton-loader';
 
 export default function Purchases() {
@@ -555,11 +556,15 @@ export default function Purchases() {
 
  return (
     <>
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-          <h1 className="text-3xl font-bold">Purchase Orders</h1>
+      <div className="container mx-auto px-4 py-6 space-y-6">
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Purchase Orders</h1>
+            <p className="text-gray-600 mt-1">Manage and track your purchase orders</p>
+          </div>
           
-          <div className="flex flex-wrap gap-2 mt-4 sm:mt-0">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -585,13 +590,17 @@ export default function Purchases() {
           </div>
         </div>
 
-        <div className="mb-6 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 items-start sm:items-center">
-          <Input
-            placeholder="Search by supplier name or notes"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1"
-          />
+        {/* Search and Filters */}
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search by supplier name or notes"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
           <Tabs
             defaultValue="all"
             value={activeTab}
@@ -606,7 +615,10 @@ export default function Purchases() {
           </Tabs>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Main Content Card */}
+        <Card className="rounded-xl border shadow-sm">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredOrders.length === 0 ? (
             <div className="col-span-full text-center p-8 bg-gray-50 rounded-lg">
               <p className="text-gray-500">No purchase orders found</p>
@@ -624,7 +636,9 @@ export default function Purchases() {
               />
             ))
           )}
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Dialogs */}

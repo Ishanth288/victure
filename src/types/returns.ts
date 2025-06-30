@@ -2,12 +2,10 @@
 export interface MedicineReturn {
   id: number;
   bill_item_id: number;
-  quantity: number;
+  quantity_returned: number;
   reason: string | null;
-  return_date: string;
-  status: 'inventory' | 'disposed';
-  processed_by: string;
-  user_id: string;
+  refund_amount: number;
+  created_at: string;
 }
 
 export interface ReturnHistoryItem {
@@ -20,7 +18,16 @@ export interface ReturnHistoryItem {
   unit_price: number;
   return_value: number;
   return_date: string;
-  status: 'inventory' | 'disposed';
   reason: string | null;
   prescription_id?: number;
+}
+
+// Database types matching Supabase schema
+export interface DatabaseMedicineReturn {
+  id: number;
+  bill_item_id: number;
+  quantity_returned: number;
+  reason: string | null;
+  refund_amount: number;
+  created_at: string | null;
 }

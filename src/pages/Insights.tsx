@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { addDays, format, subDays, subMonths } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CustomerRetentionAnalysis } from "@/components/insights/CustomerRetentionAnalysis";
+import { clearTableCaches } from "@/utils/schemaRefresh";
 
 interface BillsData {
   total_amount: string | number;
@@ -110,6 +111,8 @@ export default function Insights() {
       
       setUserId(session.user.id);
       if (!dataFetchedRef.current) {
+        // Clear caches for bills and related tables to resolve relationship errors
+        clearTableCaches(['bills', 'bill_items', 'prescriptions']);
         fetchInsightsData(session.user.id);
         dataFetchedRef.current = true;
       }

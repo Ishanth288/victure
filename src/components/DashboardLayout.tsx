@@ -118,7 +118,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }, 3000); // Reduced to 3s
 
     return () => clearTimeout(timeoutId);
-  }, [loading, planDataConfirmed]);
+  }, []); // Fixed: Remove dependencies that cause infinite loop
 
   return (
     <>

@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -15,6 +16,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { ConnectionHealthMonitor } from "@/components/ConnectionHealthMonitor";
 import Settings from "./pages/Settings";
+import { refreshSupabaseSchema } from "@/utils/schemaRefresh";
 
 
 const Admin = lazy(() => import("./pages/Admin"));
@@ -23,10 +25,23 @@ const DeletionHistory = lazy(() => import("./pages/DeletionHistory"));
 const SystemTest = lazy(() => import("./pages/SystemTest"));
 const BusinessOptimization = lazy(() => import("./pages/BusinessOptimization"));
 const Documentation = lazy(() => import("./pages/Documentation"));
-const WhatsAppPage = lazy(() => import("./pages/WhatsApp")); // Added WhatsAppPage import
+const WhatsAppPage = lazy(() => import("./pages/whatsapp")); // Added WhatsAppPage import
 
 
 function App() {
+  // Refresh schema cache on app load to resolve relationship errors
+  useEffect(() => {
+    const initializeSchema = async () => {
+      try {
+        await refreshSupabaseSchema();
+      } catch (error) {
+        console.warn('Schema refresh failed on app load:', error);
+      }
+    };
+    
+    initializeSchema();
+  }, []);
+
   return (
       <ErrorBoundary
         onError={(error, errorInfo) => {

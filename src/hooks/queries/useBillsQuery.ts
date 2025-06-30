@@ -15,7 +15,7 @@ const transformBillToPrescriptionBill = (bill: any): PrescriptionBill => {
 
   // Handle nested structure from Supabase
   const prescription = Array.isArray(bill.prescriptions) ? bill.prescriptions[0] : bill.prescriptions;
-  const patient = prescription?.patients;
+  const patient = Array.isArray(prescription?.patients) ? prescription.patients[0] : prescription?.patients;
 
   return {
     id: bill.id,
@@ -28,7 +28,7 @@ const transformBillToPrescriptionBill = (bill: any): PrescriptionBill => {
     prescription_id: prescription?.id || null,
     prescription_number: prescription?.prescription_number || 'Unknown',
     doctor_name: prescription?.doctor_name || 'Not Specified',
-    status: bill.status,
+    status: bill.status || 'completed',
     patient: patient ? { name: patient.name, phone_number: patient.phone_number } : { name: 'Unknown', phone_number: 'Unknown' },
     bill_items: bill.bill_items || [],
     display_date: billDate
@@ -49,8 +49,6 @@ const fetchBills = async (userId: string): Promise<{ bills: Bill[], prescription
         id,
         prescription_number,
         doctor_name,
-        date,
-        status,
         patient_id,
         patients (
           id,
@@ -58,7 +56,7 @@ const fetchBills = async (userId: string): Promise<{ bills: Bill[], prescription
           phone_number
         )
       ),
-      bill_items (
+      bill_items!bill_id (
         id,
         inventory_item_id,
         quantity,

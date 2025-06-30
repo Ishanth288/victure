@@ -62,6 +62,7 @@ const fetchTodaysProgress = async () => {
     
     let repeatedCustomers = 0;
     if (todayPatientIds.length > 0) {
+      // Get all previous bills for this user before today
       const { data: previousBills, error: prevError } = await supabase
         .from('bills')
         .select(`
@@ -72,8 +73,7 @@ const fetchTodaysProgress = async () => {
           )
         `)
         .eq('user_id', user.id)
-        .lt('date', today)
-        .in('prescriptions.patients.id', todayPatientIds);
+        .lt('date', today);
       
       if (!prevError && previousBills) {
         const previousPatientIds = new Set(

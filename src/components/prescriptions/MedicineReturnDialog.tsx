@@ -31,7 +31,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { processMedicineReturn, updateInventoryAfterReturn } from "@/utils/returnUtils";
 import { logMedicineReturn } from "@/utils/deletionTracker";
-import { MedicineReturn } from "@/types/returns";
+import { DatabaseMedicineReturn } from "@/types/returns";
 import { Card } from "@/components/ui/card";
 
 interface MedicineReturnItem {
@@ -201,11 +201,11 @@ export function MedicineReturnDialog({
       if (!item) throw new Error("Selected item not found");
       
       // Process the return
-      const returnData: Omit<MedicineReturn, 'id' | 'return_date' | 'processed_by' | 'user_id'> = {
+      const returnData: Omit<DatabaseMedicineReturn, 'id' | 'created_at'> = {
         bill_item_id: selectedItem,
-        quantity: returnQuantity,
+        quantity_returned: returnQuantity,
         reason: reason || null,
-        status: returnToInventory ? 'inventory' : 'disposed'
+        refund_amount: currentReturnValue
       };
       
       const processedReturn = await processMedicineReturn(returnData);

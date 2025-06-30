@@ -1,32 +1,34 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { MedicineReturn, ReturnHistoryItem } from "@/types/returns";
+import { MedicineReturn, ReturnHistoryItem, DatabaseMedicineReturn } from "@/types/returns";
 import { safeQueryData } from "./safeSupabaseQueries";
 
 export async function processMedicineReturn(
-  returnData: Omit<MedicineReturn, 'id' | 'return_date' | 'processed_by' | 'user_id'>
+  returnData: Omit<DatabaseMedicineReturn, 'id' | 'created_at'>
 ) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
-  // Create return record using generic approach to avoid type errors
-  const { data, error } = await (supabase as any)
+  // Create return record
+  const { data, error } = await supabase
     .from('medicine_returns')
     .insert({
       ...returnData,
       processed_by: user.id,
-      user_id: user.id
+      user_id: user.id,
+      status: 'pending',
+      quantity: returnData.quantity_returned
     })
     .select()
     .single();
 
   if (error) throw error;
-  return data;
+  return data as unknown as DatabaseMedicineReturn;
 }
 
 export async function updateInventoryAfterReturn(
   inventoryItemId: number,
-  quantity: number,
+  quantityReturned: number,
   returnToInventory: boolean
 ) {
   if (!returnToInventory) return;
@@ -41,7 +43,7 @@ export async function updateInventoryAfterReturn(
       
     if (fetchError) throw fetchError;
       
-    const newQuantity = (inventoryItem.quantity || 0) + quantity;
+    const newQuantity = (inventoryItem.quantity || 0) + quantityReturned;
     
     // Update the inventory quantity
     const { error: updateError } = await supabase
@@ -60,20 +62,20 @@ export async function updateInventoryAfterReturn(
 }
 
 export async function getReturnAnalytics(userId: string, timeframe: 'week' | 'month' | 'year' = 'month') {
-  let timeCondition: string;
+  let intervalDays: number;
   
   switch (timeframe) {
     case 'week':
-      timeCondition = "return_date >= now() - interval '7 days'";
+      intervalDays = 7;
       break;
     case 'month':
-      timeCondition = "return_date >= now() - interval '30 days'";
+      intervalDays = 30;
       break;
     case 'year':
-      timeCondition = "return_date >= now() - interval '365 days'";
+      intervalDays = 365;
       break;
     default:
-      timeCondition = "return_date >= now() - interval '30 days'";
+      intervalDays = 30;
   }
 
   try {
@@ -84,14 +86,13 @@ export async function getReturnAnalytics(userId: string, timeframe: 'week' | 'mo
         id,
         medicine_name,
         returned_quantity,
-        status,
         return_value,
         return_date,
         reason,
         bill_id
       `)
       .eq('user_id', userId)
-      .filter('return_date', 'gte', `now() - interval '${timeframe === 'week' ? '7 days' : timeframe === 'month' ? '30 days' : '365 days'}'`)
+      .gte('return_date', new Date(Date.now() - intervalDays * 24 * 60 * 60 * 1000).toISOString())
       .order('return_date', { ascending: false });
 
     if (error) throw error;
@@ -119,7 +120,6 @@ export async function getReturnHistoryByBill(billIds: number[]) {
         unit_price,
         return_value,
         return_date,
-        status,
         reason
       `)
       .in('bill_id', billIds)
@@ -128,11 +128,19 @@ export async function getReturnHistoryByBill(billIds: number[]) {
     if (error) throw error;
     console.log("Fetched return history by bills:", data?.length || 0, "records");
     
-    // Type assertion to ensure all required fields are present
+    // Map to ReturnHistoryItem format
     const returnHistory = data?.map(item => ({
-      ...item,
-      // If inventory_item_id is not present in the result, provide a fallback value
-      inventory_item_id: item.inventory_item_id || 0
+      id: item.id,
+      bill_item_id: item.bill_item_id,
+      inventory_item_id: item.inventory_item_id,
+      medicine_name: item.medicine_name,
+      original_quantity: item.original_quantity,
+      returned_quantity: item.returned_quantity,
+      unit_price: item.unit_price,
+      return_value: item.return_value,
+      return_date: item.return_date,
+      reason: item.reason,
+      // prescription_id is not part of the return_analytics view
     })) as ReturnHistoryItem[];
     
     return returnHistory || [];
@@ -146,34 +154,18 @@ export function calculateReturnMetrics(returnData: any[]) {
   if (!returnData || returnData.length === 0) {
     return {
       totalReturns: 0,
-      totalValue: 0,
-      returnToInventory: 0,
-      disposed: 0,
-      returnToInventoryValue: 0,
-      disposedValue: 0
+      totalValue: 0
     };
   }
 
   const metrics = returnData.reduce((acc, item) => {
-    acc.totalReturns += item.returned_quantity || 0;
+    acc.totalReturns += item.quantity_returned || 0;
     acc.totalValue += item.return_value || 0;
-    
-    if (item.status === 'inventory') {
-      acc.returnToInventory += item.returned_quantity || 0;
-      acc.returnToInventoryValue += item.return_value || 0;
-    } else if (item.status === 'disposed') {
-      acc.disposed += item.returned_quantity || 0;
-      acc.disposedValue += item.return_value || 0;
-    }
     
     return acc;
   }, {
     totalReturns: 0,
-    totalValue: 0,
-    returnToInventory: 0,
-    disposed: 0,
-    returnToInventoryValue: 0,
-    disposedValue: 0
+    totalValue: 0
   });
   
   return metrics;
