@@ -31,18 +31,23 @@ export default defineConfig(({ command, mode }) => {
     },
     build: {
       // Optimize for production deployment
-      chunkSizeWarningLimit: 500,
+      chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
           manualChunks: {
             vendor: ['react', 'react-dom'],
-            ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
+            'ui-radix': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-toast', '@radix-ui/react-tabs'],
+            'ui-components': ['@/components/ui/button', '@/components/ui/card', '@/components/ui/input', '@/components/ui/table'],
             supabase: ['@supabase/supabase-js'],
             router: ['react-router-dom'],
-            utils: ['date-fns', 'lucide-react', 'clsx', 'tailwind-merge'],
+            'date-utils': ['date-fns'],
+            icons: ['lucide-react'],
+            'style-utils': ['clsx', 'tailwind-merge'],
             charts: ['recharts'],
             motion: ['framer-motion'],
-            seo: ['react-helmet-async']
+            seo: ['react-helmet-async'],
+            'react-query': ['@tanstack/react-query'],
+            forms: ['react-hook-form']
           }
         }
       },
