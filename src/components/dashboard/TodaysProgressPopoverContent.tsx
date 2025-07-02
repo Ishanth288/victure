@@ -32,11 +32,19 @@ const fetchTodaysProgress = async () => {
     
     if (billsError) throw billsError;
     const billsTyped = bills as unknown as BillData[];
+    // Filter out zero-valued bills
+    const validBills = billsTyped?.filter(bill => 
+      bill && 
+      bill.total_amount != null && 
+      !isNaN(bill.total_amount) && 
+      bill.total_amount > 0
+    ) || [];
+    
     // Calculate metrics
     const prescriptionsGenerated = prescriptions?.length || 0;
-    const totalSales = billsTyped?.reduce((sum, bill) => sum + (bill?.total_amount || 0), 0) || 0;
-    const billsInCash = billsTyped?.filter(bill => bill.payment_method === 'cash').length || 0;
-    const billsInUpi = billsTyped?.filter(bill => bill.payment_method === 'upi').length || 0;
+    const totalSales = validBills.reduce((sum, bill) => sum + bill.total_amount, 0);
+    const billsInCash = validBills.filter(bill => bill.payment_method === 'cash').length;
+    const billsInUpi = validBills.filter(bill => bill.payment_method === 'upi').length;
     
     // Calculate profit (assuming 20% margin for simplicity)
     const profitToday = totalSales * 0.2;

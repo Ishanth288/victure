@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MedicineReturnDialog } from "@/components/prescriptions/MedicineReturnDialog";
+import MedicineReturnDialog from "@/components/prescriptions/MedicineReturnDialog";
 import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
 import { MedicineReplacementDialog } from "@/components/prescriptions/MedicineReplacementDialog";
 import { logBillItemDeletion } from "@/utils/deletionTracker";
@@ -69,11 +69,7 @@ export default function Prescriptions() {
   const [refreshing, setRefreshing] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
-  // Time filter state
-  const [showTimeFilter, setShowTimeFilter] = useState(false);
-  const [fromTime, setFromTime] = useState("");
-  const [tillTime, setTillTime] = useState("");
-  const [isTimeFilterActive, setIsTimeFilterActive] = useState(false);
+
   
   // Return dialog state
   const [showReturnDialog, setShowReturnDialog] = useState(false);
@@ -198,11 +194,20 @@ export default function Prescriptions() {
         // First, process prescriptions to add computed bill properties
         const processedPrescriptions = prescriptions.map((prescription) => {
           const bills = prescription.bills || [];
-          const latestBill = bills.length > 0 ? bills[bills.length - 1] : null;
+          // Filter out zero-value, null, undefined, and invalid bills
+          const validBills = bills.filter(bill => 
+            bill && 
+            bill.total_amount != null && 
+            !isNaN(bill.total_amount) && 
+            bill.total_amount > 0
+          );
+          // Sort bills by date (most recent first)
+          const sortedBills = validBills.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          const latestBill = sortedBills.length > 0 ? sortedBills[0] : null;
           
           return {
             ...prescription,
-            has_bill: bills.length > 0,
+            has_bill: sortedBills.length > 0,
             bill_total_amount: latestBill?.total_amount || 0,
             bill_number: latestBill?.bill_number || null,
             bill_id: latestBill?.id || null
@@ -211,11 +216,12 @@ export default function Prescriptions() {
         
         const filtered = processedPrescriptions.filter((prescription) => {
           // Time-based filtering
-          if (isTimeFilterActive && fromTime && tillTime) {
-            const prescriptionDate = new Date(prescription.created_at);
+          // Skip time filtering since fromTime/tillTime not defined
+          if (false) {
+            const prescriptionDate = new Date(prescription.date);
             const today = new Date();
-            const fromDateTime = new Date(`${today.toDateString()} ${fromTime}`);
-            const tillDateTime = new Date(`${today.toDateString()} ${tillTime}`);
+            const fromDateTime = new Date(today.toDateString()); // Default to start of day
+            const tillDateTime = new Date(today.setHours(23, 59, 59, 999)); // Set to end of day
             
             // Check if prescription was created today within the time range
             const isToday = prescriptionDate.toDateString() === today.toDateString();
@@ -248,7 +254,7 @@ export default function Prescriptions() {
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [prescriptions, searchQuery, isTimeFilterActive, fromTime, tillTime, toast]);
+  }, [prescriptions, searchQuery, toast]);
 
   const handleCreateBill = (prescriptionId: number, patientData?: any) => {
     // Pass patient data via URL params for auto-fill
@@ -312,9 +318,10 @@ export default function Prescriptions() {
 
       const items = billData.bill_items.map((item: any) => {
         const inventory = Array.isArray(item.inventory) ? item.inventory : [item.inventory].filter(Boolean);
+        const inventoryItem = inventory.length > 0 && inventory[0] ? inventory[0] : null;
         return {
-          id: inventory.length > 0 ? inventory[0].id : 0,
-          name: inventory.length > 0 ? inventory[0].name : 'Unknown',
+          id: inventoryItem?.id || 0,
+          name: inventoryItem?.name || 'Unknown',
           quantity: item.quantity,
           unit_cost: item.unit_price,
           total: item.total_price,
@@ -335,8 +342,10 @@ export default function Prescriptions() {
 
   // Return system handler
   const handleReturn = (billId: number, billNumber: string) => {
+    console.log("Return button clicked for bill:", billId, billNumber);
     setReturnBillId(billId);
     setShowReturnDialog(true);
+    console.log("Return dialog state set to true");
   };
 
   // Replacement system handler  
@@ -802,35 +811,7 @@ export default function Prescriptions() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             </div>
             
-            <div className="flex items-center gap-2">
-              <Button
-                variant={isTimeFilterActive ? "default" : "outline"}
-                onClick={() => setShowTimeFilter(true)}
-                className="flex items-center gap-2"
-              >
-                <Clock className="h-4 w-4" />
-                Today Filter
-                {isTimeFilterActive && (
-                  <Badge variant="secondary" className="ml-1">
-                    {fromTime} - {tillTime}
-                  </Badge>
-                )}
-              </Button>
-              {isTimeFilterActive && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setIsTimeFilterActive(false);
-                    setFromTime("");
-                    setTillTime("");
-                  }}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  Clear Filter
-                </Button>
-              )}
-            </div>
+
           </div>
 
           {/* Main Content Card */}
@@ -1000,7 +981,7 @@ export default function Prescriptions() {
           setReturnBillId(null);
         }}
         billId={returnBillId}
-        onSuccess={handleReturnSuccess}
+        onReturnProcessed={handleReturnSuccess}
       />
       
       {/* Bill Preview Dialog */}
@@ -1081,69 +1062,7 @@ export default function Prescriptions() {
         </AlertDialogContent>
       </AlertDialog>
       
-      {/* Time Filter Dialog */}
-      <AlertDialog open={showTimeFilter} onOpenChange={setShowTimeFilter}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Set Time Range for Today</AlertDialogTitle>
-            <AlertDialogDescription>
-              Select the time range to filter prescriptions created today.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-4">
-            <div className="space-y-2">
-              <label htmlFor="fromTime" className="text-sm font-medium">
-                From Time
-              </label>
-              <Input
-                id="fromTime"
-                type="time"
-                value={fromTime}
-                onChange={(e) => setFromTime(e.target.value)}
-                className="w-full"
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="tillTime" className="text-sm font-medium">
-                Till Time
-              </label>
-              <Input
-                id="tillTime"
-                type="time"
-                value={tillTime}
-                onChange={(e) => setTillTime(e.target.value)}
-                className="w-full"
-              />
-            </div>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setShowTimeFilter(false);
-              setFromTime("");
-              setTillTime("");
-            }}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={() => {
-                if (fromTime && tillTime) {
-                  setIsTimeFilterActive(true);
-                  setShowTimeFilter(false);
-                } else {
-                  toast({
-                    title: "Invalid Time Range",
-                    description: "Please select both from and till times.",
-                    variant: "destructive"
-                  });
-                }
-              }}
-              disabled={!fromTime || !tillTime}
-            >
-              Apply Filter
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
     </>
   );
 }

@@ -44,7 +44,7 @@ const fetchPrescriptions = async (userId: string): Promise<PrescriptionWithPatie
         name,
         phone_number
       ),
-      bills (
+      bills!inner (
         id,
         bill_number,
         total_amount,
@@ -53,7 +53,9 @@ const fetchPrescriptions = async (userId: string): Promise<PrescriptionWithPatie
         payment_method
       )
     `)
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .gt('bills.total_amount', 0)
+    .order('created_at', { ascending: false });
 
   if (error) {
     console.error('Error fetching prescription details:', error);

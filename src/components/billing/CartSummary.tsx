@@ -439,6 +439,11 @@ export function CartSummary({
             }
         }
 
+        // Validate bill total amount
+        if (total <= 0) {
+          throw new Error("Invalid Bill Amount: Cannot create a bill with zero or negative total amount. Please add items with valid prices.");
+        }
+
         console.log("📄 Creating bill record...");
         const billData = {
           bill_number: `BILL-${Date.now()}`,

@@ -2,10 +2,12 @@
 export interface MedicineReturn {
   id: number;
   bill_item_id: number;
-  quantity_returned: number;
+  quantity: number;
   reason: string | null;
-  refund_amount: number;
-  created_at: string;
+  return_date: string;
+  status: string;
+  processed_by: string;
+  user_id: string;
 }
 
 export interface ReturnHistoryItem {
@@ -26,8 +28,10 @@ export interface ReturnHistoryItem {
 export interface DatabaseMedicineReturn {
   id: number;
   bill_item_id: number;
-  quantity_returned: number;
+  quantity: number;
   reason: string | null;
-  refund_amount: number;
-  created_at: string | null;
+  return_date: string;
+  status: string;
+  processed_by: string;
+  user_id: string;
 }

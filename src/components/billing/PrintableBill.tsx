@@ -12,13 +12,13 @@ interface PrintableBillProps {
     gst_percentage: number;
     discount_amount: number;
     total_amount: number;
-    prescription: {
-      patient: {
-        name: string;
-        phone_number: string;
+    prescription?: {
+      patient?: {
+        name?: string;
+        phone_number?: string;
       };
-      doctor_name: string;
-      prescription_number: string;
+      doctor_name?: string;
+      prescription_number?: string;
     };
   };
   items: {
@@ -32,6 +32,17 @@ interface PrintableBillProps {
 
 export function PrintableBill({ billData, items }: PrintableBillProps) {
   const [pharmacyDetails, setPharmacyDetails] = useState<any>(null);
+
+  // Early return if billData is not properly structured
+  if (!billData || !billData.prescription) {
+    return (
+      <div className="w-full bg-white p-4">
+        <div className="text-center text-gray-500">
+          <p>Bill data is not available</p>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     const fetchPharmacyDetails = async () => {
@@ -66,10 +77,10 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
       <div className="grid grid-cols-2 gap-2 mb-4 text-sm">
         <div>
           <h2 className="font-semibold mb-1">Patient Details:</h2>
-          <p>Name: {billData.prescription.patient.name}</p>
-          <p>Phone: {billData.prescription.patient.phone_number}</p>
-          <p>Doctor: Dr. {billData.prescription.doctor_name}</p>
-          <p>Prescription: {billData.prescription.prescription_number}</p>
+          <p>Name: {billData.prescription?.patient?.name || 'N/A'}</p>
+          <p>Phone: {billData.prescription?.patient?.phone_number || 'N/A'}</p>
+          <p>Doctor: Dr. {billData.prescription?.doctor_name || 'N/A'}</p>
+          <p>Prescription: {billData.prescription?.prescription_number || 'N/A'}</p>
         </div>
         <div className="text-right">
           <h2 className="font-semibold mb-1">Bill Details:</h2>
@@ -90,13 +101,13 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
           </tr>
         </thead>
         <tbody>
-          {items.map((item, index) => (
-            <tr key={`${item.id}-${index}`}>
+          {items.filter(item => item && typeof item === 'object').map((item, index) => (
+            <tr key={`${item.id || index}-${index}`}>
               <td className="p-1 border">{index + 1}</td>
-              <td className="p-1 border">{item.inventory.name}</td>
-              <td className="p-1 border">{item.quantity}</td>
-              <td className="p-1 border">₹{item.unit_price.toFixed(2)}</td>
-              <td className="p-1 border">₹{item.total_price.toFixed(2)}</td>
+              <td className="p-1 border">{item.name || 'N/A'}</td>
+              <td className="p-1 border">{item.quantity || 0}</td>
+              <td className="p-1 border">₹{(item.unit_cost || 0).toFixed(2)}</td>
+              <td className="p-1 border">₹{(item.total || 0).toFixed(2)}</td>
             </tr>
           ))}
         </tbody>

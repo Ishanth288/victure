@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, XCircle, CheckCircle, PlusCircle, Flag, History } from "lucide-react";
+import { Eye, PlusCircle, History } from "lucide-react";
 import { PatientBill } from "@/types/patients";
 import { getReturnHistoryByBill } from "@/utils/returnUtils";
 
@@ -14,11 +14,8 @@ interface PatientCardProps {
   prescriptions?: any[];
   totalSpent: number;
   status?: string;
-  isFlagged?: boolean;
   onViewBill: (billId: number, patient: any, prescription: any) => void;
-  onToggleStatus: (patientId: number, currentStatus: string) => void;
   onCreateBill?: (prescriptionId: number) => void;
-  onToggleFlag: (patientId: number, currentFlagStatus: boolean) => void;
 }
 
 export function PatientCard({
@@ -29,11 +26,8 @@ export function PatientCard({
   prescriptions = [],
   totalSpent,
   status = 'active',
-  isFlagged = false,
   onViewBill,
-  onToggleStatus,
   onCreateBill,
-  onToggleFlag,
 }: PatientCardProps) {
   const isInactive = status === 'inactive';
 
@@ -70,42 +64,8 @@ export function PatientCard({
                 }`}>
                   {status}
                 </span>
-                {isFlagged && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-800 flex items-center gap-1">
-                    <Flag className="h-3 w-3" />
-                    Flagged
-                  </span>
-                )}
               </div>
               <p className="text-sm text-gray-500">{phoneNumber}</p>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => onToggleStatus(id, status)}
-              >
-                {!isInactive ? (
-                  <>
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Mark Inactive
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Mark Active
-                  </>
-                )}
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className={isFlagged ? "text-red-600 hover:bg-red-50" : "text-orange-600 hover:bg-orange-50"}
-                onClick={() => onToggleFlag(id, isFlagged)}
-              >
-                <Flag className="h-4 w-4 mr-2" />
-                {isFlagged ? 'Unflag' : 'Flag'}
-              </Button>
             </div>
           </div>
 
@@ -150,7 +110,14 @@ export function PatientCard({
                         )}
                       </div>
                       {prescription.bills && prescription.bills.length > 0 ? (
-                        prescription.bills.map((bill: any) => {
+                        prescription.bills
+                          .filter((bill: any) => 
+                            bill && 
+                            bill.total_amount != null && 
+                            !isNaN(bill.total_amount) && 
+                            bill.total_amount > 0
+                          )
+                          .map((bill: any) => {
                           const hasReturns = bill.return_value > 0;
                           const originalAmount = bill.original_amount || bill.total_amount || 0;
                           const effectiveAmount = bill.effective_amount || bill.total_amount || 0;

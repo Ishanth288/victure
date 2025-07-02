@@ -129,15 +129,15 @@ export async function logMedicineReturn(
     entity_id: returnData.id,
     entity_data: {
       original_bill_item: billItem,
-      return_quantity: returnData.quantity_returned,
-      refund_amount: returnData.refund_amount
+      return_quantity: returnData.quantity,
+      return_value: returnData.return_value
     },
     deletion_reason: reason || 'Medicine return',
     deletion_type: 'return',
     bill_id: billItem.bill_id,
     medicine_name: billItem.medicine_name,
-    amount_affected: returnData.refund_amount,
-    quantity_affected: returnData.quantity_returned,
+    amount_affected: returnData.return_value,
+    quantity_affected: returnData.quantity,
     notes: returnData.reason,
     is_reversible: true,
     reversal_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
@@ -184,4 +184,4 @@ export async function logPrescriptionDeletion(
     notes: reason,
     is_reversible: false
   });
-} 
+}

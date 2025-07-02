@@ -4,7 +4,7 @@ import { MedicineReturn, ReturnHistoryItem, DatabaseMedicineReturn } from "@/typ
 import { safeQueryData } from "./safeSupabaseQueries";
 
 export async function processMedicineReturn(
-  returnData: Omit<DatabaseMedicineReturn, 'id' | 'created_at'>
+  returnData: Omit<DatabaseMedicineReturn, 'id'>
 ) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
@@ -13,17 +13,37 @@ export async function processMedicineReturn(
   const { data, error } = await supabase
     .from('medicine_returns')
     .insert({
-      ...returnData,
-      processed_by: user.id,
-      user_id: user.id,
-      status: 'pending',
-      quantity: returnData.quantity_returned
+      bill_item_id: returnData.bill_item_id,
+      quantity: returnData.quantity,
+      reason: returnData.reason,
+      return_date: returnData.return_date,
+      status: returnData.status,
+      processed_by: returnData.processed_by || user.id,
+      user_id: returnData.user_id || user.id
     })
     .select()
     .single();
 
   if (error) throw error;
-  return data as unknown as DatabaseMedicineReturn;
+  if (isDatabaseMedicineReturn(data)) {
+    return data;
+  } else {
+    throw new Error('Returned data does not match DatabaseMedicineReturn type');
+  }
+}
+
+function isDatabaseMedicineReturn(obj: any): obj is DatabaseMedicineReturn {
+  return (
+    obj &&
+    typeof obj.id === 'number' &&
+    typeof obj.bill_item_id === 'number' &&
+    typeof obj.quantity === 'number' &&
+    typeof obj.reason === 'string' &&
+    typeof obj.return_date === 'string' &&
+    typeof obj.status === 'string' &&
+    typeof obj.processed_by === 'string' &&
+    typeof obj.user_id === 'string'
+  );
 }
 
 export async function updateInventoryAfterReturn(
@@ -159,7 +179,7 @@ export function calculateReturnMetrics(returnData: any[]) {
   }
 
   const metrics = returnData.reduce((acc, item) => {
-    acc.totalReturns += item.quantity_returned || 0;
+    acc.totalReturns += item.quantity || 0;
     acc.totalValue += item.return_value || 0;
     
     return acc;

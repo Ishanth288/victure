@@ -144,33 +144,7 @@ export default function Patients() {
     setShowBillPreview(true);
   };
 
-  const handleToggleFlag = async (patientId: number, currentFlagStatus: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('patients')
-        .update({ status: !currentFlagStatus ? 'flagged' : 'active' })
-        .eq('id', patientId);
 
-      if (error) throw error;
-
-      toast({
-        title: currentFlagStatus ? 'Patient Unflagged' : 'Patient Flagged',
-        description: currentFlagStatus 
-          ? 'Patient has been unflagged successfully.' 
-          : 'Patient has been flagged for potential foul play.',
-        variant: currentFlagStatus ? 'default' : 'destructive'
-      });
-
-      refreshData();
-    } catch (error) {
-      console.error('Error toggling patient flag:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update patient flag status.',
-        variant: 'destructive'
-      });
-    }
-  };
 
 
 
@@ -235,11 +209,6 @@ export default function Patients() {
                     setShowBillPreview(true);
                   }
                 }}
-                onToggleStatus={(patientId, currentStatus) => {
-                  // TODO: Implement patient status toggle functionality
-                  console.log('Toggle status for patient:', patientId, currentStatus);
-                }}
-                onToggleFlag={handleToggleFlag}
               />
             )}
           </CardContent>
