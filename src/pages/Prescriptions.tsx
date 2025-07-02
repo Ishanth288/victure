@@ -64,11 +64,16 @@ export default function Prescriptions() {
   
   const [filteredPrescriptions, setFilteredPrescriptions] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<string>("all");
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [prescriptionToDelete, setPrescriptionToDelete] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // Time filter state
+  const [showTimeFilter, setShowTimeFilter] = useState(false);
+  const [fromTime, setFromTime] = useState("");
+  const [tillTime, setTillTime] = useState("");
+  const [isTimeFilterActive, setIsTimeFilterActive] = useState(false);
   
   // Return dialog state
   const [showReturnDialog, setShowReturnDialog] = useState(false);
@@ -190,9 +195,35 @@ export default function Prescriptions() {
       try {
 
         
-        const filtered = prescriptions.filter((prescription) => {
-          if (activeTab !== "all" && prescription.status !== activeTab) {
-            return false;
+        // First, process prescriptions to add computed bill properties
+        const processedPrescriptions = prescriptions.map((prescription) => {
+          const bills = prescription.bills || [];
+          const latestBill = bills.length > 0 ? bills[bills.length - 1] : null;
+          
+          return {
+            ...prescription,
+            has_bill: bills.length > 0,
+            bill_total_amount: latestBill?.total_amount || 0,
+            bill_number: latestBill?.bill_number || null,
+            bill_id: latestBill?.id || null
+          };
+        });
+        
+        const filtered = processedPrescriptions.filter((prescription) => {
+          // Time-based filtering
+          if (isTimeFilterActive && fromTime && tillTime) {
+            const prescriptionDate = new Date(prescription.created_at);
+            const today = new Date();
+            const fromDateTime = new Date(`${today.toDateString()} ${fromTime}`);
+            const tillDateTime = new Date(`${today.toDateString()} ${tillTime}`);
+            
+            // Check if prescription was created today within the time range
+            const isToday = prescriptionDate.toDateString() === today.toDateString();
+            const isWithinTimeRange = prescriptionDate >= fromDateTime && prescriptionDate <= tillDateTime;
+            
+            if (!isToday || !isWithinTimeRange) {
+              return false;
+            }
           }
 
           if (searchQuery === "") return true;
@@ -205,8 +236,6 @@ export default function Prescriptions() {
           );
         });
 
-
-        
         setFilteredPrescriptions(filtered);
       } catch (error) {
         console.error("Error filtering prescriptions:", error);
@@ -219,7 +248,7 @@ export default function Prescriptions() {
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, [prescriptions, activeTab, searchQuery, toast]);
+  }, [prescriptions, searchQuery, isTimeFilterActive, fromTime, tillTime, toast]);
 
   const handleCreateBill = (prescriptionId: number, patientData?: any) => {
     // Pass patient data via URL params for auto-fill
@@ -773,14 +802,35 @@ export default function Prescriptions() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             </div>
             
-            <Tabs defaultValue="completed" value={activeTab} onValueChange={setActiveTab}>
-              <TabsList>
-                <TabsTrigger value="pending">Pending</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-                <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
-                <TabsTrigger value="all">All</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={isTimeFilterActive ? "default" : "outline"}
+                onClick={() => setShowTimeFilter(true)}
+                className="flex items-center gap-2"
+              >
+                <Clock className="h-4 w-4" />
+                Today Filter
+                {isTimeFilterActive && (
+                  <Badge variant="secondary" className="ml-1">
+                    {fromTime} - {tillTime}
+                  </Badge>
+                )}
+              </Button>
+              {isTimeFilterActive && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setIsTimeFilterActive(false);
+                    setFromTime("");
+                    setTillTime("");
+                  }}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  Clear Filter
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Main Content Card */}
@@ -917,7 +967,7 @@ export default function Prescriptions() {
                         onClick={() => handleCreateBill(prescription.id, prescription.patients)}
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Generate Bill
+                        New Bill
                       </Button>
                       
                       <Button 
@@ -1026,6 +1076,70 @@ export default function Prescriptions() {
               ) : (
                 "Delete All"
               )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Time Filter Dialog */}
+      <AlertDialog open={showTimeFilter} onOpenChange={setShowTimeFilter}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Set Time Range for Today</AlertDialogTitle>
+            <AlertDialogDescription>
+              Select the time range to filter prescriptions created today.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="fromTime" className="text-sm font-medium">
+                From Time
+              </label>
+              <Input
+                id="fromTime"
+                type="time"
+                value={fromTime}
+                onChange={(e) => setFromTime(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="tillTime" className="text-sm font-medium">
+                Till Time
+              </label>
+              <Input
+                id="tillTime"
+                type="time"
+                value={tillTime}
+                onChange={(e) => setTillTime(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowTimeFilter(false);
+              setFromTime("");
+              setTillTime("");
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (fromTime && tillTime) {
+                  setIsTimeFilterActive(true);
+                  setShowTimeFilter(false);
+                } else {
+                  toast({
+                    title: "Invalid Time Range",
+                    description: "Please select both from and till times.",
+                    variant: "destructive"
+                  });
+                }
+              }}
+              disabled={!fromTime || !tillTime}
+            >
+              Apply Filter
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

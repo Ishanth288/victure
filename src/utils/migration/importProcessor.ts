@@ -133,12 +133,16 @@ export async function processPatients(
   
   if (processedPatients.length > 0) {
     try {
+      // Use upsert to handle duplicates gracefully
       const { data, error } = await supabase
         .from('patients')
-        .insert(processedPatients);
+        .upsert(processedPatients, {
+          onConflict: 'phone_number,user_id',
+          ignoreDuplicates: false
+        });
         
       if (error) {
-        console.error('❌ Patient insert failed:', error.message);
+        console.error('❌ Patient upsert failed:', error.message);
         stableToast({
           title: "Patient Import Failed",
           description: `Error: ${error.message}`,

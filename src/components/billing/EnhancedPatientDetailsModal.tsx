@@ -112,26 +112,50 @@ export function EnhancedPatientDetailsModal({
       const cleanPhone = phoneNumber.replace(/\D/g, "");
       const cleanDoctor = doctorName.trim() || "Not Specified";
 
-      // Create new patient (always create new - no conflicts)
-      console.log("🆕 CREATING BRAND NEW PATIENT");
+      // Find existing patient or create new one
+      console.log("🔍 CHECKING FOR EXISTING PATIENT");
       
-      const { data: newPatient, error: patientError } = await supabase
-        .from("patients")
-        .insert({
-          name: cleanName,
-          phone_number: cleanPhone,
-          user_id: user.id,
-          status: 'active'
-        })
-        .select("id, name, phone_number")
+      let newPatient;
+      
+      // First, try to find existing patient with same phone and user_id
+      const { data: existingPatient, error: findError } = await supabase
+        .from('patients')
+        .select('id, name, phone_number')
+        .eq('phone_number', cleanPhone)
+        .eq('user_id', user.id)
         .single();
+      
+      if (existingPatient?.id) {
+        console.log(`👤 FOUND EXISTING PATIENT:`, existingPatient);
+        newPatient = existingPatient;
+        // Update existing patient's name if needed
+        const { error: updateError } = await supabase
+          .from('patients')
+          .update({ name: cleanName })
+          .eq('id', existingPatient.id);
+        if (updateError) console.warn("Patient name update failed:", updateError);
+      } else {
+        // Create new patient only if none exists
+        console.log("🆕 CREATING NEW PATIENT");
+        const { data: createdPatient, error: patientError } = await supabase
+          .from("patients")
+          .insert({
+            name: cleanName,
+            phone_number: cleanPhone,
+            user_id: user.id,
+            status: 'active'
+          })
+          .select("id, name, phone_number")
+          .single();
 
-      if (patientError) {
-        console.error("❌ PATIENT CREATION FAILED:", patientError);
-        throw new Error(`Failed to create patient: ${patientError.message}`);
+        if (patientError) {
+          console.error("❌ PATIENT CREATION FAILED:", patientError);
+          throw new Error(`Failed to create patient: ${patientError.message}`);
+        }
+        
+        newPatient = createdPatient;
+        console.log("✅ NEW PATIENT CREATED:", newPatient);
       }
-
-      console.log("✅ NEW PATIENT CREATED:", newPatient);
 
       // Generate unique prescription number
       const prescriptionNumber = await generatePrescriptionNumber(user.id);

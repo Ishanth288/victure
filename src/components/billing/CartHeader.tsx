@@ -2,7 +2,8 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, Phone, Calendar, FileText } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { User, Phone, Calendar, FileText, Flag, AlertTriangle } from "lucide-react";
 
 interface CartHeaderProps {
   patientName?: string;
@@ -10,6 +11,7 @@ interface CartHeaderProps {
   prescriptionId?: string;
   doctorName?: string;
   prescriptionDate?: string;
+  isFlagged?: boolean;
 }
 
 export const CartHeader: React.FC<CartHeaderProps> = ({
@@ -17,11 +19,24 @@ export const CartHeader: React.FC<CartHeaderProps> = ({
   phoneNumber = "Not Available",
   prescriptionId,
   doctorName = "Dr. Not Specified",
-  prescriptionDate
+  prescriptionDate,
+  isFlagged = false
 }) => {
   return (
-    <Card className="mb-6 shadow-sm border-l-4 border-l-primary">
-      <CardContent className="p-6">
+    <>
+      {isFlagged && (
+        <Alert className="mb-4 border-red-200 bg-red-50">
+          <AlertTriangle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800 font-medium">
+            <div className="flex items-center gap-2">
+              <Flag className="h-4 w-4" />
+              <span>Warning: This patient has been flagged for potential foul play. Please exercise caution during billing.</span>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+      <Card className="mb-6 shadow-sm border-l-4 border-l-primary">
+        <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
             <User className="h-5 w-5 text-primary" />
@@ -79,5 +94,6 @@ export const CartHeader: React.FC<CartHeaderProps> = ({
         </div>
       </CardContent>
     </Card>
+    </>
   );
 };

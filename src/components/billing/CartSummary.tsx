@@ -395,13 +395,47 @@ export function CartSummary({
                     .eq('id', patientId);
                 if (patientUpdateError) console.warn("Patient update failed, continuing with existing data:", patientUpdateError);
             } else {
-                const { data: newPatientData, error: patientError } = await supabase
-                    .from("patients")
-                    .insert({ name: prescriptionDetails.patient.name.trim(), phone_number: prescriptionDetails.patient.phone_number?.trim() || null, user_id: session.user.id, status: 'active' })
-                    .select("id").single();
-                if (patientError) throw new Error(`Patient creation error: ${patientError.message}`);
-                if (!newPatientData?.id) throw new Error("Failed to create patient - no ID returned");
-                patientId = newPatientData.id;
+                // First, try to find existing patient with same phone and user_id
+                const phoneNumber = prescriptionDetails.patient.phone_number?.trim() || null;
+                if (phoneNumber) {
+                    const { data: existingPatient, error: findError } = await supabase
+                        .from('patients')
+                        .select('id')
+                        .eq('phone_number', phoneNumber)
+                        .eq('user_id', session.user.id)
+                        .single();
+                    
+                    if (existingPatient?.id) {
+                        console.log(`👤 Found existing patient with ID: ${existingPatient.id}`);
+                        patientId = existingPatient.id;
+                        // Update existing patient's name if needed
+                        const { error: updateError } = await supabase
+                            .from('patients')
+                            .update({ name: prescriptionDetails.patient.name.trim() })
+                            .eq('id', existingPatient.id);
+                        if (updateError) console.warn("Patient name update failed:", updateError);
+                    } else {
+                        // Create new patient only if none exists
+                        const { data: newPatientData, error: patientError } = await supabase
+                            .from("patients")
+                            .insert({ name: prescriptionDetails.patient.name.trim(), phone_number: phoneNumber, user_id: session.user.id, status: 'active' })
+                            .select("id").single();
+                        if (patientError) throw new Error(`Patient creation error: ${patientError.message}`);
+                        if (!newPatientData?.id) throw new Error("Failed to create patient - no ID returned");
+                        patientId = newPatientData.id;
+                        console.log(`👤 Created new patient with ID: ${patientId}`);
+                    }
+                } else {
+                    // No phone number provided, create patient without phone
+                    const { data: newPatientData, error: patientError } = await supabase
+                        .from("patients")
+                        .insert({ name: prescriptionDetails.patient.name.trim(), phone_number: null, user_id: session.user.id, status: 'active' })
+                        .select("id").single();
+                    if (patientError) throw new Error(`Patient creation error: ${patientError.message}`);
+                    if (!newPatientData?.id) throw new Error("Failed to create patient - no ID returned");
+                    patientId = newPatientData.id;
+                    console.log(`👤 Created new patient (no phone) with ID: ${patientId}`);
+                }
             }
         }
 
@@ -409,7 +443,7 @@ export function CartSummary({
         const billData = {
           bill_number: `BILL-${Date.now()}`,
           subtotal, gst_amount: gstAmount, gst_percentage: gstPercentage, discount_amount: discountAmount, total_amount: total,
-          status: "active" as const, user_id: session.user.id, prescription_id: prescriptionId || null, date: new Date().toISOString(),
+          status: "active" as const, user_id: session.user.id, prescription_id: prescriptionId || null,
         };
 
         const { data: billResult, error: billError } = await supabase.from('bills').insert(billData).select('id, bill_number, total_amount').single();

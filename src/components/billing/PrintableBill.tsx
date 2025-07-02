@@ -75,7 +75,7 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
           <h2 className="font-semibold mb-1">Bill Details:</h2>
           <p>Bill No: {billData.bill_number}</p>
           <p>Date: {format(new Date(billData.date), 'dd/MM/yyyy')}</p>
-          <p>Time: {format(new Date(billData.date), 'hh:mm a')}</p>
+            <p>Time: {format(new Date(billData.date), 'hh:mm a')}</p>
         </div>
       </div>
 
@@ -93,10 +93,10 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
           {items.map((item, index) => (
             <tr key={`${item.id}-${index}`}>
               <td className="p-1 border">{index + 1}</td>
-              <td className="p-1 border">{item.name}</td>
+              <td className="p-1 border">{item.inventory.name}</td>
               <td className="p-1 border">{item.quantity}</td>
-              <td className="p-1 border">₹{item.unit_cost.toFixed(2)}</td>
-              <td className="p-1 border">₹{item.total.toFixed(2)}</td>
+              <td className="p-1 border">₹{item.unit_price.toFixed(2)}</td>
+              <td className="p-1 border">₹{item.total_price.toFixed(2)}</td>
             </tr>
           ))}
         </tbody>

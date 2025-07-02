@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { addDays, format } from "date-fns";
 
 import Skeleton from "@/components/ui/skeleton-loader";
@@ -8,23 +8,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
-import { 
-  AlertDialog,
-  AlertDialogAction, 
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, Trash2, Search } from "lucide-react";
+import { Loader2, RefreshCw, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { logPatientDeletion, logPrescriptionDeletion } from "@/utils/deletionTracker";
 import { useBilling } from "@/contexts/BillingContext";
 import { usePatientsQuery } from "@/hooks/queries/usePatientsQuery";
 import { useAuth } from "@/hooks/useAuth";
+import { Patient } from "@/types/patients";
 
 export default function Patients() {
   const navigate = useNavigate();
@@ -59,17 +50,22 @@ export default function Patients() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBill, setSelectedBill] = useState<any>(null);
   const [showBillPreview, setShowBillPreview] = useState(false);
-  const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [patientToDelete, setPatientToDelete] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [isDeleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
-  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   const patients = useMemo(() => {
     if (!patientsData) return [];
-    return patientsData.map(patient => {
+    
+    // First, process the patient data
+    const processedPatients = patientsData.map(patient => {
         const totalSpent = (patient.prescriptions || []).reduce((acc, prescription) => {
-          return acc + (prescription.bills as Array<{total_amount: number}> || []).reduce((billAcc, bill) => billAcc + (parseFloat(String(bill.total_amount)) || 0), 0);
+          return acc + (prescription.bills || []).reduce((billAcc, bill) => {
+            // Safely handle potential type mismatches by checking bill structure
+            if (bill && typeof bill === 'object' && 'total_amount' in bill && bill.total_amount != null) {
+              const amount = parseFloat(String(bill.total_amount)) || 0;
+              return billAcc + amount;
+            }
+            return billAcc;
+          }, 0);
         }, 0);
 
         return {
@@ -78,7 +74,38 @@ export default function Patients() {
           total_spent: totalSpent,
           status: 'active', // Add default status to match Patient interface
         };
-      });
+    });
+    
+    // Remove duplicates based on phone_number and user_id
+    // Keep the patient with the highest total_spent or most recent created_at
+    const uniquePatients = processedPatients.reduce((acc, current) => {
+      const existingIndex = acc.findIndex(p => 
+        p.phone_number === current.phone_number && p.user_id === current.user_id
+      );
+      
+      if (existingIndex === -1) {
+        // No duplicate found, add the patient
+        acc.push(current);
+      } else {
+        // Duplicate found, keep the one with higher total_spent or more recent date
+        const existing = acc[existingIndex];
+        if (current.total_spent > existing.total_spent || 
+            (current.total_spent === existing.total_spent && 
+             new Date(current.created_at) > new Date(existing.created_at))) {
+          acc[existingIndex] = current;
+        }
+      }
+      
+      return acc;
+    }, [] as typeof processedPatients);
+    
+    console.log('🔍 Deduplication Results:', {
+      original: processedPatients.length,
+      afterDedup: uniquePatients.length,
+      removed: processedPatients.length - uniquePatients.length
+    });
+    
+    return uniquePatients;
   }, [patientsData]);
 
   const filteredPatients = useMemo(() => {
@@ -117,140 +144,37 @@ export default function Patients() {
     setShowBillPreview(true);
   };
 
-  const handleDeletePatient = async () => {
-    if (patientToDelete === null) return;
-
+  const handleToggleFlag = async (patientId: number, currentFlagStatus: boolean) => {
     try {
-      // Log the deletion first
-      const { data: patientData, error: patientError } = await supabase
+      const { error } = await supabase
         .from('patients')
-        .select('*')
-        .eq('id', patientToDelete)
-        .single();
+        .update({ status: !currentFlagStatus ? 'flagged' : 'active' })
+        .eq('id', patientId);
 
-      if (patientError) throw patientError;
-      await logPatientDeletion(patientData, 'user_request');
-
-      // Then, delete the patient
-      const { error } = await supabase.from('patients').delete().eq('id', patientToDelete);
       if (error) throw error;
 
-      toast({ title: 'Patient Deleted', description: 'The patient has been successfully deleted.' });
-      refreshData(); // Refresh data after deletion
-    } catch (error) {
-      console.error('Error deleting patient:', error);
-      toast({ title: 'Error', description: 'Failed to delete patient.', variant: 'destructive' });
-    } finally {
-      setDeleteDialogOpen(false);
-      setPatientToDelete(null);
-    }
-  };
-
-  const handleDeleteAllPatients = async () => {
-    if (!user?.id) {
       toast({
-        title: "Authentication Error",
-        description: "You must be logged in to delete patients",
-        variant: "destructive",
+        title: currentFlagStatus ? 'Patient Unflagged' : 'Patient Flagged',
+        description: currentFlagStatus 
+          ? 'Patient has been unflagged successfully.' 
+          : 'Patient has been flagged for potential foul play.',
+        variant: currentFlagStatus ? 'default' : 'destructive'
       });
-      return;
-    }
-
-    setIsDeletingAll(true);
-    try {
-      // First, get all patients for this user to log deletions
-      const { data: allPatients, error: fetchError } = await supabase
-        .from('patients')
-        .select('*')
-        .eq('user_id', user.id);
-
-      if (fetchError) throw fetchError;
-
-      // Log all patient deletions
-      if (allPatients && allPatients.length > 0) {
-        for (const patient of allPatients) {
-          await logPatientDeletion(patient, 'bulk_delete_request');
-        }
-      }
-
-      // First, get all bill IDs for this user
-      const { data: userBills, error: billsQueryError } = await supabase
-        .from('bills')
-        .select('id')
-        .eq('user_id', user.id);
-      
-      if (billsQueryError) {
-        console.error('Error fetching user bills:', billsQueryError);
-        throw billsQueryError;
-      }
-      
-      // Delete all bill_items for this user's bills
-      if (userBills && userBills.length > 0) {
-        const billIds = userBills.map(bill => bill.id);
-        const { error: billItemsError } = await supabase
-          .from('bill_items')
-          .delete()
-          .in('bill_id', billIds);
-        
-        if (billItemsError) {
-          console.error('Error deleting bill items:', billItemsError);
-          throw billItemsError;
-        }
-      }
-
-      // Delete all bills for this user
-      const { error: billsError } = await supabase
-        .from('bills')
-        .delete()
-        .eq('user_id', user.id);
-      
-      if (billsError) {
-        console.error('Error deleting bills:', billsError);
-        throw billsError;
-      }
-      
-      // Delete all prescriptions for this user
-      const { error: prescriptionsError } = await supabase
-        .from('prescriptions')
-        .delete()
-        .eq('user_id', user.id);
-      
-      if (prescriptionsError) {
-        console.error('Error deleting prescriptions:', prescriptionsError);
-        throw prescriptionsError;
-      }
-
-      // Finally, delete all patients for this user
-      const { error: patientsError } = await supabase
-        .from('patients')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (patientsError) throw patientsError;
-
-      toast({
-        title: 'All Patients Deleted',
-        description: `Successfully deleted ${allPatients?.length || 0} patients and all associated data.`,
-      });
-
-      // Emit events for cross-page updates
-      window.dispatchEvent(new CustomEvent('dataRefreshNeeded', { 
-        detail: { type: 'bulk_delete_patients' }
-      }));
 
       refreshData();
     } catch (error) {
-      console.error('Error deleting all patients:', error);
+      console.error('Error toggling patient flag:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete all patients. Please try again.',
-        variant: 'destructive',
+        description: 'Failed to update patient flag status.',
+        variant: 'destructive'
       });
-    } finally {
-      setIsDeletingAll(false);
-      setDeleteAllDialogOpen(false);
     }
   };
+
+
+
+
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -265,16 +189,6 @@ export default function Patients() {
           </div>
           
           <div className="flex flex-wrap gap-3">
-            <Button 
-              onClick={() => setDeleteAllDialogOpen(true)} 
-              variant="destructive" 
-              size="sm"
-              disabled={refreshing || isDeletingAll || filteredPatients.length === 0}
-              className="flex items-center gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete All
-            </Button>
             <Button onClick={refreshData} variant="outline" size="sm" disabled={refreshing}>
               {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               Refresh
@@ -303,23 +217,29 @@ export default function Patients() {
             ) : (
               <PatientList
                 patients={filteredPatients}
-                onViewBill={(billId) => {
-                  // Find the bill by ID from the patient's bills
-                  const bill = filteredPatients
-                    .flatMap(patient => patient.bills || [])
-                    .find(bill => bill.id === billId);
+                onViewBill={(billId, patient, prescription) => {
+                  const bill = prescription.bills?.find(b => b && b.id === billId);
+
                   if (bill) {
-                    handleShowBillPreview(bill);
+                    const billWithPatientInfo = {
+                      ...bill,
+                      prescription: {
+                        ...prescription,
+                        patient: {
+                          name: patient.name,
+                          phone_number: patient.phoneNumber
+                        }
+                      }
+                    };
+                    setSelectedBill(billWithPatientInfo);
+                    setShowBillPreview(true);
                   }
                 }}
                 onToggleStatus={(patientId, currentStatus) => {
                   // TODO: Implement patient status toggle functionality
                   console.log('Toggle status for patient:', patientId, currentStatus);
                 }}
-                onDeletePatient={(id) => {
-                  setPatientToDelete(id);
-                  setDeleteDialogOpen(true);
-                }}
+                onToggleFlag={handleToggleFlag}
               />
             )}
           </CardContent>
@@ -333,54 +253,7 @@ export default function Patients() {
           items={selectedBill.bill_items || []}
         />
       )}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the patient and all associated data.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeletePatient}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
-      <AlertDialog open={isDeleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete All Patients?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete ALL {filteredPatients.length} patients and all associated data including:
-              <br />• All patient records
-              <br />• All prescriptions
-              <br />• All bills and bill items
-              <br />• All related transaction history
-              <br /><br />
-              <strong>This will completely reset your patient database.</strong>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeletingAll}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteAllPatients}
-              disabled={isDeletingAll}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {isDeletingAll ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Deleting...
-                </>
-              ) : (
-                'Delete All Patients'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

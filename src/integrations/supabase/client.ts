@@ -58,7 +58,7 @@ export const supabase = createClient<Database>(
         const timeoutId = setTimeout(() => {
           if (import.meta.env.VITE_DEBUG_LOGS) console.warn(`Request timeout for ${url}`);
           controller.abort();
-        }, 3000); // Reduced from 10s to 3s
+        }, 15000); // Temporarily increased for debugging
         
         return fetch(url, {
           ...options,
@@ -82,7 +82,7 @@ export const supabase = createClient<Database>(
 // Much shorter timeout wrapper
 export const withTimeout = <T>(
   promise: Promise<T>, 
-  timeoutMs: number = 3000, // Reduced from 10s to 3s
+  timeoutMs: number = 15000, // Increased for debugging
   operation: string = 'Database operation'
 ): Promise<T> => {
   return Promise.race([

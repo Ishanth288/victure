@@ -13,6 +13,7 @@ export default function BillingCart() {
   const { toast } = useToast();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [prescriptionDetails, setPrescriptionDetails] = useState<any>(null);
+  const [patientFlagged, setPatientFlagged] = useState<boolean>(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -53,7 +54,7 @@ export default function BillingCart() {
         .from("prescriptions")
         .select(`
           *,
-          patient:patients(name, phone_number)
+          patient:patients(name, phone_number, is_flagged)
         `)
         .eq("id", prescriptionIdNumber)
         .eq("user_id", user.id)
@@ -69,6 +70,7 @@ export default function BillingCart() {
       }
 
       setPrescriptionDetails(data);
+      setPatientFlagged(data?.patient?.is_flagged || false);
     };
 
     fetchPrescriptionDetails();
@@ -122,6 +124,7 @@ export default function BillingCart() {
         prescriptionId={prescriptionId}
         doctorName={prescriptionDetails?.doctor_name}
         prescriptionDate={prescriptionDetails?.date}
+        isFlagged={patientFlagged}
       />
 
       <CartContent

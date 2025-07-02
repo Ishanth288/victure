@@ -17,6 +17,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [userPlan, setUserPlan] = useState<"FREE" | "PRO" | "PRO PLUS" | null>(null);
   const [planDataConfirmed, setPlanDataConfirmed] = useState(false);
 
+  // Debug: Track plan changes
+  useEffect(() => {
+    if (userPlan) {
+      console.log(`🔄 DashboardLayout: Plan changed to "${userPlan}" at ${new Date().toISOString()}`);
+    }
+  }, [userPlan]);
+
   useEffect(() => {
     async function getUserAndPlan() {
       console.log('DashboardLayout: getUserAndPlan started');
@@ -48,26 +55,29 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             const fetchedPlan = profile.plan_type;
             console.log('DashboardLayout: Fetched plan from profile', fetchedPlan);
             
-            // Map old plan names to new plan names if needed
+            // Map database plan names to display plan names
             const planMapping: Record<string, "FREE" | "PRO" | "PRO PLUS"> = {
               "Basic": "FREE",
               "Free Trial": "FREE",
+              "FREE": "FREE",
+              "PRO": "PRO",
               "Pro Plus": "PRO", 
+              "PRO PLUS": "PRO PLUS",
               "Premium": "PRO PLUS"
             };
             
-            // Check if it's already a valid plan type
-            const validPlans: ("FREE" | "PRO" | "PRO PLUS")[] = ["FREE", "PRO", "PRO PLUS"];
+            // Use mapping to get the correct plan type
+            const mappedPlan = planMapping[fetchedPlan];
             
-            if (validPlans.includes(fetchedPlan as "FREE" | "PRO" | "PRO PLUS")) {
-              setUserPlan(fetchedPlan as "FREE" | "PRO" | "PRO PLUS");
-            } else if (planMapping[fetchedPlan]) {
-              setUserPlan(planMapping[fetchedPlan]);
+            if (mappedPlan) {
+              console.log(`DashboardLayout: Mapped plan "${fetchedPlan}" to "${mappedPlan}"`);
+              setUserPlan(mappedPlan);
+              setPlanDataConfirmed(true);
             } else {
               console.warn(`DashboardLayout: Unexpected plan type from profiles: "${fetchedPlan}". Defaulting to FREE.`);
               setUserPlan("FREE");
+              setPlanDataConfirmed(true);
             }
-            setPlanDataConfirmed(true);
           } else {
             console.warn("DashboardLayout: No plan_type found in profile. Defaulting to FREE.");
             await new Promise(resolve => setTimeout(resolve, 200));
@@ -106,19 +116,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     };
   }, []);
 
-  // Add loading timeout to prevent infinite loading
+  // Add loading timeout to prevent infinite loading - but only if no plan data was fetched
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (loading || !planDataConfirmed) {
+      if (loading && !planDataConfirmed) {
         console.warn('⚠️ DashboardLayout loading timeout - setting default plan');
         setLoading(false);
         setUserPlan("FREE");
         setPlanDataConfirmed(true);
       }
-    }, 3000); // Reduced to 3s
+    }, 8000); // Increased timeout and only trigger if no plan data confirmed
 
     return () => clearTimeout(timeoutId);
-  }, []); // Fixed: Remove dependencies that cause infinite loop
+  }, [loading, planDataConfirmed]); // Only run when these states change
 
   return (
     <>
