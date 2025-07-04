@@ -877,19 +877,10 @@ export default function Prescriptions() {
                         <User className="w-4 h-4 mr-2" />
                         <span>Dr. {prescription.doctor_name}</span>
                       </div>
-                      <div className="flex items-center">
-                        <FileText className="w-4 h-4 mr-2" />
-                        <span>Rx #{prescription.prescription_number}</span>
-                      </div>
-                      {prescription.has_bill && (
-                        <div className="flex items-center">
-                          <DollarSign className="w-4 h-4 mr-2" />
-                          <span>Bill Generated</span>
-                        </div>
-                      )}
+
                       <div className="flex items-center">
                         <Calendar className="w-4 h-4 mr-2" />
-                        <span>{format(new Date(prescription.created_at), "MMM dd, yyyy h:mm a")}</span>
+                        <span>{format(new Date(prescription.created_at), "MMM dd, yyyy")}</span>
                       </div>
                       <div className="flex items-center">
                         <Phone className="w-4 h-4 mr-2" />

@@ -86,7 +86,6 @@ export function PrintableBill({ billData, items }: PrintableBillProps) {
           <h2 className="font-semibold mb-1">Bill Details:</h2>
           <p>Bill No: {billData.bill_number}</p>
           <p>Date: {format(new Date(billData.date), 'dd/MM/yyyy')}</p>
-            <p>Time: {format(new Date(billData.date), 'hh:mm a')}</p>
         </div>
       </div>
 

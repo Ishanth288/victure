@@ -209,6 +209,7 @@ export default function Patients() {
                     setShowBillPreview(true);
                   }
                 }}
+                onPatientDeleted={refreshData}
               />
             )}
           </CardContent>

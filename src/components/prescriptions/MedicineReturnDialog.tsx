@@ -111,7 +111,7 @@ const MedicineReturnDialog: React.FC<MedicineReturnDialogProps> = ({
           billItemsData.map(async (item) => {
             const { data: inventoryData, error: inventoryError } = await supabase
               .from("inventory")
-              .select("medicine_name, name")
+              .select("name")
               .eq("id", item.inventory_item_id)
               .single();
 
@@ -125,7 +125,7 @@ const MedicineReturnDialog: React.FC<MedicineReturnDialogProps> = ({
 
             return {
               ...item,
-              medicine_name: inventoryData?.medicine_name || "Unknown",
+              medicine_name: inventoryData?.name || "Unknown",
               return_quantity: item.return_quantity || 0,
             };
           })

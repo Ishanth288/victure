@@ -63,49 +63,34 @@ export function CartSummary({
   }, []);
 
   useEffect(() => {
-    console.log("🔄 CartSummary: prescriptionId changed to:", prescriptionId);
-    
-    // 🧹 CRITICAL: Clear all cached data when prescription changes
+    // Clear all cached data when prescription changes
     setPrescriptionDetails(null);
     setGeneratedBill(null);
     setShowBillPreview(false);
     
-    // 🚨 FORCE IMMEDIATE FRESH FETCH: Clear React Query cache if it exists
+    // Clear any potential cached prescription data in localStorage
     if (typeof window !== 'undefined') {
-      // Clear any potential cached prescription data in localStorage
       localStorage.removeItem(`prescription_${prescriptionId}`);
       localStorage.removeItem('lastPrescriptionDetails');
-      
-      // 🚨 FORCE BROWSER CACHE CLEAR: Add timestamp to prevent any browser caching
-      const timestamp = Date.now();
-      console.log(`🚨 CACHE BUST: Forcing fresh data with timestamp: ${timestamp}`);
     }
     
     if (prescriptionId) {
-      console.log(`🔄 Triggering fresh fetch for prescription ID: ${prescriptionId}`);
       // Add small delay to ensure state is fully cleared before fetching
       setTimeout(() => {
         fetchPrescriptionDetails();
       }, 100);
     } else {
-      console.log("🧹 No prescriptionId provided - clearing prescription details");
       setPrescriptionDetails(null);
     }
   }, [prescriptionId]);
 
   const fetchPrescriptionDetails = async () => {
     if (!prescriptionId) {
-      console.warn("fetchPrescriptionDetails: No prescriptionId provided.");
       setPrescriptionDetails(null);
       return;
     }
 
-    console.log(`🔍 DEBUGGING: Fetching prescription details for ID: ${prescriptionId}`);
     try {
-      // 🚨 FORCE FRESH DATA: Add cache busting and timestamp to prevent stale data
-      const cacheKey = `${prescriptionId}_${Date.now()}`;
-      console.log(`🔄 Cache-busting query for prescription ${prescriptionId} with key: ${cacheKey}`);
-      
       const { data, error } = await supabase
         .from("prescriptions")
         .select(`
@@ -119,10 +104,9 @@ export function CartSummary({
         .single();
 
       if (error) {
-        console.error(`❌ ERROR fetching prescription ${prescriptionId}:`, error);
         toast({
           title: "Error",
-          description: `Failed to load prescription details: ${error.message}`,
+          description: "Failed to load prescription details",
           variant: "destructive",
         });
         setPrescriptionDetails(null);
@@ -130,40 +114,15 @@ export function CartSummary({
       }
       
       if (!data) {
-        console.warn(`⚠️ NO DATA found for prescription ID: ${prescriptionId}`);
         setPrescriptionDetails(null);
         return;
       }
 
-      // 🚨 DEBUG: Log the actual data being retrieved with detailed comparison
-      console.log("📊 RETRIEVED PRESCRIPTION DATA:", {
-        prescriptionId: data.id,
-        prescriptionNumber: data.prescription_number,
-        doctorName: data.doctor_name,
-        patientName: data.patient?.name,
-        patientPhone: data.patient?.phone_number,
-        patientId: data.patient_id,
-        timestamp: new Date().toISOString(),
-        fullData: data
-      });
-
-      // 🚨 ADDITIONAL CHECK: Verify this is actually fresh data
-      const previousPatientName = prescriptionDetails?.patient?.name;
-      const newPatientName = data.patient?.name;
-      
-      if (previousPatientName && previousPatientName !== newPatientName) {
-        console.log(`🔄 PATIENT DATA CHANGED: "${previousPatientName}" → "${newPatientName}"`);
-      } else if (previousPatientName === newPatientName) {
-        console.log(`⚠️ SAME PATIENT DATA: Still showing "${newPatientName}" - might be cached`);
-      }
-
       setPrescriptionDetails(data);
-      console.log(`✅ Successfully loaded prescription ID: ${prescriptionId}`);
     } catch (error: any) {
-      console.error("💥 Unexpected error fetching prescription:", error);
       toast({
         title: "Error",
-        description: `An unexpected error occurred: ${error.message}`,
+        description: "An unexpected error occurred while loading prescription details",
         variant: "destructive",
       });
       setPrescriptionDetails(null);
@@ -336,7 +295,6 @@ export function CartSummary({
 
   const generateBill = async () => {
     setIsGenerating(true);
-    console.log("🚀 Starting bill generation...");
 
     const abortController = new AbortController();
     let createdBillId: number | null = null;
@@ -356,7 +314,6 @@ export function CartSummary({
           throw new Error("Missing Prescription: No prescription selected.");
         }
 
-        console.log(`🔍 Validating prescription ID: ${prescriptionId}`);
         const { data: prescriptionCheck, error: prescriptionError } = await supabase
           .from('prescriptions')
           .select('id, status, user_id')
@@ -368,13 +325,11 @@ export function CartSummary({
           throw new Error("Invalid Prescription: The selected prescription is not valid or doesn't exist.");
         }
 
-        console.log("📦 Validating inventory availability...");
         const inventoryValidation = await validateInventoryAvailability(items, session.user.id);
         if (!inventoryValidation.valid) {
           throw new Error(`Insufficient Inventory: ${inventoryValidation.message}`);
         }
 
-        console.log("👤 Fetching pharmacy profile...");
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -387,7 +342,6 @@ export function CartSummary({
 
         let patientId = prescriptionDetails?.patient?.id;
         if (prescriptionDetails && prescriptionDetails.patient) {
-            console.log("👤 Handling patient data...");
             if (patientId && patientId > 0) {
                 const { error: patientUpdateError } = await supabase
                     .from('patients')
@@ -406,7 +360,6 @@ export function CartSummary({
                         .single();
                     
                     if (existingPatient?.id) {
-                        console.log(`👤 Found existing patient with ID: ${existingPatient.id}`);
                         patientId = existingPatient.id;
                         // Update existing patient's name if needed
                         const { error: updateError } = await supabase
@@ -423,7 +376,6 @@ export function CartSummary({
                         if (patientError) throw new Error(`Patient creation error: ${patientError.message}`);
                         if (!newPatientData?.id) throw new Error("Failed to create patient - no ID returned");
                         patientId = newPatientData.id;
-                        console.log(`👤 Created new patient with ID: ${patientId}`);
                     }
                 } else {
                     // No phone number provided, create patient without phone
@@ -434,7 +386,6 @@ export function CartSummary({
                     if (patientError) throw new Error(`Patient creation error: ${patientError.message}`);
                     if (!newPatientData?.id) throw new Error("Failed to create patient - no ID returned");
                     patientId = newPatientData.id;
-                    console.log(`👤 Created new patient (no phone) with ID: ${patientId}`);
                 }
             }
         }
@@ -444,7 +395,6 @@ export function CartSummary({
           throw new Error("Invalid Bill Amount: Cannot create a bill with zero or negative total amount. Please add items with valid prices.");
         }
 
-        console.log("📄 Creating bill record...");
         const billData = {
           bill_number: `BILL-${Date.now()}`,
           subtotal, gst_amount: gstAmount, gst_percentage: gstPercentage, discount_amount: discountAmount, total_amount: total,
@@ -455,13 +405,11 @@ export function CartSummary({
         if (billError) throw new Error(`Failed to create bill: ${billError.message}`);
         if (!billResult?.id) throw new Error("Failed to create bill - no data returned");
         createdBillId = billResult.id;
-        console.log(`✅ Bill created with ID: ${createdBillId}`);
 
         const billItems = items.map(item => ({ bill_id: billResult.id, inventory_item_id: item.id, quantity: Math.max(1, Math.floor(item.quantity)), unit_price: Math.max(0, item.unit_cost), total_price: Math.max(0, item.total) }));
         const { error: billItemsError } = await supabase.from('bill_items').insert(billItems);
         if (billItemsError) throw new Error(`Failed to create bill items: ${billItemsError.message}`);
 
-        console.log("🔄 Updating inventory quantities...");
         for (const item of items) {
             const requestedQuantity = Math.floor(item.quantity);
             const { data: currentInventory, error: fetchError } = await supabase.from('inventory').select('quantity').eq('id', item.id).eq('user_id', session.user.id).single();
@@ -472,7 +420,6 @@ export function CartSummary({
             
             const { error: inventoryError } = await supabase.from('inventory').update({ quantity: newQuantity }).eq('id', item.id).eq('user_id', session.user.id);
             if (inventoryError) throw new Error(`Failed to update inventory for item ${item.name}: ${inventoryError.message}`);
-            console.log(`   - ${item.name}: ${currentQuantity} -> ${newQuantity}`);
         }
 
         const completeGeneratedBill = {
@@ -498,20 +445,16 @@ export function CartSummary({
         });
 
         toast({ title: "Success", description: `Bill ${billResult.bill_number} generated successfully.` });
-        console.log("✅ Bill generation complete.");
 
       })();
     } catch (error: any) {
-      console.error("💥 Bill Generation Failed:", error);
       toast({ title: "Error", description: error.message, variant: "destructive" });
 
       if (createdBillId) {
-        console.log(`롤백 중... Bill ID: ${createdBillId}`);
         // Add your rollback logic here if needed
       }
     } finally {
       setIsGenerating(false);
-      console.log("🛑 Bill generation process finished.");
     }
   };
 
@@ -618,66 +561,62 @@ export function CartSummary({
         </div>
       </div>
       
-      {/* ENHANCED: Patient Information Display */}
+      {/* Patient Information Display */}
       {prescriptionDetails && prescriptionDetails.patient && (
-        <div className="bg-white border-2 border-blue-200 rounded-xl p-6 shadow-sm">
-          <h4 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
-            <User className="w-5 h-5 mr-2" />
-            Patient Information
-            <span className="ml-auto text-xs bg-gray-100 px-2 py-1 rounded">
-              ID: {prescriptionId} | DB: {prescriptionDetails.id}
-            </span>
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
+        <div className="bg-gradient-to-br from-white to-blue-50 border border-blue-200 rounded-2xl p-6 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-xl font-bold text-gray-800 flex items-center">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                <User className="w-5 h-5 text-blue-600" />
+              </div>
+              Patient Information
+            </h4>
+            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+          </div>
+          
+          {/* Vertical Patient Info Layout */}
+          <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
+            <div className="space-y-3">
+              {/* Patient Name */}
               <div className="flex items-center space-x-3">
-                <User className="w-4 h-4 text-gray-500" />
-                <div>
-                  <p className="text-sm text-gray-500">Patient Name</p>
-                  <p className="font-semibold text-gray-800">
+                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="w-3 h-3 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Patient</p>
+                  <p className="text-sm font-semibold text-gray-900 truncate">
                     {prescriptionDetails.patient.name}
-                    <span className="ml-2 text-xs text-gray-400">
-                      ({new Date().toLocaleTimeString()})
-                    </span>
                   </p>
                 </div>
               </div>
+              
+              {/* Doctor Name */}
               <div className="flex items-center space-x-3">
-                <Phone className="w-4 h-4 text-gray-500" />
-                <div>
-                  <p className="text-sm text-gray-500">Phone Number</p>
-                  <p className="font-semibold text-gray-800">
+                <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center">
+                  <FileText className="w-3 h-3 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Doctor</p>
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    Dr. {prescriptionDetails.doctor_name || 'Not Specified'}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Phone Number */}
+              <div className="flex items-center space-x-3">
+                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                  <Phone className="w-3 h-3 text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Phone</p>
+                  <p className="text-sm font-semibold text-gray-900 truncate">
                     {prescriptionDetails.patient.phone_number || 'Not provided'}
-                    <span className="ml-2 text-xs text-gray-400">
-                      (Prescription: {prescriptionDetails.date || 'N/A'})
-                    </span>
                   </p>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center space-x-3">
-                <FileText className="w-4 h-4 text-gray-500" />
-                <div>
-                  <p className="text-sm text-gray-500">Doctor Name</p>
-                  <p className="font-semibold text-gray-800">Dr. {prescriptionDetails.doctor_name}</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <Receipt className="w-4 h-4 text-gray-500" />
-                <div>
-                  <p className="text-sm text-gray-500">Prescription Number</p>
-                  <p className="font-semibold text-gray-800">{prescriptionDetails.prescription_number}</p>
                 </div>
               </div>
             </div>
           </div>
-          <details className="mt-4">
-            <summary className="text-xs text-gray-500 cursor-pointer">Debug: Raw Prescription Data</summary>
-            <pre className="text-xs bg-gray-50 p-2 mt-2 rounded overflow-auto">
-              {JSON.stringify(prescriptionDetails, null, 2)}
-            </pre>
-          </details>
         </div>
       )}
 

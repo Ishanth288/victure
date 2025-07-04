@@ -15,7 +15,7 @@ import { displayErrorMessage } from "@/utils/errorHandling";
 import { useAuth } from "@/hooks/useAuth";
 import { useSalesStats } from "@/hooks/use-sales-stats";
 import { useProductData } from "@/hooks/use-product-data";
-import { formatCurrency } from "@/utils/mobileUtils";
+import { formatCurrency, formatNumber } from "@/utils/mobileUtils";
 import { PlanBanner } from "@/components/dashboard/PlanBanner";
 import { PlanLimitAlert } from "@/components/PlanLimitAlert";
 import { AlertCircle, RefreshCw } from "lucide-react";
@@ -170,7 +170,7 @@ export default function BusinessOptimization() {
                 <>
                   <KpiCard
                     title="Total Sales"
-                    value={formatCurrency(totalSales)}
+                    value={formatNumber(totalSales)}
                     isLoading={false}
                   />
                   <KpiCard

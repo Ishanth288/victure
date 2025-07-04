@@ -6,12 +6,14 @@ interface PatientListProps {
   patients: Patient[];
   onViewBill: (billId: number, patient: any, prescription: any) => void;
   onCreateBill?: (prescriptionId: number) => void;
+  onPatientDeleted?: () => void;
 }
 
 export function PatientList({ 
   patients, 
   onViewBill, 
-  onCreateBill
+  onCreateBill,
+  onPatientDeleted
 }: PatientListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -27,6 +29,7 @@ export function PatientList({
           status={patient.status}
           onViewBill={onViewBill}
           onCreateBill={onCreateBill}
+          onPatientDeleted={onPatientDeleted}
         />
       ))}
     </div>

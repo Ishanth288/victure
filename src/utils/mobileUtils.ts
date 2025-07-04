@@ -30,6 +30,13 @@ export const formatCurrency = (amount: number): string => {
   }).format(amount);
 };
 
+export const formatNumber = (amount: number): string => {
+  return new Intl.NumberFormat('en-IN', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount);
+};
+
 export const formatDate = (date: string | Date): string => {
   return new Intl.DateTimeFormat('en-IN', {
     year: 'numeric',

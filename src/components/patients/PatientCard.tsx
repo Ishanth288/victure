@@ -2,9 +2,23 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, PlusCircle, History } from "lucide-react";
+import { Eye, PlusCircle, History, Trash2 } from "lucide-react";
 import { PatientBill } from "@/types/patients";
 import { getReturnHistoryByBill } from "@/utils/returnUtils";
+import { supabase } from "@/integrations/supabase/client";
+import { logPatientDeletion } from "@/utils/deletionTracker";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface PatientCardProps {
   id: number;
@@ -16,6 +30,7 @@ interface PatientCardProps {
   status?: string;
   onViewBill: (billId: number, patient: any, prescription: any) => void;
   onCreateBill?: (prescriptionId: number) => void;
+  onPatientDeleted?: () => void;
 }
 
 export function PatientCard({
@@ -28,11 +43,17 @@ export function PatientCard({
   status = 'active',
   onViewBill,
   onCreateBill,
+  onPatientDeleted,
 }: PatientCardProps) {
   const isInactive = status === 'inactive';
+  const { toast } = useToast();
 
   const [showHistory, setShowHistory] = useState(false);
   const [returnHistory, setReturnHistory] = useState<any[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Check if patient has zero bill amount
+  const hasZeroBillAmount = totalSpent === 0;
 
   useEffect(() => {
     if (showHistory && bills.length > 0) {
@@ -48,6 +69,67 @@ export function PatientCard({
       fetchReturnHistory();
     }
   }, [showHistory, bills]);
+
+  const handleDeletePatient = async () => {
+    if (!hasZeroBillAmount) {
+      toast({
+        title: "Cannot Delete Patient",
+        description: "Only patients with zero bill amount can be deleted.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      // Log the deletion before actually deleting
+      await logPatientDeletion(
+        { id, name, phone_number: phoneNumber, created_at: new Date().toISOString() },
+        "Patient deleted due to zero bill amount"
+      );
+
+      // Delete prescriptions first (if any)
+      if (prescriptions && prescriptions.length > 0) {
+        const { error: prescriptionError } = await supabase
+          .from("prescriptions")
+          .delete()
+          .eq("patient_id", id);
+
+        if (prescriptionError) {
+          throw prescriptionError;
+        }
+      }
+
+      // Delete the patient
+      const { error: patientError } = await supabase
+        .from("patients")
+        .delete()
+        .eq("id", id);
+
+      if (patientError) {
+        throw patientError;
+      }
+
+      toast({
+        title: "Patient Deleted",
+        description: `${name} has been successfully deleted.`,
+      });
+
+      // Notify parent component to refresh the list
+      if (onPatientDeleted) {
+        onPatientDeleted();
+      }
+    } catch (error) {
+      console.error("Error deleting patient:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete patient. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <Card className={`overflow-hidden ${isInactive ? 'bg-gray-50' : ''}`}>
@@ -67,11 +149,55 @@ export function PatientCard({
               </div>
               <p className="text-sm text-gray-500">{phoneNumber}</p>
             </div>
+            
+            {/* Delete button for patients with zero bill amount */}
+            {hasZeroBillAmount && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Patient</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete {name}? This patient has zero bill amount.
+                      This action cannot be undone and will remove all associated prescriptions.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeletePatient}
+                      className="bg-red-600 hover:bg-red-700"
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? "Deleting..." : "Delete Patient"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
 
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-500">Total Spent</span>
-            <span className="font-medium">₹{totalSpent.toFixed(2)}</span>
+            <span className={`font-medium ${
+              hasZeroBillAmount ? 'text-red-600' : ''
+            }`}>
+              ₹{totalSpent.toFixed(2)}
+              {hasZeroBillAmount && (
+                <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full">
+                  Zero Amount
+                </span>
+              )}
+            </span>
           </div>
 
           <div className="flex-1">
@@ -130,7 +256,7 @@ export function PatientCard({
                           >
                             <div>
                               <p className="font-semibold text-blue-900">Bill #{bill.bill_number}</p>
-                              <p className="text-xs text-gray-500">{format(new Date(bill.date), "MMM dd, yyyy h:mm a")}</p>
+                              <p className="text-xs text-gray-500">{format(new Date(bill.date), "MMM dd, yyyy")}</p>
                                 <div className="text-xs text-gray-700">
                                   {hasReturns ? (
                                     <div className="space-y-1">
