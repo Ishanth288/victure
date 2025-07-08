@@ -127,6 +127,9 @@ export default function Navigation() {
               <HashLink smooth to="#pricing" className="text-neutral-600 hover:text-primary transition-colors">
                 Pricing
               </HashLink>
+              <Link to="/documentation" className="text-neutral-600 hover:text-primary transition-colors">
+                Documentation
+              </Link>
               <HashLink smooth to="#scroll-animation" className="text-neutral-600 hover:text-primary transition-colors">
                 About Us
               </HashLink>

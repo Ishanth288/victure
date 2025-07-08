@@ -131,7 +131,7 @@ export function useRevenueData() {
     bills.forEach((bill) => {
       try {
         if (bill.date) {
-          const billDate = format(new Date(bill.date), 'yyyy-MM-dd');
+          const billDate = new Date(bill.date).toISOString().split('T')[0];
           const existingAmount = billsByDate.get(billDate) || 0;
           billsByDate.set(billDate, existingAmount + (bill.total_amount || 0));
         }

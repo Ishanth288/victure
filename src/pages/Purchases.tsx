@@ -217,6 +217,74 @@ export default function Purchases() {
     setEditDialogOpen(true);
   };
 
+  const handleEditOrderSubmit = async (formData: any) => {
+    try {
+      if (!selectedOrderForEdit) return;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      const totalAmount = formData.items.reduce(
+        (sum: number, item: any) => sum + (item.unit_cost * item.quantity_ordered),
+        0
+      );
+
+      // Update the purchase order
+      const { error: orderError } = await supabase
+        .from("purchase_orders")
+        .update({
+          supplier_name: formData.supplier_name,
+          supplier_phone: formData.supplier_phone,
+          order_date: formData.order_date,
+          total_amount: totalAmount,
+        })
+        .eq("id", selectedOrderForEdit.id)
+        .eq("user_id", user.id);
+
+      if (orderError) throw orderError;
+
+      // Delete existing items
+      const { error: deleteError } = await supabase
+        .from("purchase_order_items")
+        .delete()
+        .eq("purchase_order_id", selectedOrderForEdit.id);
+
+      if (deleteError) throw deleteError;
+
+      // Insert updated items
+      const itemsToInsert = formData.items.map((item: any) => ({
+        purchase_order_id: selectedOrderForEdit.id,
+        item_name: item.item_name,
+        quantity_ordered: item.quantity_ordered,
+        unit_cost: item.unit_cost,
+        total_cost: item.unit_cost * item.quantity_ordered,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from("purchase_order_items")
+        .insert(itemsToInsert);
+
+      if (itemsError) throw itemsError;
+
+      fetchOrders();
+      
+      toast({
+        title: "Success",
+        description: "Purchase order updated successfully",
+      });
+      
+      setEditDialogOpen(false);
+      setSelectedOrderForEdit(null);
+    } catch (error: any) {
+      console.error("Error updating order:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update purchase order",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDeleteOrder = (orderId: number) => {
     setOrderToDelete(orderId);
     setDeleteDialogOpen(true);
@@ -646,6 +714,14 @@ export default function Purchases() {
         open={isPurchaseDialogOpen}
         onOpenChange={setPurchaseDialogOpen}
         onSubmit={handleCreateOrder}
+      />
+
+      <AddPurchaseOrderDialog
+        open={isEditDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSubmit={handleEditOrderSubmit}
+        initialData={selectedOrderForEdit}
+        isEditing={true}
       />
 
       <EditDeliveryDialog

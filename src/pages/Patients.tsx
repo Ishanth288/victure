@@ -139,9 +139,71 @@ export default function Patients() {
     }
   }, [refreshPatients, refreshBills, toast]);
 
-  const handleShowBillPreview = (bill: any) => {
-    setSelectedBill(bill);
-    setShowBillPreview(true);
+  const handleShowBillPreview = async (billId: number, patient: any, prescription: any) => {
+    try {
+      const { data: billData, error } = await supabase
+        .from("bills")
+        .select(`
+          *,
+          prescriptions (
+            *,
+            patients (
+              name,
+              phone_number
+            )
+          ),
+          bill_items!inner (
+            *,
+            inventory:inventory_item_id (
+              name,
+              unit_cost
+            )
+          )
+        `)
+        .eq("id", billId)
+        .single();
+
+      if (error) throw error;
+
+      const prescriptions = Array.isArray(billData.prescriptions) ? billData.prescriptions : [billData.prescriptions].filter(Boolean);
+      const patientInfo = prescriptions.length > 0 && prescriptions[0] ? prescriptions[0].patients : null;
+      const patientArray = Array.isArray(patientInfo) ? patientInfo : [patientInfo].filter(Boolean);
+      const normalizedPatient = patientArray.length > 0 ? patientArray[0] : { name: 'Unknown', phone_number: 'Unknown' };
+
+      const normalizedBillData = {
+        ...billData,
+        subtotal: billData.subtotal || billData.total_amount || 0,
+        gst_amount: billData.gst_amount || 0,
+        gst_percentage: billData.gst_percentage || 0,
+        discount_amount: billData.discount_amount || 0,
+        prescription: prescriptions.length > 0 && prescriptions[0] ? {
+          ...prescriptions[0],
+          patient: normalizedPatient
+        } : null
+      };
+
+      const items = billData.bill_items.map((item: any) => {
+        const inventory = Array.isArray(item.inventory) ? item.inventory : [item.inventory].filter(Boolean);
+        const inventoryItem = inventory.length > 0 && inventory[0] ? inventory[0] : null;
+        return {
+          id: inventoryItem?.id || 0,
+          name: inventoryItem?.name || 'Unknown',
+          quantity: item.quantity,
+          unit_cost: item.unit_price,
+          total: item.total_price,
+        };
+      });
+
+      setSelectedBill({ ...normalizedBillData, items });
+      setShowBillPreview(true);
+    } catch (error) {
+      console.error("Error fetching bill details:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load bill details",
+        variant: "destructive",
+      });
+    }
   };
 
 
@@ -191,24 +253,7 @@ export default function Patients() {
             ) : (
               <PatientList
                 patients={filteredPatients}
-                onViewBill={(billId, patient, prescription) => {
-                  const bill = prescription.bills?.find(b => b && b.id === billId);
-
-                  if (bill) {
-                    const billWithPatientInfo = {
-                      ...bill,
-                      prescription: {
-                        ...prescription,
-                        patient: {
-                          name: patient.name,
-                          phone_number: patient.phoneNumber
-                        }
-                      }
-                    };
-                    setSelectedBill(billWithPatientInfo);
-                    setShowBillPreview(true);
-                  }
-                }}
+                onViewBill={handleShowBillPreview}
                 onPatientDeleted={refreshData}
               />
             )}
@@ -220,7 +265,7 @@ export default function Patients() {
           open={showBillPreview}
           onOpenChange={setShowBillPreview}
           billData={selectedBill}
-          items={selectedBill.bill_items || []}
+          items={selectedBill.items || []}
         />
       )}
 

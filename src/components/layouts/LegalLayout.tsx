@@ -1,6 +1,6 @@
 
 import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Home } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ export default function LegalLayout() {
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex-1 container mx-auto px-4 py-8">
-        <div className="mb-6 mt-4">
+        <div className="mb-6 mt-4 flex gap-2">
           <Button 
             variant="ghost"
             onClick={handleBack}
@@ -42,6 +42,15 @@ export default function LegalLayout() {
             {fromPage ? 'Back to Dashboard' : 
               fromRegistration ? 'Back to Registration' : 'Back to Home'}
           </Button>
+          <Link to="/#footer">
+            <Button 
+              variant="outline"
+              className="inline-flex items-center"
+            >
+              <Home className="h-4 w-4 mr-1" />
+              Home
+            </Button>
+          </Link>
         </div>
         
         <div className="mb-8" ref={contentRef}>

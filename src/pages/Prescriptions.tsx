@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import MedicineReturnDialog from "@/components/prescriptions/MedicineReturnDialog";
+import NewMedicineReturnDialog from "@/components/prescriptions/NewMedicineReturnDialog";
 import { BillPreviewDialog } from "@/components/billing/BillPreviewDialog";
 import { MedicineReplacementDialog } from "@/components/prescriptions/MedicineReplacementDialog";
 import { logBillItemDeletion } from "@/utils/deletionTracker";
@@ -848,17 +848,29 @@ export default function Prescriptions() {
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="text-lg font-medium">{prescription.patients?.name}</h3>
                       <div className="flex flex-col items-end space-y-1">
-                        <Badge 
-                          variant={prescriptionStatus === 'completed' ? 'default' : prescriptionStatus === 'pending' ? 'secondary' : 'destructive'}
-                        >
-                          {prescriptionStatus.charAt(0).toUpperCase() + prescriptionStatus.slice(1)}
-                        </Badge>
+                        <div className="flex gap-1">
+                          <Badge 
+                            variant={prescriptionStatus === 'completed' ? 'default' : prescriptionStatus === 'pending' ? 'secondary' : 'destructive'}
+                          >
+                            {prescriptionStatus.charAt(0).toUpperCase() + prescriptionStatus.slice(1)}
+                          </Badge>
+                          {prescription.has_return && (
+                            <Badge variant="outline" className="text-orange-600 border-orange-600">
+                              Returned
+                            </Badge>
+                          )}
+                        </div>
                         <div className="text-right">
                           {prescription.has_bill ? (
                             <div className="space-y-1">
                               <div className="text-xl font-bold text-green-600">
                                 ₹{prescription.bill_total_amount || 0}
                               </div>
+                              {prescription.has_return && prescription.return_amount && (
+                                <div className="text-sm font-medium text-orange-600">
+                                  -₹{prescription.return_amount} returned
+                                </div>
+                              )}
                               <div className="text-xs text-gray-500">
                                 Bill #{prescription.bill_number}
                               </div>
@@ -965,7 +977,7 @@ export default function Prescriptions() {
       
       {/* Return Dialog */}
 
-      <MedicineReturnDialog
+      <NewMedicineReturnDialog
         isOpen={showReturnDialog}
         onClose={() => {
           setShowReturnDialog(false);

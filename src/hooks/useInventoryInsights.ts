@@ -27,9 +27,13 @@ export const useInventoryInsights = (): UseInventoryInsightsReturn => {
     if (!user) throw new Error('User not authenticated');
     
     const today = new Date();
-    const thirtyDaysAgo = subDays(today, 30);
-    const fromDate = format(thirtyDaysAgo, 'yyyy-MM-dd');
-    const toDate = format(today, 'yyyy-MM-dd');
+    today.setHours(23, 59, 59, 999);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+    
+    const fromDateTime = thirtyDaysAgo.toISOString();
+    const toDateTime = today.toISOString();
     
     // Fetch inventory items with low stock or expiring soon
     const { data: inventory, error: invError } = await supabase
@@ -56,8 +60,8 @@ export const useInventoryInsights = (): UseInventoryInsightsReturn => {
           user_id
         )
       `)
-      .gte('bills.date', fromDate)
-      .lte('bills.date', toDate)
+      .gte('bills.date', fromDateTime)
+      .lte('bills.date', toDateTime)
       .eq('bills.user_id', user.id);
     
     if (prescError) {
@@ -67,7 +71,7 @@ export const useInventoryInsights = (): UseInventoryInsightsReturn => {
     // Process prescription-driven suggestions
     const itemFrequency = new Map<string, ItemFrequencyData>();
     prescriptionItems?.forEach((item: BillItem) => {
-      const itemId = item.inventory_item_id;
+      const itemId = item.inventory_item_id.toString();
       
       const current = itemFrequency.get(itemId) || { 
         count: 0, 
@@ -103,7 +107,7 @@ export const useInventoryInsights = (): UseInventoryInsightsReturn => {
       });
     
     // Get expiry alerts
-    const expiryAlerts = (inventory as InventoryItem[])
+    const expiryAlerts = (inventory as unknown as InventoryItem[])
       ?.filter(item => item.expiry_date)
       .map(item => {
         const expiryDate = new Date(item.expiry_date!);

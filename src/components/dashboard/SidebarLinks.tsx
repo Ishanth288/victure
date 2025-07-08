@@ -16,8 +16,7 @@ import {
   LineChart, 
   LogOut,
   Shield,
-  Trash2,
-  MessageSquare // Added MessageSquare for WhatsApp
+  Trash2
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -127,11 +126,6 @@ export function SidebarLinks({ onNavigate }: SidebarLinksProps) {
       title: "Business Optimization",
       icon: <BarChart2 className="mr-2 h-4 w-4" />,
       href: "/business-optimization"
-    },
-    {
-      title: "WhatsApp", // New WhatsApp link
-      icon: <MessageSquare className="mr-2 h-4 w-4" />,
-      href: "/whatsapp" // Placeholder link, will be constructed later
     },
     {
       title: "Deletion History",

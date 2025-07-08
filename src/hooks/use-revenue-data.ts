@@ -16,32 +16,42 @@ export function useRevenueData(userId: string | null, dateRange: { from: Date, t
     try {
       setIsLoading(true);
       
-      // Format dates for query
-      const fromDate = format(dateRange.from, "yyyy-MM-dd");
-      const toDate = format(dateRange.to, "yyyy-MM-dd");
+      // Create proper date range with time boundaries
+      const startDate = new Date(dateRange.from);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(dateRange.to);
+      endDate.setHours(23, 59, 59, 999);
+      
+      const fromDateTime = startDate.toISOString();
+      const toDateTime = endDate.toISOString();
       
       // Previous period for comparison
-      const daysDiff = Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
-      const prevFromDate = format(new Date(dateRange.from.getTime() - daysDiff * 24 * 60 * 60 * 1000), "yyyy-MM-dd");
-      const prevToDate = format(new Date(dateRange.from.getTime() - 24 * 60 * 60 * 1000), "yyyy-MM-dd");
+      const daysDiff = Math.ceil((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
+      const prevStartDate = new Date(dateRange.from.getTime() - daysDiff * 24 * 60 * 60 * 1000);
+      prevStartDate.setHours(0, 0, 0, 0);
+      const prevEndDate = new Date(dateRange.from.getTime() - 24 * 60 * 60 * 1000);
+      prevEndDate.setHours(23, 59, 59, 999);
+      
+      const prevFromDateTime = prevStartDate.toISOString();
+      const prevToDateTime = prevEndDate.toISOString();
       
       // Fetch current period bills
       const { data: currentBills, error: currentError } = await supabase
         .from('bills')
-        .select('*')
+        .select('total_amount, date')
         .eq('user_id', userId)
-        .gte('date', fromDate)
-        .lte('date', toDate);
+        .gte('date', fromDateTime)
+        .lte('date', toDateTime);
         
       if (currentError) throw currentError;
       
       // Fetch previous period bills for comparison
       const { data: prevBills, error: prevError } = await supabase
         .from('bills')
-        .select('*')
+        .select('total_amount, date')
         .eq('user_id', userId)
-        .gte('date', prevFromDate)
-        .lte('date', prevToDate);
+        .gte('date', prevFromDateTime)
+        .lte('date', prevToDateTime);
         
       if (prevError) throw prevError;
       
@@ -68,7 +78,7 @@ export function useRevenueData(userId: string | null, dateRange: { from: Date, t
       // Initialize all days with zero revenue
       for (let i = 0; i < days; i++) {
         const date = addDays(dateRange.from, i);
-        const dateStr = format(date, "yyyy-MM-dd");
+        const dateStr = date.toISOString().split('T')[0];
         revenueByDay.set(dateStr, 0);
       }
       

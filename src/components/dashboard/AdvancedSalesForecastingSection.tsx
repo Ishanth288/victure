@@ -41,10 +41,13 @@ const AdvancedSalesForecastingSection: React.FC = () => {
       if (!user) throw new Error('User not authenticated');
       
       const today = new Date();
+      today.setHours(23, 59, 59, 999);
       const currentMonth = getMonth(today);
       const threeMonthsAgo = subMonths(today, 3);
-      const fromDate = format(threeMonthsAgo, 'yyyy-MM-dd');
-      const toDate = format(today, 'yyyy-MM-dd');
+      threeMonthsAgo.setHours(0, 0, 0, 0);
+      
+      const fromDateTime = threeMonthsAgo.toISOString();
+      const toDateTime = today.toISOString();
       
       // Fetch sales data for the last 3 months with better error handling
       const { data: salesData, error: salesError } = (await supabase
@@ -61,8 +64,8 @@ const AdvancedSalesForecastingSection: React.FC = () => {
             user_id
           )
         `)
-        .gte('bill.date', fromDate)
-        .lte('bill.date', toDate)
+        .gte('bill.date', fromDateTime)
+        .lte('bill.date', toDateTime)
         .eq('bill.user_id', user.id)
         .not('bill', 'is', null)) as { data: SalesDataItem[] | null; error: any };
       

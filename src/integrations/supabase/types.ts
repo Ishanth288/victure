@@ -355,33 +355,39 @@ export type Database = {
       medicine_returns: {
         Row: {
           bill_item_id: number
+          created_at: string
           id: number
-          processed_by: string
+          processed_by: string | null
           quantity: number
           reason: string | null
+          refund_amount: number
           return_date: string
           status: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           bill_item_id: number
+          created_at?: string
           id?: number
-          processed_by: string
+          processed_by?: string | null
           quantity: number
           reason?: string | null
+          refund_amount: number
           return_date?: string
-          status: string
-          user_id: string
+          status?: string
+          user_id?: string | null
         }
         Update: {
           bill_item_id?: number
+          created_at?: string
           id?: number
-          processed_by?: string
+          processed_by?: string | null
           quantity?: number
           reason?: string | null
+          refund_amount?: number
           return_date?: string
           status?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {

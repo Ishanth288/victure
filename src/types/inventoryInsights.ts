@@ -10,10 +10,10 @@ export interface InventoryItem {
 }
 
 export interface BillItem {
-  inventory_item_id: string;
+  inventory_item_id: number;
   quantity: number;
   inventory?: {
-    id: string;
+    id: number;
     name: string;
     quantity: number;
   };

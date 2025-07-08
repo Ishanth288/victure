@@ -93,11 +93,20 @@ export function useDashboardData(): DashboardData {
         // Prescriptions query
         OptimizedQuery.execute(
           async () => {
+            // Get today's date range for prescriptions count
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+            
+            const todayStart = startOfToday.toISOString();
+            const todayEnd = endOfToday.toISOString();
+            
             const result = await supabase
               .from('prescriptions')
               .select('id')
               .eq('user_id', userId)
-              .gte('date', new Date().toISOString().split('T')[0]);
+              .gte('date', todayStart)
+              .lt('date', todayEnd);
             return result;
           },
           {

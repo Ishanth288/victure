@@ -27,12 +27,16 @@ const SalesCustomerRelationshipSection: React.FC = () => {
       if (!user) throw new Error('User not authenticated');
       
       const today = new Date();
+      today.setHours(23, 59, 59, 999);
       const threeMonthsAgo = subMonths(today, 3);
+      threeMonthsAgo.setHours(0, 0, 0, 0);
       const sixMonthsAgo = subMonths(today, 6);
-      const fromDate = format(threeMonthsAgo, 'yyyy-MM-dd');
-      const toDate = format(today, 'yyyy-MM-dd');
-      const previousPeriodFrom = format(sixMonthsAgo, 'yyyy-MM-dd');
-      const previousPeriodTo = format(threeMonthsAgo, 'yyyy-MM-dd');
+      sixMonthsAgo.setHours(0, 0, 0, 0);
+      
+      const fromDateTime = threeMonthsAgo.toISOString();
+      const toDateTime = today.toISOString();
+      const previousPeriodFromDateTime = sixMonthsAgo.toISOString();
+      const previousPeriodToDateTime = threeMonthsAgo.toISOString();
       
       // Fetch current period customer data
       const { data: currentCustomers, error: currentError } = await supabase
@@ -50,8 +54,8 @@ const SalesCustomerRelationshipSection: React.FC = () => {
           )
         `)
         .eq('user_id', user.id)
-        .gte('date', fromDate)
-        .lte('date', toDate);
+        .gte('date', fromDateTime)
+        .lte('date', toDateTime);
       
       if (currentError) throw currentError;
       
@@ -71,8 +75,8 @@ const SalesCustomerRelationshipSection: React.FC = () => {
           )
         `)
         .eq('user_id', user.id)
-        .gte('date', previousPeriodFrom)
-        .lte('date', previousPeriodTo);
+        .gte('date', previousPeriodFromDateTime)
+        .lte('date', previousPeriodToDateTime);
       
       if (previousError) throw previousError;
       

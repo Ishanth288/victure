@@ -24,6 +24,15 @@ const DeletionHistory = lazy(() => import("./pages/DeletionHistory"));
 const SystemTest = lazy(() => import("./pages/SystemTest"));
 const BusinessOptimization = lazy(() => import("./pages/BusinessOptimization"));
 const Documentation = lazy(() => import("./pages/Documentation"));
+const Blog = lazy(() => import("./pages/Blog"));
+// Legal pages
+const PrivacyPolicy = lazy(() => import("./pages/legal/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/legal/TermsOfService"));
+const RefundPolicy = lazy(() => import("./pages/legal/RefundPolicy"));
+const SLA = lazy(() => import("./pages/legal/SLA"));
+const EULA = lazy(() => import("./pages/legal/EULA"));
+const AcceptableUsePolicy = lazy(() => import("./pages/legal/AcceptableUsePolicy"));
+const Disclaimers = lazy(() => import("./pages/legal/Disclaimers"));
 // const WhatsAppPage = lazy(() => import("./pages/whatsapp")); // Temporarily disabled for Vercel build
 
 
@@ -54,84 +63,163 @@ function App() {
           }
         }}
       >
-            <AuthWrapper>
-                  <div className="min-h-screen bg-gray-50">
-                    <ConnectionHealthMonitor />
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
-                    <Route path="/inventory" element={<DashboardLayout><Inventory /></DashboardLayout>} />
-                    <Route path="/patients" element={<DashboardLayout><Patients /></DashboardLayout>} />
-                    <Route path="/prescriptions" element={<DashboardLayout><Prescriptions /></DashboardLayout>} />
-                    <Route path="/insights" element={<DashboardLayout><Insights /></DashboardLayout>} />
-                    <Route path="/billing" element={<DashboardLayout><Billing /></DashboardLayout>} />
-                    <Route path="/billing-cart" element={<DashboardLayout><BillingCart /></DashboardLayout>} />
-                    <Route path="/purchases" element={<DashboardLayout><Purchases /></DashboardLayout>} />
-                    <Route 
-                      path="/admin" 
-                      element={
-                        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-                          <DashboardLayout><Admin /></DashboardLayout>
-                        </Suspense>
-                      } 
-                    />
-                    <Route path="/settings" element={<DashboardLayout><Settings /></DashboardLayout>} />
-                    <Route 
-                      path="/admin/settings" 
-                      element={
-                        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-                          <SystemSettings />
-                        </Suspense>
-                      } 
-                    />
-                    <Route 
-                      path="/deletion-history" 
-                      element={
-                        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-                          <DashboardLayout><DeletionHistory /></DashboardLayout>
-                        </Suspense>
-                      } 
-                    />
-                    <Route 
-                      path="/system-test" 
-                      element={
-                        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-                          <SystemTest />
-                        </Suspense>
-                      } 
-                    />
-                    <Route 
-                      path="/business-optimization"
-                      element={
-                        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-                          <DashboardLayout><BusinessOptimization /></DashboardLayout>
-                        </Suspense>
-                      } 
-                    />
-                    <Route 
-                      path="/documentation" 
-                      element={
-                        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-                          <Documentation />
-                        </Suspense>
-                      } 
-                    />
-                    {/* Temporarily disabled WhatsApp route for Vercel build
-                    <Route 
-                      path="/whatsapp"
-                      element={
-                        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-                          <DashboardLayout><WhatsAppPage /></DashboardLayout>
-                        </Suspense>
-                      } 
-                    />
-                    */}
-                  </Routes>
-                </div>
-            </AuthWrapper>
-    </ErrorBoundary>
-  );
+        <div className="min-h-screen bg-gray-50">
+          <ConnectionHealthMonitor />
+          <Routes>
+            {/* Public routes - no authentication required */}
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route 
+              path="/documentation" 
+              element={
+                <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                  <Documentation />
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="/blog" 
+              element={
+                <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                  <Blog />
+                </Suspense>
+              } 
+            />
+            {/* Legal Routes - public access */}
+            <Route 
+              path="/legal/privacy-policy" 
+              element={
+                <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                  <PrivacyPolicy />
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="/legal/terms" 
+              element={
+                <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                  <TermsOfService />
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="/legal/refund-policy" 
+              element={
+                <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                  <RefundPolicy />
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="/legal/sla" 
+              element={
+                <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                  <SLA />
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="/legal/eula" 
+              element={
+                <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                  <EULA />
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="/legal/acceptable-use" 
+              element={
+                <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                  <AcceptableUsePolicy />
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="/legal/disclaimers" 
+              element={
+                <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                  <Disclaimers />
+                </Suspense>
+              } 
+            />
+            
+            {/* Protected routes - authentication required */}
+            <Route path="/dashboard" element={<AuthWrapper><DashboardLayout><Dashboard /></DashboardLayout></AuthWrapper>} />
+            <Route path="/inventory" element={<AuthWrapper><DashboardLayout><Inventory /></DashboardLayout></AuthWrapper>} />
+            <Route path="/patients" element={<AuthWrapper><DashboardLayout><Patients /></DashboardLayout></AuthWrapper>} />
+            <Route path="/prescriptions" element={<AuthWrapper><DashboardLayout><Prescriptions /></DashboardLayout></AuthWrapper>} />
+            <Route path="/insights" element={<AuthWrapper><DashboardLayout><Insights /></DashboardLayout></AuthWrapper>} />
+            <Route path="/billing" element={<AuthWrapper><DashboardLayout><Billing /></DashboardLayout></AuthWrapper>} />
+            <Route path="/billing-cart" element={<AuthWrapper><DashboardLayout><BillingCart /></DashboardLayout></AuthWrapper>} />
+            <Route path="/purchases" element={<AuthWrapper><DashboardLayout><Purchases /></DashboardLayout></AuthWrapper>} />
+            <Route 
+              path="/admin" 
+              element={
+                <AuthWrapper>
+                  <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                    <DashboardLayout><Admin /></DashboardLayout>
+                  </Suspense>
+                </AuthWrapper>
+              } 
+            />
+            <Route path="/settings" element={<AuthWrapper><DashboardLayout><Settings /></DashboardLayout></AuthWrapper>} />
+            <Route 
+              path="/admin/settings" 
+              element={
+                <AuthWrapper>
+                  <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                    <SystemSettings />
+                  </Suspense>
+                </AuthWrapper>
+              } 
+            />
+            <Route 
+              path="/deletion-history" 
+              element={
+                <AuthWrapper>
+                  <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                    <DashboardLayout><DeletionHistory /></DashboardLayout>
+                  </Suspense>
+                </AuthWrapper>
+              } 
+            />
+            <Route 
+              path="/system-test" 
+              element={
+                <AuthWrapper>
+                  <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                    <SystemTest />
+                  </Suspense>
+                </AuthWrapper>
+              } 
+            />
+            <Route 
+              path="/business-optimization"
+              element={
+                <AuthWrapper>
+                  <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                    <DashboardLayout><BusinessOptimization /></DashboardLayout>
+                  </Suspense>
+                </AuthWrapper>
+              } 
+            />
+
+            {/* Temporarily disabled WhatsApp route for Vercel build
+            <Route 
+              path="/whatsapp"
+              element={
+                <AuthWrapper>
+                  <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                    <DashboardLayout><WhatsAppPage /></DashboardLayout>
+                  </Suspense>
+                </AuthWrapper>
+              } 
+            />
+            */}
+            </Routes>
+          </div>
+        </ErrorBoundary>
+      );
 }
 
 export default App;

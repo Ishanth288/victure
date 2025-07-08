@@ -10,31 +10,36 @@ export function useProductData(userId: string | null, dateRange: { from: Date, t
   const [error, setError] = useState<Error | null>(null);
 
   const fetchProductData = useCallback(async () => {
-    if (!userId) {
-      setIsLoading(false);
-      return;
-    }
-    
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Validate inputs
-      if (!dateRange.from || !dateRange.to) {
-        throw new Error('Invalid date range provided for product data');
+      if (!userId) {
+        setIsLoading(false);
+        return;
       }
       
-      // Format dates for query
-      const fromDate = format(dateRange.from, "yyyy-MM-dd");
-      const toDate = format(dateRange.to, "yyyy-MM-dd");
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Validate inputs
+        if (!dateRange.from || !dateRange.to) {
+          throw new Error('Invalid date range provided');
+        }
+        
+        // Create proper date range with time boundaries
+        const startDate = new Date(dateRange.from);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(dateRange.to);
+        endDate.setHours(23, 59, 59, 999);
+        
+        const fromDateTime = startDate.toISOString();
+        const toDateTime = endDate.toISOString();
       
       // Step 1: Get bills for the date range
-      const { data: bills, error: billsError } = await supabase
-        .from('bills')
-        .select('id')
-        .eq('user_id', userId)
-        .gte('date', fromDate)
-        .lte('date', toDate);
+        const { data: bills, error: billsError } = await supabase
+          .from('bills')
+          .select('id, total_amount, date')
+          .eq('user_id', userId)
+          .gte('date', fromDateTime)
+          .lte('date', toDateTime);
         
       if (billsError) throw billsError;
       

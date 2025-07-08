@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ReturnReplacementPreviewDialog } from "@/components/billing/ReturnReplacementPreviewDialog";
 import { 
   Dialog,
   DialogContent,
@@ -62,6 +63,8 @@ export function MedicineReplacementDialog({
   const [loading, setLoading] = useState(false);
   const [fetchingItems, setFetchingItems] = useState(false);
   const [processingReplacement, setProcessingReplacement] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
   const [billItems, setBillItems] = useState<MedicineReplacementItem[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [selectedOriginalItem, setSelectedOriginalItem] = useState<number | null>(null);
@@ -111,6 +114,100 @@ export function MedicineReplacementDialog({
     const originalValue = originalItem.unit_price * quantity;
     const replacementValue = replacementItem.unit_cost * quantity;
     setPriceDifference(replacementValue - originalValue);
+  };
+
+  const generatePreviewData = async () => {
+    if (!billId || !selectedOriginalItem || !selectedReplacementItem || !replacementQuantity) {
+      return null;
+    }
+
+    try {
+      // Fetch bill and prescription data
+      const { data: billData, error: billError } = await supabase
+        .from('bills')
+        .select(`
+          *,
+          prescriptions (
+            *,
+            patients (
+              name,
+              phone_number
+            )
+          )
+        `)
+        .eq('id', billId)
+        .single();
+
+      if (billError) throw billError;
+
+      const prescription = billData.prescriptions;
+      const patient = prescription?.patients;
+
+      const originalItem = billItems.find(item => item.id === selectedOriginalItem);
+      const replacementItem = inventoryItems.find(item => item.id === selectedReplacementItem);
+      
+      if (!originalItem || !replacementItem) {
+        throw new Error('Selected items not found');
+      }
+      
+      // Calculate GST for each item individually
+      const originalSubtotal = originalItem.unit_price * replacementQuantity;
+      const originalGst = originalSubtotal * ((billData.gst_percentage || 0) / 100);
+      const originalTotal = originalSubtotal + originalGst;
+      
+      const replacementSubtotal = replacementItem.unit_cost * replacementQuantity;
+      const replacementGst = replacementSubtotal * ((billData.gst_percentage || 0) / 100);
+      const replacementTotal = replacementSubtotal + replacementGst;
+      
+      const previewItems = [
+        {
+          id: originalItem.id,
+          medicine_name: originalItem.medicine_name,
+          quantity: -replacementQuantity, // Negative for return
+          unit_price: originalItem.unit_price,
+          total_price: -originalTotal, // Include GST in total price
+          type: 'return' as const,
+          reason: `Replaced with ${replacementItem.name}`,
+        },
+        {
+          id: replacementItem.id,
+          medicine_name: replacementItem.name,
+          quantity: replacementQuantity,
+          unit_price: replacementItem.unit_cost,
+          total_price: replacementTotal, // Include GST in total price
+          type: 'replacement' as const,
+          reason: reason || 'Medicine replacement',
+        }
+      ];
+      
+      // Net calculations
+      const netSubtotal = replacementSubtotal - originalSubtotal;
+      const netGst = replacementGst - originalGst;
+      const netTotal = replacementTotal - originalTotal;
+
+      return {
+        bill_number: `REPLACE-${billData.bill_number}`,
+        date: new Date().toISOString(),
+        type: 'replacement' as const,
+        patient: patient ? {
+          name: patient.name,
+          phone_number: patient.phone_number,
+        } : undefined,
+        doctor_name: prescription?.doctor_name,
+        prescription_number: prescription?.prescription_number,
+        items: previewItems,
+        subtotal: netSubtotal,
+        gst_amount: netGst,
+        gst_percentage: billData.gst_percentage || 0,
+        total_amount: netTotal,
+        refund_amount: netTotal < 0 ? Math.abs(netTotal) : 0,
+        additional_charge: netTotal > 0 ? netTotal : 0,
+        net_amount: netTotal,
+      };
+    } catch (error) {
+      console.error('Error generating preview data:', error);
+      return null;
+    }
   };
   
   const fetchBillItems = async () => {
@@ -208,6 +305,23 @@ export function MedicineReplacementDialog({
     
     const originalItem = billItems.find(item => item.id === selectedOriginalItem);
     calculatePriceDifference(originalItem, selectedReplacementItem, validValue);
+  };
+
+  const handlePreview = async () => {
+    if (!selectedOriginalItem || !selectedReplacementItem || !replacementQuantity) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const preview = await generatePreviewData();
+    if (preview) {
+      setPreviewData(preview);
+      setShowPreview(true);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -329,6 +443,8 @@ export function MedicineReplacementDialog({
     setReason('');
     setMaxReplacementQuantity(0);
     setPriceDifference(0);
+    setShowPreview(false);
+    setPreviewData(null);
   };
 
   return (
@@ -354,7 +470,7 @@ export function MedicineReplacementDialog({
             <p className="mt-2 text-sm text-gray-600">No items available for replacement in this bill</p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="originalItem">Original Medicine to Replace</Label>
               <Select 
@@ -469,18 +585,13 @@ export function MedicineReplacementDialog({
                     Cancel
                   </Button>
                   <Button 
-                    type="submit" 
+                    type="button"
+                    onClick={handlePreview}
                     className="gap-1"
                     disabled={!selectedOriginalItem || !selectedReplacementItem || replacementQuantity <= 0 || processingReplacement}
                   >
-                    {processingReplacement ? (
-                      <>Processing...</>
-                    ) : (
-                      <>
-                        <ArrowLeftRight className="h-4 w-4" />
-                        Process Replacement
-                      </>
-                    )}
+                    <ArrowLeftRight className="h-4 w-4" />
+                    Preview Replacement
                   </Button>
                 </div>
 
@@ -492,7 +603,19 @@ export function MedicineReplacementDialog({
             )}
           </form>
         )}
+        
+        {showPreview && previewData && (
+           <ReturnReplacementPreviewDialog
+             isOpen={showPreview}
+             onClose={() => setShowPreview(false)}
+             data={previewData}
+             onConfirm={() => {
+               setShowPreview(false);
+               handleSubmit();
+             }}
+           />
+         )}
       </DialogContent>
     </Dialog>
   );
-} 
+}

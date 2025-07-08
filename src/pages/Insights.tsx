@@ -135,20 +135,30 @@ export default function Insights() {
       if (!userId) return;
 
       console.log("Fetching insights data for period:", {
-        from: format(dateRange.from, "yyyy-MM-dd"),
-        to: format(dateRange.to, "yyyy-MM-dd")
+        from: dateRange.from.toISOString().split('T')[0],
+        to: dateRange.to.toISOString().split('T')[0]
       });
 
-      // Format dates for query
-      const fromDate = format(dateRange.from, "yyyy-MM-dd");
-      const toDate = format(dateRange.to, "yyyy-MM-dd");
+      // Create proper date range with time boundaries
+      const startDate = new Date(dateRange.from);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(dateRange.to);
+      endDate.setHours(23, 59, 59, 999);
+      
+      const fromDateTime = startDate.toISOString();
+      const toDateTime = endDate.toISOString();
       
       // Previous period for comparison
-      const daysDiff = Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
-      const prevFromDate = format(subDays(dateRange.from, daysDiff), "yyyy-MM-dd");
-      const prevToDate = format(subDays(dateRange.from, 1), "yyyy-MM-dd");
+        const daysDiff = Math.ceil((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
+        const prevStartDate = new Date(subDays(dateRange.from, daysDiff));
+        prevStartDate.setHours(0, 0, 0, 0);
+        const prevEndDate = new Date(subDays(dateRange.to, daysDiff));
+        prevEndDate.setHours(23, 59, 59, 999);
+        
+        const prevFromDateTime = prevStartDate.toISOString();
+        const prevToDateTime = prevEndDate.toISOString();
 
-      console.log("Fetching current bills:", { userId, fromDate, toDate });
+      console.log("Fetching current bills:", { userId, fromDateTime, toDateTime });
       
       // Fetch bills for current period
       const { data: currentBills, error: currentBillsError } = await supabase
@@ -168,8 +178,8 @@ export default function Insights() {
           )
         `)
         .eq('user_id', userId)
-        .gte('date', fromDate)
-        .lte('date', toDate);
+        .gte('date', fromDateTime)
+        .lte('date', toDateTime);
 
       if (currentBillsError) {
         console.error('Error fetching current bills:', currentBillsError);
@@ -197,8 +207,8 @@ export default function Insights() {
           )
         `)
         .eq('user_id', userId)
-        .gte('date', prevFromDate)
-        .lte('date', prevToDate);
+        .gte('date', prevFromDateTime)
+        .lte('date', prevToDateTime);
 
       if (prevBillsError) {
         console.error('Error fetching previous bills:', prevBillsError);
@@ -308,8 +318,8 @@ export default function Insights() {
         .from('bills')
         .select('id')
         .eq('user_id', userId)
-        .gte('date', fromDate)
-        .lte('date', toDate);
+        .gte('date', fromDateTime)
+        .lte('date', toDateTime);
 
       if (billsError) {
         console.error('Error fetching bills in range:', billsError);
@@ -400,7 +410,7 @@ export default function Insights() {
       // Initialize all days with zero revenue
       for (let i = 0; i < days; i++) {
         const date = addDays(dateRange.from, i);
-        const dateStr = format(date, "yyyy-MM-dd");
+        const dateStr = date.toISOString().split('T')[0];
         revenueByDay.set(dateStr, 0);
       }
       

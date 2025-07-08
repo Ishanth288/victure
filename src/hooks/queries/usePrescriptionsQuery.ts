@@ -13,6 +13,8 @@ export interface PrescriptionWithPatient {
   migration_id: string;
   polytherapy: boolean;
   prescription_type: string;
+  has_return?: boolean;
+  return_amount?: number;
   patients: {
     id: number;
     name: string;
@@ -25,6 +27,11 @@ export interface PrescriptionWithPatient {
     date: string;
     status: string;
     payment_method: string;
+    bill_items?: {
+      id: number;
+      return_quantity?: number;
+      unit_price: number;
+    }[];
   }[];
 }
 
@@ -50,7 +57,12 @@ const fetchPrescriptions = async (userId: string): Promise<PrescriptionWithPatie
         total_amount,
         date,
         status,
-        payment_method
+        payment_method,
+        bill_items (
+          id,
+          return_quantity,
+          unit_price
+        )
       )
     `)
     .eq('user_id', userId)
@@ -62,8 +74,29 @@ const fetchPrescriptions = async (userId: string): Promise<PrescriptionWithPatie
     throw new Error(error.message);
   }
 
-  console.log(`Successfully fetched ${data?.length || 0} prescriptions.`);
-  return data || [];
+  // Calculate return information for each prescription
+  const prescriptionsWithReturns = (data || []).map(prescription => {
+    let totalReturnAmount = 0;
+    let hasReturn = false;
+
+    prescription.bills.forEach(bill => {
+      bill.bill_items?.forEach(item => {
+        if (item.return_quantity && item.return_quantity > 0) {
+          hasReturn = true;
+          totalReturnAmount += item.return_quantity * item.unit_price;
+        }
+      });
+    });
+
+    return {
+      ...prescription,
+      has_return: hasReturn,
+      return_amount: totalReturnAmount
+    };
+  });
+
+  console.log(`Successfully fetched ${prescriptionsWithReturns.length} prescriptions.`);
+  return prescriptionsWithReturns as unknown as PrescriptionWithPatient[];
 };
 
 export const usePrescriptionsQuery = (userId: string | null | undefined) => {

@@ -12,23 +12,31 @@ const fetchTodaysProgress = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
     
-    const today = format(new Date(), 'yyyy-MM-dd');
+    // Get today's date range (start and end of today)
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    
+    const todayStart = startOfToday.toISOString();
+    const todayEnd = endOfToday.toISOString();
     
     // Fetch today's prescriptions
     const { data: prescriptions, error: prescError } = await supabase
       .from('prescriptions')
       .select('id')
       .eq('user_id', user.id)
-      .eq('date', today);
+      .gte('date', todayStart)
+      .lt('date', todayEnd);
     
     if (prescError) throw prescError;
     
     // Fetch today's bills
     const { data: bills, error: billsError } = await supabase
       .from('bills')
-      .select('total_amount, payment_method')
+      .select('total_amount')
       .eq('user_id', user.id)
-      .eq('date', today);
+      .gte('date', todayStart)
+      .lt('date', todayEnd);
     
     if (billsError) throw billsError;
     const billsTyped = bills as unknown as BillData[];
@@ -43,8 +51,9 @@ const fetchTodaysProgress = async () => {
     // Calculate metrics
     const prescriptionsGenerated = prescriptions?.length || 0;
     const totalSales = validBills.reduce((sum, bill) => sum + bill.total_amount, 0);
-    const billsInCash = validBills.filter(bill => bill.payment_method === 'cash').length;
-    const billsInUpi = validBills.filter(bill => bill.payment_method === 'upi').length;
+    // Note: Payment method tracking removed as it's not stored in database yet
+    const billsInCash = 0; // Placeholder until payment_method column is added
+    const billsInUpi = validBills.length; // Show total bills for now
     
     // Calculate profit (assuming 20% margin for simplicity)
     const profitToday = totalSales * 0.2;
@@ -60,7 +69,8 @@ const fetchTodaysProgress = async () => {
         )
       `)
       .eq('user_id', user.id)
-      .eq('date', today);
+      .gte('date', todayStart)
+      .lt('date', todayEnd);
     
     if (patientsError) throw patientsError;
     
@@ -81,7 +91,7 @@ const fetchTodaysProgress = async () => {
           )
         `)
         .eq('user_id', user.id)
-        .lt('date', today);
+        .lt('date', todayStart);
       
       if (!prevError && previousBills) {
         const previousPatientIds = new Set(

@@ -19,12 +19,33 @@ export async function processMedicineReturn(
       return_date: returnData.return_date,
       status: returnData.status,
       processed_by: returnData.processed_by || user.id,
-      user_id: returnData.user_id || user.id
+      user_id: returnData.user_id || user.id,
+      refund_amount: 0 // Adding required refund_amount field
     })
     .select()
     .single();
 
   if (error) throw error;
+
+  // Update bill_items table with return_quantity
+  const { data: currentBillItem, error: fetchError } = await supabase
+    .from('bill_items')
+    .select('return_quantity')
+    .eq('id', returnData.bill_item_id)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  const currentReturnQuantity = currentBillItem.return_quantity || 0;
+  const newReturnQuantity = currentReturnQuantity + returnData.quantity;
+
+  const { error: updateError } = await supabase
+    .from('bill_items')
+    .update({ return_quantity: newReturnQuantity })
+    .eq('id', returnData.bill_item_id);
+
+  if (updateError) throw updateError;
+
   if (isDatabaseMedicineReturn(data)) {
     return data;
   } else {
@@ -38,7 +59,7 @@ function isDatabaseMedicineReturn(obj: any): obj is DatabaseMedicineReturn {
     typeof obj.id === 'number' &&
     typeof obj.bill_item_id === 'number' &&
     typeof obj.quantity === 'number' &&
-    typeof obj.reason === 'string' &&
+    (typeof obj.reason === 'string' || obj.reason === null) &&
     typeof obj.return_date === 'string' &&
     typeof obj.status === 'string' &&
     typeof obj.processed_by === 'string' &&

@@ -25,26 +25,34 @@ export function useSalesStats(userId: string | null, dateRange: { from: Date, to
       setError(null);
 
       if (!dateRange.from || !dateRange.to) {
-        throw new Error('Invalid date range provided');
+        throw new Error('Invalid date range provided for sales stats');
       }
       
-      const fromDate = format(dateRange.from, "yyyy-MM-dd");
-      const toDate = format(dateRange.to, "yyyy-MM-dd");
+      // Create proper date range with time boundaries
+      const startDate = new Date(dateRange.from);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(dateRange.to);
+      endDate.setHours(23, 59, 59, 999);
       
-      if (isNaN(Date.parse(fromDate)) || isNaN(Date.parse(toDate))) {
-        throw new Error('Invalid date format');
-      }
+      const fromDateTime = startDate.toISOString();
+      const toDateTime = endDate.toISOString();
       
-      const daysDiff = Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
-      const prevFromDate = format(new Date(dateRange.from.getTime() - daysDiff * 24 * 60 * 60 * 1000), "yyyy-MM-dd");
-      const prevToDate = format(new Date(dateRange.from.getTime() - 24 * 60 * 60 * 1000), "yyyy-MM-dd");
+      // Calculate previous period dates
+      const daysDiff = Math.ceil((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
+      const prevStartDate = new Date(dateRange.from.getTime() - daysDiff * 24 * 60 * 60 * 1000);
+      prevStartDate.setHours(0, 0, 0, 0);
+      const prevEndDate = new Date(dateRange.to.getTime() - daysDiff * 24 * 60 * 60 * 1000);
+      prevEndDate.setHours(23, 59, 59, 999);
+      
+      const prevFromDateTime = prevStartDate.toISOString();
+      const prevToDateTime = prevEndDate.toISOString();
       
       const { data: currentBills, error: currentError } = await supabase
         .from('bills')
         .select('*, prescription:prescriptions(patient:patients(name, phone_number))')
         .eq('user_id', userId)
-        .gte('date', fromDate)
-        .lte('date', toDate)
+        .gte('date', fromDateTime)
+        .lte('date', toDateTime)
         .abortSignal(AbortSignal.timeout(8000));
         
       if (currentError) throw currentError;
@@ -53,8 +61,8 @@ export function useSalesStats(userId: string | null, dateRange: { from: Date, to
         .from('bills')
         .select('*, prescription:prescriptions(patient:patients(name, phone_number))')
         .eq('user_id', userId)
-        .gte('date', prevFromDate)
-        .lte('date', prevToDate)
+        .gte('date', prevFromDateTime)
+        .lte('date', prevToDateTime)
         .abortSignal(AbortSignal.timeout(8000));
         
       if (prevError) throw prevError;

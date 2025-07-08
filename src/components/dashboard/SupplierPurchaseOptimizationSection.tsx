@@ -40,12 +40,15 @@ const SupplierPurchaseOptimizationSection: React.FC = () => {
       }
       
       const today = new Date();
+      today.setHours(23, 59, 59, 999);
       const threeMonthsAgo = subMonths(today, 3);
-      const fromDate = format(threeMonthsAgo, 'yyyy-MM-dd');
-      const toDate = format(today, 'yyyy-MM-dd');
+      threeMonthsAgo.setHours(0, 0, 0, 0);
+      
+      const fromDateTime = threeMonthsAgo.toISOString();
+      const toDateTime = today.toISOString();
       
       // Validate date range
-      if (isNaN(Date.parse(fromDate)) || isNaN(Date.parse(toDate))) {
+      if (isNaN(Date.parse(fromDateTime)) || isNaN(Date.parse(toDateTime))) {
         throw new Error('Invalid date range');
       }
       
@@ -67,8 +70,8 @@ const SupplierPurchaseOptimizationSection: React.FC = () => {
           )
         `)
         .eq('user_id', user.id)
-        .gte('order_date', fromDate)
-        .lte('order_date', toDate);
+        .gte('order_date', fromDateTime)
+        .lte('order_date', toDateTime);
       
       if (poError) throw poError;
       
