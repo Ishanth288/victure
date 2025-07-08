@@ -609,9 +609,72 @@ export function MedicineReplacementDialog({
              isOpen={showPreview}
              onClose={() => setShowPreview(false)}
              data={previewData}
-             onConfirm={() => {
+             onConfirm={async () => {
                setShowPreview(false);
-               handleSubmit();
+               if (!selectedOriginalItem || !selectedReplacementItem || replacementQuantity <= 0) return;
+               
+               setProcessingReplacement(true);
+               try {
+                 const originalItem = billItems.find(item => item.id === selectedOriginalItem);
+                 const replacementItem = inventoryItems.find(item => item.id === selectedReplacementItem);
+                 
+                 if (!originalItem || !replacementItem) throw new Error("Selected items not found");
+                 
+                 // Step 1: Add new bill item for replacement
+                 const { error: insertError } = await supabase
+                   .from('bill_items')
+                   .insert({
+                     bill_id: billId,
+                     inventory_item_id: selectedReplacementItem,
+                     quantity: replacementQuantity,
+                     unit_price: replacementItem.unit_cost,
+                     total_price: replacementItem.unit_cost * replacementQuantity
+                   });
+                 
+                 if (insertError) throw insertError;
+                 
+                 // Step 2: Update return quantity for original item
+                 const newReturnQuantity = (originalItem.returned_quantity || 0) + replacementQuantity;
+                 const { error: updateError } = await supabase
+                   .from('bill_items')
+                   .update({ return_quantity: newReturnQuantity })
+                   .eq('id', selectedOriginalItem);
+                 
+                 if (updateError) throw updateError;
+                 
+                 // Step 3: Update inventory quantities
+                 const { error: inventoryError1 } = await supabase
+                   .from('inventory')
+                   .update({ quantity: originalItem.quantity + replacementQuantity })
+                   .eq('id', originalItem.inventory_item_id);
+                 
+                 if (inventoryError1) throw inventoryError1;
+                 
+                 const { error: inventoryError2 } = await supabase
+                   .from('inventory')
+                   .update({ quantity: replacementItem.quantity - replacementQuantity })
+                   .eq('id', selectedReplacementItem);
+                 
+                 if (inventoryError2) throw inventoryError2;
+                 
+                 toast({
+                   title: "Success",
+                   description: `Medicine replacement completed successfully`,
+                 });
+                 
+                 resetForm();
+                 onSuccess?.();
+                 onClose();
+               } catch (error: any) {
+                 console.error("Error processing replacement:", error);
+                 toast({
+                   title: "Error",
+                   description: error.message || "Failed to process replacement",
+                   variant: "destructive",
+                 });
+               } finally {
+                 setProcessingReplacement(false);
+               }
              }}
            />
          )}
