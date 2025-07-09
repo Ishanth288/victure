@@ -375,7 +375,7 @@ export const generateCSPHeader = (): string => {
 };
 
 export const isAllowedOrigin = (origin: string): boolean => {
-  return CORS_CONFIG.allowedOrigins.includes(origin);
+  return CORS_CONFIG.allowedOrigins.includes(origin as typeof CORS_CONFIG.allowedOrigins[number]);
 };
 
 export const getRateLimitConfig = (action: keyof typeof RATE_LIMITS) => {

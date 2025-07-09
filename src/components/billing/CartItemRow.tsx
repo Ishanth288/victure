@@ -8,6 +8,7 @@ interface CartItemRowProps {
   quantity: number;
   unit_cost: number;
   total: number;
+  available_quantity?: number;
   onRemoveItem: (id: number) => void;
   onUpdateQuantity: (id: number, quantity: number) => void;
 }
@@ -18,6 +19,7 @@ export function CartItemRow({
   quantity,
   unit_cost,
   total,
+  available_quantity,
   onRemoveItem,
   onUpdateQuantity,
 }: CartItemRowProps) {
@@ -26,6 +28,11 @@ export function CartItemRow({
       <div className="flex-1">
         <div className="font-medium">{name}</div>
         <div className="text-sm text-neutral-500">₹{unit_cost.toFixed(2)} per unit</div>
+        {available_quantity && (
+          <div className="text-xs text-gray-400">
+            Stock: {available_quantity} available
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-2">
         <div className="flex items-center border rounded-md">
@@ -44,6 +51,8 @@ export function CartItemRow({
             size="icon"
             className="h-8 w-8"
             onClick={() => onUpdateQuantity(id, quantity + 1)}
+            disabled={available_quantity ? quantity >= available_quantity : false}
+            title={available_quantity && quantity >= available_quantity ? `Maximum stock: ${available_quantity}` : undefined}
           >
             <Plus className="h-4 w-4" />
           </Button>

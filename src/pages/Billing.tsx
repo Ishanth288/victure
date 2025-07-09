@@ -145,9 +145,23 @@ export default function Billing() {
     setCartItems(prev => prev.filter(item => item.id !== id));
   };
 
-  const handleUpdateQuantity = (id: number, quantity: number) => {
+  const handleUpdateQuantity = async (id: number, quantity: number) => {
     if (quantity <= 0) {
       handleRemoveItem(id);
+      return;
+    }
+
+    // Find the cart item to get available quantity
+    const cartItem = cartItems.find(item => item.id === id);
+    if (!cartItem) return;
+
+    // Check if requested quantity exceeds available stock
+    if (cartItem.available_quantity && quantity > cartItem.available_quantity) {
+      toast({
+        title: "Insufficient Stock",
+        description: `Only ${cartItem.available_quantity} units available for ${cartItem.name}`,
+        variant: "destructive",
+      });
       return;
     }
 

@@ -53,19 +53,27 @@ export const supabase = createClient<Database>(
         'x-client-info': 'victure-pharmacy-v3'
       },
       fetch: (url, options = {}) => {
-        // Much shorter timeout for faster failures
+        // Enhanced timeout handling with better error messages
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
-          if (import.meta.env.VITE_DEBUG_LOGS) console.warn(`Request timeout for ${url}`);
+          if (import.meta.env.VITE_DEBUG_LOGS) console.warn(`🕐 Request timeout for ${url}`);
           controller.abort();
         }, 15000); // Temporarily increased for debugging
+        
+        // Combine signals if one already exists
+        const existingSignal = options.signal;
+        if (existingSignal) {
+          existingSignal.addEventListener('abort', () => controller.abort());
+        }
         
         return fetch(url, {
           ...options,
           signal: controller.signal,
         }).catch((error) => {
           if (error.name === 'AbortError') {
-            throw new Error(`Connection timeout after 3 seconds`);
+            const timeoutError = new Error(`Connection timeout after 15 seconds for ${url}`);
+            timeoutError.name = 'TimeoutError';
+            throw timeoutError;
           }
           throw error;
         }).finally(() => {
@@ -79,18 +87,27 @@ export const supabase = createClient<Database>(
   }
 );
 
-// Much shorter timeout wrapper
+// Enhanced timeout wrapper with better error handling
 export const withTimeout = <T>(
   promise: Promise<T>, 
   timeoutMs: number = 15000, // Increased for debugging
   operation: string = 'Database operation'
 ): Promise<T> => {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`${operation} timeout after ${timeoutMs}ms`)), timeoutMs)
-    )
-  ]);
+  const controller = new AbortController();
+  
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      const error = new Error(`${operation} timeout after ${timeoutMs}ms`);
+      error.name = 'TimeoutError';
+      reject(error);
+    }, timeoutMs);
+    
+    // Clear timeout if promise resolves
+    promise.finally(() => clearTimeout(timeoutId));
+  });
+  
+  return Promise.race([promise, timeoutPromise]);
 };
 
 interface CachedResult<T> {

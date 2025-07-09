@@ -1,0 +1,271 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.announcements (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  title text NOT NULL,
+  message text NOT NULL,
+  type text NOT NULL DEFAULT 'info'::text,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  expires_at timestamp with time zone,
+  created_by uuid,
+  CONSTRAINT announcements_pkey PRIMARY KEY (id),
+  CONSTRAINT announcements_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
+);
+CREATE TABLE public.bill_items (
+  id bigint NOT NULL DEFAULT nextval('bill_items_id_seq'::regclass),
+  bill_id bigint NOT NULL,
+  inventory_item_id bigint NOT NULL,
+  quantity integer NOT NULL,
+  unit_price numeric NOT NULL,
+  total_price numeric NOT NULL,
+  return_quantity integer DEFAULT 0,
+  is_replacement boolean DEFAULT false,
+  replaced_item_id bigint,
+  replacement_item_id bigint,
+  replacement_quantity integer DEFAULT 0,
+  replacement_reason text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT bill_items_pkey PRIMARY KEY (id),
+  CONSTRAINT bill_items_replacement_item_id_fkey FOREIGN KEY (replacement_item_id) REFERENCES public.inventory(id),
+  CONSTRAINT bill_items_replaced_item_id_fkey FOREIGN KEY (replaced_item_id) REFERENCES public.bill_items(id),
+  CONSTRAINT bill_items_inventory_item_id_fkey FOREIGN KEY (inventory_item_id) REFERENCES public.inventory(id),
+  CONSTRAINT bill_items_bill_id_fkey FOREIGN KEY (bill_id) REFERENCES public.bills(id)
+);
+CREATE TABLE public.bills (
+  id bigint NOT NULL DEFAULT nextval('bills_id_seq'::regclass),
+  prescription_id bigint,
+  user_id uuid,
+  bill_number text NOT NULL,
+  subtotal numeric NOT NULL,
+  gst_amount numeric NOT NULL,
+  gst_percentage numeric NOT NULL,
+  discount_amount numeric,
+  total_amount numeric NOT NULL,
+  status text DEFAULT 'completed'::text,
+  date date DEFAULT CURRENT_DATE,
+  payment_method character varying DEFAULT 'cash'::character varying,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT bills_pkey PRIMARY KEY (id),
+  CONSTRAINT bills_prescription_id_fkey FOREIGN KEY (prescription_id) REFERENCES public.prescriptions(id),
+  CONSTRAINT bills_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.deletion_history (
+  id integer NOT NULL DEFAULT nextval('deletion_history_id_seq'::regclass),
+  entity_type character varying NOT NULL CHECK (entity_type::text = ANY (ARRAY['bill_item'::character varying, 'prescription'::character varying, 'patient'::character varying, 'medicine_return'::character varying, 'inventory_adjustment'::character varying]::text[])),
+  entity_id integer NOT NULL,
+  entity_data jsonb NOT NULL,
+  deletion_reason text,
+  deletion_type character varying DEFAULT 'manual'::character varying,
+  patient_id integer,
+  prescription_id integer,
+  bill_id integer,
+  medicine_name character varying,
+  deleted_by uuid NOT NULL,
+  deleted_at timestamp with time zone DEFAULT now(),
+  amount_affected numeric,
+  quantity_affected integer,
+  notes text,
+  is_reversible boolean DEFAULT false,
+  reversal_deadline timestamp with time zone,
+  CONSTRAINT deletion_history_pkey PRIMARY KEY (id),
+  CONSTRAINT deletion_history_deleted_by_fkey FOREIGN KEY (deleted_by) REFERENCES auth.users(id)
+);
+CREATE TABLE public.feedback (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  email text,
+  message text NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  is_read boolean DEFAULT false,
+  user_response text,
+  CONSTRAINT feedback_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.inventory (
+  id integer NOT NULL DEFAULT nextval('inventory_id_seq'::regclass),
+  name character varying NOT NULL,
+  ndc character varying,
+  manufacturer character varying,
+  dosage_form character varying,
+  unit_size character varying,
+  quantity integer NOT NULL DEFAULT 0,
+  unit_cost numeric,
+  expiry_date date,
+  supplier character varying,
+  status character varying NOT NULL DEFAULT 'in stock'::character varying CHECK (status::text = ANY (ARRAY['in stock'::character varying::text, 'low stock'::character varying::text, 'out of stock'::character varying::text])),
+  generic_name character varying,
+  strength character varying,
+  reorder_point integer DEFAULT 10,
+  storage_condition character varying,
+  user_id uuid,
+  selling_price numeric,
+  migration_id uuid,
+  category text,
+  CONSTRAINT inventory_pkey PRIMARY KEY (id),
+  CONSTRAINT inventory_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.mapping_templates (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  name text NOT NULL,
+  source_system text NOT NULL,
+  data_type text NOT NULL,
+  mappings jsonb NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT mapping_templates_pkey PRIMARY KEY (id),
+  CONSTRAINT mapping_templates_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.medicine_returns (
+  id integer NOT NULL DEFAULT nextval('medicine_returns_id_seq'::regclass),
+  bill_item_id integer NOT NULL,
+  quantity integer NOT NULL,
+  reason text,
+  return_date timestamp with time zone NOT NULL DEFAULT now(),
+  status character varying NOT NULL CHECK (status::text = ANY (ARRAY['inventory'::character varying::text, 'disposed'::character varying::text])),
+  processed_by uuid NOT NULL,
+  user_id uuid NOT NULL,
+  CONSTRAINT medicine_returns_pkey PRIMARY KEY (id),
+  CONSTRAINT medicine_returns_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT medicine_returns_processed_by_fkey FOREIGN KEY (processed_by) REFERENCES auth.users(id)
+);
+CREATE TABLE public.migration_logs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  migration_id uuid NOT NULL,
+  type text NOT NULL,
+  timestamp timestamp with time zone NOT NULL DEFAULT now(),
+  added_count integer NOT NULL DEFAULT 0,
+  skipped_count integer NOT NULL DEFAULT 0,
+  issues jsonb,
+  CONSTRAINT migration_logs_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.patients (
+  id integer NOT NULL DEFAULT nextval('patients_id_seq'::regclass),
+  name character varying NOT NULL,
+  phone_number character varying NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  user_id uuid NOT NULL,
+  status character varying DEFAULT 'active'::character varying,
+  migration_id uuid,
+  patient_type text,
+  CONSTRAINT patients_pkey PRIMARY KEY (id),
+  CONSTRAINT patients_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.pharmacy_knowledge (
+  id integer NOT NULL DEFAULT nextval('pharmacy_knowledge_id_seq'::regclass),
+  question text NOT NULL,
+  answer text NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT pharmacy_knowledge_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.prescriptions (
+  id integer NOT NULL DEFAULT nextval('prescriptions_id_seq'::regclass),
+  prescription_number character varying NOT NULL,
+  patient_id integer NOT NULL,
+  doctor_name character varying DEFAULT 'Not Specified'::character varying,
+  date timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  status character varying NOT NULL DEFAULT 'active'::character varying CHECK (status::text = ANY (ARRAY['active'::character varying::text, 'completed'::character varying::text, 'cancelled'::character varying::text])),
+  user_id uuid NOT NULL,
+  migration_id uuid,
+  prescription_type text,
+  polytherapy boolean DEFAULT false,
+  CONSTRAINT prescriptions_pkey PRIMARY KEY (id),
+  CONSTRAINT prescriptions_patient_id_fkey FOREIGN KEY (patient_id) REFERENCES public.patients(id),
+  CONSTRAINT prescriptions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.price_history (
+  id integer NOT NULL DEFAULT nextval('price_history_id_seq'::regclass),
+  inventory_item_id integer NOT NULL,
+  previous_cost numeric NOT NULL,
+  new_cost numeric NOT NULL,
+  previous_selling_price numeric,
+  new_selling_price numeric,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_by uuid,
+  CONSTRAINT price_history_pkey PRIMARY KEY (id),
+  CONSTRAINT price_history_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id),
+  CONSTRAINT price_history_inventory_item_id_fkey FOREIGN KEY (inventory_item_id) REFERENCES public.inventory(id),
+  CONSTRAINT fk_inventory_item FOREIGN KEY (inventory_item_id) REFERENCES public.inventory(id)
+);
+CREATE TABLE public.pricing_plans (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  description text NOT NULL,
+  price_monthly numeric NOT NULL,
+  price_yearly numeric NOT NULL,
+  features jsonb NOT NULL,
+  is_popular boolean DEFAULT false,
+  category text,
+  plan_id text,
+  display_order integer DEFAULT 0,
+  updated_at timestamp with time zone DEFAULT now(),
+  updated_by uuid,
+  CONSTRAINT pricing_plans_pkey PRIMARY KEY (id),
+  CONSTRAINT pricing_plans_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id)
+);
+CREATE TABLE public.profiles (
+  id uuid NOT NULL,
+  pharmacy_name text NOT NULL,
+  owner_name text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  address text,
+  pincode text,
+  gstin text,
+  city text,
+  state text,
+  phone text,
+  role text DEFAULT 'owner'::text,
+  plan_type text NOT NULL DEFAULT 'Free Trial'::text,
+  registration_date timestamp with time zone NOT NULL DEFAULT now(),
+  trial_expiration_date timestamp with time zone NOT NULL DEFAULT (now() + '30 days'::interval),
+  monthly_bills_count integer NOT NULL DEFAULT 0,
+  daily_bills_count integer NOT NULL DEFAULT 0,
+  last_bill_date date,
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.purchase_order_items (
+  id integer NOT NULL DEFAULT nextval('purchase_order_items_id_seq'::regclass),
+  purchase_order_id integer,
+  item_name text NOT NULL,
+  quantity_ordered integer NOT NULL,
+  quantity_delivered integer DEFAULT 0,
+  unit_cost numeric NOT NULL,
+  total_cost numeric NOT NULL,
+  is_delivered boolean DEFAULT false,
+  delivery_notes text,
+  CONSTRAINT purchase_order_items_pkey PRIMARY KEY (id),
+  CONSTRAINT purchase_order_items_purchase_order_id_fkey FOREIGN KEY (purchase_order_id) REFERENCES public.purchase_orders(id)
+);
+CREATE TABLE public.purchase_orders (
+  id integer NOT NULL DEFAULT nextval('purchase_orders_id_seq'::regclass),
+  user_id uuid,
+  supplier_name text NOT NULL,
+  supplier_phone text,
+  order_date timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  status text DEFAULT 'pending'::text,
+  notes text,
+  total_amount numeric DEFAULT 0,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  delivery_notes text,
+  CONSTRAINT purchase_orders_pkey PRIMARY KEY (id),
+  CONSTRAINT purchase_orders_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.system_settings (
+  id integer NOT NULL DEFAULT 1 CHECK (id = 1),
+  maintenance_mode boolean DEFAULT false,
+  maintenance_message text DEFAULT 'The system is currently undergoing scheduled maintenance. Please try again later.'::text,
+  maintenance_start_date timestamp with time zone,
+  maintenance_end_date timestamp with time zone,
+  max_login_attempts integer DEFAULT 5,
+  session_timeout integer DEFAULT 60,
+  enable_two_factor boolean DEFAULT false,
+  ip_restriction boolean DEFAULT false,
+  allowed_ips text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  maintenance_announcement text,
+  maintenance_announced_at timestamp with time zone,
+  CONSTRAINT system_settings_pkey PRIMARY KEY (id)
+);

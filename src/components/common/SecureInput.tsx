@@ -4,14 +4,15 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { sanitizeInput, validateEmail, checkPasswordStrength } from '../../utils/securityUtils';
+import { sanitizeInput, isValidEmail } from '../../utils/securityUtils';
+import { checkPasswordStrength } from '@/utils/passwordUtils';
 import {
   sanitizePatientInput,
   sanitizeMedicineInput,
   sanitizePrescriptionInput,
   sanitizePhoneNumber,
   sanitizeAge,
-  sanitizeNumericValue
+  sanitizeNumericInput
 } from '../../utils/sanitization';
 import { logSecurityEvent } from '../../utils/securityLogger';
 
@@ -79,7 +80,7 @@ const SecureInput: React.FC<SecureInputProps> = ({
         case 'phone':
           return sanitizePhoneNumber(inputValue);
         case 'number':
-          return sanitizeNumericValue(inputValue).toString();
+          return sanitizeNumericInput(inputValue).toString();
         case 'email':
         case 'password':
         case 'text':
@@ -124,7 +125,7 @@ const SecureInput: React.FC<SecureInputProps> = ({
     // Type-specific validations
     switch (type) {
       case 'email':
-        if (inputValue && !validateEmail(inputValue)) {
+        if (inputValue && !isValidEmail(inputValue)) {
           errors.push('Please enter a valid email address');
         }
         break;

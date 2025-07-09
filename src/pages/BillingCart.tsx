@@ -83,18 +83,41 @@ export default function BillingCart() {
     const price = medicine.selling_price || medicine.unit_cost;
     
     if (existingItem) {
+      const newQuantity = existingItem.quantity + quantity;
+      
+      // Check if new quantity exceeds available stock
+      if (medicine.available_quantity && newQuantity > medicine.available_quantity) {
+        toast({
+          title: "Insufficient Stock",
+          description: `Only ${medicine.available_quantity} units available for ${medicine.name}. Currently ${existingItem.quantity} in cart.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       setCartItems(cartItems.map(item =>
         item.id === medicine.id
-          ? { ...item, quantity: item.quantity + quantity, total: (item.quantity + quantity) * item.unit_cost }
+          ? { ...item, quantity: newQuantity, total: newQuantity * item.unit_cost }
           : item
       ));
     } else {
+      // Check if initial quantity exceeds available stock
+      if (medicine.available_quantity && quantity > medicine.available_quantity) {
+        toast({
+          title: "Insufficient Stock",
+          description: `Only ${medicine.available_quantity} units available for ${medicine.name}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       setCartItems([...cartItems, {
         id: medicine.id,
         name: medicine.name,
         quantity,
         unit_cost: price, // Use the price we determined above
         total: quantity * price, // Use the price we determined above
+        available_quantity: medicine.available_quantity, // Include available quantity
       }]);
     }
   };
@@ -105,6 +128,21 @@ export default function BillingCart() {
 
   const handleUpdateQuantity = (id: number, quantity: number) => {
     if (quantity <= 0) return;
+    
+    // Find the item to check available stock
+    const item = cartItems.find(item => item.id === id);
+    if (!item) return;
+    
+    // Check if quantity exceeds available stock
+    if (item.available_quantity && quantity > item.available_quantity) {
+      toast({
+        title: "Insufficient Stock",
+        description: `Only ${item.available_quantity} units available for ${item.name}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setCartItems(cartItems.map(item =>
       item.id === id
         ? { ...item, quantity, total: quantity * item.unit_cost }

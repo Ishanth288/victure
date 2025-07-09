@@ -652,6 +652,7 @@ export function CartSummary({
                   quantity={item.quantity}
                   unit_cost={item.unit_cost}
                   total={item.total}
+                  available_quantity={item.available_quantity}
                   onRemoveItem={onRemoveItem}
                   onUpdateQuantity={onUpdateQuantity}
                 />

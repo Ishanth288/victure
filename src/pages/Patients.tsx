@@ -252,7 +252,7 @@ export default function Patients() {
                <Skeleton className="h-64 w-full" />
             ) : (
               <PatientList
-                patients={filteredPatients}
+                patients={filteredPatients as unknown as Patient[]}
                 onViewBill={handleShowBillPreview}
                 onPatientDeleted={refreshData}
               />

@@ -33,6 +33,7 @@ const SLA = lazy(() => import("./pages/legal/SLA"));
 const EULA = lazy(() => import("./pages/legal/EULA"));
 const AcceptableUsePolicy = lazy(() => import("./pages/legal/AcceptableUsePolicy"));
 const Disclaimers = lazy(() => import("./pages/legal/Disclaimers"));
+const TimeoutDebugPage = lazy(() => import("./pages/TimeoutDebugPage"));
 // const WhatsAppPage = lazy(() => import("./pages/whatsapp")); // Temporarily disabled for Vercel build
 
 
@@ -199,6 +200,16 @@ function App() {
                 <AuthWrapper>
                   <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
                     <DashboardLayout><BusinessOptimization /></DashboardLayout>
+                  </Suspense>
+                </AuthWrapper>
+              } 
+            />
+            <Route 
+              path="/timeout-debug"
+              element={
+                <AuthWrapper>
+                  <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+                    <DashboardLayout><TimeoutDebugPage /></DashboardLayout>
                   </Suspense>
                 </AuthWrapper>
               } 
