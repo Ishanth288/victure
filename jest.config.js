@@ -1,3 +1,4 @@
+/** @type {import('jest').Config} */
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
@@ -14,4 +15,5 @@ module.exports = {
     '<rootDir>/src/**/?(*.)(spec|test).(ts|tsx|js)',
   ],
   clearMocks: true,
+  collectCoverage: false,
 };
